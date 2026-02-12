@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation' // ✅ 1. Import router
 
 export default function Dashboard() {
+  const router = useRouter() // ✅ 2. ประกาศ router
   const [loading, setLoading] = useState(true)
   
   // Stats State
@@ -22,122 +24,143 @@ export default function Dashboard() {
   const [carStats, setCarStats] = useState([])
   const [recentLogs, setRecentLogs] = useState([])
   
-  // ✅ New Analytics States
-  const [dailyTrend, setDailyTrend] = useState([])      // กราฟ 7 วัน
-  const [carTypeStats, setCarTypeStats] = useState([])  // ประเภทรถ
-  const [timeStats, setTimeStats] = useState({ morning: 0, afternoon: 0 }) // ช่วงเวลา
+  // New Analytics States
+  const [dailyTrend, setDailyTrend] = useState([])      
+  const [carTypeStats, setCarTypeStats] = useState([])  
+  const [timeStats, setTimeStats] = useState({ morning: 0, afternoon: 0 })
+
+  // ✅ 3. ฟังก์ชันปิดหน้าต่างแบบฉลาด (Smart Close)
+  const handleClose = () => {
+    window.close() // ลองปิด Tab ก่อน
+    // ถ้าปิดไม่ได้ (เพราะเป็น Tab หลัก) ให้กลับไปหน้า Home แทน
+    setTimeout(() => {
+      if (!window.closed) {
+        router.push('/')
+      }
+    }, 100)
+  }
 
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Fetch Data
-      const { data: logs } = await supabase.from('trip_logs').select('*, cars(plate_number, model, car_type)').eq('is_completed', true)
-      const { data: cars } = await supabase.from('cars').select('*')
-      const { data: recents } = await supabase.from('trip_logs').select('*, cars(plate_number)').order('created_at', { ascending: false }).limit(6)
+      try {
+        // 1. Fetch Data
+        const { data: logs, error: logError } = await supabase.from('trip_logs').select('*, cars(plate_number, model, car_type)').eq('is_completed', true)
+        const { data: cars, error: carError } = await supabase.from('cars').select('*')
+        const { data: recents, error: recentError } = await supabase.from('trip_logs').select('*, cars(plate_number)').order('created_at', { ascending: false }).limit(6)
 
-      if (logs && cars) {
-        // --- Basic Stats ---
-        const totalDist = logs.reduce((sum, log) => sum + (log.end_mileage - log.start_mileage), 0)
-        const totalCost = logs.reduce((sum, log) => sum + (log.fuel_cost || 0), 0)
-        const activeCount = cars.filter(c => c.status === 'busy').length
+        if (logError || carError) throw new Error('Data fetch failed')
 
-        setStats({
-          totalTrips: logs.length,
-          activeCars: activeCount,
-          availableCars: cars.length - activeCount,
-          totalCars: cars.length,
-          totalFuelCost: totalCost,
-          totalDistance: totalDist,
-          avgCostPerKm: totalDist > 0 ? (totalCost / totalDist) : 0
-        })
+        if (logs && cars) {
+            // --- Basic Stats ---
+            const totalDist = logs.reduce((sum, log) => sum + (log.end_mileage - log.start_mileage), 0)
+            const totalCost = logs.reduce((sum, log) => sum + (log.fuel_cost || 0), 0)
+            const activeCount = cars.filter(c => c.status === 'busy').length
 
-        // --- 1. Daily Trend (7 Days) ---
-        const last7Days = [...Array(7)].map((_, i) => {
-            const d = new Date()
-            d.setDate(d.getDate() - i)
-            return d.toISOString().split('T')[0]
-        }).reverse()
+            setStats({
+            totalTrips: logs.length,
+            activeCars: activeCount,
+            availableCars: cars.length - activeCount,
+            totalCars: cars.length,
+            totalFuelCost: totalCost,
+            totalDistance: totalDist,
+            avgCostPerKm: totalDist > 0 ? (totalCost / totalDist) : 0
+            })
 
-        const trendMap = {}
-        last7Days.forEach(date => trendMap[date] = 0)
-        
-        logs.forEach(log => {
-            const logDate = new Date(log.created_at).toISOString().split('T')[0]
-            if (trendMap[logDate] !== undefined) trendMap[logDate]++
-        })
-
-        const maxTrip = Math.max(...Object.values(trendMap), 1) // หาค่าสูงสุดเพื่อทำความสูงกราฟ
-        setDailyTrend(Object.entries(trendMap).map(([date, count]) => ({
-            date: new Date(date).toLocaleDateString('th-TH', {weekday:'short'}),
-            count,
-            height: (count / maxTrip) * 100 // % ความสูง
-        })))
-
-        // --- 2. Vehicle Type Analysis ---
-        const typeMap = {}
-        cars.forEach(c => {
-            const type = c.car_type || 'ทั่วไป'
-            if (!typeMap[type]) typeMap[type] = { total: 0, active: 0 }
-            typeMap[type].total++
-            if (c.status === 'busy') typeMap[type].active++
-        })
-        setCarTypeStats(Object.entries(typeMap).map(([name, val]) => ({ name, ...val })))
-
-        // --- 3. Time Analysis (Morning vs Afternoon) ---
-        let morning = 0, afternoon = 0
-        logs.forEach(log => {
-            const hour = new Date(log.created_at).getHours()
-            if (hour < 12) morning++
-            else afternoon++
-        })
-        setTimeStats({ morning, afternoon })
-
-        // --- 4. Location & Driver Analysis (Existing) ---
-        const locMap = {}
-        const driverMap = {}
-        
-        logs.forEach(log => {
-          // Loc
-          const loc = log.location || 'ไม่ระบุ'
-          locMap[loc] = (locMap[loc] || 0) + 1
-          
-          // Driver
-          const driver = log.driver_name || 'ไม่ระบุ'
-          if (!driverMap[driver]) driverMap[driver] = { trips: 0, distance: 0 }
-          driverMap[driver].trips++
-          driverMap[driver].distance += (log.end_mileage - log.start_mileage)
-        })
-
-        setLocationStats(Object.entries(locMap)
-          .map(([name, count]) => ({ name, count, percent: (count / logs.length) * 100 }))
-          .sort((a, b) => b.count - a.count).slice(0, 5))
-
-        setDriverStats(Object.entries(driverMap)
-          .map(([name, data]) => ({ name, ...data }))
-          .sort((a, b) => b.trips - a.trips).slice(0, 5))
-
-        // --- 5. Car Table Data ---
-        const carMapStats = {}
-        cars.forEach(c => {
-            carMapStats[c.id] = { plate: c.plate_number, model: c.model, trips: 0, distance: 0, cost: 0 }
-        })
-        logs.forEach(log => {
-            if (carMapStats[log.car_id]) {
-                carMapStats[log.car_id].trips++
-                carMapStats[log.car_id].distance += (log.end_mileage - log.start_mileage)
-                carMapStats[log.car_id].cost += (log.fuel_cost || 0)
+            // --- 1. Daily Trend (7 Days - Local Time Fix) ---
+            const trendMap = {}
+            // สร้าง Key วันที่ย้อนหลัง 7 วัน (DD/MM/YYYY)
+            for (let i = 0; i < 7; i++) {
+                const d = new Date()
+                d.setDate(d.getDate() - i)
+                const dateKey = d.toLocaleDateString('en-CA') // YYYY-MM-DD (Local)
+                trendMap[dateKey] = 0
             }
-        })
-        setCarStats(Object.values(carMapStats).sort((a, b) => b.distance - a.distance))
+
+            logs.forEach(log => {
+                const logDate = new Date(log.created_at).toLocaleDateString('en-CA') // YYYY-MM-DD (Local)
+                if (trendMap[logDate] !== undefined) trendMap[logDate]++
+            })
+
+            // แปลงกลับเป็น Array และเรียงวันที่
+            const sortedKeys = Object.keys(trendMap).sort()
+            const maxTrip = Math.max(...Object.values(trendMap), 1)
+
+            setDailyTrend(sortedKeys.map(dateKey => ({
+                date: new Date(dateKey).toLocaleDateString('th-TH', {weekday:'short'}),
+                count: trendMap[dateKey],
+                height: (trendMap[dateKey] / maxTrip) * 100
+            })))
+
+            // --- 2. Vehicle Type Analysis ---
+            const typeMap = {}
+            cars.forEach(c => {
+                const type = c.car_type || 'ทั่วไป'
+                if (!typeMap[type]) typeMap[type] = { total: 0, active: 0 }
+                typeMap[type].total++
+                if (c.status === 'busy') typeMap[type].active++
+            })
+            setCarTypeStats(Object.entries(typeMap).map(([name, val]) => ({ name, ...val })))
+
+            // --- 3. Time Analysis ---
+            let morning = 0, afternoon = 0
+            logs.forEach(log => {
+                const hour = new Date(log.created_at).getHours()
+                if (hour < 12) morning++
+                else afternoon++
+            })
+            setTimeStats({ morning, afternoon })
+
+            // --- 4. Location & Driver Analysis ---
+            const locMap = {}
+            const driverMap = {}
+            
+            logs.forEach(log => {
+                // Loc
+                const loc = log.location || 'ไม่ระบุ'
+                locMap[loc] = (locMap[loc] || 0) + 1
+                
+                // Driver
+                const driver = log.driver_name || 'ไม่ระบุ'
+                if (!driverMap[driver]) driverMap[driver] = { trips: 0, distance: 0 }
+                driverMap[driver].trips++
+                driverMap[driver].distance += (log.end_mileage - log.start_mileage)
+            })
+
+            setLocationStats(Object.entries(locMap)
+            .map(([name, count]) => ({ name, count, percent: (count / logs.length) * 100 }))
+            .sort((a, b) => b.count - a.count).slice(0, 5))
+
+            setDriverStats(Object.entries(driverMap)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.trips - a.trips).slice(0, 5))
+
+            // --- 5. Car Table Data ---
+            const carMapStats = {}
+            cars.forEach(c => {
+                carMapStats[c.id] = { plate: c.plate_number, model: c.model, trips: 0, distance: 0, cost: 0 }
+            })
+            logs.forEach(log => {
+                if (carMapStats[log.car_id]) {
+                    carMapStats[log.car_id].trips++
+                    carMapStats[log.car_id].distance += (log.end_mileage - log.start_mileage)
+                    carMapStats[log.car_id].cost += (log.fuel_cost || 0)
+                }
+            })
+            setCarStats(Object.values(carMapStats).sort((a, b) => b.distance - a.distance))
+        }
+        
+        if (recents) setRecentLogs(recents)
+      } catch (err) {
+        console.error("Error loading dashboard:", err)
+      } finally {
+        setLoading(false)
       }
-      
-      if (recents) setRecentLogs(recents)
-      setLoading(false)
     }
 
     fetchData()
   }, [])
 
-  if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F3F7] text-[#742F99]"><div className="w-10 h-10 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin mb-4"></div>กำลังวิเคราะห์ข้อมูล...</div>
+  if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F3F7] text-[#742F99]"><div className="w-10 h-10 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin mb-4"></div>กำลังประมวลผลข้อมูล...</div>
 
   return (
     <div className="min-h-screen bg-[#F5F3F7] font-sarabun text-gray-800 pb-12">
@@ -153,8 +176,9 @@ export default function Dashboard() {
              <p className="text-[10px] text-purple-200 mt-0.5 opacity-90 tracking-wider">DASHBOARD & ANALYTICS</p>
            </div>
         </div>
-        <button onClick={() => window.close()} className="text-xs bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all text-white backdrop-blur-md border border-white/20">
-            ปิดหน้าต่าง
+        {/* ✅ ปุ่มปิดหน้าต่างเรียกใช้ handleClose */}
+        <button onClick={handleClose} className="text-xs bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all text-white backdrop-blur-md border border-white/20 flex items-center gap-2">
+            <span>✖</span> ปิดหน้าต่าง
         </button>
       </div>
 
@@ -226,7 +250,7 @@ export default function Dashboard() {
                  {dailyTrend.map((day, i) => (
                     <div key={i} className="flex flex-col items-center w-full group cursor-pointer">
                        {/* Tooltip on hover */}
-                       <div className="mb-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-gray-800 text-white px-2 py-1 rounded absolute -mt-8">
+                       <div className="mb-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-gray-800 text-white px-2 py-1 rounded absolute -mt-8 pointer-events-none">
                           {day.count} เที่ยว
                        </div>
                        {/* Bar */}
