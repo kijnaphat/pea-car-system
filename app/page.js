@@ -64,7 +64,7 @@ function CarSelector() {
                 <img src="/pea_logo.png" className="w-10 h-10 object-contain" alt="logo" />
              </div>
              <div>
-               <h1 className="text-xl font-black uppercase tracking-tight">PEA SMART FLEET</h1>
+               <h1 className="text-xl font-black uppercase tracking-tight">PEA SMART CAR</h1>
                <p className="text-[10px] text-purple-200 tracking-wider">ระบบจัดการยานพาหนะดิจิทัล</p>
              </div>
           </div>
