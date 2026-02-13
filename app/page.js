@@ -27,24 +27,19 @@ function CarSelector() {
 
   const fetchCars = async () => {
     try {
-      // 1. ดึงข้อมูลรถทั้งหมด
       const { data: carsData } = await supabase.from('cars').select('*')
-      
-      // 2. ดึงข้อมูล Log ที่ยังไม่จบ (เพื่อเอาเวลาเริ่มงาน)
       const { data: activeLogs } = await supabase.from('trip_logs').select('car_id, start_time, driver_name').eq('is_completed', false)
 
       if (carsData) {
-        // 3. รวมข้อมูลรถ + เวลาเริ่มงาน
         const mergedCars = carsData.map(car => {
             const log = activeLogs?.find(l => l.car_id === car.id)
-            return { ...car, activeLog: log } // ยัด log เข้าไปในรถ
+            return { ...car, activeLog: log }
         })
 
-        // 4. จัดเรียง: รถไม่ว่าง (busy) ขึ้นก่อน
         mergedCars.sort((a, b) => {
-            if (a.status === 'busy' && b.status !== 'busy') return -1 // a ขึ้นก่อน
-            if (a.status !== 'busy' && b.status === 'busy') return 1  // b ขึ้นก่อน
-            return a.plate_number.localeCompare(b.plate_number) // ถ้าสถานะเหมือนกัน เรียงตามทะเบียน
+            if (a.status === 'busy' && b.status !== 'busy') return -1 
+            if (a.status !== 'busy' && b.status === 'busy') return 1  
+            return a.plate_number.localeCompare(b.plate_number)
         })
 
         setCars(mergedCars)
@@ -58,7 +53,7 @@ function CarSelector() {
 
   useEffect(() => {
     fetchCars()
-    const interval = setInterval(fetchCars, 5000) // Auto Refresh 5 วิ
+    const interval = setInterval(fetchCars, 5000) 
     return () => clearInterval(interval)
   }, [])
 
@@ -71,11 +66,11 @@ function CarSelector() {
   return (
     <div className="min-h-screen bg-[#EBF0F6] font-sarabun pb-6">
       
-      {/* 🟣 Header (Modern Curve) */}
+      {/* 🟣 Header */}
       <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-20 text-white rounded-b-[3rem] shadow-xl relative z-10">
         <div className="flex justify-between items-start">
           <div>
-             <h1 className="text-2xl font-black tracking-tight">PEA SMART VEHICLE</h1>
+             <h1 className="text-2xl font-black tracking-tight">PEA SMART FLEET</h1>
              <p className="text-purple-200 text-sm opacity-90">ระบบบริหารจัดการยานพาหนะ</p>
           </div>
           <button 
@@ -87,9 +82,8 @@ function CarSelector() {
         </div>
       </div>
 
-      {/* 🔶 Alert Instruction (ป้ายนิ่ง ไม่กระพริบแล้ว) */}
+      {/* 🔶 Alert Instruction */}
       <div className="-mt-12 mx-4 relative z-20 mb-6">
-        {/* ✅ ลบ animate-pulse ออกแล้วครับ */}
         <div className="bg-gradient-to-br from-[#F2994A] to-[#F3B236] p-5 rounded-3xl shadow-xl shadow-orange-500/30 text-white flex items-center justify-between ring-4 ring-white">
             <div className="flex items-center gap-4">
                 <div className="bg-white/20 p-3 rounded-2xl">
@@ -98,7 +92,7 @@ function CarSelector() {
                 <div>
                     <h3 className="text-lg font-black drop-shadow-sm uppercase">สแกน QR Code ทุกครั้ง</h3>
                     <p className="text-xs opacity-90 font-medium bg-black/10 px-2 py-0.5 rounded-md inline-block mt-1">
-                        เมื่อนำรถออก หรือ คืนรถ
+                        เมื่อ นำรถออก หรือ คืนรถ
                     </p>
                 </div>
             </div>
@@ -106,18 +100,18 @@ function CarSelector() {
         </div>
       </div>
 
-      {/* ⚪ รายการรถ (List View 1 Column) */}
+      {/* ⚪ รายการรถ */}
       <div className="px-4 space-y-4 relative z-20">
         {cars.map((car) => (
           <div 
             key={car.id} 
             className={`relative p-5 rounded-[2rem] shadow-sm border transition-all ${
                 car.status === 'busy' 
-                ? 'bg-white border-red-100 shadow-red-100' // รถไม่ว่าง
-                : 'bg-white border-gray-100' // รถว่าง
+                ? 'bg-white border-red-100 shadow-red-100' 
+                : 'bg-white border-gray-100'
             }`}
           >
-             {/* 🖨️ ปุ่มพิมพ์ (มุมขวาบน) */}
+             {/* ปุ่มพิมพ์ */}
              <button 
                  onClick={(e) => {
                     e.stopPropagation()
@@ -129,7 +123,6 @@ function CarSelector() {
              </button>
 
              <div className="flex items-start gap-4">
-                {/* Icon รถ */}
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner ${
                     car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                 }`}>
@@ -137,11 +130,9 @@ function CarSelector() {
                 </div>
 
                 <div className="flex-1 pt-1">
-                    {/* ทะเบียน */}
                     <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
                     <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{car.model}</p>
 
-                    {/* Badge สถานะ + เวลา */}
                     <div className="mt-3 flex flex-wrap gap-2">
                         <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
                             car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -150,7 +141,6 @@ function CarSelector() {
                             {car.status === 'available' ? 'ว่างพร้อมใช้' : 'กำลังใช้งาน'}
                         </span>
 
-                        {/* 🕒 โชว์เวลาเฉพาะตอนไม่ว่าง */}
                         {car.status === 'busy' && car.activeLog && (
                             <span className="px-3 py-1 rounded-lg text-xs font-bold bg-orange-50 text-orange-600 flex items-center gap-1">
                                 🕒 ออก: {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})} น.
@@ -158,7 +148,6 @@ function CarSelector() {
                         )}
                     </div>
                     
-                    {/* ชื่อคนขับ (ถ้าไม่ว่าง) */}
                     {car.status === 'busy' && car.activeLog && (
                          <p className="text-[10px] text-gray-400 mt-2 ml-1">
                             โดย: {car.activeLog.driver_name}
@@ -170,7 +159,7 @@ function CarSelector() {
         ))}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.3
+            PEA Fleet System v2.4 (Double-Check Secured)
         </div>
       </div>
     </div>
@@ -178,7 +167,7 @@ function CarSelector() {
 }
 
 // ==========================================
-// 2. หน้าฟอร์มบันทึก (Action Form) - Logic เดิม
+// 2. หน้าฟอร์มบันทึก (Action Form)
 // ==========================================
 function CarActionForm({ carId }) {
   const router = useRouter()
@@ -250,8 +239,17 @@ function CarActionForm({ carId }) {
     const finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
     if (!employeeId || !mileage || !finalLocation) return alert('กรุณากรอกข้อมูลให้ครบ')
     
-    setLoading(true)
+    setLoading(true) // ล็อกปุ่มทันที
+
     try {
+      // ✅ DOUBLE CHECK: เช็คสถานะล่าสุดก่อนบันทึกจริง (กันกดซ้ำ/กด Back)
+      const { data: latestCar } = await supabase.from('cars').select('status').eq('id', carId).single()
+      if (latestCar.status === 'busy') {
+         alert('⚠️ รายการนี้ถูกบันทึกไปแล้วครับ (ไม่สามารถทำซ้ำได้)')
+         window.location.href = '/'
+         return
+      }
+
       const { error } = await supabase.from('trip_logs').insert({
         car_id: carId, driver_name: currentName, driver_position: staffPosition,
         start_mileage: parseFloat(mileage), location: finalLocation, start_time: new Date().toISOString(), is_completed: false
@@ -260,8 +258,10 @@ function CarActionForm({ carId }) {
       await supabase.from('cars').update({ status: 'busy' }).eq('id', carId)
       alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${currentName}`)
       window.location.href = '/'
-    } catch (err) { alert('Error: ' + err.message) } 
-    finally { setLoading(false) }
+    } catch (err) { 
+        alert('Error: ' + err.message) 
+        setLoading(false) // ถ้า Error ให้ปลดล็อกปุ่ม
+    } 
   }
 
   // คืนรถ
@@ -275,8 +275,17 @@ function CarActionForm({ carId }) {
         return
     }
 
-    setLoading(true)
+    setLoading(true) // ล็อกปุ่มทันที
+
     try {
+      // ✅ DOUBLE CHECK: เช็คสถานะล่าสุดก่อนบันทึกจริง (กันกดซ้ำ/กด Back)
+      const { data: latestCar } = await supabase.from('cars').select('status').eq('id', carId).single()
+      if (latestCar.status === 'available') {
+         alert('⚠️ รายการนี้ถูกคืนไปเรียบร้อยแล้วครับ')
+         window.location.href = '/'
+         return
+      }
+
       await supabase.from('trip_logs').update({
         end_mileage: endM, fuel_liters: fuelLiters ? parseFloat(fuelLiters) : 0, fuel_cost: fuelCost ? parseFloat(fuelCost) : 0,
         end_time: new Date().toISOString(), is_completed: true
@@ -284,8 +293,10 @@ function CarActionForm({ carId }) {
       await supabase.from('cars').update({ status: 'available' }).eq('id', carId)
       alert('✅ คืนรถเรียบร้อย ขอบคุณครับ!')
       window.location.href = '/'
-    } catch (err) { alert('Error: ' + err.message) }
-    finally { setLoading(false) }
+    } catch (err) { 
+        alert('Error: ' + err.message)
+        setLoading(false) // ถ้า Error ให้ปลดล็อกปุ่ม
+    }
   }
 
   if (!car) return <div className="min-h-screen flex items-center justify-center text-[#742F99]">กำลังโหลด...</div>
@@ -335,8 +346,14 @@ function CarActionForm({ carId }) {
                     <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)} placeholder="ระบุเอง..." className="w-full p-4 mt-2 bg-purple-50 text-[#742F99] rounded-2xl border border-purple-100 outline-none" />
                  )}
               </div>
-              <button onClick={handleTakeOut} disabled={loading} className="w-full bg-[#742F99] text-white py-4 rounded-2xl font-bold mt-2 shadow-lg hover:bg-[#5b237a] transition-all">
-                {loading ? 'กำลังบันทึก...' : 'ยืนยัน'}
+              <button 
+                onClick={handleTakeOut} 
+                disabled={loading} // ถ้ากำลังโหลด ปุ่มจะกดไม่ได้
+                className={`w-full py-4 rounded-2xl font-bold mt-2 shadow-lg transition-all text-white ${
+                    loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'
+                }`}
+              >
+                {loading ? '⏳ กำลังบันทึก...' : 'ยืนยัน'}
               </button>
             </div>
           ) : (
@@ -366,8 +383,14 @@ function CarActionForm({ carId }) {
                     <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" />
                   </div>
                </div>
-               <button onClick={handleReturn} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-bold shadow-lg mt-4">
-                 {loading ? 'กำลังบันทึก...' : 'ยืนยันการคืนรถ'}
+               <button 
+                 onClick={handleReturn} 
+                 disabled={loading} // ถ้ากำลังโหลด ปุ่มจะกดไม่ได้
+                 className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-4 text-white ${
+                    loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                 }`}
+               >
+                 {loading ? '⏳ กำลังบันทึก...' : 'ยืนยันการคืนรถ'}
                </button>
             </div>
           )}
