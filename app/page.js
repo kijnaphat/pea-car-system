@@ -18,7 +18,7 @@ export default function App() {
 }
 
 // ==========================================
-// 1. หน้าแสดงผล (Home - Compact Grid)
+// 1. หน้าแสดงผล (Home - Compact Grid 3 Cols)
 // ==========================================
 function CarSelector() {
   const router = useRouter()
@@ -38,7 +38,7 @@ function CarSelector() {
 
   useEffect(() => {
     fetchCars()
-    const interval = setInterval(fetchCars, 10000) // Auto Refresh ทุก 10 วิ
+    const interval = setInterval(fetchCars, 5000) // Auto Refresh ทุก 5 วิ (เร็วขึ้นเพื่อให้ Realtime สุดๆ)
     return () => clearInterval(interval)
   }, [])
 
@@ -49,63 +49,91 @@ function CarSelector() {
   )
 
   return (
-    <div className="min-h-screen bg-[#F5F3F7] font-sarabun">
+    <div className="min-h-screen bg-[#F0F2F5] font-sarabun pb-4">
       
-      {/* 🟣 Header (Compact) */}
-      <div className="bg-[#742F99] px-5 pt-8 pb-12 text-white rounded-b-[2rem] shadow-lg relative z-10">
+      {/* 🟣 Header (Super Compact) */}
+      <div className="bg-[#742F99] px-4 pt-4 pb-16 text-white rounded-b-[1.5rem] shadow-md relative z-10">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-             <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
-                <img src="/pea_logo.png" className="w-8 h-8 object-contain" alt="logo" />
-             </div>
+          <div className="flex items-center gap-2">
+             <img src="/pea_logo.png" className="w-8 h-8 object-contain bg-white/20 rounded-lg p-1 backdrop-blur-sm" alt="logo" />
              <div>
-               <h1 className="text-lg font-bold leading-tight">PEA FLEET VIEW</h1>
-               <p className="text-[10px] text-purple-200">สถานะยานพาหนะแบบ Real-time</p>
+               <h1 className="text-base font-bold leading-tight">PEA VIHICLE MANAGEMENT</h1>
+               <p className="text-[9px] text-purple-200">สถานะยานพาหนะ Real-time</p>
              </div>
           </div>
           <button 
             onClick={() => router.push('/dashboard')} 
-            className="bg-white text-[#742F99] p-2 rounded-xl shadow-md active:scale-95 transition-all text-xs font-bold flex items-center gap-1"
+            className="bg-white/10 hover:bg-white/20 p-2 rounded-xl backdrop-blur-md border border-white/10 active:scale-95 transition-all"
           >
-            📊 ภาพรวม
+            📊
           </button>
         </div>
       </div>
 
-      {/* ⚪ รายการรถ (Grid Layout 2 คอลัมน์) */}
-      <div className="-mt-8 px-4 pb-8 relative z-20">
-        <div className="grid grid-cols-2 gap-3">
+      {/* 🔶 Alert Instruction (แจ้งเตือนสแกน QR) */}
+      <div className="-mt-10 mx-4 relative z-20 mb-4">
+        {/* เปลี่ยนสีเป็น yellow-500/orange-500 และใช้ animate-pulse ธรรมดา */}
+        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-3 rounded-xl shadow-lg text-white flex items-center justify-between animate-pulse">
+            <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                    📱
+                </div>
+                <div>
+                    {/* เปลี่ยน text-shadow เป็น drop-shadow-md */}
+                    <h3 className="text-sm font-bold drop-shadow-md">สแกน QR Code ที่รถ</h3>
+                    <p className="text-[10px] opacity-90">เพื่อ บันทึกนำรถออก หรือ คืนรถ</p>
+                </div>
+            </div>
+            <div className="text-xl">➔</div>
+        </div>
+      </div>
+
+      {/* ⚪ รายการรถ (Grid Layout 3 คอลัมน์) */}
+      <div className="px-2 relative z-20">
+        <div className="grid grid-cols-3 gap-2">
           {cars.map((car) => (
             <div 
               key={car.id} 
-              className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col items-center text-center opacity-100"
+              className="bg-white p-2 pt-3 rounded-xl shadow-sm border border-gray-100 relative flex flex-col items-center text-center group"
             >
+              {/* 🖨️ Print Button (ย้ายมาตรงนี้) */}
+              <button 
+                 onClick={(e) => {
+                    e.stopPropagation()
+                    window.open(`/report?car_id=${car.id}`, '_blank')
+                 }}
+                 className="absolute top-1 right-1 text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-500 p-1.5 rounded-lg transition-colors z-30"
+                 title="พิมพ์รายงาน"
+              >
+                 🖨️
+              </button>
+
               {/* Status Dot */}
-              <div className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full ${car.status === 'available' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div className={`absolute top-2 left-2 w-2 h-2 rounded-full ${car.status === 'available' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
 
               {/* Icon */}
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-2 ${
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl mb-1 mt-2 ${
                 car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
               }`}>
                 {car.car_type === 'รถตู้' ? '🚐' : car.car_type === 'รถเก๋ง' ? '🚗' : '🛻'}
               </div>
               
-              {/* Info */}
-              <h3 className="text-base font-bold text-gray-800">{car.plate_number}</h3>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">{car.model}</p>
+              {/* Info (Compact Text) */}
+              <h3 className="text-sm font-extrabold text-gray-800 leading-tight">{car.plate_number}</h3>
+              <p className="text-[8px] text-gray-400 uppercase tracking-wide mb-2 truncate w-full px-1">{car.model}</p>
               
               {/* Badge */}
-              <span className={`text-[9px] px-2 py-1 rounded-md font-bold w-full ${
+              <div className={`text-[8px] px-1 py-0.5 rounded w-full font-bold ${
                  car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               }`}>
-                 {car.status === 'available' ? 'ว่าง' : 'ใช้งานอยู่'}
-              </span>
+                 {car.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}
+              </div>
             </div>
           ))}
         </div>
         
-        <div className="text-center mt-6">
-            <p className="text-[10px] text-gray-400">สแกน QR Code ที่รถเพื่อเริ่มใช้งาน</p>
+        <div className="text-center mt-6 text-gray-300 text-[10px]">
+            PEA Fleet System v2.1
         </div>
       </div>
     </div>
@@ -124,7 +152,7 @@ function CarActionForm({ carId }) {
   const [employeeId, setEmployeeId] = useState('')
   const [staffName, setStaffName] = useState('') 
   const [staffPosition, setStaffPosition] = useState('') 
-  const [staffError, setStaffError] = useState(false) // ✅ ไว้โชว์ Error เมื่อกรอกเสร็จ
+  const [staffError, setStaffError] = useState(false)
 
   const [mileage, setMileage] = useState('')
   const [selectedLocation, setSelectedLocation] = useState('') 
@@ -161,39 +189,26 @@ function CarActionForm({ carId }) {
     fetchData()
   }, [carId])
 
-  // ✅ ฟังก์ชันเช็คชื่อพนักงาน (เรียกตอน onBlur หรือกดปุ่ม)
+  // เช็คชื่อพนักงาน
   const checkStaff = async () => {
     if (employeeId.length < 4) return
-    
     const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', employeeId).single()
     if (data) {
-        setStaffName(data.full_name)
-        setStaffPosition(data.position)
-        setStaffError(false)
+        setStaffName(data.full_name); setStaffPosition(data.position); setStaffError(false)
     } else {
-        setStaffName('')
-        setStaffPosition('')
-        setStaffError(true) // แจ้งเตือนว่าไม่เจอ
+        setStaffName(''); setStaffPosition(''); setStaffError(true)
     }
   }
 
   // นำรถออก
   const handleTakeOut = async () => {
-    // เช็คอีกรอบเผื่อยังไม่ได้กด Enter หรือคลิกออก
     let currentName = staffName
     if (!currentName) {
         const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', employeeId).single()
-        if (data) {
-            currentName = data.full_name
-            setStaffPosition(data.position)
-        }
+        if (data) { currentName = data.full_name; setStaffPosition(data.position) }
     }
 
-    if (!currentName) {
-        setStaffError(true)
-        alert('❌ ไม่พบรหัสพนักงานในระบบ\nกรุณาตรวจสอบความถูกต้อง')
-        return
-    }
+    if (!currentName) { setStaffError(true); alert('❌ ไม่พบรหัสพนักงานในระบบ'); return }
 
     const finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
     if (!employeeId || !mileage || !finalLocation) return alert('กรุณากรอกข้อมูลให้ครบ')
@@ -201,58 +216,40 @@ function CarActionForm({ carId }) {
     setLoading(true)
     try {
       const { error } = await supabase.from('trip_logs').insert({
-        car_id: carId,
-        driver_name: currentName,
-        driver_position: staffPosition,
-        start_mileage: parseFloat(mileage),
-        location: finalLocation,
-        start_time: new Date().toISOString(),
-        is_completed: false
+        car_id: carId, driver_name: currentName, driver_position: staffPosition,
+        start_mileage: parseFloat(mileage), location: finalLocation, start_time: new Date().toISOString(), is_completed: false
       })
       if (error) throw error
       await supabase.from('cars').update({ status: 'busy' }).eq('id', carId)
-      
       alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${currentName}`)
       window.location.href = '/'
-    } catch (err) {
-      alert('Error: ' + err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { alert('Error: ' + err.message) } 
+    finally { setLoading(false) }
   }
 
   // คืนรถ
   const handleReturn = async () => {
     if (!endMileage) return alert('กรุณากรอกเลขไมล์จบงาน')
     
-    // ✅ เช็คเลขไมล์: จบ ต้องมากกว่า เริ่ม
+    // Check Mileage Logic
     const startM = parseFloat(activeLog.start_mileage)
     const endM = parseFloat(endMileage)
-
     if (endM < startM) {
-        alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})\nกรุณาตรวจสอบอีกครั้ง`)
-        return // หยุดทำงานทันที
+        alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
+        return
     }
 
     setLoading(true)
     try {
       await supabase.from('trip_logs').update({
-        end_mileage: endM,
-        fuel_liters: fuelLiters ? parseFloat(fuelLiters) : 0,
-        fuel_cost: fuelCost ? parseFloat(fuelCost) : 0,
-        end_time: new Date().toISOString(),
-        is_completed: true
+        end_mileage: endM, fuel_liters: fuelLiters ? parseFloat(fuelLiters) : 0, fuel_cost: fuelCost ? parseFloat(fuelCost) : 0,
+        end_time: new Date().toISOString(), is_completed: true
       }).eq('id', activeLog.id)
-      
       await supabase.from('cars').update({ status: 'available' }).eq('id', carId)
-      
       alert('✅ คืนรถเรียบร้อย ขอบคุณครับ!')
       window.location.href = '/'
-    } catch (err) {
-      alert('Error: ' + err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { alert('Error: ' + err.message) }
+    finally { setLoading(false) }
   }
 
   if (!car) return <div className="min-h-screen flex items-center justify-center text-[#742F99]">กำลังโหลด...</div>
@@ -260,36 +257,28 @@ function CarActionForm({ carId }) {
   return (
     <div className="min-h-screen bg-[#F8F9FD] font-sarabun flex flex-col pb-10">
       
-      {/* Header Form */}
+      {/* Header Form (เอาปุ่ม Print ออก เพราะย้ายไปหน้าแรกแล้ว) */}
       <div className="bg-[#742F99] px-6 pt-10 pb-20 text-white rounded-b-[2.5rem] shadow-lg relative">
         <button onClick={() => window.location.href = '/'} className="absolute top-10 left-5 bg-white/20 p-2 px-4 rounded-xl text-sm">⬅ กลับ</button>
         <div className="text-center mt-6">
           <h2 className="text-3xl font-black">{car.plate_number}</h2>
           <p className="text-purple-200 text-sm uppercase">{car.model}</p>
         </div>
-        <button onClick={() => window.open(`/report?car_id=${car.id}`, '_blank')} className="absolute top-10 right-5 bg-[#F3B236] p-3 rounded-full shadow-lg">🖨️</button>
       </div>
 
       <div className="-mt-12 px-4 relative z-20">
         <div className="bg-white rounded-3xl shadow-xl p-6 border border-gray-50">
           
           {car.status === 'available' ? (
-            // Form Take Out
             <div className="space-y-4">
               <h3 className="font-bold text-[#742F99] border-b pb-3 text-lg">📋 บันทึกนำรถออก</h3>
               
-              {/* รหัสพนักงาน */}
               <div className="space-y-1">
                  <label className="text-xs font-bold text-gray-400 ml-1">รหัสพนักงาน</label>
                  <input 
-                    type="text" 
-                    value={employeeId} 
-                    onChange={e => {
-                        setEmployeeId(e.target.value)
-                        setStaffError(false) // พิมพ์ใหม่ให้หายแดง
-                        setStaffName('') // ล้างชื่อเดิม
-                    }} 
-                    onBlur={checkStaff} // ✅ เช็คเมื่อพิมพ์เสร็จ (คลิกออก)
+                    type="text" value={employeeId} 
+                    onChange={e => { setEmployeeId(e.target.value); setStaffError(false); setStaffName('') }} 
+                    onBlur={checkStaff} 
                     placeholder="กรอกรหัสพนักงาน..." 
                     className={`w-full p-4 rounded-2xl border transition-all outline-none ${
                         staffError ? 'border-red-500 bg-red-50' : (staffName ? 'border-green-500 bg-green-50' : 'bg-gray-50 border-gray-100')
@@ -299,13 +288,11 @@ function CarActionForm({ carId }) {
                  {staffError && <p className="text-red-500 text-xs font-bold ml-2 animate-pulse">❌ ไม่พบรหัสพนักงานนี้</p>}
               </div>
 
-              {/* เลขไมล์ */}
               <div className="space-y-1">
                  <label className="text-xs font-bold text-gray-400 ml-1">เลขไมล์เริ่มต้น</label>
                  <input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none" />
               </div>
 
-              {/* สถานที่ */}
               <div className="space-y-1">
                  <label className="text-xs font-bold text-gray-400 ml-1">สถานที่</label>
                  <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
@@ -325,7 +312,6 @@ function CarActionForm({ carId }) {
               </button>
             </div>
           ) : (
-            // Form Return
             <div className="space-y-4">
                <div className="flex justify-between items-center border-b pb-3">
                   <h3 className="font-bold text-red-600 text-lg">↩️ คืนรถ</h3>
@@ -340,10 +326,7 @@ function CarActionForm({ carId }) {
                <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-400 ml-1">เลขไมล์จบงาน</label>
                   <input 
-                    type="number" 
-                    value={endMileage} 
-                    onChange={e => setEndMileage(e.target.value)} 
-                    placeholder="ต้องมากกว่าไมล์เริ่ม..."
+                    type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)} placeholder="ต้องมากกว่าไมล์เริ่ม..."
                     className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-red-500 outline-none font-mono text-lg" 
                   />
                </div>
