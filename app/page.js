@@ -13,7 +13,7 @@ export default function App() {
     return <CarActionForm carId={carId} />
   }
 
-  // 2. ถ้าไม่มี -> ไปหน้า Home (Dashboard View)
+  // 2. ถ้าไม่มี -> ไปหน้า Home
   return <CarSelector />
 }
 
@@ -70,7 +70,7 @@ function CarSelector() {
       <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-20 text-white rounded-b-[3rem] shadow-xl relative z-10">
         <div className="flex justify-between items-start">
           <div>
-             <h1 className="text-2xl font-black tracking-tight">PEA SMART FLEET</h1>
+             <h1 className="text-2xl font-black tracking-tight">PEA SMART VEHICLE</h1>
              <p className="text-purple-200 text-sm opacity-90">ระบบบริหารจัดการยานพาหนะ</p>
           </div>
           <button 
@@ -159,7 +159,7 @@ function CarSelector() {
         ))}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.4 (Double-Check Secured)
+            PEA Fleet System v2.5 (Mileage Sync)
         </div>
       </div>
     </div>
@@ -181,6 +181,8 @@ function CarActionForm({ carId }) {
   const [staffError, setStaffError] = useState(false)
 
   const [mileage, setMileage] = useState('')
+  const [isMileageLocked, setIsMileageLocked] = useState(false) // ✅ State สำหรับล็อกเลขไมล์
+
   const [selectedLocation, setSelectedLocation] = useState('') 
   const [customLocation, setCustomLocation] = useState('') 
   
@@ -197,15 +199,28 @@ function CarActionForm({ carId }) {
     return () => clearInterval(timer)
   }, [])
 
-  // โหลดข้อมูลรถ
+  // โหลดข้อมูลรถ + เลขไมล์ล่าสุด
   useEffect(() => {
     const fetchData = async () => {
       const { data: c } = await supabase.from('cars').select('*').eq('id', carId).single()
       if (c) {
         setCar(c)
         if (c.status === 'available') {
-           const { data: l } = await supabase.from('trip_logs').select('end_mileage').eq('car_id', carId).eq('is_completed', true).order('created_at', { ascending: false }).limit(1).single()
-           if (l?.end_mileage) setMileage(l.end_mileage.toString())
+           // ดึงเลขไมล์จาก Trip ล่าสุดที่จบงานแล้ว
+           const { data: l } = await supabase.from('trip_logs')
+             .select('end_mileage')
+             .eq('car_id', carId)
+             .eq('is_completed', true)
+             .order('created_at', { ascending: false })
+             .limit(1)
+             .single()
+           
+           if (l?.end_mileage) {
+               setMileage(l.end_mileage.toString())
+               setIsMileageLocked(true) // ✅ เจอข้อมูลเก่า -> สั่งล็อกทันที
+           } else {
+               setIsMileageLocked(false) // ❌ ไม่เจอ (รถใหม่/ครั้งแรก) -> ปล่อยให้พิมพ์เอง
+           }
         } else {
            const { data: l } = await supabase.from('trip_logs').select('*').eq('car_id', carId).eq('is_completed', false).limit(1).single()
            if (l) setActiveLog(l)
@@ -239,10 +254,10 @@ function CarActionForm({ carId }) {
     const finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
     if (!employeeId || !mileage || !finalLocation) return alert('กรุณากรอกข้อมูลให้ครบ')
     
-    setLoading(true) // ล็อกปุ่มทันที
+    setLoading(true)
 
     try {
-      // ✅ DOUBLE CHECK: เช็คสถานะล่าสุดก่อนบันทึกจริง (กันกดซ้ำ/กด Back)
+      // Double Check Status
       const { data: latestCar } = await supabase.from('cars').select('status').eq('id', carId).single()
       if (latestCar.status === 'busy') {
          alert('⚠️ รายการนี้ถูกบันทึกไปแล้วครับ (ไม่สามารถทำซ้ำได้)')
@@ -260,7 +275,7 @@ function CarActionForm({ carId }) {
       window.location.href = '/'
     } catch (err) { 
         alert('Error: ' + err.message) 
-        setLoading(false) // ถ้า Error ให้ปลดล็อกปุ่ม
+        setLoading(false) 
     } 
   }
 
@@ -275,10 +290,10 @@ function CarActionForm({ carId }) {
         return
     }
 
-    setLoading(true) // ล็อกปุ่มทันที
+    setLoading(true)
 
     try {
-      // ✅ DOUBLE CHECK: เช็คสถานะล่าสุดก่อนบันทึกจริง (กันกดซ้ำ/กด Back)
+      // Double Check Status
       const { data: latestCar } = await supabase.from('cars').select('status').eq('id', carId).single()
       if (latestCar.status === 'available') {
          alert('⚠️ รายการนี้ถูกคืนไปเรียบร้อยแล้วครับ')
@@ -295,7 +310,7 @@ function CarActionForm({ carId }) {
       window.location.href = '/'
     } catch (err) { 
         alert('Error: ' + err.message)
-        setLoading(false) // ถ้า Error ให้ปลดล็อกปุ่ม
+        setLoading(false)
     }
   }
 
@@ -329,10 +344,26 @@ function CarActionForm({ carId }) {
                  {staffName && <p className="text-green-600 text-xs font-bold ml-2">✅ คุณ{staffName}</p>}
                  {staffError && <p className="text-red-500 text-xs font-bold ml-2 animate-pulse">❌ ไม่พบรหัสพนักงานนี้</p>}
               </div>
+
+              {/* ✅ ช่องเลขไมล์ (มีระบบล็อก) */}
               <div className="space-y-1">
-                 <label className="text-xs font-bold text-gray-400 ml-1">เลขไมล์เริ่มต้น</label>
-                 <input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none" />
+                 <div className="flex justify-between items-center ml-1">
+                    <label className="text-xs font-bold text-gray-400">เลขไมล์เริ่มต้น</label>
+                    {isMileageLocked && <span className="text-[10px] text-[#742F99] font-bold bg-purple-50 px-2 py-0.5 rounded-full">🔒 ต่อเนื่องจากล่าสุด</span>}
+                 </div>
+                 <input 
+                    type="number" 
+                    value={mileage} 
+                    readOnly={isMileageLocked} // ถ้ามีข้อมูลเก่า -> ล็อก (พิมพ์ไม่ได้)
+                    onChange={e => setMileage(e.target.value)} 
+                    className={`w-full p-4 rounded-2xl border outline-none font-mono text-lg transition-colors ${
+                        isMileageLocked 
+                        ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' // สไตล์ตอนล็อก
+                        : 'bg-gray-50 border-gray-100' // สไตล์ปกติ
+                    }`}
+                 />
               </div>
+
               <div className="space-y-1">
                  <label className="text-xs font-bold text-gray-400 ml-1">สถานที่</label>
                  <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
@@ -348,7 +379,7 @@ function CarActionForm({ carId }) {
               </div>
               <button 
                 onClick={handleTakeOut} 
-                disabled={loading} // ถ้ากำลังโหลด ปุ่มจะกดไม่ได้
+                disabled={loading} 
                 className={`w-full py-4 rounded-2xl font-bold mt-2 shadow-lg transition-all text-white ${
                     loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'
                 }`}
@@ -385,7 +416,7 @@ function CarActionForm({ carId }) {
                </div>
                <button 
                  onClick={handleReturn} 
-                 disabled={loading} // ถ้ากำลังโหลด ปุ่มจะกดไม่ได้
+                 disabled={loading} 
                  className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-4 text-white ${
                     loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
                  }`}
