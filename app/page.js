@@ -200,7 +200,7 @@ function CarActionForm({ carId }) {
   const [currentTime, setCurrentTime] = useState(new Date())
 
   // ตัวเลือก Dropdown
-  const kfkList = ['กฟก.1', 'กฟก.2', 'กฟก.3', 'คลังพัสดุ', 'สนง.การไฟฟ้า', 'สถานีไฟฟ้ากำแพงแสน', 'อื่น ๆ'];
+  const kfkList = ['กฟจ.นฐ.', 'กฟส.นช.', 'กฟส.บลน.', 'กฟจ.สพ.', 'กฟส.อมง.', 'กฟส.ศปจ.', 'กฟจ.สค.','กฟส.กทบ.','กฟจ.กจ.','กฟส.ทมง.','กฟส.ทมก.','กฟส.สขบ.'];
   const otherBrandList = ['EA Anywhere', 'EV Station', 'MEA EV', 'EGAT', 'Emergency charger'];
 
   // Config ตัวเลือกสถานี

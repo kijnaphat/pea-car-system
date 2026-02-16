@@ -1,412 +1,304 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useRouter } from 'next/navigation' // ✅ 1. Import router
+import { useRouter } from 'next/navigation'
 
-export default function Dashboard() {
-  const router = useRouter() // ✅ 2. ประกาศ router
+export default function UltimateDashboard() {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   
-  // Stats State
-  const [stats, setStats] = useState({
-    totalTrips: 0,
-    activeCars: 0,
-    totalFuelCost: 0,
-    totalDistance: 0,
-    avgCostPerKm: 0,
-    availableCars: 0,
-    totalCars: 0
+  const [globalStats, setGlobalStats] = useState({
+    totalDistance: 0, totalTrips: 0, fuelSavings: 0, activeRate: 0, availableCars: 0, totalCars: 0
   })
 
-  // Chart Data States
-  const [locationStats, setLocationStats] = useState([])
-  const [driverStats, setDriverStats] = useState([])
-  const [carStats, setCarStats] = useState([])
-  const [recentLogs, setRecentLogs] = useState([])
-  
-  // New Analytics States
-  const [dailyTrend, setDailyTrend] = useState([])      
-  const [carTypeStats, setCarTypeStats] = useState([])  
-  const [timeStats, setTimeStats] = useState({ morning: 0, afternoon: 0 })
+  const [gasolineStats, setGasolineStats] = useState({ cost: 0, distance: 0, efficiency: 0, fuelLiters: 0 })
+  const [evStats, setEvStats] = useState({ distance: 0, charges: 0, avgGain: 0, carbonSaved: 0, peaVoltaRate: 0 })
 
-  // ✅ 3. ฟังก์ชันปิดหน้าต่างแบบฉลาด (Smart Close)
+  const [analytics, setAnalytics] = useState({
+    dailyTrend: [], topLocations: [], topDrivers: [], fleetTable: [], recentActivity: []
+  })
+
   const handleClose = () => {
-    window.close() // ลองปิด Tab ก่อน
-    // ถ้าปิดไม่ได้ (เพราะเป็น Tab หลัก) ให้กลับไปหน้า Home แทน
-    setTimeout(() => {
-      if (!window.closed) {
-        router.push('/')
-      }
-    }, 100)
+    window.close()
+    setTimeout(() => { if (!window.closed) router.push('/') }, 100)
   }
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch Data
-        const { data: logs, error: logError } = await supabase.from('trip_logs').select('*, cars(plate_number, model, car_type)').eq('is_completed', true)
-        const { data: cars, error: carError } = await supabase.from('cars').select('*')
-        const { data: recents, error: recentError } = await supabase.from('trip_logs').select('*, cars(plate_number)').order('created_at', { ascending: false }).limit(6)
-
-        if (logError || carError) throw new Error('Data fetch failed')
+        const { data: logs } = await supabase.from('trip_logs').select('*, cars(*)').eq('is_completed', true)
+        const { data: cars } = await supabase.from('cars').select('*')
+        const { data: recent } = await supabase.from('trip_logs').select('*, cars(plate_number)').order('end_time', { ascending: false }).limit(5)
 
         if (logs && cars) {
-            // --- Basic Stats ---
-            const totalDist = logs.reduce((sum, log) => sum + (log.end_mileage - log.start_mileage), 0)
-            const totalCost = logs.reduce((sum, log) => sum + (log.fuel_cost || 0), 0)
-            const activeCount = cars.filter(c => c.status === 'busy').length
+          // ⛽ Gasoline Analytics
+          const gasLogs = logs.filter(l => !l.cars?.plate_number?.includes('6ขฆ'))
+          const gCost = gasLogs.reduce((s, l) => s + (l.fuel_cost || 0), 0)
+          const gDist = gasLogs.reduce((s, l) => s + (l.end_mileage - l.start_mileage), 0)
+          const gLiters = gasLogs.reduce((s, l) => s + (l.fuel_liters || 0), 0)
 
-            setStats({
+          // ⚡ EV Analytics
+          const evLogs = logs.filter(l => l.cars?.plate_number?.includes('6ขฆ'))
+          const evDist = evLogs.reduce((s, l) => s + (l.end_mileage - l.start_mileage), 0)
+          const evCharges = evLogs.filter(l => l.battery_after > 0)
+          const peaVoltaCount = evCharges.filter(l => l.station_type === 'PEA').length
+          const battGains = evCharges.map(l => (l.battery_after - l.battery_before))
+          const avgCharge = battGains.length > 0 ? (battGains.reduce((a,b)=>a+b,0)/battGains.length) : 0
+
+          // Calculate Comprehensive Fleet Table
+          const fleetData = cars.map(c => {
+             const cLogs = logs.filter(l => l.car_id === c.id)
+             const totalD = cLogs.reduce((s, l) => s + (l.end_mileage - l.start_mileage), 0)
+             const totalC = cLogs.reduce((s, l) => s + (l.fuel_cost || 0), 0)
+             const chargeCount = cLogs.filter(l => l.battery_after > 0 || l.fuel_liters > 0).length
+             const isEV = c.plate_number.includes('6ขฆ')
+             
+             return {
+               plate: c.plate_number,
+               type: isEV ? 'EV' : 'Gasoline',
+               dist: totalD,
+               trips: cLogs.length,
+               efficiency: isEV ? 0 : (totalD > 0 ? (totalC / totalD).toFixed(2) : 0),
+               refillCount: chargeCount,
+               status: c.status
+             }
+          }).sort((a,b) => b.dist - a.dist)
+
+          setGlobalStats({
+            totalDistance: gDist + evDist,
             totalTrips: logs.length,
-            activeCars: activeCount,
-            availableCars: cars.length - activeCount,
-            totalCars: cars.length,
-            totalFuelCost: totalCost,
-            totalDistance: totalDist,
-            avgCostPerKm: totalDist > 0 ? (totalCost / totalDist) : 0
-            })
+            fuelSavings: (evDist * (gCost / (gDist || 1))).toFixed(0),
+            activeRate: ((cars.filter(c => c.status === 'busy').length / cars.length) * 100).toFixed(0),
+            availableCars: cars.filter(c => c.status === 'available').length,
+            totalCars: cars.length
+          })
 
-            // --- 1. Daily Trend (7 Days - Local Time Fix) ---
-            const trendMap = {}
-            // สร้าง Key วันที่ย้อนหลัง 7 วัน (DD/MM/YYYY)
-            for (let i = 0; i < 7; i++) {
-                const d = new Date()
-                d.setDate(d.getDate() - i)
-                const dateKey = d.toLocaleDateString('en-CA') // YYYY-MM-DD (Local)
-                trendMap[dateKey] = 0
-            }
+          setGasolineStats({ cost: gCost, distance: gDist, efficiency: gDist > 0 ? (gCost/gDist).toFixed(2) : 0, fuelLiters: gLiters })
+          setEvStats({ distance: evDist, charges: evCharges.length, avgGain: avgCharge.toFixed(1), carbonSaved: (evDist * 0.12).toFixed(1), peaVoltaRate: evCharges.length > 0 ? ((peaVoltaCount/evCharges.length)*100).toFixed(0) : 0 })
+          
+          // Advanced Analytics
+          const locMap = {}; const driverMap = {}; const trendMap = {}
+          logs.forEach(l => {
+            locMap[l.location] = (locMap[l.location] || 0) + 1
+            if (!driverMap[l.driver_name]) driverMap[l.driver_name] = { trips: 0, dist: 0 }
+            driverMap[l.driver_name].trips++
+            driverMap[l.driver_name].dist += (l.end_mileage - l.start_mileage)
+            const d = new Date(l.created_at).toLocaleDateString('th-TH', {weekday:'short'})
+            trendMap[d] = (trendMap[d] || 0) + 1
+          })
 
-            logs.forEach(log => {
-                const logDate = new Date(log.created_at).toLocaleDateString('en-CA') // YYYY-MM-DD (Local)
-                if (trendMap[logDate] !== undefined) trendMap[logDate]++
-            })
-
-            // แปลงกลับเป็น Array และเรียงวันที่
-            const sortedKeys = Object.keys(trendMap).sort()
-            const maxTrip = Math.max(...Object.values(trendMap), 1)
-
-            setDailyTrend(sortedKeys.map(dateKey => ({
-                date: new Date(dateKey).toLocaleDateString('th-TH', {weekday:'short'}),
-                count: trendMap[dateKey],
-                height: (trendMap[dateKey] / maxTrip) * 100
-            })))
-
-            // --- 2. Vehicle Type Analysis ---
-            const typeMap = {}
-            cars.forEach(c => {
-                const type = c.car_type || 'ทั่วไป'
-                if (!typeMap[type]) typeMap[type] = { total: 0, active: 0 }
-                typeMap[type].total++
-                if (c.status === 'busy') typeMap[type].active++
-            })
-            setCarTypeStats(Object.entries(typeMap).map(([name, val]) => ({ name, ...val })))
-
-            // --- 3. Time Analysis ---
-            let morning = 0, afternoon = 0
-            logs.forEach(log => {
-                const hour = new Date(log.created_at).getHours()
-                if (hour < 12) morning++
-                else afternoon++
-            })
-            setTimeStats({ morning, afternoon })
-
-            // --- 4. Location & Driver Analysis ---
-            const locMap = {}
-            const driverMap = {}
-            
-            logs.forEach(log => {
-                // Loc
-                const loc = log.location || 'ไม่ระบุ'
-                locMap[loc] = (locMap[loc] || 0) + 1
-                
-                // Driver
-                const driver = log.driver_name || 'ไม่ระบุ'
-                if (!driverMap[driver]) driverMap[driver] = { trips: 0, distance: 0 }
-                driverMap[driver].trips++
-                driverMap[driver].distance += (log.end_mileage - log.start_mileage)
-            })
-
-            setLocationStats(Object.entries(locMap)
-            .map(([name, count]) => ({ name, count, percent: (count / logs.length) * 100 }))
-            .sort((a, b) => b.count - a.count).slice(0, 5))
-
-            setDriverStats(Object.entries(driverMap)
-            .map(([name, data]) => ({ name, ...data }))
-            .sort((a, b) => b.trips - a.trips).slice(0, 5))
-
-            // --- 5. Car Table Data ---
-            const carMapStats = {}
-            cars.forEach(c => {
-                carMapStats[c.id] = { plate: c.plate_number, model: c.model, trips: 0, distance: 0, cost: 0 }
-            })
-            logs.forEach(log => {
-                if (carMapStats[log.car_id]) {
-                    carMapStats[log.car_id].trips++
-                    carMapStats[log.car_id].distance += (log.end_mileage - log.start_mileage)
-                    carMapStats[log.car_id].cost += (log.fuel_cost || 0)
-                }
-            })
-            setCarStats(Object.values(carMapStats).sort((a, b) => b.distance - a.distance))
+          setAnalytics({
+            topLocations: Object.entries(locMap).sort((a,b)=>b[1]-a[1]).slice(0, 5),
+            topDrivers: Object.entries(driverMap).sort((a,b)=>b.dist-a.dist).slice(0, 5),
+            dailyTrend: Object.entries(trendMap).map(([label, val]) => ({ label, val })),
+            fleetTable: fleetData,
+            recentActivity: recent || []
+          })
         }
-        
-        if (recents) setRecentLogs(recents)
-      } catch (err) {
-        console.error("Error loading dashboard:", err)
-      } finally {
-        setLoading(false)
-      }
+      } catch (err) { console.error(err) } finally { setLoading(false) }
     }
-
     fetchData()
   }, [])
 
-  if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F3F7] text-[#742F99]"><div className="w-10 h-10 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin mb-4"></div>กำลังประมวลผลข้อมูล...</div>
+  if (loading) return <div className="min-h-screen bg-white flex flex-col items-center justify-center font-bold text-[#742F99]">
+    <div className="w-12 h-12 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin mb-4"></div>
+    <p>กำลังประมวลผลข้อมูล Fleet ระดับสูง...</p>
+  </div>
 
   return (
-    <div className="min-h-screen bg-[#F5F3F7] font-sarabun text-gray-800 pb-12">
+    <div className="min-h-screen bg-[#F4F7FE] font-sarabun text-slate-700 pb-20">
       
-      {/* 🟣 Header Bar */}
-      <div className="bg-gradient-to-r from-[#591d79] to-[#742F99] shadow-lg px-6 py-4 sticky top-0 z-50 flex justify-between items-center text-white">
-        <div className="flex items-center gap-3">
-           <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/10">
-             <img src="/pea_logo.png" className="h-8 w-8 object-contain" alt="Logo" />
+      {/* ⚪ NAVIGATION (Light Mode) */}
+      <div className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-50 flex justify-between items-center shadow-sm">
+        <div className="flex items-center gap-4">
+           <div className="p-2 bg-[#742F99]/5 rounded-2xl">
+              <img src="/pea_logo.png" className="h-10 w-10 object-contain" alt="Logo" />
            </div>
            <div>
-             <h1 className="text-xl font-bold leading-none tracking-wide">PEA INTELLIGENCE</h1>
-             <p className="text-[10px] text-purple-200 mt-0.5 opacity-90 tracking-wider">DASHBOARD & ANALYTICS</p>
+              <h1 className="text-xl font-black tracking-tight text-slate-800">FLEET ULTIMATE DASHBOARD</h1>
+              <p className="text-[10px] text-purple-500 font-bold uppercase tracking-widest">Real-time Performance Monitoring</p>
            </div>
         </div>
-        {/* ✅ ปุ่มปิดหน้าต่างเรียกใช้ handleClose */}
-        <button onClick={handleClose} className="text-xs bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-all text-white backdrop-blur-md border border-white/20 flex items-center gap-2">
-            <span>✖</span> ปิดหน้าต่าง
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => router.push('/')} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">หน้าหลัก</button>
+          <button onClick={handleClose} className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-black hover:bg-red-600 hover:text-white transition-all">✖</button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         
-        {/* === 1. Top KPI Stats (Grid 4) === */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-           {/* Card 1: Active Status */}
-           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center relative overflow-hidden group">
-              <div className="absolute right-0 top-0 h-full w-1.5 bg-[#742F99]"></div>
-              <div>
-                 <p className="text-gray-500 text-xs uppercase tracking-wide">สถานะยานพาหนะ</p>
-                 <div className="flex items-baseline gap-2 mt-1">
-                    <h2 className="text-3xl font-bold text-[#742F99]">{stats.activeCars}</h2>
-                    <span className="text-xs text-gray-400">คัน (ไม่ว่าง)</span>
-                 </div>
-                 <p className="text-[10px] text-green-500 mt-1">● ว่างพร้อมใช้ {stats.availableCars} คัน</p>
+        {/* 📊 GLOBAL KPI GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 relative overflow-hidden group">
+              <div className="absolute -right-2 -bottom-2 opacity-5 text-6xl group-hover:scale-110 transition-transform">🚗</div>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">การใช้รถปัจจุบัน</p>
+              <div className="flex items-baseline gap-2 mt-2">
+                 <span className="text-4xl font-black text-[#742F99]">{globalStats.activeRate}%</span>
+                 <span className="text-xs text-slate-400 font-bold uppercase">Utilization</span>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🚗</div>
+              <p className="text-[10px] text-green-500 mt-2 font-bold">● จอดว่าง {globalStats.availableCars} จาก {globalStats.totalCars} คัน</p>
            </div>
-
-           {/* Card 2: Total Distance */}
-           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center relative overflow-hidden group">
-              <div className="absolute right-0 top-0 h-full w-1.5 bg-[#F3B236]"></div>
-              <div>
-                 <p className="text-gray-500 text-xs uppercase tracking-wide">ระยะทางสะสม</p>
-                 <h2 className="text-3xl font-bold text-gray-800">{stats.totalDistance.toLocaleString()}</h2>
-                 <p className="text-[10px] text-gray-400 mt-1">กิโลเมตร</p>
+           <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">ระยะทางสะสมรวม</p>
+              <h2 className="text-3xl font-black mt-2 text-slate-800">{globalStats.totalDistance.toLocaleString()} <span className="text-xs text-slate-400 font-bold">KM</span></h2>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                <div className="bg-blue-500 h-full rounded-full" style={{width: '75%'}}></div>
               </div>
-              <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🛣️</div>
            </div>
-
-           {/* Card 3: Trips */}
-           <div className="bg-gradient-to-br from-[#742F99] to-[#5b237a] p-5 rounded-2xl shadow-lg text-white flex justify-between items-center">
-              <div>
-                 <p className="text-purple-200 text-xs uppercase tracking-wide">เที่ยววิ่งทั้งหมด</p>
-                 <h2 className="text-3xl font-bold mt-1">{stats.totalTrips.toLocaleString()}</h2>
-                 <p className="text-[10px] opacity-70 mt-1">งานสำเร็จ</p>
-              </div>
-              <div className="text-4xl opacity-20">🚩</div>
+           <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">การปล่อย CO2 ที่ลดได้</p>
+              <h2 className="text-3xl font-black mt-2 text-green-500">{evStats.carbonSaved} <span className="text-xs">kg</span></h2>
+              <p className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-tighter">Green Energy Impact</p>
            </div>
-
-           {/* Card 4: Efficiency */}
-           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-              <div className="flex justify-between items-end mb-2">
-                 <p className="text-gray-500 text-xs uppercase tracking-wide">ความคุ้มค่า</p>
-                 <span className="text-xl font-bold text-[#742F99]">{stats.avgCostPerKm.toFixed(2)} <span className="text-xs font-normal text-gray-400">บ./กม.</span></span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-2">
-                 <div className="bg-gradient-to-r from-green-400 to-[#F3B236] h-full rounded-full" style={{width: `${Math.min(stats.avgCostPerKm * 10, 100)}%`}}></div>
-              </div>
-              <p className="text-[10px] text-gray-400 mt-2 text-right">รวมค่าเชื้อเพลิง ฿{stats.totalFuelCost.toLocaleString()}</p>
+           <div className="bg-gradient-to-br from-[#742F99] to-[#5b237a] p-6 rounded-[2rem] shadow-lg text-white">
+              <p className="text-purple-200 text-[10px] font-black uppercase tracking-widest">มูลค่าประหยัดรวม</p>
+              <h2 className="text-3xl font-black mt-2">฿{globalStats.fuelSavings}</h2>
+              <p className="text-[10px] text-white/50 mt-2 font-bold">เปรียบเทียบ EV vs น้ำมัน</p>
            </div>
         </div>
 
-        {/* === 2. Advanced Charts Section === */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           
-           {/* Chart 1: Daily Usage Trend (CSS Bar Chart) */}
-           <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex justify-between items-center mb-6">
-                 <h3 className="font-bold text-[#742F99] flex items-center gap-2">
-                    <span className="bg-purple-100 p-1.5 rounded-lg text-sm">📈</span> แนวโน้มการใช้งาน 7 วันล่าสุด
-                 </h3>
-              </div>
-              
-              {/* Graph Container */}
-              <div className="h-48 flex items-end justify-between gap-2 px-2">
-                 {dailyTrend.map((day, i) => (
-                    <div key={i} className="flex flex-col items-center w-full group cursor-pointer">
-                       {/* Tooltip on hover */}
-                       <div className="mb-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-gray-800 text-white px-2 py-1 rounded absolute -mt-8 pointer-events-none">
-                          {day.count} เที่ยว
-                       </div>
-                       {/* Bar */}
-                       <div 
-                          className="w-full max-w-[40px] bg-[#F3B236] rounded-t-lg transition-all duration-1000 group-hover:bg-[#742F99] relative"
-                          style={{ height: `${day.height}%`, minHeight: '4px' }}
-                       ></div>
-                       {/* Label */}
-                       <p className="text-xs text-gray-400 mt-2 font-medium">{day.date}</p>
-                    </div>
-                 ))}
-              </div>
-           </div>
-
-           {/* Chart 2: Usage by Time of Day (Donut Representation) */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-              <h3 className="font-bold text-gray-700 flex items-center gap-2 mb-4">
-                 <span className="bg-orange-100 p-1.5 rounded-lg text-sm">🌞</span> ช่วงเวลาการใช้รถ
-              </h3>
-              
-              <div className="flex items-center gap-6">
-                 {/* Morning Bar */}
-                 <div className="flex-1 text-center">
-                    <div className="h-32 bg-gray-100 rounded-2xl relative overflow-hidden flex items-end justify-center mx-auto w-16">
-                       <div className="w-full bg-[#F3B236] transition-all duration-1000" style={{ height: `${(timeStats.morning / (timeStats.morning + timeStats.afternoon || 1)) * 100}%` }}></div>
-                       <span className="absolute bottom-2 text-xs font-bold text-white drop-shadow-md">{timeStats.morning}</span>
-                    </div>
-                    <p className="text-xs font-bold text-gray-600 mt-3">ช่วงเช้า</p>
-                    <p className="text-[10px] text-gray-400">00:00 - 11:59</p>
-                 </div>
-
-                 <div className="text-gray-300 font-bold">VS</div>
-
-                 {/* Afternoon Bar */}
-                 <div className="flex-1 text-center">
-                    <div className="h-32 bg-gray-100 rounded-2xl relative overflow-hidden flex items-end justify-center mx-auto w-16">
-                       <div className="w-full bg-[#742F99] transition-all duration-1000" style={{ height: `${(timeStats.afternoon / (timeStats.morning + timeStats.afternoon || 1)) * 100}%` }}></div>
-                       <span className="absolute bottom-2 text-xs font-bold text-white drop-shadow-md">{timeStats.afternoon}</span>
-                    </div>
-                    <p className="text-xs font-bold text-gray-600 mt-3">ช่วงบ่าย</p>
-                    <p className="text-[10px] text-gray-400">12:00 - 23:59</p>
-                 </div>
-              </div>
-           </div>
-        </div>
-
-        {/* === 3. Vehicle & Driver Breakdown === */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           
-           {/* Left: Vehicle Types */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="font-bold text-gray-700 mb-4 text-sm uppercase">ประเภทรถ</h3>
-              <div className="space-y-4">
-                 {carTypeStats.map((type, idx) => (
-                    <div key={idx}>
-                       <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600">{type.name}</span>
-                          <span className="font-bold text-[#742F99]">{type.active}/{type.total} <span className="text-[10px] font-normal text-gray-400">ใช้งาน</span></span>
-                       </div>
-                       <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-[#742F99] h-full" style={{ width: `${(type.active / type.total) * 100}%` }}></div>
-                       </div>
-                    </div>
-                 ))}
-              </div>
-           </div>
-
-           {/* Middle: Top Locations */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="font-bold text-gray-700 mb-4 text-sm uppercase">พื้นที่ใช้งานสูงสุด</h3>
-              <div className="space-y-3">
-                 {locationStats.map((loc, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 last:border-0">
-                       <span className="text-gray-600 truncate w-[70%]">{idx+1}. {loc.name}</span>
-                       <span className="bg-purple-50 text-[#742F99] px-2 py-0.5 rounded text-xs font-bold">{loc.count}</span>
-                    </div>
-                 ))}
-              </div>
-           </div>
-
-           {/* Right: Top Drivers */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="font-bold text-gray-700 mb-4 text-sm uppercase">ผู้ขับขี่ดีเด่น</h3>
-              <div className="space-y-3">
-                 {driverStats.map((d, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                       <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-bold ${idx===0?'bg-[#F3B236]': 'bg-gray-200 text-gray-500'}`}>{idx+1}</div>
-                          <div className="text-sm text-gray-700">{d.name}</div>
-                       </div>
-                       <div className="text-xs font-bold text-gray-400">{d.trips} งาน</div>
-                    </div>
-                 ))}
-              </div>
-           </div>
-        </div>
-
-        {/* === 4. Recent Feed & Car Table === */}
+        {/* 🌓 DUAL CORE ANALYTICS (GAS vs EV) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           
-           {/* Recent Feed */}
-           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                 <span className="text-[#F3B236] animate-pulse">●</span> รายการล่าสุด (Real-time)
-              </h3>
-              <div className="space-y-0">
-                 {recentLogs.map((log) => (
-                    <div key={log.id} className="flex gap-4 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors px-2 -mx-2 rounded-lg">
-                       <div className="mt-1">
-                          <div className={`w-2 h-2 rounded-full ${log.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+           {/* GAS Zone */}
+           <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-black flex items-center gap-2"><span className="text-orange-500 text-2xl">⛽</span> รายงานรถน้ำมัน</h3>
+                <span className="text-[10px] font-black bg-orange-50 text-orange-600 px-3 py-1 rounded-full">GASOLINE FLEET</span>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                 <div className="text-center p-4 bg-orange-50 rounded-2xl">
+                    <p className="text-[10px] font-black text-orange-400 uppercase">จ่ายน้ำมันรวม</p>
+                    <p className="text-xl font-black text-orange-600">฿{gasolineStats.cost.toLocaleString()}</p>
+                 </div>
+                 <div className="text-center p-4 bg-slate-50 rounded-2xl">
+                    <p className="text-[10px] font-black text-slate-400 uppercase">เติมสะสม</p>
+                    <p className="text-xl font-black text-slate-700">{gasolineStats.fuelLiters.toFixed(1)} <span className="text-[10px]">L</span></p>
+                 </div>
+                 <div className="text-center p-4 bg-slate-50 rounded-2xl">
+                    <p className="text-[10px] font-black text-slate-400 uppercase">ความสิ้นเปลือง</p>
+                    <p className="text-xl font-black text-slate-700">{gasolineStats.efficiency} <span className="text-[10px]">บ/กม</span></p>
+                 </div>
+              </div>
+           </div>
+
+           {/* EV Zone */}
+           <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border-t-8 border-green-400 border border-slate-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-black flex items-center gap-2"><span className="text-green-500 text-2xl">⚡</span> รายงานรถ EV</h3>
+                <span className="text-[10px] font-black bg-green-50 text-green-600 px-3 py-1 rounded-full">ELECTRIC VEHICLE</span>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                 <div className="text-center p-4 bg-green-50 rounded-2xl">
+                    <p className="text-[10px] font-black text-green-400 uppercase">จำนวนครั้งชาร์จ</p>
+                    <p className="text-2xl font-black text-green-600">{evStats.charges}</p>
+                 </div>
+                 <div className="text-center p-4 bg-blue-50 rounded-2xl">
+                    <p className="text-[10px] font-black text-blue-400 uppercase">PEA Volta Rate</p>
+                    <p className="text-2xl font-black text-blue-600">{evStats.peaVoltaRate}%</p>
+                 </div>
+                 <div className="text-center p-4 bg-slate-50 rounded-2xl">
+                    <p className="text-[10px] font-black text-slate-400 uppercase">ประจุเฉลี่ย</p>
+                    <p className="text-2xl font-black text-slate-700">+{evStats.avgGain}%</p>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* 📈 MID ROW: TREND & DRIVER RANKING */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+           <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-10">แนวโน้มการใช้งาน 7 วัน</h3>
+              <div className="h-56 flex items-end justify-between gap-4 px-2">
+                 {analytics.dailyTrend.map((d, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center group relative cursor-pointer">
+                       <div className="opacity-0 group-hover:opacity-100 absolute -top-10 transition-all bg-slate-800 text-white text-[10px] px-3 py-1 rounded-full shadow-lg font-bold z-10">{d.val} งาน</div>
+                       <div className="w-full max-w-[40px] bg-slate-100 rounded-t-xl h-full flex items-end overflow-hidden">
+                          <div className="w-full bg-gradient-to-t from-[#742F99] to-purple-400 group-hover:from-blue-500 group-hover:to-cyan-300 transition-all duration-500" style={{height: `${(d.val / Math.max(...analytics.dailyTrend.map(x=>x.val), 1)) * 100}%`}}></div>
                        </div>
-                       <div className="flex-1">
-                          <div className="flex justify-between">
-                             <span className="text-sm font-bold text-[#742F99]">{log.cars?.plate_number}</span>
-                             <span className="text-[10px] text-gray-400">{new Date(log.created_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})} น.</span>
-                          </div>
-                          <p className="text-xs text-gray-600 mt-0.5">
-                             {log.driver_name} <span className="text-gray-400 mx-1">➜</span> {log.location}
-                          </p>
-                          {log.is_completed && (
-                             <p className="text-[10px] text-green-600 mt-1 bg-green-50 inline-block px-1.5 rounded">
-                                จบงาน: {log.end_mileage - log.start_mileage} กม.
-                             </p>
-                          )}
-                       </div>
+                       <span className="text-[10px] font-black text-slate-400 mt-4 uppercase">{d.label}</span>
                     </div>
                  ))}
               </div>
            </div>
 
-           {/* Car Table (Mini) */}
-           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-4 bg-gray-50 border-b border-gray-100">
-                 <h3 className="font-bold text-gray-700 text-sm">ประสิทธิภาพรายคัน (Top 5)</h3>
+           <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Top Performers (KM)</h3>
+              <div className="space-y-4">
+                 {analytics.topDrivers.map(([name, data], i) => (
+                    <div key={i} className="flex items-center justify-between group">
+                       <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${i===0?'bg-yellow-400 text-white':'bg-slate-100 text-slate-400'}`}>{i+1}</div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-600">{name}</span>
+                            <span className="text-[9px] text-slate-400 uppercase">{data.trips} ภารกิจ</span>
+                          </div>
+                       </div>
+                       <span className="text-xs font-black text-[#742F99]">{data.dist.toLocaleString()} กม.</span>
+                    </div>
+                 ))}
               </div>
-              <table className="w-full text-sm text-left">
-                 <thead className="text-xs text-gray-400 bg-white border-b">
-                    <tr>
-                       <th className="px-4 py-2">ทะเบียน</th>
-                       <th className="px-4 py-2 text-right">ระยะทาง</th>
-                       <th className="px-4 py-2 text-right">น้ำมัน (บ.)</th>
-                    </tr>
-                 </thead>
-                 <tbody className="divide-y divide-gray-50">
-                    {carStats.slice(0, 5).map((c) => (
-                       <tr key={c.plate}>
-                          <td className="px-4 py-3 font-medium text-[#742F99]">{c.plate}</td>
-                          <td className="px-4 py-3 text-right">{c.distance.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right text-gray-500">{c.cost.toLocaleString()}</td>
+           </div>
+        </div>
+
+        {/* 📑 BOTTOM ROW: COMPREHENSIVE STATUS & ACTIVITY */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+           {/* Detailed Fleet Table */}
+           <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-200">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-8">Comprehensive Fleet Status</h3>
+              <div className="overflow-x-auto">
+                 <table className="w-full text-left">
+                    <thead>
+                       <tr className="text-[10px] text-slate-400 uppercase font-black border-b border-slate-100">
+                          <th className="pb-6 px-4">Plate Number</th>
+                          <th className="pb-6 px-4">Type</th>
+                          <th className="pb-6 px-4">Distance</th>
+                          <th className="pb-6 px-4 text-center">Refill/Charge</th>
+                          <th className="pb-6 px-4 text-center">Efficiency</th>
                        </tr>
-                    ))}
-                 </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                       {analytics.fleetTable.map((c, i) => (
+                          <tr key={i} className="hover:bg-slate-50 transition-all">
+                             <td className="py-6 px-4 font-black text-slate-800">{c.plate}</td>
+                             <td className="py-6 px-4">
+                                <span className={`text-[9px] font-black px-3 py-1 rounded-full ${c.type === 'EV' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>{c.type}</span>
+                             </td>
+                             <td className="py-6 px-4 font-black text-slate-700">{c.dist.toLocaleString()} <span className="text-[9px] text-slate-300">KM</span></td>
+                             <td className="py-6 px-4 text-center text-sm font-bold text-slate-500">{c.refillCount} ครั้ง</td>
+                             <td className="py-6 px-4 text-center">
+                                {c.type === 'EV' ? (
+                                   <span className="text-[10px] font-bold text-green-500">Eco-Friendly</span>
+                                ) : (
+                                   <span className="text-sm font-black text-[#742F99]">{c.efficiency} <span className="text-[9px] font-normal text-slate-400">บ/กม</span></span>
+                                )}
+                             </td>
+                          </tr>
+                       ))}
+                    </tbody>
+                 </table>
+              </div>
            </div>
 
+           {/* Recent Activity Feed */}
+           <div className="bg-[#1e293b] rounded-[2.5rem] p-8 shadow-2xl text-white">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-8">Recent Activity</h3>
+              <div className="space-y-6">
+                 {analytics.recentActivity.map((act, i) => (
+                    <div key={i} className="flex items-start gap-4 border-l-2 border-slate-700 pl-4 relative">
+                       <div className="absolute -left-[5px] top-0 w-2 h-2 bg-blue-500 rounded-full"></div>
+                       <div className="flex flex-col">
+                          <span className="text-xs font-black text-blue-400">{act.cars?.plate_number}</span>
+                          <span className="text-[11px] font-bold text-slate-200 mt-1">{act.driver_name} ➜ {act.location}</span>
+                          <span className="text-[9px] text-slate-500 mt-1">{new Date(act.end_time).toLocaleTimeString('th-TH')} น.</span>
+                       </div>
+                    </div>
+                 ))}
+                 {analytics.recentActivity.length === 0 && <p className="text-xs text-slate-500 text-center py-10">ไม่มีรายการล่าสุด</p>}
+              </div>
+              <button onClick={() => router.push('/')} className="w-full mt-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-blue-500/20 uppercase tracking-widest">ดูรถทั้งหมด</button>
+           </div>
         </div>
+
       </div>
     </div>
   )
