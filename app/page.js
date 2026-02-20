@@ -63,7 +63,7 @@ function CarSelector() {
     const plate = car.plate_number || ''
     
     // เช็คว่าเป็นรถ EV หรือไม่ (ดูจากทะเบียน)
-    if (plate.includes('6ขฆ')) return '/6.png'
+    if (plate.includes('6ขฆ')) return '/mg.png'
     
     // เช็คตามคำขึ้นต้นของประเภทรถ
     if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
@@ -71,6 +71,7 @@ function CarSelector() {
     if (type.startsWith('รถเครน')) return '/crane.png'
     if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
     if (type.startsWith('รถกระบะ')) return '/truck.png'
+    if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     
     return null // ถ้าไม่ตรงเงื่อนไขเลย จะให้ส่งค่า null กลับไปเพื่อแสดงเป็น Emoji แทน
   }
