@@ -57,6 +57,24 @@ function CarSelector() {
     return () => clearInterval(interval)
   }, [])
 
+  // ฟังก์ชันช่วยดึงรูปภาพรถตามประเภท
+  const getCarImage = (car) => {
+    const type = car.car_type || ''
+    const plate = car.plate_number || ''
+    
+    // เช็คว่าเป็นรถ EV หรือไม่ (ดูจากทะเบียน)
+    if (plate.includes('6ขฆ')) return '/6.png'
+    
+    // เช็คตามคำขึ้นต้นของประเภทรถ
+    if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
+    if (type.startsWith('รถบรรทุก')) return '/2_ton_truck.png'
+    if (type.startsWith('รถเครน')) return '/crane.png'
+    if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
+    if (type.startsWith('รถกระบะ')) return '/truck.png'
+    
+    return null // ถ้าไม่ตรงเงื่อนไขเลย จะให้ส่งค่า null กลับไปเพื่อแสดงเป็น Emoji แทน
+  }
+
   if (loading) return (
     <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center">
       <div className="w-12 h-12 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin"></div>
@@ -102,74 +120,78 @@ function CarSelector() {
 
       {/* ⚪ รายการรถ */}
       <div className="px-4 space-y-4 relative z-20">
-        {cars.map((car) => (
-          <div 
-            key={car.id} 
-            className={`relative p-5 rounded-[2rem] shadow-sm border transition-all ${
-                car.status === 'busy' 
-                ? 'bg-white border-red-100 shadow-red-100' 
-                : 'bg-white border-gray-100'
-            }`}
-          >
-             {/* ปุ่มพิมพ์ */}
-             <button 
-                 onClick={(e) => {
-                    e.stopPropagation()
-                    window.open(`/report?car_id=${car.id}`, '_blank')
-                 }}
-                 className="absolute top-4 right-4 bg-gray-50 hover:bg-gray-200 text-gray-400 p-2 rounded-xl transition-colors z-30"
-             >
-                 🖨️
-             </button>
+        {cars.map((car) => {
+          const carImageSrc = getCarImage(car)
 
-             <div className="flex items-start gap-4">
-                {/* ✅ เปลี่ยนการแสดงผลไอคอนรถ */}
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
-                    car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                }`}>
-                    {car.car_type === 'รถกระบะ' ? (
-                        // แสดงรูปรถกระบะถ้าเป็นประเภท 'รถกระบะ'
-                        <img src="/truck.png" alt="รถกระบะ" className="w-full h-full object-cover" />
-                    ) : (
-                        // แสดงอิโมจิสำหรับรถประเภทอื่น
-                        car.car_type === 'รถตู้' ? '🚐' : '🚗'
-                    )}
-                </div>
+          return (
+            <div 
+                key={car.id} 
+                className={`relative p-5 rounded-[2rem] shadow-sm border transition-all ${
+                    car.status === 'busy' 
+                    ? 'bg-white border-red-100 shadow-red-100' 
+                    : 'bg-white border-gray-100'
+                }`}
+            >
+                {/* ปุ่มพิมพ์ */}
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(`/report?car_id=${car.id}`, '_blank')
+                    }}
+                    className="absolute top-4 right-4 bg-gray-50 hover:bg-gray-200 text-gray-400 p-2 rounded-xl transition-colors z-30"
+                >
+                    🖨️
+                </button>
 
-                <div className="flex-1 pt-1">
-                    <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
-                    
-                    <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">
-                        {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#742F99]">{car.car_type}</span>
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                        <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
-                            car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                            <span className={`w-2 h-2 rounded-full ${car.status === 'available' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
-                            {car.status === 'available' ? 'ว่างพร้อมใช้' : 'กำลังใช้งาน'}
-                        </span>
-
-                        {car.status === 'busy' && car.activeLog && (
-                            <span className="px-3 py-1 rounded-lg text-xs font-bold bg-orange-50 text-orange-600 flex items-center gap-1">
-                                🕒 ออก: {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})} น.
-                            </span>
+                <div className="flex items-center gap-4">
+                    {/* ✅ ส่วนแสดงรูปรถ */}
+                    <div className={`w-20 h-20 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
+                        car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                    }`}>
+                        {carImageSrc ? (
+                            // แสดงรูปรถตามที่ตั้งไว้ (ถ้าเจอ)
+                            <img src={carImageSrc} alt={car.car_type} className="w-full h-full object-cover" />
+                        ) : (
+                            // แสดงอิโมจิหากประเภทรถไม่ตรงเงื่อนไขเลย
+                            '🚗'
                         )}
                     </div>
-                    
-                    {car.status === 'busy' && car.activeLog && (
-                         <p className="text-[10px] text-gray-400 mt-2 ml-1 font-bold">
-                            👤 โดย: <span className="text-gray-600">{car.activeLog.driver_name}</span>
-                         </p>
-                    )}
+
+                    <div className="flex-1">
+                        <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
+                        
+                        <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">
+                            {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#742F99]">{car.car_type}</span>
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
+                                car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                                <span className={`w-2 h-2 rounded-full ${car.status === 'available' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
+                                {car.status === 'available' ? 'ว่างพร้อมใช้' : 'กำลังใช้งาน'}
+                            </span>
+
+                            {car.status === 'busy' && car.activeLog && (
+                                <span className="px-3 py-1 rounded-lg text-xs font-bold bg-orange-50 text-orange-600 flex items-center gap-1">
+                                    🕒 ออก: {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})} น.
+                                </span>
+                            )}
+                        </div>
+                        
+                        {car.status === 'busy' && car.activeLog && (
+                            <p className="text-[10px] text-gray-400 mt-2 ml-1 font-bold">
+                                👤 โดย: <span className="text-gray-600">{car.activeLog.driver_name}</span>
+                            </p>
+                        )}
+                    </div>
                 </div>
-             </div>
-          </div>
-        ))}
+            </div>
+          )
+        })}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.17 (Pickup Image Update)
+            PEA Fleet System v2.18 (Dynamic Car Images)
         </div>
       </div>
     </div>
@@ -180,7 +202,7 @@ function CarSelector() {
 // 2. หน้าฟอร์มบันทึก (Action Form)
 // ==========================================
 function CarActionForm({ carId }) {
-  // (ส่วนนี้เหมือนเดิม ไม่มีการเปลี่ยนแปลง)
+  // (โค้ดส่วนนี้ยังคงเดิมทั้งหมด ไม่มีการเปลี่ยนแปลง)
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
