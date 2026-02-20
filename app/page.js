@@ -67,7 +67,7 @@ function CarSelector() {
     
     // เช็คตามคำขึ้นต้นของประเภทรถ
     if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
-    if (type.startsWith('รถบรรทุก')) return '/2_ton_truck.png'
+    if (type.startsWith('รถบรรทุก 2 ตันเเก้ไฟ')) return '/2_ton_truck.png'
     if (type.startsWith('รถเครน')) return '/crane.png'
     if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
     if (type.startsWith('รถกระบะ')) return '/truck.png'
