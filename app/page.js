@@ -131,7 +131,11 @@ function CarSelector() {
 
                 <div className="flex-1 pt-1">
                     <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
-                    <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{car.model}</p>
+                    
+                    {/* ✅ เพิ่ม car_type มาแสดงต่อท้าย model ตรงนี้ */}
+                    <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">
+                        {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#742F99]">{car.car_type}</span>
+                    </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
                         <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
@@ -149,8 +153,8 @@ function CarSelector() {
                     </div>
                     
                     {car.status === 'busy' && car.activeLog && (
-                         <p className="text-[10px] text-gray-400 mt-2 ml-1">
-                            โดย: {car.activeLog.driver_name}
+                         <p className="text-[10px] text-gray-400 mt-2 ml-1 font-bold">
+                            👤 โดย: <span className="text-gray-600">{car.activeLog.driver_name}</span>
                          </p>
                     )}
                 </div>
@@ -159,7 +163,7 @@ function CarSelector() {
         ))}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.15 (Position & Batt Validation)
+            PEA Fleet System v2.16 (Car Type Display)
         </div>
       </div>
     </div>
@@ -262,15 +266,14 @@ function CarActionForm({ carId }) {
   // นำรถออก
   const handleTakeOut = async () => {
     let currentName = staffName
-    let currentPosition = staffPosition // ✅ สร้างตัวแปร Local ไว้เก็บค่าให้ชัวร์
+    let currentPosition = staffPosition
 
-    // ถ้ายังไม่มีชื่อ (กรณีไม่ได้กด Enter หรือ Tab) ให้ลอง Fetch อีกรอบ
     if (!currentName) {
         const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', employeeId).single()
         if (data) { 
             currentName = data.full_name; 
-            currentPosition = data.position; // ✅ อัปเดตตัวแปร Local
-            setStaffPosition(data.position); // อัปเดต State (เผื่อใช้ UI)
+            currentPosition = data.position;
+            setStaffPosition(data.position);
         }
     }
 
@@ -295,7 +298,7 @@ function CarActionForm({ carId }) {
       const { error } = await supabase.from('trip_logs').insert({
         car_id: carId, 
         driver_name: currentName, 
-        driver_position: currentPosition, // ✅ ใช้ตัวแปร Local บันทึกค่า (แก้ปัญหารถ EV บันทึกไวเกิน)
+        driver_position: currentPosition,
         start_mileage: parseFloat(mileage || 0), 
         location: isEV ? '-' : finalLocation, 
         start_time: new Date().toISOString(), is_completed: false
@@ -326,7 +329,6 @@ function CarActionForm({ carId }) {
     if (isEV) {
         if (!battBefore || !battAfter) return alert('กรุณากรอก % แบตเตอรี่ ทั้งก่อนและหลังชาร์จ')
         
-        // ✅ เพิ่ม validation: แบตก่อน ต้องน้อยกว่า แบตหลัง
         if (parseInt(battBefore) >= parseInt(battAfter)) {
             return alert('❌ ข้อมูลผิดพลาด!\nเปอร์เซ็นต์แบตเตอรี่ "ก่อนชาร์จ" ต้องน้อยกว่า "หลังชาร์จ"')
         }
@@ -397,7 +399,7 @@ function CarActionForm({ carId }) {
         <button onClick={() => window.location.href = '/'} className="absolute top-10 left-5 bg-white/20 p-2 px-4 rounded-xl text-sm">⬅ กลับ</button>
         <div className="text-center mt-6">
           <h2 className="text-3xl font-black">{car.plate_number}</h2>
-          <p className="text-purple-200 text-sm uppercase">{car.model}</p>
+          <p className="text-purple-200 text-sm uppercase font-bold">{car.model} | {car.car_type}</p>
           {isEV && <span className="bg-green-400 text-green-900 text-[10px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block">Electric Vehicle</span>}
         </div>
       </div>
@@ -408,7 +410,7 @@ function CarActionForm({ carId }) {
             // ================== ฟอร์มนำรถออก ==================
             <div className="space-y-4">
               <h3 className="font-bold text-[#742F99] border-b pb-3 text-lg">
-                  {isEV ? '⚡ บันทึกข้อมูลการชาร์จ' : '📋 บันทึกนำรถออก'}
+                {isEV ? '⚡ บันทึกข้อมูลการชาร์จ' : '📋 บันทึกนำรถออก'}
               </h3>
               
               <div className="space-y-1">
