@@ -123,16 +123,22 @@ function CarSelector() {
              </button>
 
              <div className="flex items-start gap-4">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner ${
+                {/* ✅ เปลี่ยนการแสดงผลไอคอนรถ */}
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
                     car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                 }`}>
-                    {car.car_type === 'รถตู้' ? '🚐' : car.car_type === 'รถเก๋ง' ? '🚗' : '🛻'}
+                    {car.car_type === 'รถกระบะ' ? (
+                        // แสดงรูปรถกระบะถ้าเป็นประเภท 'รถกระบะ'
+                        <img src="/truck.png" alt="รถกระบะ" className="w-full h-full object-cover" />
+                    ) : (
+                        // แสดงอิโมจิสำหรับรถประเภทอื่น
+                        car.car_type === 'รถตู้' ? '🚐' : '🚗'
+                    )}
                 </div>
 
                 <div className="flex-1 pt-1">
                     <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
                     
-                    {/* ✅ เพิ่ม car_type มาแสดงต่อท้าย model ตรงนี้ */}
                     <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">
                         {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#742F99]">{car.car_type}</span>
                     </p>
@@ -163,7 +169,7 @@ function CarSelector() {
         ))}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.16 (Car Type Display)
+            PEA Fleet System v2.17 (Pickup Image Update)
         </div>
       </div>
     </div>
@@ -174,6 +180,7 @@ function CarSelector() {
 // 2. หน้าฟอร์มบันทึก (Action Form)
 // ==========================================
 function CarActionForm({ carId }) {
+  // (ส่วนนี้เหมือนเดิม ไม่มีการเปลี่ยนแปลง)
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
