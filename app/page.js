@@ -274,7 +274,7 @@ function CarSelector() {
                                     การนำรถออก
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์เริ่มต้น (ในครั้งแรกที่ใช้งานเท่านั้น ต่อไปไม่ต้องกรอก) ➔ กรอกสถานที่ (เลือกที่มีให้ หรือระบุเอง) ➔ <span className="text-red-600 font-bold">กดยืนยันนำรถออก</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์เริ่มต้น (ในครั้งแรกที่ใช้งานเท่านั้น ครั้งต่อไปไม่ต้องกรอก) ➔ กรอกสถานที่ (เลือกที่มีให้ หรือระบุเอง) ➔ <span className="text-red-600 font-bold">กดยืนยันนำรถออก</span>
                                 </p>
                             </div>
                             <div className="relative">
@@ -302,7 +302,7 @@ function CarSelector() {
                                     การเริ่มชาร์จไฟรถ
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว กรอกเลขไมล์ล่าสุดก่อนชาร์จไฟ ➔ กรอก%แบตเตอรี่ล่าสุดก่อนชาร์จไฟ ➔ เลือกประเภทสถานีชาร์จ ระบุสาขา / แบรนด์ ➔ <span className="text-sky-600 font-bold">กดยืนยันเริ่มชาร์จไฟรถ</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์ล่าสุดก่อนชาร์จไฟ ➔ กรอก%แบตเตอรี่ล่าสุดก่อนชาร์จไฟ ➔ เลือกประเภทสถานีชาร์จ ระบุสาขา / แบรนด์ ➔ <span className="text-sky-600 font-bold">กดยืนยันเริ่มชาร์จไฟรถ</span>
                                 </p>
                             </div>
                             <div className="relative">
@@ -711,30 +711,30 @@ function CarActionForm({ carId }) {
               )}
 
               <button onClick={handleTakeOut} disabled={loading} className={`w-full py-4 rounded-2xl font-bold mt-4 shadow-lg transition-all text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
-                {loading ? '⏳ กำลังบันทึก...' : (isEV ? '⚡ ยืนยันเริ่มการชาร์จรถ' : 'ยืนยันนำรถออก')}
+                {loading ? '⏳ กำลังบันทึก...' : (isEV ? '⚡ ยืนยันเริ่มชาร์จไฟรถ' : 'ยืนยันนำรถออก')}
               </button>
             </div>
           ) : (
             // ================== ฟอร์มคืนรถ (สถานะ "กำลังใช้งาน") ==================
             <div className="space-y-4">
                <div className="flex justify-between items-center border-b pb-3">
-                  <h3 className={`font-bold text-lg flex items-center gap-2 ${isEV ? 'text-green-600' : 'text-red-600'}`}>
+                  <h3 className={`font-bold text-lg flex items-center gap-2 ${isEV ? 'text-purple-600' : 'text-purple-600'}`}>
                       {isEV ? '🔌 นำที่ชาร์จออก' : '↩️ คืนรถ'}
                   </h3>
                   <span className="text-xs text-gray-400">{currentTime.toLocaleTimeString('th-TH')}</span>
                </div>
                
                {/* โชว์ข้อมูลผู้ใช้งาน เพื่อให้รู้ตัวว่ากำลังทำรายการของใคร */}
-               <div className={`${isEV ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'} p-4 rounded-2xl border`}>
-                  <p className={`text-sm font-bold ${isEV ? 'text-green-800' : 'text-orange-800'}`}>👤 ผู้ใช้: {activeLog?.driver_name}</p>
+               <div className={`${isEV ? 'bg-purple-50 border-purple-100' : 'bg-purple-50 border-pueple-100'} p-4 rounded-2xl border`}>
+                  <p className={`text-sm font-bold ${isEV ? 'text-purple-800' : 'text-purple-800'}`}>👤 ผู้ใช้: {activeLog?.driver_name}</p>
                   
                   {isEV ? (
-                      <div className="mt-2 text-green-700 text-xs font-medium space-y-1 border-t border-green-200/50 pt-2">
-                          <p>🔋 แบตก่อนชาร์จ: <span className="font-bold text-green-800">{activeLog?.battery_before}%</span></p>
+                      <div className="mt-2 text-purple-700 text-xs font-medium space-y-1 border-t border-green-200/50 pt-2">
+                          <p>🔋 แบตก่อนชาร์จ: <span className="font-bold text-purple-800">{activeLog?.battery_before}%</span></p>
                           <p>📍 สถานี: {activeLog?.station_name}</p>
                       </div>
                   ) : (
-                      <p className="text-orange-600 text-xs mt-1 font-medium">ไมล์เริ่ม: {activeLog?.start_mileage?.toLocaleString()}</p>
+                      <p className="text-purple-600 text-xs mt-1 font-medium">ไมล์เริ่ม: {activeLog?.start_mileage?.toLocaleString()}</p>
                   )}
                </div>
                
@@ -743,13 +743,13 @@ function CarActionForm({ carId }) {
                    // EV คืนรถ: กรอกแค่แบตหลังชาร์จ
                    <div className="space-y-2 pt-2">
                        <label className="text-xs font-bold text-gray-500 ml-1 block text-center mt-4">กรุณากรอกปริมาณแบตเตอรี่ล่าสุด</label>
-                       <div className="flex items-center justify-center gap-4 bg-white border-2 border-green-200 rounded-2xl p-4 shadow-inner">
+                       <div className="flex items-center justify-center gap-4 bg-white border-2 border-purple-200 rounded-2xl p-4 shadow-inner">
                            <span className="text-3xl">🔋</span>
                            <input 
                                 type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)} placeholder="0-100"
-                                className="w-24 p-2 bg-gray-50 rounded-xl outline-none text-center text-2xl font-black text-green-700 border-none" 
+                                className="w-24 p-2 bg-gray-50 rounded-xl outline-none text-center text-2xl font-black text-purple-700 border-none" 
                            />
-                           <span className="text-xl font-bold text-green-700">%</span>
+                           <span className="text-xl font-bold text-purple-700">%</span>
                        </div>
                    </div>
                ) : (
@@ -759,7 +759,7 @@ function CarActionForm({ carId }) {
                           <label className="text-xs font-bold text-gray-400 ml-1">เลขไมล์ล่าสุด (จบงาน)</label>
                           <input 
                             type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)} placeholder="กรอกเลขไมล์ปัจจุบัน..."
-                            className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-red-500 outline-none font-mono text-lg" 
+                            className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-purple-500 outline-none font-mono text-lg" 
                           />
                        </div>
                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-dashed border-gray-200 mt-4">
@@ -775,8 +775,8 @@ function CarActionForm({ carId }) {
                    </>
                )}
 
-               <button onClick={handleReturn} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : (isEV ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700')}`}>
-                 {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันนำที่ชาร์จออก' : 'ยืนยันการคืนรถ')}
+               <button onClick={handleReturn} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : (isEV ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-600 hover:bg-purple-700')}`}>
+                 {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จไฟรถ' : 'ยืนยันคืนรถ')}
                </button>
             </div>
           )}
