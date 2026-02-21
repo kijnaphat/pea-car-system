@@ -74,7 +74,7 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
     
-    return null // ถ้าไม่ตรงเงื่อนไขเลย จะให้ส่งค่า null กลับไปเพื่อแสดงเป็น Emoji แทน
+    return null 
   }
 
   if (loading) return (
@@ -87,7 +87,7 @@ function CarSelector() {
     <div className="min-h-screen bg-[#EBF0F6] font-sarabun pb-6">
       
       {/* 🟣 Header */}
-      <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-20 text-white rounded-b-[3rem] shadow-xl relative z-10">
+      <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
         <div className="flex justify-between items-start">
           <div>
              <h1 className="text-2xl font-black tracking-tight">PEA SMART VEHICLE MANAGEMENT</h1>
@@ -102,21 +102,56 @@ function CarSelector() {
         </div>
       </div>
 
-      {/* 🔶 Alert Instruction */}
-      <div className="-mt-12 mx-4 relative z-20 mb-6">
-        <div className="bg-gradient-to-br from-[#F2994A] to-[#F3B236] p-5 rounded-3xl shadow-xl shadow-orange-500/30 text-white flex items-center justify-between ring-4 ring-white">
-            <div className="flex items-center gap-4">
-                <div className="bg-white/20 p-3 rounded-2xl">
-                    <span className="text-3xl">📱</span>
-                </div>
-                <div>
-                    <h3 className="text-lg font-black drop-shadow-sm uppercase">สแกน QR Code</h3>
-                    <p className="text-xs opacity-90 font-medium bg-black/10 px-2 py-0.5 rounded-md inline-block mt-1">
-                        เพื่อ นำรถออก หรือ คืนรถ
-                    </p>
-                </div>
-            </div>
-            <div className="text-2xl opacity-80">➔</div>
+      {/* 🌟 Alert Instruction (อัปเกรดดีไซน์ใหม่ + ข้อความวิ่ง) */}
+      <div className="-mt-16 mx-4 relative z-20 mb-8">
+        {/* เพิ่ม CSS สำหรับทำตัวหนังสือวิ่ง */}
+        <style>{`
+          @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-150%); }
+          }
+          .animate-scrolling-text {
+            display: inline-block;
+            white-space: nowrap;
+            animation: scroll-left 12s linear infinite;
+          }
+        `}</style>
+
+        <div className="bg-gradient-to-r from-[#FF8008] to-[#FFC837] p-1 rounded-[2rem] shadow-2xl shadow-orange-500/40">
+          <div className="bg-white/10 backdrop-blur-xl rounded-[1.8rem] p-4 flex flex-col gap-3 border border-white/30">
+              
+              {/* ส่วนหัวป้าย (Header ป้ายเหลือง) */}
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                      <div className="bg-white text-orange-500 w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
+                          <span className="absolute w-full h-full rounded-full border-4 border-orange-300 animate-ping opacity-30"></span>
+                          <span className="text-2xl z-10">📷</span>
+                      </div>
+                      <div>
+                          <h3 className="text-white text-xl font-black tracking-widest drop-shadow-md">SCAN QR CODE</h3>
+                          <p className="text-orange-50 text-[10px] uppercase font-bold tracking-widest bg-black/20 px-2 py-0.5 rounded-md inline-block mt-0.5">
+                              ระบบสแกนรับ-คืนรถ
+                          </p>
+                      </div>
+                  </div>
+                  <div className="bg-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-inner">
+                      <span className="text-xl font-bold">➔</span>
+                  </div>
+              </div>
+
+              {/* แถบตัวหนังสือวิ่ง (Marquee) */}
+              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-8">
+                  <div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-[10px] font-black px-3 flex items-center rounded-l-xl z-10 shadow-md">
+                      ประกาศ 📢
+                  </div>
+                  <div className="w-full overflow-hidden pl-[70px]">
+                      <p className="text-white text-[11px] font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
+                          กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
+                      </p>
+                  </div>
+              </div>
+
+          </div>
         </div>
       </div>
 
@@ -146,15 +181,12 @@ function CarSelector() {
                 </button>
 
                 <div className="flex items-center gap-4">
-                    {/* ✅ ส่วนแสดงรูปรถ */}
                     <div className={`w-20 h-20 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
                         car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                     }`}>
                         {carImageSrc ? (
-                            // แสดงรูปรถตามที่ตั้งไว้ (ถ้าเจอ)
                             <img src={carImageSrc} alt={car.car_type} className="w-full h-full object-cover" />
                         ) : (
-                            // แสดงอิโมจิหากประเภทรถไม่ตรงเงื่อนไขเลย
                             '🚗'
                         )}
                     </div>
@@ -193,7 +225,7 @@ function CarSelector() {
         })}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.18 (Dynamic Car Images)
+            PEA Fleet System v2.19 (Premium Alert & Marquee)
         </div>
       </div>
     </div>
@@ -204,7 +236,6 @@ function CarSelector() {
 // 2. หน้าฟอร์มบันทึก (Action Form)
 // ==========================================
 function CarActionForm({ carId }) {
-  // (โค้ดส่วนนี้ยังคงเดิมทั้งหมด ไม่มีการเปลี่ยนแปลง)
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
