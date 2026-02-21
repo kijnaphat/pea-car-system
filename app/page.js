@@ -104,17 +104,18 @@ function CarSelector() {
 
       {/* 🌟 Alert Instruction (อัปเกรดดีไซน์ใหม่ + ข้อความวิ่ง) */}
       <div className="-mt-16 mx-4 relative z-20 mb-8">
-        {/* เพิ่ม CSS สำหรับทำตัวหนังสือวิ่ง */}
+        {/* ✅ CSS ทำตัวหนังสือวิ่งแบบใหม่ ไร้รอยต่อ และช้าลง */}
         <style>{`
           @keyframes scroll-left {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-150%); }
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-100%); }
           }
           .animate-scrolling-text {
             display: inline-block;
             white-space: nowrap;
-            /* ✅ วิ่งช้าลงเท่าตัว (24s) ให้อ่านทัน */
-            animation: scroll-left 24s linear infinite;
+            padding-left: 100%; /* ดันข้อความไปเริ่มที่ขอบขวาพอดี */
+            animation: scroll-left 25s linear infinite; /* วิ่งช้าลง อ่านสบายตาขึ้น */
+            will-change: transform;
           }
         `}</style>
 
@@ -140,14 +141,11 @@ function CarSelector() {
                   </div>
               </div>
 
-              {/* แถบตัวหนังสือวิ่ง (Marquee) ✅ ตัด "ประกาศ" ออก และขยายฟอนต์ใหญ่ขึ้น */}
-              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-10">
-                  <div className="w-full overflow-hidden">
-                      {/* ✅ เปลี่ยนขนาดตัวหนังสือเป็น text-sm (ใหญ่ขึ้น) */}
-                      <p className="text-white text-sm font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
-                          กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
-                      </p>
-                  </div>
+              {/* แถบตัวหนังสือวิ่ง (Marquee) ✅ วนลูปทันทีที่จบข้อความ */}
+              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-10 w-full">
+                  <p className="text-white text-sm font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
+                      กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
+                  </p>
               </div>
 
           </div>
@@ -225,7 +223,7 @@ function CarSelector() {
         })}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.20 (Slower & Larger Marquee)
+            PEA Fleet System v2.21 (Perfect Marquee Loop)
         </div>
       </div>
     </div>
