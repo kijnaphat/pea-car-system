@@ -145,7 +145,7 @@ function CarSelector() {
                       className="bg-white/20 hover:bg-white/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-inner transition-all active:scale-95 cursor-pointer"
                       title="คลิกเพื่อดูวิธีใช้งาน"
                   >
-                      <span className="text-xl font-bold">➔</span>
+                      <span className="text-xl font-bold">คู่มือการใช้</span>
                   </button>
               </div>
 
