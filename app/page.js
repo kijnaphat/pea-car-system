@@ -263,7 +263,7 @@ function CarSelector() {
                     
                     {/* 🚙 หมวดหมู่: รถน้ำมัน */}
                     <div className="bg-white border border-orange-200 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="bg-orange-100 text-orange-900 font-bold p-3 flex items-center gap-2 text-sm">
+                        <div className="bg-red-900 text-orange-900 font-bold p-3 flex items-center gap-2 text-sm">
                             <span className="text-lg">🚙</span> รถยนต์ทั่วไป (รถใช้น้ำมัน)
                         </div>
                         <div className="p-4 space-y-4">
@@ -274,7 +274,7 @@ function CarSelector() {
                                     การนำรถออก
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสพนักงาน ➔ <b>กรอกเลขไมล์เริ่มต้น (ในครั้งแรกที่ใช้งานเท่านั้น ต่อไปไม่ต้องกรอก)</b> และ <b>กรอกสถานที่ (เลือกที่มีให้ หรือระบุเอง)</b> ➔ <span className="text-orange-600 font-bold">กดยืนยันนำรถออก</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว ➔ <b>กรอกเลขไมล์เริ่มต้น (ในครั้งแรกที่ใช้งานเท่านั้น ต่อไปไม่ต้องกรอก)</b> และ <b>กรอกสถานที่ (เลือกที่มีให้ หรือระบุเอง)</b> ➔ <span className="text-orange-600 font-bold">กดยืนยันนำรถออก</span>
                                 </p>
                             </div>
                             <div className="relative">
@@ -291,27 +291,27 @@ function CarSelector() {
 
                     {/* ⚡ หมวดหมู่: รถไฟฟ้า (EV) */}
                     <div className="bg-white border border-green-200 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="bg-green-100 text-green-900 font-bold p-3 flex items-center gap-2 text-sm">
+                        <div className="bg-sky-400 text-blue-900 font-bold p-3 flex items-center gap-2 text-sm">
                             <span className="text-lg">⚡</span> รถยนต์ไฟฟ้า (EV)
                         </div>
                         <div className="p-4 space-y-4">
                             <div className="relative">
                                 <div className="absolute left-[9px] top-6 bottom-[-20px] w-0.5 bg-green-100"></div>
-                                <h4 className="font-bold text-green-700 text-xs mb-1 flex items-center gap-2">
-                                    <span className="bg-green-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">1</span> 
+                                <h4 className="font-bold text-blue-700 text-xs mb-1 flex items-center gap-2">
+                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">1</span> 
                                     การเริ่มชาร์จรถ
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว <b>กรอกเลขไมล์ล่าสุดก่อนชาร์จไฟ</b> ➔ <b>กรอก%แบตเตอรี่ล่าสุดก่อบชาร์จไฟ</b> เลือกประเภทสถานีชาร์จ ระบุสาขา / แบรนด์ ➔ <span className="text-green-600 font-bold">กดยืนยันการชาร์จรถ</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว <b>กรอกเลขไมล์ล่าสุดก่อนชาร์จไฟ</b> ➔ <b>กรอก%แบตเตอรี่ล่าสุดก่อบชาร์จไฟ</b> เลือกประเภทสถานีชาร์จ ระบุสาขา / แบรนด์ ➔ <span className="text-blue-600 font-bold">กดยืนยันการชาร์จรถ</span>
                                 </p>
                             </div>
                             <div className="relative">
-                                <h4 className="font-bold text-green-700 text-xs mb-1 flex items-center gap-2">
-                                    <span className="bg-green-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">2</span> 
+                                <h4 className="font-bold text-blue-700 text-xs mb-1 flex items-center gap-2">
+                                    <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">2</span> 
                                     การนำที่ชาร์จออก (เสร็จสิ้น)
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ <b>กรอกปริมาณ%แบตเตอรี่ล่าสุดที่ชาร์จ</b> เพียงอย่างเดียว ➔ <span className="text-green-600 font-bold">กดยืนยันนำที่ชาร์จออก</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ <b>กรอกปริมาณ%แบตเตอรี่ล่าสุดที่ชาร์จ</b> เพียงอย่างเดียว ➔ <span className="text-blue-600 font-bold">กดยืนยันนำที่ชาร์จออก</span>
                                 </p>
                             </div>
                         </div>
