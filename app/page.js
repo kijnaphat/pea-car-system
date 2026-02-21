@@ -24,6 +24,9 @@ function CarSelector() {
   const router = useRouter()
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
+  
+  // ✅ State สำหรับควบคุมการเปิด/ปิดหน้าต่างคู่มือ
+  const [showInstructions, setShowInstructions] = useState(false)
 
   const fetchCars = async () => {
     try {
@@ -74,7 +77,7 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
     
-    return null // ถ้าไม่ตรงเงื่อนไขเลย จะให้ส่งค่า null กลับไปเพื่อแสดงเป็น Emoji แทน
+    return null 
   }
 
   if (loading) return (
@@ -84,7 +87,7 @@ function CarSelector() {
   )
 
   return (
-    <div className="min-h-screen bg-[#EBF0F6] font-sarabun pb-6">
+    <div className="min-h-screen bg-[#EBF0F6] font-sarabun pb-6 relative">
       
       {/* 🟣 Header */}
       <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
@@ -102,9 +105,8 @@ function CarSelector() {
         </div>
       </div>
 
-      {/* 🌟 Alert Instruction (อัปเกรดดีไซน์ใหม่ + ข้อความวิ่ง) */}
+      {/* 🌟 Alert Instruction (ป้ายเหลือง) */}
       <div className="-mt-16 mx-4 relative z-20 mb-8">
-        {/* ✅ CSS ทำตัวหนังสือวิ่งแบบใหม่ ไร้รอยต่อ และช้าลง */}
         <style>{`
           @keyframes scroll-left {
             0% { transform: translateX(0%); }
@@ -113,8 +115,8 @@ function CarSelector() {
           .animate-scrolling-text {
             display: inline-block;
             white-space: nowrap;
-            padding-left: 100%; /* ดันข้อความไปเริ่มที่ขอบขวาพอดี */
-            animation: scroll-left 25s linear infinite; /* วิ่งช้าลง อ่านสบายตาขึ้น */
+            padding-left: 100%;
+            animation: scroll-left 25s linear infinite;
             will-change: transform;
           }
         `}</style>
@@ -122,7 +124,6 @@ function CarSelector() {
         <div className="bg-gradient-to-r from-[#FF8008] to-[#FFC837] p-1 rounded-[2rem] shadow-2xl shadow-orange-500/40">
           <div className="bg-white/10 backdrop-blur-xl rounded-[1.8rem] p-4 flex flex-col gap-3 border border-white/30">
               
-              {/* ส่วนหัวป้าย (Header ป้ายเหลือง) */}
               <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                       <div className="bg-white text-orange-500 w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
@@ -136,18 +137,24 @@ function CarSelector() {
                           </p>
                       </div>
                   </div>
-                  <div className="bg-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-inner">
+                  
+                  {/* ✅ เปลี่ยนเป็นปุ่มกดเพื่อเปิด Modal อธิบายการใช้งาน */}
+                  <button 
+                      onClick={() => setShowInstructions(true)}
+                      className="bg-white/20 hover:bg-white/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-inner transition-all active:scale-95 cursor-pointer"
+                      title="คลิกเพื่อดูวิธีใช้งาน"
+                  >
                       <span className="text-xl font-bold">➔</span>
+                  </button>
+              </div>
+
+              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-10 w-full">
+                  <div className="w-full overflow-hidden">
+                      <p className="text-white text-sm font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
+                          กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
+                      </p>
                   </div>
               </div>
-
-              {/* แถบตัวหนังสือวิ่ง (Marquee) ✅ วนลูปทันทีที่จบข้อความ */}
-              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-10 w-full">
-                  <p className="text-white text-sm font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
-                      กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
-                  </p>
-              </div>
-
           </div>
         </div>
       </div>
@@ -166,7 +173,6 @@ function CarSelector() {
                     : 'bg-white border-gray-100'
                 }`}
             >
-                {/* ปุ่มพิมพ์ */}
                 <button 
                     onClick={(e) => {
                         e.stopPropagation()
@@ -178,7 +184,6 @@ function CarSelector() {
                 </button>
 
                 <div className="flex items-center gap-4">
-                    {/* ✅ ส่วนแสดงรูปรถ */}
                     <div className={`w-20 h-20 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
                         car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                     }`}>
@@ -223,9 +228,99 @@ function CarSelector() {
         })}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.21 (Perfect Marquee Loop)
+            PEA Fleet System v2.22 (Help Modal Added)
         </div>
       </div>
+
+      {/* ✅ Modal คำอธิบายการใช้งาน */}
+      {showInstructions && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Background Blur */}
+            <div 
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={() => setShowInstructions(false)}
+            ></div>
+
+            {/* Modal Content */}
+            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
+                
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] p-5 text-white flex justify-between items-center">
+                    <h2 className="text-lg font-black flex items-center gap-2">
+                        <span>📖</span> คู่มือการใช้งานระบบ
+                    </h2>
+                    <button 
+                        onClick={() => setShowInstructions(false)}
+                        className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors text-sm"
+                    >
+                        ✖
+                    </button>
+                </div>
+
+                {/* Modal Body (Scrollable) */}
+                <div className="p-6 overflow-y-auto space-y-6 text-gray-700">
+                    
+                    {/* Step 1 */}
+                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl">
+                        <h3 className="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2">
+                            <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">1</span> 
+                            การนำรถออกไปใช้งาน
+                        </h3>
+                        <ul className="text-sm space-y-1 ml-6 list-disc text-blue-900/80 marker:text-blue-400">
+                            <li><strong>สแกน QR Code</strong> ที่ติดอยู่หน้ารถคันที่จะใช้</li>
+                            <li>กรอก <strong>รหัสพนักงาน</strong> (ระบบจะดึงชื่อมาให้อัตโนมัติ)</li>
+                            <li>กรอก <strong>เลขไมล์เริ่มต้น</strong> และ <strong>สถานที่</strong></li>
+                            <li>กดปุ่มยืนยัน</li>
+                        </ul>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl">
+                        <h3 className="font-bold text-orange-800 text-sm mb-2 flex items-center gap-2">
+                            <span className="bg-orange-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span> 
+                            การคืนรถ (รถน้ำมัน ⛽)
+                        </h3>
+                        <ul className="text-sm space-y-1 ml-6 list-disc text-orange-900/80 marker:text-orange-400">
+                            <li>เมื่อปฏิบัติงานเสร็จ <strong>สแกน QR Code เดิม</strong></li>
+                            <li>กรอก <strong>เลขไมล์ล่าสุด</strong> (เลขไมล์จบงาน)</li>
+                            <li>หากเติมน้ำมัน ให้ใส่จำนวนลิตร/จำนวนเงิน (ถ้าไม่มีเว้นว่างไว้)</li>
+                            <li>กดปุ่มยืนยันการคืนรถ</li>
+                        </ul>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="bg-green-50 border border-green-100 p-4 rounded-2xl">
+                        <h3 className="font-bold text-green-800 text-sm mb-2 flex items-center gap-2">
+                            <span className="bg-green-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">3</span> 
+                            การคืนรถ (รถไฟฟ้า EV ⚡)
+                        </h3>
+                        <ul className="text-sm space-y-1 ml-6 list-disc text-green-900/80 marker:text-green-400">
+                            <li>สแกน QR Code เพื่อเข้าสู่หน้าคืนรถ</li>
+                            <li>กรอก <strong>% แบตเตอรี่ ก่อนชาร์จ</strong> และ <strong>หลังชาร์จ</strong></li>
+                            <li>ระบุประเภทสถานีชาร์จ (PEA Volta หรือ แบรนด์อื่นๆ)</li>
+                            <li>กดปุ่มยืนยันการชาร์จรถ</li>
+                        </ul>
+                    </div>
+
+                    {/* Extra Info */}
+                    <div className="text-xs text-center text-gray-400 pt-2 border-t border-gray-100">
+                        * กดที่ไอคอน 🖨️ เพื่อพิมพ์รายงานการใช้รถ (Log Book)<br/>
+                        * กดที่ไอคอน 📊 มุมขวาบนเพื่อดูสถิติและ Dashboard
+                    </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 border-t bg-gray-50 text-center">
+                    <button 
+                        onClick={() => setShowInstructions(false)}
+                        className="w-full bg-[#742F99] text-white py-3 rounded-xl font-bold shadow-md hover:bg-[#591d79] transition-colors"
+                    >
+                        เข้าใจแล้ว
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   )
 }
