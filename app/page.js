@@ -24,8 +24,6 @@ function CarSelector() {
   const router = useRouter()
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
-  
-  // ✅ State สำหรับควบคุมการเปิด/ปิดหน้าต่างคู่มือ
   const [showInstructions, setShowInstructions] = useState(false)
 
   const fetchCars = async () => {
@@ -60,22 +58,16 @@ function CarSelector() {
     return () => clearInterval(interval)
   }, [])
 
-  // ฟังก์ชันช่วยดึงรูปภาพรถตามประเภท
   const getCarImage = (car) => {
     const type = car.car_type || ''
     const plate = car.plate_number || ''
     
-    // เช็คว่าเป็นรถ EV หรือไม่ (ดูจากทะเบียน)
-    if (plate.includes('6ขฆ')) return '/mg.png'
-    
-    // เช็คตามคำขึ้นต้นของประเภทรถ
-    if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
-    if (type.startsWith('รถบรรทุก 2 ตันเเก้ไฟ')) return '/2_ton_truck.png'
-    if (type.startsWith('รถเครน')) return '/crane.png'
-    if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
-    if (type.startsWith('รถกระบะ')) return '/truck.png'
-    if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
-    if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
+    if (plate.includes('6ขฆ')) return '/6.png'
+    if (type.startsWith('รถกระเช้า')) return '/1.png'
+    if (type.startsWith('รถบรรทุก')) return '/2.png'
+    if (type.startsWith('รถเครน')) return '/3.png'
+    if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/4.png'
+    if (type.startsWith('รถกระบะ')) return '/5.png'
     
     return null 
   }
@@ -128,7 +120,7 @@ function CarSelector() {
                   <div className="flex items-center gap-4">
                       <div className="bg-white text-orange-500 w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
                           <span className="absolute w-full h-full rounded-full border-4 border-orange-300 animate-ping opacity-30"></span>
-                          <span className="text-2xl z-10">📱</span>
+                          <span className="text-2xl z-10">📷</span>
                       </div>
                       <div>
                           <h3 className="text-white text-xl font-black tracking-widest drop-shadow-md">SCAN QR CODE</h3>
@@ -138,11 +130,9 @@ function CarSelector() {
                       </div>
                   </div>
                   
-                  {/* ✅ เปลี่ยนเป็นปุ่มกดเพื่อเปิด Modal อธิบายการใช้งาน */}
                   <button 
                       onClick={() => setShowInstructions(true)}
                       className="bg-white/20 hover:bg-white/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-inner transition-all active:scale-95 cursor-pointer"
-                      title="คลิกเพื่อดูวิธีใช้งาน"
                   >
                       <span className="text-xl font-bold">➔</span>
                   </button>
@@ -228,23 +218,19 @@ function CarSelector() {
         })}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.22 (Help Modal Added)
+            PEA Fleet System v2.23 (New EV Flow)
         </div>
       </div>
 
       {/* ✅ Modal คำอธิบายการใช้งาน */}
       {showInstructions && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Background Blur */}
             <div 
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={() => setShowInstructions(false)}
             ></div>
 
-            {/* Modal Content */}
             <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
-                
-                {/* Modal Header */}
                 <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] p-5 text-white flex justify-between items-center">
                     <h2 className="text-lg font-black flex items-center gap-2">
                         <span>📖</span> คู่มือการใช้งานระบบ
@@ -257,10 +243,7 @@ function CarSelector() {
                     </button>
                 </div>
 
-                {/* Modal Body (Scrollable) */}
                 <div className="p-6 overflow-y-auto space-y-6 text-gray-700">
-                    
-                    {/* Step 1 */}
                     <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl">
                         <h3 className="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2">
                             <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">1</span> 
@@ -274,7 +257,6 @@ function CarSelector() {
                         </ul>
                     </div>
 
-                    {/* Step 2 */}
                     <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl">
                         <h3 className="font-bold text-orange-800 text-sm mb-2 flex items-center gap-2">
                             <span className="bg-orange-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span> 
@@ -288,28 +270,19 @@ function CarSelector() {
                         </ul>
                     </div>
 
-                    {/* Step 3 */}
                     <div className="bg-green-50 border border-green-100 p-4 rounded-2xl">
                         <h3 className="font-bold text-green-800 text-sm mb-2 flex items-center gap-2">
                             <span className="bg-green-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">3</span> 
-                            การคืนรถ (รถไฟฟ้า EV ⚡)
+                            การชาร์จรถ (รถไฟฟ้า EV ⚡)
                         </h3>
                         <ul className="text-sm space-y-1 ml-6 list-disc text-green-900/80 marker:text-green-400">
-                            <li>สแกน QR Code เพื่อเข้าสู่หน้าคืนรถ</li>
-                            <li>กรอก <strong>% แบตเตอรี่ ก่อนชาร์จ</strong> และ <strong>หลังชาร์จ</strong></li>
-                            <li>ระบุประเภทสถานีชาร์จ (PEA Volta หรือ แบรนด์อื่นๆ)</li>
-                            <li>กดปุ่มยืนยันการชาร์จรถ</li>
+                            <li>สแกน QR Code เพื่อเข้าสู่หน้าเริ่มชาร์จ</li>
+                            <li>กรอก <strong>เลขไมล์, แบตก่อนชาร์จ, และสถานี</strong></li>
+                            <li>เมื่อชาร์จเสร็จ สแกน QR Code อีกครั้งเพื่อ <strong>กรอกแบตหลังชาร์จ</strong> และกดนำที่ชาร์จออก</li>
                         </ul>
-                    </div>
-
-                    {/* Extra Info */}
-                    <div className="text-xs text-center text-gray-400 pt-2 border-t border-gray-100">
-                        * กดที่ไอคอน 🖨️ เพื่อพิมพ์รายงานการใช้รถ (Log Book)<br/>
-                        * กดที่ไอคอน 📊 มุมขวาบนเพื่อดูสถิติและ Dashboard
                     </div>
                 </div>
 
-                {/* Modal Footer */}
                 <div className="p-4 border-t bg-gray-50 text-center">
                     <button 
                         onClick={() => setShowInstructions(false)}
@@ -418,7 +391,7 @@ function CarActionForm({ carId }) {
     }
   }
 
-  // นำรถออก
+  // ✅ นำรถออก (รถน้ำมัน) หรือ เริ่มชาร์จรถ (EV)
   const handleTakeOut = async () => {
     let currentName = staffName
     let currentPosition = staffPosition
@@ -438,7 +411,20 @@ function CarActionForm({ carId }) {
     const finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
     
     if (!employeeId) return alert('กรุณากรอกรหัสพนักงาน')
-    if (!isEV && (!mileage || !finalLocation)) return alert('กรุณากรอกข้อมูลให้ครบถ้วน')
+    if (!mileage) return alert('กรุณากรอกเลขไมล์เริ่มต้น') // EV ตอนนี้บังคับกรอกไมล์ตอนเริ่มชาร์จ
+    
+    // EV Validation ชุดใหม่ตอนเริ่มชาร์จ
+    if (isEV) {
+        if (!battBefore) return alert('กรุณากรอก % แบตเตอรี่ก่อนชาร์จ')
+        if (!subStationType) return alert('กรุณาระบุประเภทสถานีชาร์จ')
+        
+        const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
+        if (selectedOption?.inputType !== 'none' && !stationName) {
+            return alert('กรุณาระบุชื่อสถานี/สาขาให้ครบถ้วน')
+        }
+    } else {
+        if (!finalLocation) return alert('กรุณาระบุสถานที่')
+    }
     
     setLoading(true)
 
@@ -450,20 +436,36 @@ function CarActionForm({ carId }) {
          return
       }
 
-      const { error } = await supabase.from('trip_logs').insert({
+      // เตรียมข้อมูลบันทึก
+      const insertData = {
         car_id: carId, 
         driver_name: currentName, 
         driver_position: currentPosition,
         start_mileage: parseFloat(mileage || 0), 
-        location: isEV ? '-' : finalLocation, 
-        start_time: new Date().toISOString(), is_completed: false
-      })
+        start_time: new Date().toISOString(), 
+        is_completed: false
+      }
+
+      if (isEV) {
+          const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
+          const label = selectedOption ? selectedOption.label.replace(/ \(.+\)/, '') : '';
+          const finalStationName = (selectedOption?.inputType !== 'none' && stationName) ? `${label}: ${stationName}` : label;
+          
+          insertData.location = finalStationName; // บันทึกสถานที่เป็นจุดหมาย
+          insertData.battery_before = parseInt(battBefore);
+          insertData.station_type = stationType;
+          insertData.station_name = finalStationName;
+      } else {
+          insertData.location = finalLocation;
+      }
+
+      const { error } = await supabase.from('trip_logs').insert(insertData)
       if (error) throw error
       await supabase.from('cars').update({ status: 'busy' }).eq('id', carId)
       
       if (isEV) {
-          alert(`✅ บันทึกรถออกสำเร็จ!\nระบบจะพาไปหน้าบันทึกข้อมูลต่อทันที...`)
-          window.location.reload()
+          alert(`✅ บันทึกเริ่มการชาร์จสำเร็จ!\nคุณ ${currentName} กรุณาเข้ามากรอกแบตหลังชาร์จเมื่อชาร์จเสร็จสิ้น`)
+          window.location.href = '/'
       } else {
           alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${currentName}`)
           window.location.href = '/'
@@ -475,32 +477,22 @@ function CarActionForm({ carId }) {
     } 
   }
 
-  // คืนรถ
+  // ✅ คืนรถ (รถน้ำมัน) หรือ นำที่ชาร์จออก (EV)
   const handleReturn = async () => {
     const isEV = car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
-
-    if (!endMileage) return alert('กรุณากรอกเลขไมล์ล่าสุด (จบงาน)')
-    
-    if (isEV) {
-        if (!battBefore || !battAfter) return alert('กรุณากรอก % แบตเตอรี่ ทั้งก่อนและหลังชาร์จ')
-        
-        if (parseInt(battBefore) >= parseInt(battAfter)) {
-            return alert('❌ ข้อมูลผิดพลาด!\nเปอร์เซ็นต์แบตเตอรี่ "ก่อนชาร์จ" ต้องน้อยกว่า "หลังชาร์จ"')
-        }
-
-        if (!subStationType) return alert('กรุณาระบุประเภทสถานีชาร์จ')
-        
-        const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
-        if (selectedOption?.inputType !== 'none' && !stationName) {
-            return alert('กรุณาระบุชื่อสถานี/สาขาให้ครบถ้วน')
-        }
-    }
-
     const startM = parseFloat(activeLog.start_mileage)
-    const endM = parseFloat(endMileage)
-    if (endM < startM) {
-        alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
-        return
+
+    if (isEV) {
+        if (!battAfter) return alert('กรุณากรอก % แบตเตอรี่หลังชาร์จ')
+        if (activeLog.battery_before && parseInt(activeLog.battery_before) >= parseInt(battAfter)) {
+            return alert('❌ ข้อมูลผิดพลาด!\nเปอร์เซ็นต์แบตเตอรี่ "หลังชาร์จ" ต้องมากกว่า "ก่อนชาร์จ"')
+        }
+    } else {
+        if (!endMileage) return alert('กรุณากรอกเลขไมล์ล่าสุด (จบงาน)')
+        const endM = parseFloat(endMileage)
+        if (endM < startM) {
+            return alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
+        }
     }
 
     setLoading(true)
@@ -514,21 +506,16 @@ function CarActionForm({ carId }) {
       }
 
       const updateData = {
-        end_mileage: endM,
         end_time: new Date().toISOString(),
         is_completed: true
       }
 
       if (isEV) {
-          const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
-          const label = selectedOption ? selectedOption.label.replace(/ \(.+\)/, '') : '';
-          const finalStationName = (selectedOption?.inputType !== 'none' && stationName) ? `${label}: ${stationName}` : label;
-
-          updateData.battery_before = parseInt(battBefore)
+          // EV ตอนถอดสายชาร์จ ให้เลขไมล์จบ = เลขไมล์เริ่ม
+          updateData.end_mileage = startM 
           updateData.battery_after = parseInt(battAfter)
-          updateData.station_type = stationType 
-          updateData.station_name = finalStationName
       } else {
+          updateData.end_mileage = parseFloat(endMileage)
           updateData.fuel_liters = fuelLiters ? parseFloat(fuelLiters) : 0
           updateData.fuel_cost = fuelCost ? parseFloat(fuelCost) : 0
       }
@@ -555,19 +542,21 @@ function CarActionForm({ carId }) {
         <div className="text-center mt-6">
           <h2 className="text-3xl font-black">{car.plate_number}</h2>
           <p className="text-purple-200 text-sm uppercase font-bold">{car.model} | {car.car_type}</p>
-          {isEV && <span className="bg-green-400 text-green-900 text-[10px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block">Electric Vehicle</span>}
+          {isEV && <span className="bg-green-400 text-green-900 text-[10px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block shadow-sm">Electric Vehicle</span>}
         </div>
       </div>
 
       <div className="-mt-12 px-4 relative z-20">
         <div className="bg-white rounded-3xl shadow-xl p-6 border border-gray-50">
+          
           {car.status === 'available' ? (
-            // ================== ฟอร์มนำรถออก ==================
+            // ================== ฟอร์มนำรถออก (หน้าแรก) ==================
             <div className="space-y-4">
-              <h3 className="font-bold text-[#742F99] border-b pb-3 text-lg">
-                {isEV ? '⚡ บันทึกข้อมูลการชาร์จ' : '📋 บันทึกนำรถออก'}
+              <h3 className="font-bold text-[#742F99] border-b pb-3 text-lg flex items-center gap-2">
+                {isEV ? '⚡ บันทึกเริ่มการชาร์จ (EV)' : '📋 บันทึกนำรถออก'}
               </h3>
               
+              {/* Common: รหัสพนักงาน & เลขไมล์ */}
               <div className="space-y-1">
                  <label className="text-xs font-bold text-gray-400 ml-1">รหัสพนักงาน</label>
                  <input 
@@ -583,96 +572,44 @@ function CarActionForm({ carId }) {
                  {staffError && <p className="text-red-500 text-xs font-bold ml-2 animate-pulse">❌ ไม่พบรหัสพนักงานนี้</p>}
               </div>
 
-              {!isEV && (
-                <>
-                  <div className="space-y-1">
-                     <div className="flex justify-between items-center ml-1">
-                        <label className="text-xs font-bold text-gray-400">เลขไมล์เริ่มต้น</label>
-                        {isMileageLocked && <span className="text-[10px] text-[#742F99] font-bold bg-purple-50 px-2 py-0.5 rounded-full">🔒 ต่อเนื่องจากล่าสุด</span>}
-                     </div>
-                     <input 
-                        type="number" value={mileage} readOnly={isMileageLocked} onChange={e => setMileage(e.target.value)} 
-                        className={`w-full p-4 rounded-2xl border outline-none font-mono text-lg transition-colors ${
-                            isMileageLocked ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'bg-gray-50 border-gray-100'
-                        }`}
-                     />
-                  </div>
+              <div className="space-y-1">
+                 <div className="flex justify-between items-center ml-1">
+                    <label className="text-xs font-bold text-gray-400">เลขไมล์เริ่มต้น</label>
+                    {isMileageLocked && <span className="text-[10px] text-[#742F99] font-bold bg-purple-50 px-2 py-0.5 rounded-full">🔒 ต่อเนื่องจากล่าสุด</span>}
+                 </div>
+                 <input 
+                    type="number" value={mileage} readOnly={isMileageLocked} onChange={e => setMileage(e.target.value)} 
+                    className={`w-full p-4 rounded-2xl border outline-none font-mono text-lg transition-colors ${
+                        isMileageLocked ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'bg-gray-50 border-gray-100'
+                    }`}
+                 />
+              </div>
 
-                  <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 ml-1">สถานที่</label>
-                      <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
-                          <option value="" disabled>เลือกพื้นที่...</option>
-                          <option value="พื้นที่อำเภอกำแพงแสน">1. พื้นที่อำเภอกำแพงแสน</option>
-                          <option value="คลังพัสดุนครชัยศรี">2. คลังพัสดุนครชัยศรี</option>
-                          <option value="สำนักงานกฟก.3">3. สำนักงานกฟก.3</option>
-                          <option value="อื่นๆ">4. อื่นๆ</option>
-                      </select>
-                      {selectedLocation === 'อื่นๆ' && (
-                          <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)} placeholder="ระบุเอง..." className="w-full p-4 mt-2 bg-purple-50 text-[#742F99] rounded-2xl border border-purple-100 outline-none" />
-                      )}
-                  </div>
-                </>
-              )}
-
-              <button onClick={handleTakeOut} disabled={loading} className={`w-full py-4 rounded-2xl font-bold mt-2 shadow-lg transition-all text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
-                {loading ? '⏳ กำลังบันทึก...' : 'ยืนยัน'}
-              </button>
-            </div>
-          ) : (
-            // ================== ฟอร์มคืนรถ / กรอกข้อมูล ==================
-            <div className="space-y-4">
-               <div className="flex justify-between items-center border-b pb-3">
-                  <h3 className="font-bold text-red-600 text-lg">↩️ {isEV ? 'บันทึกข้อมูลการชาร์จ' : 'คืนรถ'}</h3>
-                  <span className="text-xs text-gray-400">{currentTime.toLocaleTimeString('th-TH')}</span>
-               </div>
-               <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
-                  <p className="text-orange-800 text-sm font-bold">👤 ผู้ใช้: {activeLog?.driver_name}</p>
-                  
-                  {!isEV && (
-                      <p className="text-orange-600 text-xs mt-1">ไมล์เริ่ม: {activeLog?.start_mileage?.toLocaleString()}</p>
-                  )}
-               </div>
-               
-               <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 ml-1">เลขไมล์ล่าสุด (จบงาน)</label>
-                  <input 
-                    type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)} placeholder="กรอกเลขไมล์ปัจจุบัน..."
-                    className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-red-500 outline-none font-mono text-lg" 
-                  />
-               </div>
-
-               {isEV ? (
-                   // ✅ ฟอร์มเฉพาะ EV
-                   <div className="space-y-4 pt-4 border-t border-dashed border-gray-200 mt-2">
-                       <p className="text-sm font-bold text-green-700 flex items-center gap-1">⚡ ข้อมูลการชาร์จ (กรุณากรอกให้ครบ)</p>
-                       
-                       <div className="grid grid-cols-2 gap-3">
-                           <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">แบตก่อนชาร์จ (%)</label>
-                                <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" placeholder="0-100" />
-                           </div>
-                           <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">แบตหลังชาร์จ (%)</label>
-                                <input type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" placeholder="0-100" />
-                           </div>
+              {/* Conditional: EV vs Gasoline */}
+              {isEV ? (
+                  // ✅ หน้าแรก EV: กรอกแบตก่อนชาร์จ & สถานี
+                  <div className="space-y-4 pt-2 border-t border-dashed border-gray-200">
+                       <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-400 ml-1 uppercase">แบตก่อนชาร์จ (%)</label>
+                            <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center text-lg" placeholder="0-100" />
                        </div>
 
                        <div className="space-y-2">
-                           <label className="text-[10px] font-bold text-gray-400 uppercase">ประเภทสถานี</label>
+                           <label className="text-xs font-bold text-gray-400 ml-1 uppercase">ประเภทสถานีชาร์จ</label>
                            <div className="flex gap-2">
-                               <button onClick={() => { setStationType('PEA'); setSubStationType(''); setStationName(''); }} className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${stationType === 'PEA' ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}>สถานีชาร์จของ PEA Volta</button>
-                               <button onClick={() => { setStationType('OTHER'); setSubStationType(''); setStationName(''); }} className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${stationType === 'OTHER' ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}>สถานีชาร์จนอกเครือข่าย PEA Volta</button>
+                               <button onClick={() => { setStationType('PEA'); setSubStationType(''); setStationName(''); }} className={`flex-1 py-3 rounded-xl text-xs font-bold border transition-all ${stationType === 'PEA' ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}>สถานี PEA Volta</button>
+                               <button onClick={() => { setStationType('OTHER'); setSubStationType(''); setStationName(''); }} className={`flex-1 py-3 rounded-xl text-xs font-bold border transition-all ${stationType === 'OTHER' ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}>สถานีแบรนด์อื่นๆ</button>
                            </div>
                        </div>
 
                        <div className="space-y-2">
-                           <label className="text-[10px] font-bold text-gray-400 uppercase">ระบุสถานี</label>
+                           <label className="text-xs font-bold text-gray-400 ml-1 uppercase">ระบุสถานี</label>
                            <div className="grid grid-cols-2 gap-2">
                                {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt) => (
                                    <button 
                                       key={opt.id}
                                       onClick={() => { setSubStationType(opt.id); setStationName(''); }}
-                                      className={`py-2 px-2 rounded-lg text-[11px] border text-left transition-all ${subStationType === opt.id ? 'bg-green-50 border-green-500 text-green-700' : 'bg-white border-gray-100 text-gray-600'}`}
+                                      className={`py-2 px-2 rounded-lg text-xs border text-left transition-all ${subStationType === opt.id ? 'bg-green-50 border-green-500 text-green-700 font-bold' : 'bg-white border-gray-100 text-gray-600'}`}
                                    >
                                       {subStationType === opt.id ? '● ' : '○ '}{opt.label}
                                    </button>
@@ -688,11 +625,7 @@ function CarActionForm({ carId }) {
                                return (
                                    <div className="space-y-1 animate-fade-in-down">
                                         <label className="text-[10px] font-bold text-gray-400 uppercase">รายละเอียดเพิ่มเติม</label>
-                                        <input 
-                                            type="text" value={stationName} onChange={e => setStationName(e.target.value)} 
-                                            placeholder="ระบุชื่อสถานี..."
-                                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100" 
-                                        />
+                                        <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..." className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100" />
                                    </div>
                                );
                            }
@@ -700,7 +633,7 @@ function CarActionForm({ carId }) {
                                return (
                                    <div className="space-y-1 animate-fade-in-down">
                                         <label className="text-[10px] font-bold text-gray-400 uppercase">เลือกสาขา</label>
-                                        <select value={stationName} onChange={e => setStationName(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 appearance-none">
+                                        <select value={stationName} onChange={e => setStationName(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100">
                                             <option value="" disabled>-- กรุณาเลือก --</option>
                                             {kfkList.map(k => <option key={k} value={k}>{k}</option>)}
                                         </select>
@@ -711,7 +644,7 @@ function CarActionForm({ carId }) {
                                return (
                                    <div className="space-y-1 animate-fade-in-down">
                                         <label className="text-[10px] font-bold text-gray-400 uppercase">เลือกแบรนด์</label>
-                                        <select value={stationName} onChange={e => setStationName(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 appearance-none">
+                                        <select value={stationName} onChange={e => setStationName(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100">
                                             <option value="" disabled>-- กรุณาเลือก --</option>
                                             {otherBrandList.map(b => <option key={b} value={b}>{b}</option>)}
                                         </select>
@@ -720,22 +653,88 @@ function CarActionForm({ carId }) {
                            }
                            return null;
                        })()}
+                  </div>
+              ) : (
+                  // หน้าแรก รถน้ำมัน: กรอกสถานที่
+                  <div className="space-y-1 pt-2">
+                      <label className="text-xs font-bold text-gray-400 ml-1">สถานที่</label>
+                      <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
+                          <option value="" disabled>เลือกพื้นที่...</option>
+                          <option value="พื้นที่อำเภอกำแพงแสน">1. พื้นที่อำเภอกำแพงแสน</option>
+                          <option value="คลังพัสดุนครชัยศรี">2. คลังพัสดุนครชัยศรี</option>
+                          <option value="สำนักงานกฟก.3">3. สำนักงานกฟก.3</option>
+                          <option value="อื่นๆ">4. อื่นๆ</option>
+                      </select>
+                      {selectedLocation === 'อื่นๆ' && (
+                          <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)} placeholder="ระบุเอง..." className="w-full p-4 mt-2 bg-purple-50 text-[#742F99] rounded-2xl border border-purple-100 outline-none" />
+                      )}
+                  </div>
+              )}
+
+              <button onClick={handleTakeOut} disabled={loading} className={`w-full py-4 rounded-2xl font-bold mt-4 shadow-lg transition-all text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
+                {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันการชาร์จรถ' : 'ยืนยัน')}
+              </button>
+            </div>
+
+          ) : (
+
+            // ================== ฟอร์มคืนรถ (หน้าสอง) ==================
+            <div className="space-y-4">
+               <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className={`font-bold text-lg flex items-center gap-2 ${isEV ? 'text-green-600' : 'text-red-600'}`}>
+                      {isEV ? '🔌 นำที่ชาร์จออก' : '↩️ คืนรถ'}
+                  </h3>
+                  <span className="text-xs text-gray-400">{currentTime.toLocaleTimeString('th-TH')}</span>
+               </div>
+               
+               {/* โชว์ข้อมูลผู้ใช้งาน */}
+               <div className={`${isEV ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'} p-4 rounded-2xl border`}>
+                  <p className={`text-sm font-bold ${isEV ? 'text-green-800' : 'text-orange-800'}`}>👤 ผู้ใช้: {activeLog?.driver_name}</p>
+                  
+                  {isEV ? (
+                      <div className="mt-2 text-green-700 text-xs font-medium space-y-1">
+                          <p>🔋 แบตก่อนชาร์จ: <span className="font-bold text-green-800">{activeLog?.battery_before}%</span></p>
+                          <p>📍 สถานี: {activeLog?.station_name}</p>
+                      </div>
+                  ) : (
+                      <p className="text-orange-600 text-xs mt-1 font-medium">ไมล์เริ่ม: {activeLog?.start_mileage?.toLocaleString()}</p>
+                  )}
+               </div>
+               
+               {isEV ? (
+                   // ✅ หน้าสอง EV: กรอกแค่ แบตหลังชาร์จ
+                   <div className="space-y-1 pt-2">
+                       <label className="text-xs font-bold text-gray-500 ml-1">กรุณากรอก แบตหลังชาร์จ (%)</label>
+                       <input 
+                            type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)} placeholder="0-100"
+                            className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-green-500 outline-none text-center text-xl font-bold text-green-700" 
+                       />
                    </div>
                ) : (
-                   <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase">เติมน้ำมัน (ลิตร)</label>
-                        <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวนเงิน (บาท)</label>
-                        <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" />
-                      </div>
-                   </div>
+                   // หน้าสอง รถน้ำมัน: เลขไมล์จบ, น้ำมัน
+                   <>
+                       <div className="space-y-1 pt-2">
+                          <label className="text-xs font-bold text-gray-400 ml-1">เลขไมล์ล่าสุด (จบงาน)</label>
+                          <input 
+                            type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)} placeholder="กรอกเลขไมล์ปัจจุบัน..."
+                            className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-red-500 outline-none font-mono text-lg" 
+                          />
+                       </div>
+                       <div className="grid grid-cols-2 gap-3 pt-2 border-t border-dashed border-gray-200 mt-4">
+                          <div className="space-y-1 mt-2">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase">เติมน้ำมัน (ลิตร)</label>
+                            <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" />
+                          </div>
+                          <div className="space-y-1 mt-2">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวนเงิน (บาท)</label>
+                            <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" />
+                          </div>
+                       </div>
+                   </>
                )}
 
-               <button onClick={handleReturn} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-4 text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>
-                 {loading ? '⏳ กำลังบันทึก...' : 'ยืนยันการคืนรถ/การชาร์จรถ'}
+               <button onClick={handleReturn} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-4 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : (isEV ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700')}`}>
+                 {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันการนำที่ชาร์จออก' : 'ยืนยันการคืนรถ')}
                </button>
             </div>
           )}
