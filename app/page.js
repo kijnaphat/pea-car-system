@@ -74,7 +74,7 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
     
-    return null 
+    return null // ถ้าไม่ตรงเงื่อนไขเลย จะให้ส่งค่า null กลับไปเพื่อแสดงเป็น Emoji แทน
   }
 
   if (loading) return (
@@ -113,7 +113,8 @@ function CarSelector() {
           .animate-scrolling-text {
             display: inline-block;
             white-space: nowrap;
-            animation: scroll-left 12s linear infinite;
+            /* ✅ วิ่งช้าลงเท่าตัว (24s) ให้อ่านทัน */
+            animation: scroll-left 24s linear infinite;
           }
         `}</style>
 
@@ -139,13 +140,11 @@ function CarSelector() {
                   </div>
               </div>
 
-              {/* แถบตัวหนังสือวิ่ง (Marquee) */}
-              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-8">
-                  <div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-orange-600 to-orange-500 text-white text-[10px] font-black px-3 flex items-center rounded-l-xl z-10 shadow-md">
-                      ประกาศ 📢
-                  </div>
-                  <div className="w-full overflow-hidden pl-[70px]">
-                      <p className="text-white text-[11px] font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
+              {/* แถบตัวหนังสือวิ่ง (Marquee) ✅ ตัด "ประกาศ" ออก และขยายฟอนต์ใหญ่ขึ้น */}
+              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-10">
+                  <div className="w-full overflow-hidden">
+                      {/* ✅ เปลี่ยนขนาดตัวหนังสือเป็น text-sm (ใหญ่ขึ้น) */}
+                      <p className="text-white text-sm font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
                           กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
                       </p>
                   </div>
@@ -181,6 +180,7 @@ function CarSelector() {
                 </button>
 
                 <div className="flex items-center gap-4">
+                    {/* ✅ ส่วนแสดงรูปรถ */}
                     <div className={`w-20 h-20 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
                         car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                     }`}>
@@ -225,7 +225,7 @@ function CarSelector() {
         })}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.19 (Premium Alert & Marquee)
+            PEA Fleet System v2.20 (Slower & Larger Marquee)
         </div>
       </div>
     </div>
