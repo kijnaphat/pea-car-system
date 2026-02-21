@@ -274,7 +274,7 @@ function CarSelector() {
                                     การนำรถออก
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code หน้าจอรถ ➔ กรอกรหัสพนักงาน ➔ ระบุ <b>เลขไมล์เริ่มต้น</b> และ <b>สถานที่</b> ➔ <span className="text-orange-600 font-bold">กดยืนยันนำรถออก</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสพนักงาน ➔ <b>กรอกเลขไมล์เริ่มต้น (ในครั้งแรกที่ใช้งานเท่านั้น ต่อไปไม่ต้องกรอก)</b> และ <b>กรอกสถานที่ (เลือกที่มีให้ หรือระบุเอง)</b> ➔ <span className="text-orange-600 font-bold">กดยืนยันนำรถออก</span>
                                 </p>
                             </div>
                             <div className="relative">
@@ -283,7 +283,7 @@ function CarSelector() {
                                     การคืนรถ
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code เดิม ➔ ระบุ <b>เลขไมล์ล่าสุด (จบงาน)</b> ➔ กรอกข้อมูลเติมน้ำมัน (ถ้าไม่ได้เติมให้เว้นไว้) ➔ <span className="text-orange-600 font-bold">กดยืนยันการคืนรถ</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ <b>กรอกเลขไมล์ล่าสุดหลังใช้รถ</b> ➔ กรอกข้อมูลเติมน้ำมัน ลิตร/บาท (ถ้าไม่ได้เติมให้เว้นไว้) ➔ <span className="text-orange-600 font-bold">กดยืนยันการคืนรถ</span>
                                 </p>
                             </div>
                         </div>
@@ -302,7 +302,7 @@ function CarSelector() {
                                     การเริ่มชาร์จรถ
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code หน้าจอรถ ➔ กรอกรหัสพนักงานและ <b>เลขไมล์</b> ➔ ระบุ <b>% แบตเตอรี่ ก่อนชาร์จ</b> พร้อมเลือกสถานี ➔ <span className="text-green-600 font-bold">กดยืนยันเริ่มการชาร์จรถ</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว <b>กรอกเลขไมล์ล่าสุดก่อนชาร์จไฟ</b> ➔ <b>กรอก%แบตเตอรี่ล่าสุดก่อบชาร์จไฟ</b> เลือกประเภทสถานีชาร์จ ระบุสาขา / แบรนด์ ➔ <span className="text-green-600 font-bold">กดยืนยันการชาร์จรถ</span>
                                 </p>
                             </div>
                             <div className="relative">
@@ -311,7 +311,7 @@ function CarSelector() {
                                     การนำที่ชาร์จออก (เสร็จสิ้น)
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    เมื่อชาร์จเสร็จ สแกน QR Code อีกครั้ง ➔ ระบุ <b>% แบตเตอรี่ หลังชาร์จ</b> เพียงอย่างเดียว ➔ <span className="text-green-600 font-bold">กดยืนยันนำที่ชาร์จออก</span>
+                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ <b>กรอกปริมาณ%แบตเตอรี่ล่าสุดที่ชาร์จ</b> เพียงอย่างเดียว ➔ <span className="text-green-600 font-bold">กดยืนยันนำที่ชาร์จออก</span>
                                 </p>
                             </div>
                         </div>
