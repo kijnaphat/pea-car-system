@@ -128,7 +128,7 @@ function CarSelector() {
                   <div className="flex items-center gap-4">
                       <div className="bg-white text-orange-500 w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
                           <span className="absolute w-full h-full rounded-full border-4 border-orange-300 animate-ping opacity-30"></span>
-                          <span className="text-2xl z-10">📷</span>
+                          <span className="text-2xl z-10">📱</span>
                       </div>
                       <div>
                           <h3 className="text-white text-xl font-black tracking-widest drop-shadow-md">SCAN QR CODE</h3>
