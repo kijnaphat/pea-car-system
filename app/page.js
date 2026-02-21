@@ -72,6 +72,7 @@ function CarSelector() {
     if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
     if (type.startsWith('รถกระบะ')) return '/truck.png'
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
+    if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
     
     return null // ถ้าไม่ตรงเงื่อนไขเลย จะให้ส่งค่า null กลับไปเพื่อแสดงเป็น Emoji แทน
   }
