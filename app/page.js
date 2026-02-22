@@ -76,7 +76,6 @@ function CarSelector() {
     if (type.startsWith('รถกระบะ')) return '/truck.png'
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
-    if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
     
     return null 
   }
@@ -229,7 +228,7 @@ function CarSelector() {
         })}
         
         <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.25 (Separated Help Modal)
+            PEA Fleet System v2.26 (Unlocked EV Mileage)
         </div>
       </div>
 
@@ -399,6 +398,10 @@ function CarActionForm({ carId }) {
       const { data: c } = await supabase.from('cars').select('*').eq('id', carId).single()
       if (c) {
         setCar(c)
+        
+        // ✅ ตรวจสอบก่อนว่าเป็นรถ EV ไหม
+        const isThisCarEV = c?.plate_number?.includes('6ขฆ-6169') || c?.plate_number?.includes('6ขฆ 6169');
+
         if (c.status === 'available') {
            const { data: l } = await supabase.from('trip_logs')
              .select('end_mileage')
@@ -408,7 +411,12 @@ function CarActionForm({ carId }) {
              .limit(1)
              .single()
            
-           if (l?.end_mileage) {
+           if (isThisCarEV) {
+               // ✅ ถ้ารถเป็น EV ปลดล็อกช่องเลขไมล์ และให้เว้นว่างบังคับพิมพ์ใหม่
+               setMileage('')
+               setIsMileageLocked(false)
+           } else if (l?.end_mileage) {
+               // ถ้ารถน้ำมัน ดึงเลขไมล์เดิมมาแสดงและล็อกการแก้ไข
                setMileage(l.end_mileage.toString())
                setIsMileageLocked(true)
            } else {
@@ -620,8 +628,9 @@ function CarActionForm({ carId }) {
                  </div>
                  <input 
                     type="number" value={mileage} readOnly={isMileageLocked} onChange={e => setMileage(e.target.value)} 
+                    placeholder={isEV ? "กรอกเลขไมล์ล่าสุด..." : ""}
                     className={`w-full p-4 rounded-2xl border outline-none font-mono text-lg transition-colors ${
-                        isMileageLocked ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'bg-gray-50 border-gray-100'
+                        isMileageLocked ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'bg-gray-50 border-gray-100 focus:border-[#742F99]'
                     }`}
                  />
               </div>
@@ -725,11 +734,11 @@ function CarActionForm({ carId }) {
                </div>
                
                {/* โชว์ข้อมูลผู้ใช้งาน เพื่อให้รู้ตัวว่ากำลังทำรายการของใคร */}
-               <div className={`${isEV ? 'bg-purple-50 border-purple-100' : 'bg-purple-50 border-pueple-100'} p-4 rounded-2xl border`}>
+               <div className={`${isEV ? 'bg-purple-50 border-purple-100' : 'bg-purple-50 border-purple-100'} p-4 rounded-2xl border`}>
                   <p className={`text-sm font-bold ${isEV ? 'text-purple-800' : 'text-purple-800'}`}>👤 ผู้ใช้: {activeLog?.driver_name}</p>
                   
                   {isEV ? (
-                      <div className="mt-2 text-purple-700 text-xs font-medium space-y-1 border-t border-green-200/50 pt-2">
+                      <div className="mt-2 text-purple-700 text-xs font-medium space-y-1 border-t border-purple-200/50 pt-2">
                           <p>🔋 แบตก่อนชาร์จ: <span className="font-bold text-purple-800">{activeLog?.battery_before}%</span></p>
                           <p>📍 สถานี: {activeLog?.station_name}</p>
                       </div>
@@ -775,7 +784,7 @@ function CarActionForm({ carId }) {
                    </>
                )}
 
-               <button onClick={handleReturn} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : (isEV ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-600 hover:bg-purple-700')}`}>
+               <button onClick={handleReturn} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
                  {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จไฟรถ' : 'ยืนยันคืนรถ')}
                </button>
             </div>
