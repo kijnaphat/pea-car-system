@@ -63,10 +63,9 @@ function CarSelector() {
   // ฟังก์ชันช่วยดึงรูปภาพรถตามประเภท
   const getCarImage = (car) => {
     const type = car.car_type || ''
-    const plate = car.plate_number || ''
     
-    // เช็คว่าเป็นรถ EV หรือไม่ (ดูจากทะเบียน)
-    if (plate.includes('6ขฆ')) return '/mg.png'
+    // ✅ เช็คว่าเป็นรถ EV หรือไม่ (ดูจาก fuel_type แทนทะเบียน)
+    if (car.fuel_type?.toUpperCase() === 'EV') return '/mg.png'
     
     // เช็คตามคำขึ้นต้นของประเภทรถ
     if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
@@ -399,8 +398,8 @@ function CarActionForm({ carId }) {
       if (c) {
         setCar(c)
         
-        // ✅ ตรวจสอบก่อนว่าเป็นรถ EV ไหม
-        const isThisCarEV = c?.plate_number?.includes('6ขฆ-6169') || c?.plate_number?.includes('6ขฆ 6169');
+        // ✅ ตรวจสอบว่าเป็นรถ EV ไหมจากคอลัมน์ fuel_type
+        const isThisCarEV = c?.fuel_type?.toUpperCase() === 'EV';
 
         if (c.status === 'available') {
            const { data: l } = await supabase.from('trip_logs')
@@ -457,7 +456,8 @@ function CarActionForm({ carId }) {
 
     if (!currentName) { setStaffError(true); alert('❌ ไม่พบรหัสพนักงานในระบบ'); return }
 
-    const isEV = car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
+    // ✅ ตรวจสอบจาก fuel_type
+    const isEV = car?.fuel_type?.toUpperCase() === 'EV';
     const finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
     
     if (!employeeId) return alert('กรุณากรอกรหัสพนักงาน')
@@ -531,7 +531,8 @@ function CarActionForm({ carId }) {
 
   // ✅ คืนรถ หรือ ถอดสายชาร์จ EV
   const handleReturn = async () => {
-    const isEV = car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
+    // ✅ ตรวจสอบจาก fuel_type
+    const isEV = car?.fuel_type?.toUpperCase() === 'EV';
     const startM = parseFloat(activeLog.start_mileage)
 
     if (isEV) {
@@ -584,7 +585,8 @@ function CarActionForm({ carId }) {
 
   if (!car) return <div className="min-h-screen flex items-center justify-center text-[#742F99]">กำลังโหลด...</div>
 
-  const isEV = car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
+  // ✅ ตรวจสอบจาก fuel_type
+  const isEV = car?.fuel_type?.toUpperCase() === 'EV';
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] font-sarabun flex flex-col pb-10">
