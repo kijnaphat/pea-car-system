@@ -65,7 +65,8 @@ function CarSelector() {
     const type = car.car_type || ''
     
     // ✅ เช็คว่าเป็นรถ EV หรือไม่ (ดูจาก fuel_type แทนทะเบียน)
-    if (car.fuel_type?.toUpperCase() === 'EV') return '/mg.png'
+    if (car.car_type?.toUpperCase() === 'รถ EV') return '/mg.png'
+    if (car.car_type?.toUpperCase() === 'รถ EV ทดเเทน') return '/mg2.png'
     
     // เช็คตามคำขึ้นต้นของประเภทรถ
     if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
