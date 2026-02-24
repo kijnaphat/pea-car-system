@@ -335,7 +335,7 @@ function ReportPage() {
                         <div className="flex items-center pt-1 text-[12px] pl-10 font-normal">
                             {/* ✅ เปลี่ยนเป็นสีดำ */}
                             อัตราสิ้นเปลืองเชื้อเพลิงยานพาหนะ <span className="border-b border-dotted border-black w-[130px] text-center mx-1 font-normal text-black">{kmPerLiter}</span> กิโลเมตร/ลิตร,
-                            เครื่องจักร <span className="border-b border-dotted border-black min-w-[60px] text-center mx-1"></span> ลิตร/ชั่วโมง
+                            <span className="ml-2 font-normal">เครื่องจักร ..................... ลิตร/ชั่วโมง</span>
                         </div>
                     </div>
 
