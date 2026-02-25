@@ -32,11 +32,18 @@ function CarSelector() {
     try {
       const { data: carsData } = await supabase.from('cars').select('*')
       const { data: activeLogs } = await supabase.from('trip_logs').select('car_id, start_time, driver_name').eq('is_completed', false)
+      
+      // ✅ ดึงข้อมูล car_id ทั้งหมดใน trip_logs เพื่อเช็คว่าคันไหนเคยใช้งานแล้วบ้าง
+      const { data: allLogs } = await supabase.from('trip_logs').select('car_id')
 
       if (carsData) {
+        // ✅ สร้าง Set เอาไว้ตรวจสอบว่ามีประวัติการใช้รถหรือไม่
+        const activatedSet = new Set(allLogs?.map(l => l.car_id) || [])
+
         const mergedCars = carsData.map(car => {
             const log = activeLogs?.find(l => l.car_id === car.id)
-            return { ...car, activeLog: log }
+            // ✅ เพิ่ม isActivated เข้าไป
+            return { ...car, activeLog: log, isActivated: activatedSet.has(car.id) }
         })
 
         mergedCars.sort((a, b) => {
@@ -163,6 +170,9 @@ function CarSelector() {
       <div className="px-4 space-y-4 relative z-20">
         {cars.map((car) => {
           const carImageSrc = getCarImage(car)
+          
+          // ✅ เช็คว่าเป็น EV ไหม สำหรับเปลี่ยน Text ในป้ายสถานะ
+          const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
 
           return (
             <div 
@@ -184,8 +194,9 @@ function CarSelector() {
                 </button>
 
                 <div className="flex items-center gap-4">
+                    {/* ✅ อัปเดตสีพื้นหลังรูปให้เป็นสีเทาถ้า Not Activated */}
                     <div className={`w-20 h-20 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
-                        car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                        !car.isActivated ? 'bg-gray-100 text-gray-400' : car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                     }`}>
                         {carImageSrc ? (
                             <img src={carImageSrc} alt={car.car_type} className="w-full h-full object-cover" />
@@ -202,11 +213,12 @@ function CarSelector() {
                         </p>
 
                         <div className="mt-2 flex flex-wrap gap-2">
+                            {/* ✅ อัปเดตสีป้ายสถานะและข้อความเฉพาะ EV */}
                             <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
-                                car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                !car.isActivated ? 'bg-gray-100 text-gray-500' : car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                             }`}>
-                                <span className={`w-2 h-2 rounded-full ${car.status === 'available' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
-                                {car.status === 'available' ? 'ว่างพร้อมใช้' : 'กำลังใช้งาน'}
+                                <span className={`w-2 h-2 rounded-full ${!car.isActivated ? 'bg-gray-400' : car.status === 'available' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
+                                {!car.isActivated ? 'Not Activated' : car.status === 'available' ? (isEV ? 'พร้อมใช้งาน' : 'ว่างพร้อมใช้') : (isEV ? 'กำลังชาร์จไฟ' : 'กำลังใช้งาน')}
                             </span>
 
                             {car.status === 'busy' && car.activeLog && (
