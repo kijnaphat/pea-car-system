@@ -156,7 +156,7 @@ function ReportPage() {
                              <span>พ.ศ.</span>
                              <div className="border-b border-dotted border-black px-2 min-w-[50px] text-center mx-1">{formatThaiYear(reportDate)}</div>
                              <span>หน่วยงาน</span>
-                             <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">กฟส.กผส.</div>
+                             <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">กฟส.กพส.</div>
                              <span>หมายเลขทะเบียน</span>
                              <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">{car?.plate_number}</div>
                         </div>
@@ -202,7 +202,7 @@ function ReportPage() {
                                 return (
                                     <tr key={i} className="h-[35px] text-center font-normal align-middle">
                                         <td className="border border-black">{formatDate(log.start_time)}</td>
-                                        <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.กผส.</td>
+                                        <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.กพส.</td>
                                         <td className="border border-black text-right px-1">{log.end_mileage.toLocaleString()}</td>
                                         <td className="border border-black">{log.battery_before || '-'}</td>
                                         <td className="border border-black">{log.battery_after || '-'}</td>
