@@ -245,19 +245,14 @@ function CarSelector() {
         </div>
       </div>
 
-      {/* ✅ Modal คำอธิบายการใช้งาน (อัปเดตใหม่ แยกประเภทชัดเจน) */}
+      {/* ✅ Modal คำอธิบายการใช้งาน */}
       {showInstructions && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Background Blur */}
             <div 
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={() => setShowInstructions(false)}
             ></div>
-
-            {/* Modal Content */}
             <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
-                
-                {/* Modal Header */}
                 <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] p-5 text-white flex justify-between items-center shadow-md z-10">
                     <h2 className="text-lg font-black flex items-center gap-2">
                         <span>📖</span> คู่มือการใช้งานระบบ
@@ -265,15 +260,9 @@ function CarSelector() {
                     <button 
                         onClick={() => setShowInstructions(false)}
                         className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors text-sm"
-                    >
-                        ✖
-                    </button>
+                    >✖</button>
                 </div>
-
-                {/* Modal Body (Scrollable) */}
                 <div className="p-5 overflow-y-auto space-y-5 text-gray-700 bg-gray-50">
-                    
-                    {/* 🚙 หมวดหมู่: รถน้ำมัน */}
                     <div className="bg-white border border-red-200 rounded-2xl overflow-hidden shadow-sm">
                         <div className="bg-red-300 text-red-700 font-bold p-3 flex items-center gap-2 text-sm">
                             <span className="text-lg">🚙</span> รถยนต์ทั่วไป (รถใช้น้ำมัน)
@@ -286,7 +275,7 @@ function CarSelector() {
                                     การนำรถออก
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์เริ่มต้น (ในครั้งแรกที่ใช้งานเท่านั้น ครั้งต่อไปไม่ต้องกรอก) ➔ กรอกสถานที่ (เลือกที่มีให้ หรือระบุเอง) ➔ <span className="text-red-600 font-bold">กดยืนยันนำรถออก</span>
+                                    สแกน QR Code ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์เริ่มต้น ➔ กรอกสถานที่ ➔ <span className="text-red-600 font-bold">กดยืนยันนำรถออก</span>
                                 </p>
                             </div>
                             <div className="relative">
@@ -295,13 +284,11 @@ function CarSelector() {
                                     การคืนรถ
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกเลขไมล์ล่าสุดหลังใช้รถ ➔ กรอกข้อมูลเติมน้ำมัน ลิตร/บาท (ถ้าไม่ได้เติมให้เว้นไว้) ➔ <span className="text-red-600 font-bold">กดยืนยันคืนรถ</span>
+                                    สแกน QR Code ➔ กรอกเลขไมล์ล่าสุดหลังใช้รถ ➔ กรอกข้อมูลเติมน้ำมัน ➔ <span className="text-red-600 font-bold">กดยืนยันคืนรถ</span>
                                 </p>
                             </div>
                         </div>
                     </div>
-
-                    {/* ⚡ หมวดหมู่: รถไฟฟ้า (EV) */}
                     <div className="bg-white border border-sky-200 rounded-2xl overflow-hidden shadow-sm">
                         <div className="bg-sky-300 text-sky-700 font-bold p-3 flex items-center gap-2 text-sm">
                             <span className="text-lg">⚡</span> รถยนต์ไฟฟ้า (EV)
@@ -314,36 +301,26 @@ function CarSelector() {
                                     การเริ่มชาร์จไฟรถ
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์ล่าสุดก่อนชาร์จไฟ ➔ กรอก%แบตเตอรี่ล่าสุดก่อนชาร์จไฟ ➔ เลือกประเภทสถานีชาร์จ ระบุสาขา / แบรนด์ ➔ <span className="text-sky-600 font-bold">กดยืนยันเริ่มชาร์จไฟรถ</span>
+                                    สแกน QR Code ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์ ➔ กรอก%แบตก่อนชาร์จ ➔ เลือกสถานี ➔ <span className="text-sky-600 font-bold">กดยืนยันเริ่มชาร์จ</span>
                                 </p>
                             </div>
                             <div className="relative">
                                 <h4 className="font-bold text-sky-600 text-xs mb-1 flex items-center gap-2">
                                     <span className="bg-sky-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">2</span> 
-                                    การเลิกชาร์จไฟรถ (เสร็จสิ้น)
+                                    การเลิกชาร์จไฟรถ
                                 </h4>
                                 <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ที่ติดอยู่กระจกหน้ารถ ➔ กรอกปริมาณ%แบตเตอรี่ล่าสุดที่ชาร์จ ➔ <span className="text-sky-600 font-bold">กดยืนยันเลิกชาร์จไฟรถ</span>
+                                    สแกน QR Code ➔ กรอกปริมาณ%แบตเตอรี่ล่าสุด ➔ <span className="text-sky-600 font-bold">กดยืนยันเลิกชาร์จ</span>
                                 </p>
                             </div>
                         </div>
                     </div>
-
-                    {/* Extra Info */}
-                    <div className="text-[10px] text-center text-gray-400 pt-2 border-t border-gray-200">
-                        * กดที่ไอคอน 🖨️ หลังชื่อรถ เพื่อพิมพ์รายงานการใช้รถ (Log Book)<br/>
-                        * กดที่ไอคอน 📊 มุมขวาบนสุด เพื่อดูข้อมูลสถิติและ Dashboard
-                    </div>
                 </div>
-
-                {/* Modal Footer */}
                 <div className="p-4 border-t bg-white text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                     <button 
                         onClick={() => setShowInstructions(false)}
                         className="w-full bg-[#742F99] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#591d79] transition-colors active:scale-95"
-                    >
-                        รับทราบและเข้าใจแล้ว
-                    </button>
+                    >รับทราบและเข้าใจแล้ว</button>
                 </div>
             </div>
         </div>
@@ -384,6 +361,9 @@ function CarActionForm({ carId }) {
   
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // ✅ State ควบคุมการแสดง Popup แจ้งเตือนเรื่องเติมน้ำมัน
+  const [showFuelWarning, setShowFuelWarning] = useState(true)
 
   // ตัวเลือก Dropdown
   const kfkList = ['กฟจ.นฐ.', 'กฟส.นช.', 'กฟส.บลน.', 'กฟจ.สพ.', 'กฟส.อมง.', 'กฟส.ศปจ.', 'กฟจ.สค.','กฟส.กทบ.','กฟจ.กจ.','กฟส.ทมง.','กฟส.ทมก.','กฟส.สขบ.'];
@@ -562,7 +542,6 @@ function CarActionForm({ carId }) {
 
   // ✅ คืนรถ หรือ ถอดสายชาร์จ EV
   const handleReturn = async () => {
-    // ✅ ตรวจสอบจาก fuel_type
     const isEV = car?.fuel_type?.toUpperCase() === 'EV';
     const startM = parseFloat(activeLog.start_mileage)
 
@@ -595,7 +574,7 @@ function CarActionForm({ carId }) {
       }
 
       if (isEV) {
-          updateData.end_mileage = startM // EV ตอนชาร์จ ไมล์ไม่ได้วิ่ง
+          updateData.end_mileage = startM 
           updateData.battery_after = parseInt(battAfter)
       } else {
           updateData.end_mileage = parseFloat(endMileage)
@@ -620,6 +599,27 @@ function CarActionForm({ carId }) {
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] font-sarabun flex flex-col pb-10">
+      
+      {/* ✅ Popup แจ้งเตือนการเติมน้ำมัน (แสดงเฉพาะตอนคืนรถน้ำมัน) */}
+      {showFuelWarning && car.status !== 'available' && !isEV && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center animate-fade-in-down border border-gray-100">
+               <div className="text-5xl mb-3">⛽</div>
+               <h3 className="text-xl font-black text-gray-800 mb-2 tracking-tight">อย่าลืมข้อมูลน้ำมัน!</h3>
+               <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                  หากมีการ <span className="font-bold text-[#742F99]">เติมน้ำมัน</span> ระหว่างใช้งาน<br/>
+                  กรุณากรอกปริมาณ (ลิตร) และ จำนวนเงิน (บาท) ด้วยนะครับ
+               </p>
+               <button 
+                  onClick={() => setShowFuelWarning(false)} 
+                  className="w-full bg-[#742F99] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b237a] active:scale-95 transition-all shadow-md"
+               >
+                   รับทราบ และเริ่มกรอกข้อมูล
+               </button>
+           </div>
+        </div>
+      )}
+
       <div className="bg-[#742F99] px-6 pt-10 pb-20 text-white rounded-b-[2.5rem] shadow-lg relative">
         <button onClick={() => window.location.href = '/'} className="absolute top-10 left-5 bg-white/20 p-2 px-4 rounded-xl text-sm">⬅ กลับ</button>
         <div className="text-center mt-6">
