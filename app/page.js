@@ -364,6 +364,9 @@ function CarActionForm({ carId }) {
 
   // ✅ State ควบคุมการแสดง Popup แจ้งเตือนเรื่องเติมน้ำมัน
   const [showFuelWarning, setShowFuelWarning] = useState(true)
+  
+  // ✅ State สำหรับควบคุมการแสดง Popup ยืนยันเลขไมล์ (ใหม่)
+  const [showReturnConfirm, setShowReturnConfirm] = useState(false)
 
   // ตัวเลือก Dropdown
   const kfkList = ['กฟจ.นฐ.', 'กฟส.นช.', 'กฟส.บลน.', 'กฟจ.สพ.', 'กฟส.อมง.', 'กฟส.ศปจ.', 'กฟจ.สค.','กฟส.กทบ.','กฟจ.กจ.','กฟส.ทมง.','กฟส.ทมก.','กฟส.สขบ.'];
@@ -540,8 +543,9 @@ function CarActionForm({ carId }) {
     } 
   }
 
-  // ✅ คืนรถ หรือ ถอดสายชาร์จ EV
-  const handleReturn = async () => {
+  // ✅ คืนรถ หรือ ถอดสายชาร์จ EV (อัปเดตรองรับ skipConfirm)
+  const handleReturn = async (skipConfirm = false) => {
+    // ✅ ตรวจสอบจาก fuel_type
     const isEV = car?.fuel_type?.toUpperCase() === 'EV';
     const startM = parseFloat(activeLog.start_mileage)
 
@@ -555,6 +559,12 @@ function CarActionForm({ carId }) {
         const endM = parseFloat(endMileage)
         if (endM < startM) {
             return alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
+        }
+
+        // ✅ แจ้งเตือน Popup ตรวจสอบเลขไมล์ก่อนบันทึกจริง (เฉพาะรถน้ำมัน)
+        if (skipConfirm !== true) {
+            setShowReturnConfirm(true);
+            return;
         }
     }
 
@@ -574,7 +584,7 @@ function CarActionForm({ carId }) {
       }
 
       if (isEV) {
-          updateData.end_mileage = startM 
+          updateData.end_mileage = startM // EV ตอนชาร์จ ไมล์ไม่ได้วิ่ง
           updateData.battery_after = parseInt(battAfter)
       } else {
           updateData.end_mileage = parseFloat(endMileage)
@@ -602,7 +612,7 @@ function CarActionForm({ carId }) {
       
       {/* ✅ Popup แจ้งเตือนการเติมน้ำมัน (แสดงเฉพาะตอนคืนรถน้ำมัน) */}
       {showFuelWarning && car.status !== 'available' && !isEV && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[998] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
            <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center animate-fade-in-down border border-gray-100">
                <div className="text-5xl mb-3">⛽</div>
                <h3 className="text-xl font-black text-gray-800 mb-2 tracking-tight">อย่าลืมข้อมูลน้ำมัน!</h3>
@@ -616,6 +626,48 @@ function CarActionForm({ carId }) {
                >
                    รับทราบ และเริ่มกรอกข้อมูล
                </button>
+           </div>
+        </div>
+      )}
+
+      {/* ✅ Popup ยืนยันเลขไมล์ (แสดงหลังจากกดคืนรถ) */}
+      {showReturnConfirm && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center animate-fade-in-down border border-gray-100">
+               <div className="text-5xl mb-3">📍</div>
+               <h3 className="text-xl font-black text-gray-800 mb-2 tracking-tight">ตรวจสอบเลขไมล์</h3>
+               
+               <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left space-y-3 border border-gray-200">
+                  <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">ไมล์ก่อนเดินทาง:</span>
+                      <span className="font-bold text-gray-700">{parseFloat(activeLog?.start_mileage).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">ไมล์ล่าสุด (จบงาน):</span>
+                      <span className="font-black text-[#742F99] text-lg">{parseFloat(endMileage).toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center">
+                      <span className="text-gray-600 text-sm font-bold">ระยะทางที่ขับไป:</span>
+                      <span className="font-black text-green-600 text-xl">{(parseFloat(endMileage) - parseFloat(activeLog?.start_mileage)).toLocaleString()} <span className="text-sm">กม.</span></span>
+                  </div>
+               </div>
+
+               <div className="flex gap-3">
+                   {/* ปุ่มยืนยันอยู่ด้านซ้าย */}
+                   <button 
+                      onClick={() => { setShowReturnConfirm(false); handleReturn(true); }} 
+                      className="flex-1 bg-[#742F99] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b237a] active:scale-95 transition-all shadow-md"
+                   >
+                       ยืนยัน
+                   </button>
+                   {/* ปุ่มแก้ไขอยู่ด้านขวา */}
+                   <button 
+                      onClick={() => setShowReturnConfirm(false)} 
+                      className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-xl font-bold hover:bg-gray-200 active:scale-95 transition-all shadow-sm border border-gray-200"
+                   >
+                       แก้ไข
+                   </button>
+               </div>
            </div>
         </div>
       )}
@@ -811,7 +863,8 @@ function CarActionForm({ carId }) {
                    </>
                )}
 
-               <button onClick={handleReturn} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
+               {/* ✅ เปลี่ยน onClick ให้ครอบด้วย arrow function เพื่อส่งค่า false (ไม่ข้าม Confirm) */}
+               <button onClick={() => handleReturn(false)} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
                  {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จไฟรถ' : 'ยืนยันคืนรถ')}
                </button>
             </div>
