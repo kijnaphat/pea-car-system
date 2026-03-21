@@ -351,6 +351,8 @@ function CarActionForm({ carId }) {
   const [endMileage, setEndMileage] = useState('')
   const [fuelLiters, setFuelLiters] = useState('')
   const [fuelCost, setFuelCost] = useState('')
+  // ✅ เพิ่ม State สำหรับปุ่มบังคับเลือกเติมน้ำมัน
+  const [hasRefueled, setHasRefueled] = useState(null)
 
   // EV Inputs
   const [battBefore, setBattBefore] = useState('')
@@ -365,7 +367,7 @@ function CarActionForm({ carId }) {
   // ✅ State ควบคุมการแสดง Popup แจ้งเตือนเรื่องเติมน้ำมัน
   const [showFuelWarning, setShowFuelWarning] = useState(true)
   
-  // ✅ State สำหรับควบคุมการแสดง Popup ยืนยันเลขไมล์ (ใหม่)
+  // ✅ State สำหรับควบคุมการแสดง Popup ยืนยันเลขไมล์
   const [showReturnConfirm, setShowReturnConfirm] = useState(false)
 
   // ตัวเลือก Dropdown
@@ -543,7 +545,7 @@ function CarActionForm({ carId }) {
     } 
   }
 
-  // ✅ คืนรถ หรือ ถอดสายชาร์จ EV (อัปเดตรองรับ skipConfirm)
+  // ✅ คืนรถ หรือ ถอดสายชาร์จ EV
   const handleReturn = async (skipConfirm = false) => {
     // ✅ ตรวจสอบจาก fuel_type
     const isEV = car?.fuel_type?.toUpperCase() === 'EV';
@@ -559,6 +561,11 @@ function CarActionForm({ carId }) {
         const endM = parseFloat(endMileage)
         if (endM < startM) {
             return alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
+        }
+
+        // ✅ บังคับตรวจสอบว่าเติมน้ำมันหรือยัง ถ้ามีเติมน้ำมันแล้วแต่ไม่กรอกให้แจ้งเตือน
+        if (hasRefueled === true && (!fuelLiters || !fuelCost)) {
+             return alert('กรุณากรอกข้อมูล ปริมาณน้ำมัน (ลิตร) และ จำนวนเงิน (บาท) ให้ครบถ้วน')
         }
 
         // ✅ แจ้งเตือน Popup ตรวจสอบเลขไมล์ก่อนบันทึกจริง (เฉพาะรถน้ำมัน)
@@ -584,12 +591,12 @@ function CarActionForm({ carId }) {
       }
 
       if (isEV) {
-          updateData.end_mileage = startM // EV ตอนชาร์จ ไมล์ไม่ได้วิ่ง
+          updateData.end_mileage = startM 
           updateData.battery_after = parseInt(battAfter)
       } else {
           updateData.end_mileage = parseFloat(endMileage)
-          updateData.fuel_liters = fuelLiters ? parseFloat(fuelLiters) : 0
-          updateData.fuel_cost = fuelCost ? parseFloat(fuelCost) : 0
+          updateData.fuel_liters = (hasRefueled && fuelLiters) ? parseFloat(fuelLiters) : 0
+          updateData.fuel_cost = (hasRefueled && fuelCost) ? parseFloat(fuelCost) : 0
       }
 
       await supabase.from('trip_logs').update(updateData).eq('id', activeLog.id)
@@ -850,23 +857,58 @@ function CarActionForm({ carId }) {
                             className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-purple-500 outline-none font-mono text-lg" 
                           />
                        </div>
-                       <div className="grid grid-cols-2 gap-3 pt-2 border-t border-dashed border-gray-200 mt-4">
-                          <div className="space-y-1 mt-2">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase">เติมน้ำมัน (ลิตร)</label>
-                            <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" />
-                          </div>
-                          <div className="space-y-1 mt-2">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวนเงิน (บาท)</label>
-                            <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-center" />
-                          </div>
+
+                       {/* ✅ ส่วนเลือกและกรอกการเติมน้ำมัน */}
+                       <div className="pt-4 border-t border-dashed border-gray-200 mt-4 space-y-3">
+                           <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block text-center">มีการเติมน้ำมันหรือไม่?</label>
+                           <div className="flex gap-2">
+                               <button 
+                                  onClick={() => { setHasRefueled(true); setFuelLiters(''); setFuelCost(''); }} 
+                                  className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-all ${hasRefueled === true ? 'bg-green-50 border-green-500 text-green-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}
+                               >
+                                  ✅ มีการเติม
+                               </button>
+                               <button 
+                                  onClick={() => { setHasRefueled(false); setFuelLiters(''); setFuelCost(''); }} 
+                                  className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-all ${hasRefueled === false ? 'bg-red-50 border-red-500 text-red-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}
+                               >
+                                  ❌ ไม่ได้เติม
+                               </button>
+                           </div>
+
+                           {/* โชว์ช่องกรอกเฉพาะตอนกด "มีการเติม" */}
+                           {hasRefueled === true && (
+                               <div className="grid grid-cols-2 gap-3 pt-2 animate-fade-in-down">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">เติมน้ำมัน (ลิตร)</label>
+                                    <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} className="w-full p-3 bg-white rounded-xl border border-gray-200 text-center outline-none focus:border-green-500" placeholder="ระบุจำนวน" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวนเงิน (บาท)</label>
+                                    <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} className="w-full p-3 bg-white rounded-xl border border-gray-200 text-center outline-none focus:border-green-500" placeholder="ระบุจำนวน" />
+                                  </div>
+                               </div>
+                           )}
                        </div>
                    </>
                )}
 
-               {/* ✅ เปลี่ยน onClick ให้ครอบด้วย arrow function เพื่อส่งค่า false (ไม่ข้าม Confirm) */}
-               <button onClick={() => handleReturn(false)} disabled={loading} className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
+               {/* ✅ ปรับให้ปุ่มล็อค (สีเทา) จนกว่าจะเลือกกดเติมน้ำมัน */}
+               <button 
+                  onClick={() => handleReturn(false)} 
+                  disabled={loading || (!isEV && hasRefueled === null)} 
+                  className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${
+                      loading ? 'bg-gray-400 cursor-not-allowed' : 
+                      (!isEV && hasRefueled === null) ? 'bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed' : 
+                      'bg-[#742F99] hover:bg-[#5b237a] active:scale-95'
+                  }`}
+               >
                  {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จไฟรถ' : 'ยืนยันคืนรถ')}
                </button>
+               
+               {!isEV && hasRefueled === null && (
+                   <p className="text-center text-xs font-bold text-red-500 mt-2 animate-pulse">👆 กรุณาเลือกว่า มีการเติมน้ำมัน หรือไม่ ก่อนกดยืนยัน</p>
+               )}
             </div>
           )}
         </div>
