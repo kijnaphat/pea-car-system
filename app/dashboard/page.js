@@ -124,6 +124,7 @@ export default function UltimateDashboard() {
           dist: totalD,
           trips: cLogs.length,
           fuelLiters: totalL,
+          fuelCost: totalC, 
           efficiency: isEV ? 0 : (totalD > 0 ? (totalC / totalD).toFixed(2) : 0),
           refillCount: chargeCount,
           status: c.status,
@@ -239,7 +240,6 @@ export default function UltimateDashboard() {
       {/* 🟣 PREMIUM NAVIGATION */}
       <div className="bg-white/70 backdrop-blur-2xl border-b border-white px-6 py-4 sticky top-0 z-50 flex flex-col xl:flex-row gap-6 justify-between items-center shadow-[0_4px_30px_rgb(0,0,0,0.03)]">
         <div className="flex items-center gap-4">
-           {/* ✅ แก้ไข: แสดงโลโก้ PEA แบบ Original */}
            <img src="/pea_logo.png" className="h-12 w-auto object-contain drop-shadow-sm" alt="PEA Logo" />
            <div>
               <h1 className="text-2xl font-black tracking-tight text-slate-800">FLEET <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#742F99] to-[#A163C1]">INTELLIGENCE</span></h1>
@@ -489,7 +489,7 @@ export default function UltimateDashboard() {
                        <th className="py-5 px-6 border-b border-slate-200">สถานะ</th>
                        <th className="py-5 px-6 border-b border-slate-200 text-center">ใช้งาน (รอบ)</th>
                        <th className="py-5 px-6 border-b border-slate-200 text-right">ระยะทางรวม</th>
-                       <th className="py-5 px-6 border-b border-slate-200 text-right">เชื้อเพลิง/ชาร์จ</th>
+                       <th className="py-5 px-6 border-b border-slate-200 text-right">ปริมาณ / ค่าใช้จ่าย</th>
                        <th className="py-5 px-6 border-b border-slate-200 text-center">ประสิทธิภาพ</th>
                     </tr>
                  </thead>
@@ -523,13 +523,20 @@ export default function UltimateDashboard() {
                           </td>
                           <td className="py-4 px-6 text-right font-bold text-slate-600">
                               {c.type === 'EV' ? (
-                                  <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-100 px-3 py-1 rounded-lg text-xs font-bold">
-                                     ⚡ {c.refillCount} ชาร์จ
+                                  <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-100 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-sm">
+                                      ⚡ {c.refillCount} ชาร์จ
                                   </span>
                               ) : (
-                                  <span className="inline-flex items-center gap-1 text-orange-700 bg-orange-50 border border-orange-100 px-3 py-1 rounded-lg text-xs font-bold">
-                                     ⛽ {c.fuelLiters.toFixed(1)} L
-                                  </span>
+                                  <div className="flex flex-col items-end gap-1.5">
+                                      <span className="inline-flex items-center gap-1.5 text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm">
+                                          ⛽ {c.fuelLiters.toFixed(1)} L
+                                      </span>
+                                      {c.fuelCost > 0 && (
+                                          <span className="inline-flex items-center gap-1.5 text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm">
+                                              💸 ฿ {c.fuelCost.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                          </span>
+                                      )}
+                                  </div>
                               )}
                           </td>
                           <td className="py-4 px-6 text-center">
@@ -550,7 +557,7 @@ export default function UltimateDashboard() {
         {/* 👥 ROW 4: LEADERBOARDS & LOGS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            
-           {/* New: Top Vehicles */}
+           {/* Top Vehicles */}
            <GlassCard>
               <SectionTitle icon="⭐️" title="รถที่ถูกใช้งานมากสุด" />
               <div className="space-y-4">
@@ -584,7 +591,7 @@ export default function UltimateDashboard() {
                               i===2 ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white' : 
                               'bg-slate-100 text-slate-400'
                           }`}>
-                             {i+1}
+                              {i+1}
                           </div>
                           <div className="flex flex-col">
                              <span className="text-xs font-black text-slate-700">{d.name}</span>
