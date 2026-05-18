@@ -89,240 +89,255 @@ function CarSelector() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#EBF0F6] font-sarabun pb-6 relative">
-      
-      {/* 🟣 Header */}
-      <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
-        <div className="flex justify-between items-start">
-          <div>
-             <h1 className="text-2xl font-black tracking-tight">PEA SMART VEHICLE MANAGEMENT</h1>
-             <p className="text-purple-200 text-sm opacity-90">ระบบบริหารจัดการยานพาหนะ</p>
-          </div>
-          <button 
-            onClick={() => router.push('/dashboard')} 
-            className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl backdrop-blur-md border border-white/10 active:scale-95 transition-all shadow-lg"
-          >
-            📊
-          </button>
+    <div className="min-h-screen bg-[#f5f5f7] font-sarabun pb-20" style={{WebkitFontSmoothing:'antialiased'}}>
+      <style>{`
+        @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }
+        .ticker { display:inline-block; white-space:nowrap; padding-left:100%; animation:ticker 28s linear infinite; }
+        .row-tap { transition:background .1s; }
+        .row-tap:active { background:#f5f5f7; }
+      `}</style>
+
+      {/* ── Nav Bar ── */}
+      <nav className="sticky top-0 z-50 h-[52px] flex items-center justify-between px-5 border-b border-black/[0.07]"
+           style={{background:'rgba(245,245,247,0.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)'}}>
+        <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">PEA Fleet</span>
+        <button onClick={() => router.push('/dashboard')}
+          className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
+          Dashboard
+        </button>
+      </nav>
+
+      <div className="max-w-[600px] mx-auto px-4">
+
+        {/* ── Hero ── */}
+        <div className="pt-9 pb-8">
+          <h1 className="text-[38px] font-bold tracking-[-1.5px] leading-[1.05] text-[#1d1d1f]">ยานพาหนะ</h1>
+          <p className="text-[19px] text-[#6e6e73] mt-1.5 tracking-[-0.3px]">PEA Smart Vehicle Management</p>
         </div>
-      </div>
 
-      {/* 🌟 Alert Instruction (ป้ายเหลือง) */}
-      <div className="-mt-16 mx-4 relative z-20 mb-8">
-        <style>{`
-          @keyframes scroll-left {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-100%); }
-          }
-          .animate-scrolling-text {
-            display: inline-block;
-            white-space: nowrap;
-            padding-left: 100%;
-            animation: scroll-left 25s linear infinite;
-            will-change: transform;
-          }
-        `}</style>
+        {/* ── QR Scan Banner ── */}
+        <div className="bg-[#1d1d1f] rounded-[22px] overflow-hidden mb-8"
+             style={{boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
+          <div className="px-6 py-5 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.15em] mb-2">Scan to Start</p>
+              <p className="text-[22px] font-semibold text-white leading-tight tracking-[-0.5px]">
+                สแกน QR Code<br/>ประจำรถ
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-3 pt-1 flex-shrink-0">
+              <button onClick={() => setShowInstructions(true)}
+                className="text-[13px] font-medium text-[#2997ff] active:opacity-50 transition-opacity whitespace-nowrap">
+                คู่มือ →
+              </button>
+              <div className="w-[50px] h-[50px] bg-[#2c2c2e] rounded-[14px] flex items-center justify-center text-[24px]">
+                📱
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-white/[0.07] px-6 py-2.5 overflow-hidden">
+            <span className="ticker text-[12px] text-[#636366]">
+              กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้ง 🚗⚡
+            </span>
+          </div>
+        </div>
 
-        <div className="bg-gradient-to-r from-[#FF8008] to-[#FFC837] p-1 rounded-[2rem] shadow-2xl shadow-orange-500/40">
-          <div className="bg-white/10 backdrop-blur-xl rounded-[1.8rem] p-4 flex flex-col gap-3 border border-white/30">
-              
-              <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                      <div className="bg-white text-orange-500 w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
-                          <span className="absolute w-full h-full rounded-full border-4 border-orange-300 animate-ping opacity-30"></span>
-                          <span className="text-2xl z-10">📱</span>
-                      </div>
-                      <div>
-                          <h3 className="text-white text-xl font-black tracking-widest drop-shadow-md">SCAN QR CODE</h3>
-                          <p className="text-orange-50 text-[10px] uppercase font-bold tracking-widest bg-black/20 px-2 py-0.5 rounded-md inline-block mt-0.5">
-                              ระบบสแกนรับ-คืนรถ
-                          </p>
-                      </div>
+        {/* ── Car List ── */}
+        {(() => {
+          const busyCars = cars.filter(c => c.status === 'busy')
+          const availableCars = cars.filter(c => c.status !== 'busy')
+
+          const CarRow = ({ car, isLast }) => {
+            const carImageSrc = getCarImage(car)
+            const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
+            const isBusy = car.status === 'busy'
+            const statusDot = !car.isActivated ? '#aeaeb2' : isBusy ? '#ff3b30' : isEV ? '#0071e3' : '#34c759'
+            const imgBg = !car.isActivated ? '#f5f5f7' : isBusy ? '#fff2f0' : isEV ? '#edf6ff' : '#edfbf0'
+
+            return (
+              <div className="row-tap bg-white relative flex items-center gap-4 px-4 py-4 active:bg-[#f5f5f7] transition-colors"
+                   style={{borderBottom: isLast ? 'none' : '0.5px solid rgba(60,60,67,0.1)'}}>
+                {/* รูปรถ */}
+                <div className="w-[76px] h-[76px] flex-shrink-0 rounded-[18px] overflow-hidden flex items-center justify-center"
+                     style={{background: imgBg}}>
+                  {carImageSrc
+                    ? <img src={carImageSrc} alt={car.car_type}
+                        className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
+                    : <span className="text-[36px]">🚗</span>}
+                </div>
+
+                {/* ข้อมูล */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[20px] font-semibold tracking-[-0.5px] leading-tight ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
+                      {car.plate_number}
+                    </span>
+                    <span className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${isBusy ? 'animate-pulse' : ''}`}
+                          style={{background: statusDot}}/>
                   </div>
-                  
-                  {/* ปุ่มกดเพื่อเปิด Modal อธิบายการใช้งาน */}
-                  <button 
-                      onClick={() => setShowInstructions(true)}
-                      className="bg-white/20 hover:bg-white/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-inner transition-all active:scale-95 cursor-pointer"
-                      title="คลิกเพื่อดูวิธีใช้งาน"
-                  >
-                      <span className="text-xl font-bold">➔</span>
+                  <p className="text-[13px] truncate mt-0.5 leading-snug">
+                    <span className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#6e3fa3]'}>
+                      {car.car_type}
+                    </span>
+                  </p>
+                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                    <span className={`text-[12px] font-medium px-2.5 py-[3px] rounded-full ${
+                      !car.isActivated ? 'bg-[#f5f5f7] text-[#aeaeb2]'
+                      : isBusy ? 'bg-[#fff2f0] text-[#ff3b30]'
+                      : isEV ? 'bg-[#edf6ff] text-[#0071e3]'
+                      : 'bg-[#edfbf0] text-[#248a3d]'
+                    }`}>
+                      {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+                    </span>
+                    {isBusy && car.activeLog && (
+                      <span className="text-[12px] text-[#aeaeb2]">
+                        ออก {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
+                      </span>
+                    )}
+                  </div>
+                  {isBusy && car.activeLog && (
+                    <p className="text-[13px] text-[#1d1d1f] mt-1 font-medium truncate">
+                      👤 {car.activeLog.driver_name}
+                    </p>
+                  )}
+                </div>
+
+                {/* ขวา */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
+                    className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors">
+                    🖨️
                   </button>
+                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none" className="opacity-[0.2] flex-shrink-0">
+                    <path d="M1 1l5 5-5 5" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
               </div>
-
-              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-10 w-full">
-                  <div className="w-full overflow-hidden">
-                      <p className="text-white text-sm font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
-                          กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
-                      </p>
-                  </div>
-              </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ⚪ รายการรถ */}
-      <div className="px-4 space-y-4 relative z-20">
-        {cars.map((car) => {
-          const carImageSrc = getCarImage(car)
-          
-          // ✅ เช็คว่าเป็น EV ไหม สำหรับเปลี่ยน Text ในป้ายสถานะ
-          const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
+            )
+          }
 
           return (
-            <div 
-                key={car.id} 
-                className={`relative p-5 rounded-[2rem] shadow-sm border transition-all ${
-                    car.status === 'busy' 
-                    ? 'bg-white border-red-100 shadow-red-100' 
-                    : 'bg-white border-gray-100'
-                }`}
-            >
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        window.open(`/report?car_id=${car.id}`, '_blank')
-                    }}
-                    className="absolute top-4 right-4 bg-gray-50 hover:bg-gray-200 text-gray-400 p-2 rounded-xl transition-colors z-30"
-                >
-                    🖨️
-                </button>
-
-                <div className="flex items-center gap-4">
-                    {/* ✅ อัปเดตสีพื้นหลังรูปให้เป็นสีเทาถ้า Not Activated */}
-                    <div className={`w-20 h-20 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
-                        !car.isActivated ? 'bg-gray-100 text-gray-400' : car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                    }`}>
-                        {carImageSrc ? (
-                            <img src={carImageSrc} alt={car.car_type} className="w-full h-full object-cover" />
-                        ) : (
-                            '🚗'
-                        )}
-                    </div>
-
-                    <div className="flex-1">
-                        <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
-                        
-                        <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">
-                            {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#742F99]">{car.car_type}</span>
-                        </p>
-
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {/* ✅ อัปเดตสีป้ายสถานะและข้อความเฉพาะ EV */}
-                            <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
-                                !car.isActivated ? 'bg-gray-100 text-gray-500' : car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                            }`}>
-                                <span className={`w-2 h-2 rounded-full ${!car.isActivated ? 'bg-gray-400' : car.status === 'available' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
-                                {!car.isActivated ? 'Not Activated' : car.status === 'available' ? (isEV ? 'พร้อมใช้งาน' : 'ว่างพร้อมใช้') : (isEV ? 'กำลังชาร์จไฟ' : 'กำลังใช้งาน')}
-                            </span>
-
-                            {car.status === 'busy' && car.activeLog && (
-                                <span className="px-3 py-1 rounded-lg text-xs font-bold bg-orange-50 text-orange-600 flex items-center gap-1">
-                                    🕒 ออก: {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})} น.
-                                </span>
-                            )}
-                        </div>
-                        
-                        {car.status === 'busy' && car.activeLog && (
-                            <p className="text-[10px] text-gray-400 mt-2 ml-1 font-bold">
-                                👤 โดย: <span className="text-gray-600">{car.activeLog.driver_name}</span>
-                            </p>
-                        )}
-                    </div>
+            <div className="space-y-5">
+              {/* กำลังใช้งาน */}
+              {busyCars.length > 0 && (
+                <div>
+                  <div className="flex items-baseline justify-between mb-2 px-1">
+                    <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">กำลังใช้งาน</h2>
+                    <span className="text-[13px] text-[#aeaeb2]">{busyCars.length} คัน</span>
+                  </div>
+                  <div className="rounded-[18px] overflow-hidden"
+                       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
+                    {busyCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === busyCars.length - 1}/>)}
+                  </div>
                 </div>
+              )}
+
+              {/* ว่างพร้อมใช้ */}
+              {availableCars.length > 0 && (
+                <div>
+                  <div className="flex items-baseline justify-between mb-2 px-1">
+                    <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">พร้อมใช้งาน</h2>
+                    <span className="text-[13px] text-[#aeaeb2]">{availableCars.length} คัน</span>
+                  </div>
+                  <div className="rounded-[18px] overflow-hidden"
+                       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
+                    {availableCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === availableCars.length - 1}/>)}
+                  </div>
+                </div>
+              )}
             </div>
           )
-        })}
-        
-        <div className="text-center pt-6 text-gray-300 text-[10px]">
-            PEA Fleet System v2.26 (Unlocked EV Mileage)
-        </div>
+        })()}
+
+        <p className="text-center text-[11px] text-[#d2d2d7] mt-10">PEA Fleet System v2.26</p>
       </div>
 
-      {/* ✅ Modal คำอธิบายการใช้งาน */}
+      {/* ── Modal คู่มือ (Bottom Sheet) ── */}
       {showInstructions && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div 
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={() => setShowInstructions(false)}
-            ></div>
-            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
-                <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] p-5 text-white flex justify-between items-center shadow-md z-10">
-                    <h2 className="text-lg font-black flex items-center gap-2">
-                        <span>📖</span> คู่มือการใช้งานระบบ
-                    </h2>
-                    <button 
-                        onClick={() => setShowInstructions(false)}
-                        className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors text-sm"
-                    >✖</button>
-                </div>
-                <div className="p-5 overflow-y-auto space-y-5 text-gray-700 bg-gray-50">
-                    <div className="bg-white border border-red-200 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="bg-red-300 text-red-700 font-bold p-3 flex items-center gap-2 text-sm">
-                            <span className="text-lg">🚙</span> รถยนต์ทั่วไป (รถใช้น้ำมัน)
-                        </div>
-                        <div className="p-4 space-y-4">
-                            <div className="relative">
-                                <div className="absolute left-[9px] top-6 bottom-[-20px] w-0.5 bg-orange-100"></div>
-                                <h4 className="font-bold text-red-600 text-xs mb-1 flex items-center gap-2">
-                                    <span className="bg-red-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">1</span> 
-                                    การนำรถออก
-                                </h4>
-                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์เริ่มต้น ➔ กรอกสถานที่ ➔ <span className="text-red-600 font-bold">กดยืนยันนำรถออก</span>
-                                </p>
-                            </div>
-                            <div className="relative">
-                                <h4 className="font-bold text-red-600 text-xs mb-1 flex items-center gap-2">
-                                    <span className="bg-red-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">2</span> 
-                                    การคืนรถ
-                                </h4>
-                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ➔ กรอกเลขไมล์ล่าสุดหลังใช้รถ ➔ กรอกข้อมูลเติมน้ำมัน ➔ <span className="text-red-600 font-bold">กดยืนยันคืนรถ</span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white border border-sky-200 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="bg-sky-300 text-sky-700 font-bold p-3 flex items-center gap-2 text-sm">
-                            <span className="text-lg">⚡</span> รถยนต์ไฟฟ้า (EV)
-                        </div>
-                        <div className="p-4 space-y-4">
-                            <div className="relative">
-                                <div className="absolute left-[9px] top-6 bottom-[-20px] w-0.5 bg-green-100"></div>
-                                <h4 className="font-bold text-sky-600 text-xs mb-1 flex items-center gap-2">
-                                    <span className="bg-sky-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">1</span> 
-                                    การเริ่มชาร์จไฟรถ
-                                </h4>
-                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์ ➔ กรอก%แบตก่อนชาร์จ ➔ เลือกสถานี ➔ <span className="text-sky-600 font-bold">กดยืนยันเริ่มชาร์จ</span>
-                                </p>
-                            </div>
-                            <div className="relative">
-                                <h4 className="font-bold text-sky-600 text-xs mb-1 flex items-center gap-2">
-                                    <span className="bg-sky-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">2</span> 
-                                    การเลิกชาร์จไฟรถ
-                                </h4>
-                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
-                                    สแกน QR Code ➔ กรอกปริมาณ%แบตเตอรี่ล่าสุด ➔ <span className="text-sky-600 font-bold">กดยืนยันเลิกชาร์จ</span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-4 border-t bg-white text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                    <button 
-                        onClick={() => setShowInstructions(false)}
-                        className="w-full bg-[#742F99] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#591d79] transition-colors active:scale-95"
-                    >รับทราบและเข้าใจแล้ว</button>
-                </div>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/40"
+               style={{backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)'}}
+               onClick={() => setShowInstructions(false)}/>
+          <div className="relative w-full max-w-[440px] bg-[#f5f5f7] rounded-t-[26px] sm:rounded-[26px] z-10 max-h-[92vh] flex flex-col overflow-hidden"
+               style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
+
+            {/* handle */}
+            <div className="sm:hidden flex justify-center pt-3 pb-0">
+              <div className="w-9 h-1 rounded-full bg-[#c7c7cc]"/>
             </div>
+
+            {/* header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-black/[0.06]">
+              <span className="text-[18px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">คู่มือการใช้งาน</span>
+              <button onClick={() => setShowInstructions(false)}
+                className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3c3c43] font-semibold active:bg-[#d1d1d6] transition-colors">
+                ✕
+              </button>
+            </div>
+
+            {/* body */}
+            <div className="overflow-y-auto px-5 py-4 space-y-3">
+              {/* น้ำมัน */}
+              <div className="bg-white rounded-[16px] overflow-hidden"
+                   style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
+                <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
+                  <span>🚙</span>
+                  <span className="text-[15px] font-semibold text-[#1d1d1f]">รถยนต์ทั่วไป (น้ำมัน)</span>
+                </div>
+                <div className="px-4 py-4 space-y-3.5">
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การนำรถออก</p>
+                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
+                      สแกน QR Code → รหัสประจำตัว → เลขไมล์เริ่มต้น → สถานที่ → <span className="font-semibold text-[#1d1d1f]">ยืนยันนำรถออก</span>
+                    </p>
+                  </div>
+                  <div className="border-t border-[#f2f2f7] pt-3.5">
+                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การคืนรถ</p>
+                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
+                      สแกน QR Code → เลขไมล์ล่าสุด → ข้อมูลเติมน้ำมัน → <span className="font-semibold text-[#1d1d1f]">ยืนยันคืนรถ</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* EV */}
+              <div className="bg-white rounded-[16px] overflow-hidden"
+                   style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
+                <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
+                  <span>⚡</span>
+                  <span className="text-[15px] font-semibold text-[#1d1d1f]">รถยนต์ไฟฟ้า (EV)</span>
+                </div>
+                <div className="px-4 py-4 space-y-3.5">
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การเริ่มชาร์จ</p>
+                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
+                      สแกน QR Code → รหัสประจำตัว → เลขไมล์ → %แบตก่อนชาร์จ → สถานี → <span className="font-semibold text-[#1d1d1f]">ยืนยันเริ่มชาร์จ</span>
+                    </p>
+                  </div>
+                  <div className="border-t border-[#f2f2f7] pt-3.5">
+                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การเลิกชาร์จ</p>
+                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
+                      สแกน QR Code → %แบตเตอรี่ล่าสุด → <span className="font-semibold text-[#1d1d1f]">ยืนยันเลิกชาร์จ</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* footer */}
+            <div className="px-5 pt-3 pb-8 border-t border-black/[0.05]">
+              <button onClick={() => setShowInstructions(false)}
+                className="w-full bg-[#1d1d1f] text-white text-[16px] font-semibold py-4 rounded-[16px] active:bg-[#3a3a3c] transition-colors tracking-[-0.2px]">
+                รับทราบ
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -423,50 +438,91 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
-        <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] text-white p-5 text-center font-black text-lg">
-          ✍️ {title}
-        </div>
-        
-        <div className="bg-blue-50/80 border-b border-blue-100 text-blue-700 text-xs py-2 px-4 text-center font-bold flex items-center justify-center gap-2 shadow-sm">
-            <span className="text-lg">📅</span> อนุญาตให้เซ็นเอกสารเฉพาะวันที่ 28 ถึง 5 ของเดือนถัดไป
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
+         style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
+      <div className="bg-[#f5f5f7] w-full max-w-md rounded-t-[24px] sm:rounded-[24px] overflow-hidden flex flex-col"
+           style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)', WebkitFontSmoothing:'antialiased'}}>
+
+        {/* handle (mobile) */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-9 h-[4px] rounded-full bg-[#c7c7cc]"/>
         </div>
 
-        <div className="p-6">
+        {/* Header */}
+        <div className="px-5 pt-4 pb-4 flex items-center justify-between border-b border-[rgba(0,0,0,0.06)]">
+          <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">✍️ {title}</span>
+          <button onClick={onClose} className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3a3a3c] font-semibold active:bg-[#d1d1d6] transition-colors">✕</button>
+        </div>
+
+        {/* Notice */}
+        <div className="mx-5 mt-3 flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
+          <span className="text-[13px]">📅</span>
+          <span className="text-[12px] font-medium text-[#0071e3]">เซ็นได้เฉพาะวันที่ 28–5 ของรอบเดือน</span>
+        </div>
+
+        <div className="p-5">
           {!staffInfo ? (
             <div className="space-y-4">
-               <div className="text-center space-y-1 mb-4">
-                  <div className="text-4xl mb-2">🔐</div>
-                  <h3 className="font-bold text-gray-800 text-lg">ยืนยันตัวตนก่อนเซ็นชื่อ</h3>
-                  <p className="text-xs text-gray-500">กรุณากรอกรหัสพนักงานของคุณ</p>
-               </div>
-               <div>
-                   <input type="text" value={empId} onChange={e => setEmpId(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifyEmp()} className="w-full border-2 border-gray-200 bg-gray-50 p-4 rounded-2xl text-center text-xl font-bold tracking-widest outline-none focus:border-[#742F99] focus:bg-white transition-all" placeholder="XXXXXX" />
-                   <div className="h-6 mt-1 text-center">{error && <p className="text-red-500 text-sm font-bold animate-pulse">{error}</p>}</div>
-               </div>
-               <div className="flex gap-3 pt-2">
-                   <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-600 p-4 rounded-2xl font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
-                   <button onClick={verifyEmp} disabled={isLoading} className={`flex-1 text-white p-4 rounded-2xl font-bold shadow-lg transition-all ${isLoading ? 'bg-gray-400' : 'bg-[#742F99] hover:bg-[#591d79]'}`}>{isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}</button>
-               </div>
+              <div className="text-center space-y-1 mb-2">
+                <div className="w-14 h-14 rounded-full bg-[#e5e5ea] flex items-center justify-center text-3xl mx-auto mb-3">🔐</div>
+                <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">ยืนยันตัวตน</h3>
+                <p className="text-[13px] text-[#6e6e73]">กรอกรหัสพนักงานของคุณ</p>
+              </div>
+              <input type="text" value={empId} onChange={e => setEmpId(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && verifyEmp()}
+                className="w-full bg-white text-[#1d1d1f] text-[20px] font-semibold tracking-[0.2em] text-center px-4 py-3.5 rounded-[14px] outline-none"
+                style={{boxShadow:'0 0 0 0.5px rgba(0,0,0,0.12)', fontFamily:'monospace'}}
+                placeholder="XXXXXX" />
+              {error && <p className="text-[13px] text-[#ff3b30] text-center font-medium">{error}</p>}
+              <div className="flex gap-3 pt-1">
+                <button onClick={onClose}
+                  className="flex-1 py-3.5 rounded-[14px] bg-[#e5e5ea] text-[#1d1d1f] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
+                  ยกเลิก
+                </button>
+                <button onClick={verifyEmp} disabled={isLoading}
+                  className={`flex-1 py-3.5 rounded-[14px] text-white text-[15px] font-medium transition-colors ${isLoading ? 'bg-[#aeaeb2]' : 'bg-[#1d1d1f] active:bg-[#3a3a3c]'}`}>
+                  {isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="space-y-4 animate-fade-in-down">
-               <div className="bg-green-50 border border-green-200 p-3 rounded-2xl flex justify-between items-center shadow-sm">
-                  <div>
-                      <p className="text-green-800 text-sm font-bold flex items-center gap-1"><span className="text-lg">✅</span> คุณ{staffInfo.full_name}</p>
-                      <p className="text-green-600 text-[10px] ml-6">{staffInfo.position}</p>
+            <div className="space-y-4">
+              {/* confirmed user */}
+              <div className="bg-white rounded-[14px] px-4 py-3 flex items-center justify-between"
+                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-[7px] h-[7px] rounded-full bg-[#34c759]"/>
+                    <span className="text-[14px] font-semibold text-[#1d1d1f]">{staffInfo.full_name}</span>
                   </div>
-                  <button onClick={() => setStaffInfo(null)} className="text-[10px] bg-white border border-green-200 px-2 py-1 rounded-lg text-green-700 font-bold hover:bg-green-100">เปลี่ยนรหัส</button>
-               </div>
-               <p className="text-center text-xs text-gray-400 font-bold uppercase tracking-wider">กรุณาใช้นิ้วเซ็นชื่อในกรอบด้านล่าง</p>
-               <div className="flex justify-center bg-gray-50 p-3 rounded-2xl border border-gray-100 relative">
-                 <canvas ref={canvasRef} width={320} height={160} className="bg-white border-2 border-dashed border-gray-300 rounded-xl cursor-crosshair touch-none shadow-inner" style={{ touchAction: 'none' }} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} />
-               </div>
-               <div className="flex gap-3 pt-2">
-                 <button onClick={clearCanvas} className="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200">ลบเขียนใหม่</button>
-                 <button onClick={handleSave} className="flex-1 py-3.5 bg-gradient-to-r from-[#742F99] to-[#591d79] text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95">บันทึกลายเซ็น</button>
-               </div>
+                  <p className="text-[12px] text-[#6e6e73] mt-0.5 ml-[15px]">{staffInfo.position}</p>
+                </div>
+                <button onClick={() => setStaffInfo(null)}
+                  className="text-[12px] text-[#0071e3] font-medium active:opacity-60">เปลี่ยน</button>
+              </div>
+
+              <p className="text-[12px] text-[#6e6e73] text-center">ใช้นิ้วเซ็นชื่อในกรอบด้านล่าง</p>
+
+              {/* canvas */}
+              <div className="bg-white rounded-[14px] p-3 flex justify-center"
+                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
+                <canvas ref={canvasRef} width={300} height={140}
+                  className="rounded-[10px] cursor-crosshair touch-none"
+                  style={{border:'1.5px dashed #d2d2d7', touchAction:'none', background:'#fafafa'}}
+                  onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} />
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={clearCanvas}
+                  className="flex-1 py-3.5 rounded-[14px] bg-[#e5e5ea] text-[#1d1d1f] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
+                  ลบ / เขียนใหม่
+                </button>
+                <button onClick={handleSave}
+                  className="flex-1 py-3.5 rounded-[14px] bg-[#1d1d1f] text-white text-[15px] font-medium active:bg-[#3a3a3c] transition-colors">
+                  บันทึก
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -731,85 +787,111 @@ function ReportPage() {
         }}
       />
 
-      <div className="w-full fixed top-0 left-0 xl:w-[320px] xl:top-4 xl:left-auto xl:right-4 print:hidden z-50 flex flex-col gap-2 bg-white/95 backdrop-blur-md p-3 shadow-lg xl:shadow-2xl border-b xl:border border-gray-200 xl:rounded-2xl overflow-hidden">
-        
-        <div className="flex justify-between items-center mb-1">
-          <h3 className="font-black text-[#742F99] text-[15px] xl:text-lg">⚙️ ตั้งค่าเอกสาร</h3>
-          <button onClick={() => window.print()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-blue-700 font-bold text-[11px] xl:text-sm flex items-center gap-1 active:scale-95 transition-transform">🖨️ พิมพ์</button>
-        </div>
+      {/* ── Settings Panel ── Apple style ── */}
+      <div className="w-full fixed top-0 left-0 xl:w-[300px] xl:top-4 xl:left-auto xl:right-4 print:hidden z-50"
+           style={{WebkitFontSmoothing:'antialiased'}}>
+        <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl border-b border-[rgba(0,0,0,0.1)] xl:border xl:border-[rgba(0,0,0,0.08)] xl:rounded-[20px] xl:shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden">
 
-        {/* ✅ ป้ายแจ้งเตือนเรื่องรอบเวลาเซ็นเอกสาร */}
-        {!canSignAny ? (
-            <div className="bg-orange-50 border border-orange-200 text-orange-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
-                🔒 นอกเวลาอนุญาต (เซ็นได้เฉพาะวันที่ 28 ถึง 5 ของรอบเดือน)
-            </div>
-        ) : selectedMonth !== signableMonth ? (
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
-                ℹ️ หากกดเซ็น ระบบจะสลับไปเดือนที่กำหนด ({signableMonth})
-            </div>
-        ) : (
-            <div className="bg-green-50 border border-green-200 text-green-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
-                ✅ สามารถแก้ไขลายเซ็นของเดือนนี้ได้
-            </div>
-        )}
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(0,0,0,0.06)]">
+            <span className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">เอกสาร</span>
+            <button onClick={() => window.print()}
+              className="bg-[#1d1d1f] text-white text-[13px] font-medium px-4 py-1.5 rounded-full flex items-center gap-1.5 active:bg-[#3a3a3c] transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              พิมพ์
+            </button>
+          </div>
 
-        <div className="grid grid-cols-1 gap-2">
-            <div className="flex items-center gap-2">
-                <label className="text-[11px] font-bold text-gray-600 whitespace-nowrap">📅 เดือน :</label>
-                <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="flex-1 border border-gray-200 bg-white rounded-lg px-2 py-1 text-[11px] outline-none focus:border-[#742F99]" />
+          {/* Status badge */}
+          <div className="px-4 py-2 border-b border-[rgba(0,0,0,0.06)]">
+            {!canSignAny ? (
+              <div className="flex items-center gap-2 bg-[#fff3cd] rounded-[10px] px-3 py-2">
+                <span className="text-[14px]">🔒</span>
+                <span className="text-[11px] font-medium text-[#856404]">นอกเวลาอนุญาต (28–5 ของเดือน)</span>
+              </div>
+            ) : selectedMonth !== signableMonth ? (
+              <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
+                <span className="text-[14px]">ℹ️</span>
+                <span className="text-[11px] font-medium text-[#0071e3]">จะสลับไปเดือน {signableMonth}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 bg-[#edfbf0] rounded-[10px] px-3 py-2">
+                <span className="w-[7px] h-[7px] rounded-full bg-[#34c759] flex-shrink-0"/>
+                <span className="text-[11px] font-medium text-[#248a3d]">แก้ไขลายเซ็นได้</span>
+              </div>
+            )}
+          </div>
+
+          <div className="px-4 py-3 space-y-3">
+            {/* เดือน */}
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-[#1d1d1f] font-medium">เดือน</span>
+              <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}
+                className="text-[13px] text-[#0071e3] font-medium bg-transparent border-none outline-none cursor-pointer" />
             </div>
 
+            {/* จาก / ถึง / เรียน */}
             {!isEVCar && (
-              <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] font-bold text-gray-500 w-6">จาก</label>
-                    <input type="text" value={fromText} onChange={(e) => setFromText(e.target.value)} placeholder="แผนก..." className="w-full border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-[#742F99]"/>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] font-bold text-gray-500 w-6">ถึง</label>
-                    <input type="text" value={toText} onChange={(e) => setToText(e.target.value)} placeholder="ผจก..." className="w-full border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-[#742F99]"/>
-                </div>
-                <div className="flex items-center gap-1.5 col-span-2">
-                    <label className="text-[10px] font-bold text-gray-500 w-6">เรียน</label>
-                    <input type="text" value={dearText} onChange={(e) => setDearText(e.target.value)} placeholder="ผจก..." className="w-full border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-[#742F99]"/>
-                </div>
+              <div className="bg-white rounded-[12px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
+                {[
+                  { label: 'จาก', val: fromText, set: setFromText, ph: 'แผนก...' },
+                  { label: 'ถึง',  val: toText,   set: setToText,   ph: 'หัวหน้า...' },
+                  { label: 'เรียน', val: dearText, set: setDearText, ph: 'ผจก...' },
+                ].map(({ label, val, set, ph }, i, arr) => (
+                  <div key={label} className={`flex items-center px-3 py-2 gap-3 ${i < arr.length-1 ? 'border-b border-[rgba(0,0,0,0.06)]' : ''}`}>
+                    <span className="text-[12px] text-[#6e6e73] w-8 flex-shrink-0">{label}</span>
+                    <input type="text" value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                      className="flex-1 text-[12px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]" />
+                  </div>
+                ))}
               </div>
             )}
 
+            {/* ลายเซ็น */}
             <div>
-                <label className="text-[10px] font-bold text-gray-500 block mb-1">✍️ การลงนามเอกสาร</label>
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="border border-gray-200 rounded-lg p-1.5 bg-gray-50 flex flex-col justify-center items-center relative h-[60px]">
-                        <span className="text-[9px] font-bold text-gray-600 absolute top-1 left-2">{isEVCar ? 'ผู้รายงาน' : 'ผู้ขับรถ'}</span>
-                        {driverSigText ? (
-                            <>
-                                <img src={driverSigText} alt="sig" className="h-6 object-contain mt-3" />
-                                {/* ✅ ซ่อนปุ่มลบ ถ้าเปิดดูเดือนอื่นอยู่ (ป้องกันมือลั่นลบผิดเดือน) */}
-                                {isCurrentMonthSignable && <button onClick={() => handleDeleteSig('driver')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
-                            </>
-                        ) : (
-                            <button onClick={() => openSigModal('driver', isEVCar ? 'เซ็นชื่อผู้รายงาน' : 'เซ็นชื่อผู้ขับยานพาหนะ')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${canSignAny ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                                + เซ็นชื่อ
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-1.5 bg-gray-50 flex flex-col justify-center items-center relative h-[60px]">
-                        <span className="text-[9px] font-bold text-gray-600 absolute top-1 left-2">ผู้ควบคุม</span>
-                        {controllerSigText ? (
-                            <>
-                                <img src={controllerSigText} alt="sig" className="h-6 object-contain mt-3" />
-                                {/* ✅ ซ่อนปุ่มลบ ถ้าเปิดดูเดือนอื่นอยู่ */}
-                                {isCurrentMonthSignable && <button onClick={() => handleDeleteSig('controller')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
-                            </>
-                        ) : (
-                            <button onClick={() => openSigModal('controller', 'เซ็นชื่อผู้ควบคุม')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${canSignAny ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                                + เซ็นชื่อ
-                            </button>
-                        )}
-                    </div>
+              <p className="text-[11px] text-[#6e6e73] font-medium mb-2 tracking-[-0.1px]">ลายเซ็น</p>
+              <div className="grid grid-cols-2 gap-2">
+                {/* ผู้ขับ/ผู้รายงาน */}
+                <div className="bg-white rounded-[12px] overflow-hidden flex flex-col items-center py-2 px-1 relative" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)', minHeight:'70px'}}>
+                  <span className="text-[10px] text-[#6e6e73] mb-1.5">{isEVCar ? 'ผู้รายงาน' : 'ผู้ขับรถ'}</span>
+                  {driverSigText ? (
+                    <>
+                      <img src={driverSigText} alt="sig" className="h-7 object-contain" />
+                      {isCurrentMonthSignable && (
+                        <button onClick={() => handleDeleteSig('driver')}
+                          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#ff3b30] flex items-center justify-center text-white text-[8px] font-bold">✕</button>
+                      )}
+                    </>
+                  ) : (
+                    <button onClick={() => openSigModal('driver', isEVCar ? 'เซ็นชื่อผู้รายงาน' : 'เซ็นชื่อผู้ขับ')}
+                      className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny ? 'border-[#0071e3] text-[#0071e3] active:bg-[#edf6ff]' : 'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                      + เซ็น
+                    </button>
+                  )}
                 </div>
+
+                {/* ผู้ควบคุม */}
+                <div className="bg-white rounded-[12px] overflow-hidden flex flex-col items-center py-2 px-1 relative" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)', minHeight:'70px'}}>
+                  <span className="text-[10px] text-[#6e6e73] mb-1.5">ผู้ควบคุม</span>
+                  {controllerSigText ? (
+                    <>
+                      <img src={controllerSigText} alt="sig" className="h-7 object-contain" />
+                      {isCurrentMonthSignable && (
+                        <button onClick={() => handleDeleteSig('controller')}
+                          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#ff3b30] flex items-center justify-center text-white text-[8px] font-bold">✕</button>
+                      )}
+                    </>
+                  ) : (
+                    <button onClick={() => openSigModal('controller', 'เซ็นชื่อผู้ควบคุม')}
+                      className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny ? 'border-[#0071e3] text-[#0071e3] active:bg-[#edf6ff]' : 'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                      + เซ็น
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+          </div>
         </div>
       </div>
 
@@ -1386,312 +1468,363 @@ function CarActionForm({ carId }) {
     }
   }
 
-  if (!car) return <div className="min-h-screen flex items-center justify-center text-[#742F99]">กำลังโหลด...</div>
+  if (!car) return (
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/>
+    </div>
+  )
 
   const isEV = car?.fuel_type?.toUpperCase() === 'EV';
-  
-  // ✅ ตรรกะใหม่: ตรวจสอบว่าเป็นช่วงเวลาเซ็นเอกสารหรือไม่ (วันที่ 28 ถึง 5)
   const currentDay = currentTime.getDate();
   const isSigningPeriod = currentDay >= 28 || currentDay <= 5;
   const showSignReminder = isSigningPeriod && !isSignReminderDismissed && car.status === 'available';
 
   return (
-    <div className="min-h-screen bg-[#F8F9FD] font-sarabun flex flex-col pb-10">
-      
-      {/* ✅ Popup แจ้งเตือนให้เซ็นเอกสาร (แสดงเฉพาะตอนนำรถออก ทั้ง EV และน้ำมัน ในช่วงวันที่ 28-5) */}
+    <div className="min-h-screen bg-[#f5f5f7] font-sarabun pb-16" style={{WebkitFontSmoothing:'antialiased'}}>
+      <style>{`* { -webkit-font-smoothing: antialiased; }`}</style>
+
+      {/* ── Popup เซ็นเอกสาร ── */}
       {showSignReminder && (
-        <div className="fixed inset-0 z-[998] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center animate-fade-in-down border border-gray-100">
-               <div className="text-5xl mb-3">📝</div>
-               <h3 className="text-xl font-black text-gray-800 mb-2 tracking-tight">ถึงเวลาเซ็นเอกสาร!</h3>
-               <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-                  ขณะนี้อยู่ในช่วงเวลา <span className="font-bold text-[#742F99]">เซ็นเอกสารประจำเดือน</span><br/>
-                  อย่าลืมเข้าไปเซ็นชื่อที่หน้ารายงาน (ไอคอน 🖨️) นะครับ
-               </p>
-               <button 
-                  onClick={() => setIsSignReminderDismissed(true)} 
-                  className="w-full bg-[#742F99] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b237a] active:scale-95 transition-all shadow-md"
-               >
-                   รับทราบ
-               </button>
-           </div>
+        <div className="fixed inset-0 z-[998] flex items-end sm:items-center justify-center"
+             style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
+          <div className="bg-[#f5f5f7] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6 text-center"
+               style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)'}}>
+            <div className="text-[48px] mb-3">📝</div>
+            <h3 className="text-[20px] font-semibold text-[#1d1d1f] mb-2 tracking-[-0.4px]">ถึงเวลาเซ็นเอกสาร</h3>
+            <p className="text-[14px] text-[#6e6e73] mb-6 leading-relaxed">
+              อยู่ในช่วงเวลาเซ็นเอกสารประจำเดือน<br/>อย่าลืมเข้าไปเซ็นชื่อที่หน้ารายงาน (ไอคอน 🖨️)
+            </p>
+            <button onClick={() => setIsSignReminderDismissed(true)}
+              className="w-full bg-[#1d1d1f] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#3a3a3c] transition-colors">
+              รับทราบ
+            </button>
+          </div>
         </div>
       )}
 
-      {/* ✅ Popup ยืนยันเลขไมล์ (แสดงหลังจากกดคืนรถ) */}
+      {/* ── Popup ยืนยันเลขไมล์ ── */}
       {showReturnConfirm && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center animate-fade-in-down border border-gray-100">
-               <div className="text-5xl mb-3">📍</div>
-               <h3 className="text-xl font-black text-gray-800 mb-2 tracking-tight">ตรวจสอบเลขไมล์</h3>
-               
-               <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left space-y-3 border border-gray-200">
-                  <div className="flex justify-between items-center">
-                      <span className="text-gray-500 text-sm">ไมล์ก่อนเดินทาง:</span>
-                      <span className="font-bold text-gray-700">{parseFloat(activeLog?.start_mileage).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                      <span className="text-gray-500 text-sm">ไมล์ล่าสุด (จบงาน):</span>
-                      <span className="font-black text-[#742F99] text-lg">{parseFloat(endMileage).toLocaleString()}</span>
-                  </div>
-                  <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center">
-                      <span className="text-gray-600 text-sm font-bold">ระยะทางที่ขับไป:</span>
-                      <span className="font-black text-green-600 text-xl">{(parseFloat(endMileage) - parseFloat(activeLog?.start_mileage)).toLocaleString()} <span className="text-sm">กม.</span></span>
-                  </div>
-               </div>
-
-               <div className="flex gap-3">
-                   {/* ปุ่มยืนยันอยู่ด้านซ้าย */}
-                   <button 
-                      onClick={() => { setShowReturnConfirm(false); handleReturn(true); }} 
-                      className="flex-1 bg-[#742F99] text-white py-3.5 rounded-xl font-bold hover:bg-[#5b237a] active:scale-95 transition-all shadow-md"
-                   >
-                       ยืนยัน
-                   </button>
-                   {/* ปุ่มแก้ไขอยู่ด้านขวา */}
-                   <button 
-                      onClick={() => setShowReturnConfirm(false)} 
-                      className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-xl font-bold hover:bg-gray-200 active:scale-95 transition-all shadow-sm border border-gray-200"
-                   >
-                       แก้ไข
-                   </button>
-               </div>
-           </div>
+        <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center"
+             style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
+          <div className="bg-[#f5f5f7] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6"
+               style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)'}}>
+            <div className="text-[48px] text-center mb-3">📍</div>
+            <h3 className="text-[20px] font-semibold text-[#1d1d1f] mb-4 tracking-[-0.4px] text-center">ตรวจสอบเลขไมล์</h3>
+            <div className="bg-white rounded-[16px] p-4 mb-5 space-y-3"
+                 style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-[#6e6e73]">ไมล์ก่อนเดินทาง</span>
+                <span className="text-[14px] font-semibold text-[#1d1d1f]">{parseFloat(activeLog?.start_mileage).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-[#6e6e73]">ไมล์ล่าสุด (จบงาน)</span>
+                <span className="text-[14px] font-semibold text-[#1d1d1f]">{parseFloat(endMileage).toLocaleString()}</span>
+              </div>
+              <div className="border-t border-[#f2f2f7] pt-3 flex justify-between items-center">
+                <span className="text-[14px] text-[#1d1d1f] font-semibold">ระยะทาง</span>
+                <span className="text-[20px] font-bold text-[#34c759]">{(parseFloat(endMileage) - parseFloat(activeLog?.start_mileage)).toLocaleString()} <span className="text-[13px] font-normal text-[#6e6e73]">กม.</span></span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setShowReturnConfirm(false); handleReturn(true); }}
+                className="flex-1 bg-[#1d1d1f] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#3a3a3c] transition-colors">
+                ยืนยัน
+              </button>
+              <button onClick={() => setShowReturnConfirm(false)}
+                className="flex-1 bg-[#e5e5ea] text-[#1d1d1f] py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#d1d1d6] transition-colors">
+                แก้ไข
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="bg-[#742F99] px-6 pt-10 pb-20 text-white rounded-b-[2.5rem] shadow-lg relative">
-        <button onClick={() => window.location.href = '/'} className="absolute top-10 left-5 bg-white/20 p-2 px-4 rounded-xl text-sm">⬅ กลับ</button>
-        <div className="text-center mt-6">
-          <h2 className="text-3xl font-black">{car.plate_number}</h2>
-          <p className="text-purple-200 text-sm uppercase font-bold">{car.model} | {car.car_type}</p>
-          {isEV && <span className="bg-green-400 text-green-900 text-[10px] font-bold px-2 py-0.5 rounded-full mt-2 inline-block shadow-sm shadow-green-400/50">Electric Vehicle</span>}
+      {/* ── Nav ── */}
+      <div className="sticky top-0 z-50 h-[52px] flex items-center px-4 border-b border-black/[0.07]"
+           style={{background:'rgba(245,245,247,0.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)'}}>
+        <button onClick={() => window.location.href = '/'}
+          className="flex items-center gap-1 text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
+          <svg width="9" height="15" viewBox="0 0 9 15" fill="none"><path d="M8 1L1 7.5L8 14" stroke="#0071e3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          กลับ
+        </button>
+      </div>
+
+      {/* ── Car Info Card ── */}
+      <div className="px-4 pt-5 pb-4">
+        <div className="bg-white rounded-[20px] px-5 py-4 flex items-center gap-4"
+             style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
+          <div className={`w-[60px] h-[60px] rounded-[14px] flex-shrink-0 flex items-center justify-center text-[28px] ${
+            isEV ? 'bg-[#edf6ff]' : car.status === 'busy' ? 'bg-[#fff2f0]' : 'bg-[#edfbf0]'
+          }`}>
+            {isEV ? '⚡' : '🚗'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[22px] font-bold text-[#1d1d1f] tracking-[-0.5px]">{car.plate_number}</span>
+              {isEV && <span className="text-[11px] font-medium bg-[#edf6ff] text-[#0071e3] px-2 py-0.5 rounded-full">EV</span>}
+            </div>
+            <p className="text-[13px] text-[#6e6e73] mt-0.5">{car.model} · {car.car_type}</p>
+          </div>
+          <button onClick={() => window.open(`/report?car_id=${car.id}`, '_blank')}
+            className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[16px] active:bg-[#e5e5ea] transition-colors flex-shrink-0">
+            🖨️
+          </button>
         </div>
       </div>
 
-      <div className="-mt-12 px-4 relative z-20">
-        <div className="bg-white rounded-3xl shadow-xl p-6 border border-gray-50">
-          {car.status === 'available' ? (
-            // ================== ฟอร์มนำรถออก ==================
-            <div className="space-y-4">
-              <h3 className="font-bold text-[#742F99] border-b pb-3 text-lg flex items-center gap-2">
-                {isEV ? '⚡ บันทึกเริ่มการชาร์จรถ' : '📋 บันทึกนำรถออก'}
-              </h3>
-              
-              <div className="space-y-1">
-                 <label className="text-xs font-bold text-gray-400 ml-1">รหัสพนักงาน</label>
-                 <input 
-                    type="text" value={employeeId} 
-                    onChange={e => { setEmployeeId(e.target.value); setStaffError(false); setStaffName('') }} 
-                    onBlur={checkStaff} 
-                    placeholder="กรอกรหัสพนักงาน..." 
-                    className={`w-full p-4 rounded-2xl border transition-all outline-none ${
-                        staffError ? 'border-red-500 bg-red-50' : (staffName ? 'border-green-500 bg-green-50' : 'bg-gray-50 border-gray-100')
-                    }`}
-                 />
-                 {staffName && <p className="text-green-600 text-xs font-bold ml-2">✅ คุณ{staffName}</p>}
-                 {staffError && <p className="text-red-500 text-xs font-bold ml-2 animate-pulse">❌ ไม่พบรหัสพนักงานนี้</p>}
-              </div>
+      {/* ── Form ── */}
+      <div className="px-4">
+        <div className="bg-white rounded-[20px] overflow-hidden"
+             style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
 
-              <div className="space-y-1">
-                 <div className="flex justify-between items-center ml-1">
-                    <label className="text-xs font-bold text-gray-400">เลขไมล์เริ่มต้น</label>
-                    {isMileageLocked && <span className="text-[10px] text-[#742F99] font-bold bg-purple-50 px-2 py-0.5 rounded-full">🔒 ต่อเนื่องจากล่าสุด</span>}
-                 </div>
-                 <input 
-                    type="number" value={mileage} readOnly={isMileageLocked} onChange={e => setMileage(e.target.value)} 
-                    placeholder={isEV ? "กรอกเลขไมล์ล่าสุด..." : ""}
-                    className={`w-full p-4 rounded-2xl border outline-none font-mono text-lg transition-colors ${
-                        isMileageLocked ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'bg-gray-50 border-gray-100 focus:border-[#742F99]'
-                    }`}
-                 />
-              </div>
+          {/* Form Header */}
+          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+            <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">
+              {car.status === 'available'
+                ? (isEV ? '⚡ เริ่มชาร์จรถ' : '🚗 นำรถออก')
+                : (isEV ? '🔌 นำที่ชาร์จออก' : '↩️ คืนรถ')}
+            </span>
+            {car.status === 'busy' && (
+              <span className="text-[12px] text-[#6e6e73]">{currentTime.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})} น.</span>
+            )}
+          </div>
 
-              {isEV ? (
-                  <div className="space-y-4 pt-2 border-t border-dashed border-gray-200">
-                      <div className="space-y-1">
-                           <label className="text-[11px] font-bold text-gray-400 ml-1 uppercase tracking-wider">แบตก่อนชาร์จ (%)</label>
-                           <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center text-lg focus:border-[#742F99] outline-none" placeholder="ระบุตัวเลข 0-100" />
-                      </div>
+          <div className="px-5 py-4 space-y-4">
+            {car.status === 'available' ? (
+              /* ── ฟอร์มนำรถออก ── */
+              <>
+                {/* รหัสพนักงาน */}
+                <div>
+                  <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">รหัสพนักงาน</label>
+                  <input type="text" value={employeeId}
+                    onChange={e => { setEmployeeId(e.target.value); setStaffError(false); setStaffName('') }}
+                    onBlur={checkStaff} placeholder="กรอกรหัสพนักงาน"
+                    className={`w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none border transition-colors ${
+                      staffError ? 'border-[#ff3b30] bg-[#fff2f0]' : staffName ? 'border-[#34c759] bg-[#edfbf0]' : 'border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f]'
+                    }`}/>
+                  {staffName && <p className="text-[12px] text-[#34c759] font-medium mt-1 ml-1">✓ {staffName}</p>}
+                  {staffError && <p className="text-[12px] text-[#ff3b30] font-medium mt-1 ml-1">ไม่พบรหัสพนักงานนี้</p>}
+                </div>
 
-                      <div className="space-y-2">
-                          <label className="text-[11px] font-bold text-gray-400 ml-1 uppercase tracking-wider">ประเภทสถานีชาร์จ</label>
-                          <div className="flex gap-2">
-                              <button onClick={() => { setStationType('PEA'); setSubStationType(''); setStationName(''); }} className={`flex-1 py-3 rounded-xl text-[11px] font-bold border transition-all ${stationType === 'PEA' ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}>สถานี PEA Volta</button>
-                              <button onClick={() => { setStationType('OTHER'); setSubStationType(''); setStationName(''); }} className={`flex-1 py-3 rounded-xl text-[11px] font-bold border transition-all ${stationType === 'OTHER' ? 'bg-purple-100 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}>สถานีแบรนด์อื่นๆ</button>
-                          </div>
-                      </div>
-
-                      <div className="space-y-2">
-                          <label className="text-[11px] font-bold text-gray-400 ml-1 uppercase tracking-wider">ระบุสาขา / แบรนด์</label>
-                          <div className="grid grid-cols-2 gap-2">
-                              {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt) => (
-                                  <button 
-                                     key={opt.id}
-                                     onClick={() => { setSubStationType(opt.id); setStationName(''); }}
-                                     className={`py-3 px-2 rounded-xl text-[11px] border text-left transition-all ${subStationType === opt.id ? 'bg-green-50 border-green-500 text-green-700 font-bold' : 'bg-white border-gray-100 text-gray-600'}`}
-                                  >
-                                     {subStationType === opt.id ? '● ' : '○ '}{opt.label}
-                                  </button>
-                              ))}
-                          </div>
-                      </div>
-
-                      {(() => {
-                          const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
-                          if (!selectedOption) return null;
-
-                          if (selectedOption.inputType === 'text') {
-                              return (
-                                  <div className="space-y-1 animate-fade-in-down pt-2">
-                                       <label className="text-[10px] font-bold text-gray-400 uppercase">รายละเอียดเพิ่มเติม</label>
-                                       <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..." className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-[#742F99] outline-none" />
-                                  </div>
-                              );
-                          }
-                          if (selectedOption.inputType === 'dropdown_kfk') {
-                              return (
-                                  <div className="space-y-1 animate-fade-in-down pt-2">
-                                       <label className="text-[10px] font-bold text-gray-400 uppercase">เลือกสาขาของ กฟก.</label>
-                                       <select value={stationName} onChange={e => setStationName(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
-                                           <option value="" disabled>-- กรุณาเลือก --</option>
-                                           {kfkList.map(k => <option key={k} value={k}>{k}</option>)}
-                                       </select>
-                                  </div>
-                              );
-                          }
-                          if (selectedOption.inputType === 'dropdown_other') {
-                              return (
-                                  <div className="space-y-1 animate-fade-in-down pt-2">
-                                       <label className="text-[10px] font-bold text-gray-400 uppercase">เลือกแบรนด์สถานี</label>
-                                       <select value={stationName} onChange={e => setStationName(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
-                                           <option value="" disabled>-- กรุณาเลือก --</option>
-                                           {otherBrandList.map(b => <option key={b} value={b}>{b}</option>)}
-                                       </select>
-                                  </div>
-                              );
-                          }
-                          return null;
-                      })()}
+                {/* เลขไมล์ */}
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-[12px] font-medium text-[#6e6e73]">เลขไมล์เริ่มต้น</label>
+                    {isMileageLocked && <span className="text-[11px] text-[#0071e3] font-medium">🔒 ต่อเนื่องจากล่าสุด</span>}
                   </div>
-              ) : (
-                  <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 ml-1">สถานที่ไปปฏิบัติงาน</label>
-                      <select value={selectedLocation} onChange={e => setSelectedLocation(e.target.value)} className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none">
-                          <option value="" disabled>เลือกพื้นที่...</option>
-                          <option value="พื้นที่อำเภอกำแพงแสน">1. พื้นที่อำเภอกำแพงแสน</option>
-                          <option value="คลังพัสดุนครชัยศรี">2. คลังพัสดุนครชัยศรี</option>
-                          <option value="สำนักงานกฟก.3">3. สำนักงานกฟก.3</option>
-                          <option value="อื่นๆ">4. อื่นๆ</option>
-                      </select>
-                      {selectedLocation === 'อื่นๆ' && (
-                          <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)} placeholder="ระบุเอง..." className="w-full p-4 mt-2 bg-purple-50 text-[#742F99] rounded-2xl border border-purple-100 outline-none" />
-                      )}
-                  </div>
-              )}
+                  <input type="number" value={mileage} readOnly={isMileageLocked}
+                    onChange={e => setMileage(e.target.value)}
+                    placeholder={isEV ? "เลขไมล์ล่าสุด" : "เลขไมล์เริ่มต้น"}
+                    className={`w-full px-4 py-3.5 rounded-[14px] text-[16px] font-mono outline-none border transition-colors ${
+                      isMileageLocked ? 'bg-[#f5f5f7] border-[#e5e5ea] text-[#6e6e73] cursor-not-allowed' : 'bg-[#f5f5f7] border-[#e5e5ea] focus:border-[#1d1d1f]'
+                    }`}/>
+                </div>
 
-              <button onClick={handleTakeOut} disabled={loading} className={`w-full py-4 rounded-2xl font-bold mt-4 shadow-lg transition-all text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#742F99] hover:bg-[#5b237a]'}`}>
-                {loading ? '⏳ กำลังบันทึก...' : (isEV ? '⚡ ยืนยันเริ่มชาร์จไฟรถ' : 'ยืนยันนำรถออก')}
-              </button>
-            </div>
-          ) : (
-            // ================== ฟอร์มคืนรถ ==================
-            <div className="space-y-4">
-               <div className="flex justify-between items-center border-b pb-3">
-                  <h3 className={`font-bold text-lg flex items-center gap-2 ${isEV ? 'text-purple-600' : 'text-purple-600'}`}>
-                      {isEV ? '🔌 นำที่ชาร์จออก' : '↩️ คืนรถ'}
-                  </h3>
-                  <span className="text-xs text-gray-400">{currentTime.toLocaleTimeString('th-TH')}</span>
-               </div>
-               
-               <div className={`${isEV ? 'bg-purple-50 border-purple-100' : 'bg-purple-50 border-purple-100'} p-4 rounded-2xl border`}>
-                  <p className={`text-sm font-bold ${isEV ? 'text-purple-800' : 'text-purple-800'}`}>👤 ผู้ใช้: {activeLog?.driver_name}</p>
-                  
+                {isEV ? (
+                  <>
+                    {/* %แบต */}
+                    <div>
+                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">%แบตเตอรี่ก่อนชาร์จ</label>
+                      <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)}
+                        placeholder="0 – 100"
+                        className="w-full px-4 py-3.5 rounded-[14px] text-[16px] text-center font-mono outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
+                    </div>
+
+                    {/* ประเภทสถานี */}
+                    <div>
+                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">ประเภทสถานีชาร์จ</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['PEA', 'OTHER'].map(t => (
+                          <button key={t} onClick={() => { setStationType(t); setSubStationType(''); setStationName(''); }}
+                            className={`py-3 rounded-[12px] text-[13px] font-medium border transition-colors ${
+                              stationType === t ? 'bg-[#1d1d1f] border-[#1d1d1f] text-white' : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
+                            }`}>
+                            {t === 'PEA' ? 'สถานี PEA Volta' : 'แบรนด์อื่นๆ'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* สาขา */}
+                    <div>
+                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">ระบุสาขา / แบรนด์</label>
+                      <div className="rounded-[14px] overflow-hidden border border-[#e5e5ea]">
+                        {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt, i, arr) => (
+                          <button key={opt.id} onClick={() => { setSubStationType(opt.id); setStationName(''); }}
+                            className={`w-full flex items-center justify-between px-4 py-3 text-[14px] transition-colors ${
+                              subStationType === opt.id ? 'bg-[#f0f9ff] text-[#0071e3]' : 'bg-white text-[#1d1d1f]'
+                            }`}
+                            style={{borderBottom: i < arr.length-1 ? '0.5px solid rgba(60,60,67,0.1)' : 'none'}}>
+                            <span>{opt.label}</span>
+                            {subStationType === opt.id && (
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#0071e3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ชื่อสถานี input */}
+                    {(() => {
+                      const sel = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
+                      if (!sel || sel.inputType === 'none') return null;
+                      if (sel.inputType === 'text') return (
+                        <div>
+                          <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">รายละเอียดเพิ่มเติม</label>
+                          <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..."
+                            className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
+                        </div>
+                      );
+                      if (sel.inputType === 'dropdown_kfk') return (
+                        <div>
+                          <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">เลือกสาขาของ กฟก.</label>
+                          <select value={stationName} onChange={e => setStationName(e.target.value)}
+                            className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7]">
+                            <option value="" disabled>-- กรุณาเลือก --</option>
+                            {kfkList.map(k => <option key={k} value={k}>{k}</option>)}
+                          </select>
+                        </div>
+                      );
+                      if (sel.inputType === 'dropdown_other') return (
+                        <div>
+                          <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">เลือกแบรนด์สถานี</label>
+                          <select value={stationName} onChange={e => setStationName(e.target.value)}
+                            className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7]">
+                            <option value="" disabled>-- กรุณาเลือก --</option>
+                            {otherBrandList.map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
+                      );
+                      return null;
+                    })()}
+                  </>
+                ) : (
+                  /* สถานที่ */
+                  <div>
+                    <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">สถานที่ไปปฏิบัติงาน</label>
+                    <div className="rounded-[14px] overflow-hidden border border-[#e5e5ea]">
+                      {[
+                        {v:'พื้นที่อำเภอกำแพงแสน', l:'1. พื้นที่อำเภอกำแพงแสน'},
+                        {v:'คลังพัสดุนครชัยศรี',    l:'2. คลังพัสดุนครชัยศรี'},
+                        {v:'สำนักงานกฟก.3',         l:'3. สำนักงานกฟก.3'},
+                        {v:'อื่นๆ',                  l:'4. อื่นๆ'},
+                      ].map((item, i) => (
+                        <button key={item.v} onClick={() => setSelectedLocation(item.v)}
+                          className={`w-full flex items-center justify-between px-4 py-3.5 text-[14px] transition-colors ${
+                            selectedLocation === item.v ? 'bg-[#f0f9ff] text-[#0071e3]' : 'bg-white text-[#1d1d1f]'
+                          }`}
+                          style={{borderBottom: i < 3 ? '0.5px solid rgba(60,60,67,0.1)' : 'none'}}>
+                          <span>{item.l}</span>
+                          {selectedLocation === item.v && (
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#0071e3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedLocation === 'อื่นๆ' && (
+                      <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)}
+                        placeholder="ระบุสถานที่..." className="w-full mt-2 px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
+                    )}
+                  </div>
+                )}
+
+                <button onClick={handleTakeOut} disabled={loading}
+                  className={`w-full py-4 rounded-[16px] text-[16px] font-semibold mt-2 transition-colors ${
+                    loading ? 'bg-[#d2d2d7] text-white cursor-not-allowed' : 'bg-[#1d1d1f] text-white active:bg-[#3a3a3c]'
+                  }`}>
+                  {loading ? 'กำลังบันทึก...' : (isEV ? '⚡ ยืนยันเริ่มชาร์จ' : 'ยืนยันนำรถออก')}
+                </button>
+              </>
+            ) : (
+              /* ── ฟอร์มคืนรถ ── */
+              <>
+                {/* ข้อมูลผู้ใช้รถ */}
+                <div className="bg-[#f5f5f7] rounded-[14px] px-4 py-3"
+                     style={{border:'0.5px solid rgba(60,60,67,0.1)'}}>
+                  <div className="flex items-center gap-2">
+                    <span className="w-[8px] h-[8px] rounded-full bg-[#ff3b30] animate-pulse flex-shrink-0"/>
+                    <span className="text-[14px] font-semibold text-[#1d1d1f]">{activeLog?.driver_name}</span>
+                  </div>
                   {isEV ? (
-                      <div className="mt-2 text-purple-700 text-xs font-medium space-y-1 border-t border-purple-200/50 pt-2">
-                          <p>🔋 แบตก่อนชาร์จ: <span className="font-bold text-purple-800">{activeLog?.battery_before}%</span></p>
-                          <p>📍 สถานี: {activeLog?.station_name}</p>
-                      </div>
+                    <div className="mt-1.5 text-[12px] text-[#6e6e73] space-y-0.5">
+                      <p>🔋 แบตก่อนชาร์จ: <span className="font-semibold text-[#1d1d1f]">{activeLog?.battery_before}%</span></p>
+                      <p>📍 สถานี: <span className="text-[#1d1d1f]">{activeLog?.station_name}</span></p>
+                    </div>
                   ) : (
-                      <p className="text-purple-600 text-xs mt-1 font-medium">ไมล์เริ่ม: {activeLog?.start_mileage?.toLocaleString()}</p>
+                    <p className="text-[12px] text-[#6e6e73] mt-0.5">ไมล์เริ่ม: <span className="font-semibold text-[#1d1d1f]">{activeLog?.start_mileage?.toLocaleString()}</span></p>
                   )}
-               </div>
-               
-               {isEV ? (
-                   <div className="space-y-2 pt-2">
-                       <label className="text-xs font-bold text-gray-500 ml-1 block text-center mt-4">กรุณากรอกปริมาณแบตเตอรี่ล่าสุด</label>
-                       <div className="flex items-center justify-center gap-4 bg-white border-2 border-purple-200 rounded-2xl p-4 shadow-inner">
-                           <span className="text-3xl">🔋</span>
-                           <input 
-                                type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)} placeholder="0-100"
-                                className="w-24 p-2 bg-gray-50 rounded-xl outline-none text-center text-2xl font-black text-purple-700 border-none" 
-                           />
-                           <span className="text-xl font-bold text-purple-700">%</span>
-                       </div>
-                   </div>
-               ) : (
-                   <>
-                       <div className="space-y-1 pt-2">
-                          <label className="text-xs font-bold text-gray-400 ml-1">เลขไมล์ล่าสุด (จบงาน)</label>
-                          <input 
-                            type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)} placeholder="กรอกเลขไมล์ปัจจุบัน..."
-                            className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-purple-500 outline-none font-mono text-lg" 
-                          />
-                       </div>
+                </div>
 
-                       {/* ✅ ส่วนเลือกและกรอกการเติมน้ำมัน */}
-                       <div className="pt-4 border-t border-dashed border-gray-200 mt-4 space-y-3">
-                           <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block text-center">มีการเติมน้ำมันหรือไม่?</label>
-                           <div className="flex gap-2">
-                               <button 
-                                  onClick={() => { setHasRefueled(true); setFuelLiters(''); setFuelCost(''); }} 
-                                  className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-all ${hasRefueled === true ? 'bg-green-50 border-green-500 text-green-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}
-                               >
-                                  ✅ มีการเติม
-                               </button>
-                               <button 
-                                  onClick={() => { setHasRefueled(false); setFuelLiters(''); setFuelCost(''); }} 
-                                  className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-all ${hasRefueled === false ? 'bg-red-50 border-red-500 text-red-700 shadow-sm' : 'bg-white border-gray-200 text-gray-400'}`}
-                               >
-                                  ❌ ไม่ได้เติม
-                               </button>
-                           </div>
+                {isEV ? (
+                  /* %แบตหลัง */
+                  <div>
+                    <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">%แบตเตอรี่หลังชาร์จ</label>
+                    <div className="flex items-center justify-center gap-4 bg-[#f5f5f7] rounded-[14px] px-4 py-4 border border-[#e5e5ea]">
+                      <span className="text-[28px]">🔋</span>
+                      <input type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)}
+                        placeholder="0–100"
+                        className="w-24 py-2 bg-white rounded-[10px] outline-none text-center text-[24px] font-bold text-[#1d1d1f] border border-[#e5e5ea]"/>
+                      <span className="text-[20px] font-semibold text-[#6e6e73]">%</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* เลขไมล์จบ */}
+                    <div>
+                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">เลขไมล์ล่าสุด (จบงาน)</label>
+                      <input type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)}
+                        placeholder="เลขไมล์ปัจจุบัน"
+                        className="w-full px-4 py-3.5 rounded-[14px] text-[16px] font-mono outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
+                    </div>
 
-                           {/* โชว์ช่องกรอกเฉพาะตอนกด "มีการเติม" */}
-                           {hasRefueled === true && (
-                               <div className="grid grid-cols-2 gap-3 pt-2 animate-fade-in-down">
-                                  <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase">เติมน้ำมัน (ลิตร)</label>
-                                    <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} className="w-full p-3 bg-white rounded-xl border border-gray-200 text-center outline-none focus:border-green-500" placeholder="ระบุจำนวน" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase">จำนวนเงิน (บาท)</label>
-                                    <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} className="w-full p-3 bg-white rounded-xl border border-gray-200 text-center outline-none focus:border-green-500" placeholder="ระบุจำนวน" />
-                                  </div>
-                               </div>
-                           )}
-                       </div>
-                   </>
-               )}
+                    {/* เติมน้ำมัน */}
+                    <div>
+                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">มีการเติมน้ำมันหรือไม่?</label>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {[{v:true,l:'เติมน้ำมัน'},{v:false,l:'ไม่ได้เติม'}].map(item => (
+                          <button key={String(item.v)} onClick={() => { setHasRefueled(item.v); setFuelLiters(''); setFuelCost(''); }}
+                            className={`py-3 rounded-[12px] text-[14px] font-medium border transition-colors ${
+                              hasRefueled === item.v ? 'bg-[#1d1d1f] border-[#1d1d1f] text-white' : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
+                            }`}>
+                            {item.l}
+                          </button>
+                        ))}
+                      </div>
+                      {hasRefueled === true && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] text-[#6e6e73] mb-1 block">ปริมาณ (ลิตร)</label>
+                            <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)}
+                              placeholder="0.00"
+                              className="w-full px-3 py-3 rounded-[12px] text-[15px] text-center font-mono outline-none border border-[#e5e5ea] bg-white focus:border-[#1d1d1f] transition-colors"/>
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-[#6e6e73] mb-1 block">จำนวนเงิน (บาท)</label>
+                            <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)}
+                              placeholder="0"
+                              className="w-full px-3 py-3 rounded-[12px] text-[15px] text-center font-mono outline-none border border-[#e5e5ea] bg-white focus:border-[#1d1d1f] transition-colors"/>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
 
-               {/* ✅ ปรับให้ปุ่มล็อค (สีเทา) จนกว่าจะเลือกกดเติมน้ำมัน */}
-               <button 
-                  onClick={() => handleReturn(false)} 
-                  disabled={loading || (!isEV && hasRefueled === null)} 
-                  className={`w-full py-4 rounded-2xl font-bold shadow-lg mt-6 text-white transition-all ${
-                      loading ? 'bg-gray-400 cursor-not-allowed' : 
-                      (!isEV && hasRefueled === null) ? 'bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed' : 
-                      'bg-[#742F99] hover:bg-[#5b237a] active:scale-95'
-                  }`}
-               >
-                 {loading ? '⏳ กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จไฟรถ' : 'ยืนยันคืนรถ')}
-               </button>
-               
-               {!isEV && hasRefueled === null && (
-                   <p className="text-center text-xs font-bold text-red-500 mt-2 animate-pulse">👆 กรุณาเลือกว่า มีการเติมน้ำมัน หรือไม่ ก่อนกดยืนยัน</p>
-               )}
-            </div>
-          )}
+                <button onClick={() => handleReturn(false)} disabled={loading || (!isEV && hasRefueled === null)}
+                  className={`w-full py-4 rounded-[16px] text-[16px] font-semibold mt-2 transition-colors ${
+                    loading ? 'bg-[#d2d2d7] text-white cursor-not-allowed'
+                    : (!isEV && hasRefueled === null) ? 'bg-[#e5e5ea] text-[#aeaeb2] cursor-not-allowed'
+                    : 'bg-[#1d1d1f] text-white active:bg-[#3a3a3c]'
+                  }`}>
+                  {loading ? 'กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จ' : 'ยืนยันคืนรถ')}
+                </button>
+
+                {!isEV && hasRefueled === null && (
+                  <p className="text-center text-[12px] text-[#ff3b30] font-medium -mt-1">กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่</p>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

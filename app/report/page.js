@@ -1,12 +1,338 @@
 'use client'
-import React, { useState, useEffect, Suspense, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
+
+// --- Main Component ---
+function App() {
+  const searchParams = useSearchParams()
+  const carId = searchParams.get('car_id') 
+
+  // 1. ถ้ามี car_id -> ไปหน้าฟอร์ม
+  if (carId) {
+    return <CarActionForm carId={carId} />
+  }
+
+  // 2. ถ้าไม่มี -> ไปหน้า Home
+  return <CarSelector />
+}
 
 // ==========================================
-// 🎨 Component: กระดานเซ็นชื่อ (Signature Pad)
+// 1. หน้าแสดงผล (Home)
 // ==========================================
-function SignatureModal({ isOpen, onClose, onSave, title }) {
+function CarSelector() {
+  const router = useRouter()
+  const [cars, setCars] = useState([])
+  const [loading, setLoading] = useState(true)
+  
+  // ✅ State สำหรับควบคุมการเปิด/ปิดหน้าต่างคู่มือ
+  const [showInstructions, setShowInstructions] = useState(false)
+
+  const fetchCars = async () => {
+    try {
+      const { data: carsData } = await supabase.from('cars').select('*')
+      const { data: activeLogs } = await supabase.from('trip_logs').select('car_id, start_time, driver_name').eq('is_completed', false)
+      
+      // ✅ ดึงข้อมูล car_id ทั้งหมดใน trip_logs เพื่อเช็คว่าคันไหนเคยใช้งานแล้วบ้าง
+      const { data: allLogs } = await supabase.from('trip_logs').select('car_id')
+
+      if (carsData) {
+        // ✅ สร้าง Set เอาไว้ตรวจสอบว่ามีประวัติการใช้รถหรือไม่
+        const activatedSet = new Set(allLogs?.map(l => l.car_id) || [])
+
+        const mergedCars = carsData.map(car => {
+            const log = activeLogs?.find(l => l.car_id === car.id)
+            // ✅ เพิ่ม isActivated เข้าไป
+            return { ...car, activeLog: log, isActivated: activatedSet.has(car.id) }
+        })
+
+        mergedCars.sort((a, b) => {
+            if (a.status === 'busy' && b.status !== 'busy') return -1 
+            if (a.status !== 'busy' && b.status === 'busy') return 1  
+            return a.plate_number.localeCompare(b.plate_number)
+        })
+
+        setCars(mergedCars)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCars()
+    const interval = setInterval(fetchCars, 5000) 
+    return () => clearInterval(interval)
+  }, [])
+
+  // ฟังก์ชันช่วยดึงรูปภาพรถตามประเภท
+  const getCarImage = (car) => {
+    const type = car.car_type || ''
+    
+    // ✅ เช็คว่าเป็นรถ EV หรือไม่ (ดูจาก fuel_type แทนทะเบียน)
+    if (car.car_type?.toUpperCase() === 'รถ EV') return '/mg.png'
+    if (car.car_type?.toUpperCase() === 'รถ EV ทดเเทน') return '/mg2.png'
+    
+    // เช็คตามคำขึ้นต้นของประเภทรถ
+    if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
+    if (type.startsWith('รถบรรทุก 2 ตันเเก้ไฟ')) return '/2_ton_truck.png'
+    if (type.startsWith('รถเครน')) return '/crane.png'
+    if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
+    if (type.startsWith('รถกระบะ')) return '/truck.png'
+    if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
+    if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
+    if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
+    
+    return null 
+  }
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center">
+      <div className="w-12 h-12 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen bg-[#EBF0F6] font-sarabun pb-6 relative">
+      
+      {/* 🟣 Header */}
+      <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
+        <div className="flex justify-between items-start">
+          <div>
+             <h1 className="text-2xl font-black tracking-tight">PEA SMART VEHICLE MANAGEMENT</h1>
+             <p className="text-purple-200 text-sm opacity-90">ระบบบริหารจัดการยานพาหนะ</p>
+          </div>
+          <button 
+            onClick={() => router.push('/dashboard')} 
+            className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl backdrop-blur-md border border-white/10 active:scale-95 transition-all shadow-lg"
+          >
+            📊
+          </button>
+        </div>
+      </div>
+
+      {/* 🌟 Alert Instruction (ป้ายเหลือง) */}
+      <div className="-mt-16 mx-4 relative z-20 mb-8">
+        <style>{`
+          @keyframes scroll-left {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-100%); }
+          }
+          .animate-scrolling-text {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 100%;
+            animation: scroll-left 25s linear infinite;
+            will-change: transform;
+          }
+        `}</style>
+
+        <div className="bg-gradient-to-r from-[#FF8008] to-[#FFC837] p-1 rounded-[2rem] shadow-2xl shadow-orange-500/40">
+          <div className="bg-white/10 backdrop-blur-xl rounded-[1.8rem] p-4 flex flex-col gap-3 border border-white/30">
+              
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                      <div className="bg-white text-orange-500 w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
+                          <span className="absolute w-full h-full rounded-full border-4 border-orange-300 animate-ping opacity-30"></span>
+                          <span className="text-2xl z-10">📱</span>
+                      </div>
+                      <div>
+                          <h3 className="text-white text-xl font-black tracking-widest drop-shadow-md">SCAN QR CODE</h3>
+                          <p className="text-orange-50 text-[10px] uppercase font-bold tracking-widest bg-black/20 px-2 py-0.5 rounded-md inline-block mt-0.5">
+                              ระบบสแกนรับ-คืนรถ
+                          </p>
+                      </div>
+                  </div>
+                  
+                  {/* ปุ่มกดเพื่อเปิด Modal อธิบายการใช้งาน */}
+                  <button 
+                      onClick={() => setShowInstructions(true)}
+                      className="bg-white/20 hover:bg-white/40 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/40 shadow-inner transition-all active:scale-95 cursor-pointer"
+                      title="คลิกเพื่อดูวิธีใช้งาน"
+                  >
+                      <span className="text-xl font-bold">➔</span>
+                  </button>
+              </div>
+
+              <div className="bg-black/25 rounded-xl p-2 relative overflow-hidden border border-white/10 flex items-center h-10 w-full">
+                  <div className="w-full overflow-hidden">
+                      <p className="text-white text-sm font-bold animate-scrolling-text drop-shadow-sm tracking-wide">
+                          กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้งเพื่ออัปเดตสถานะในระบบ 🚗⚡
+                      </p>
+                  </div>
+              </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ⚪ รายการรถ */}
+      <div className="px-4 space-y-4 relative z-20">
+        {cars.map((car) => {
+          const carImageSrc = getCarImage(car)
+          
+          // ✅ เช็คว่าเป็น EV ไหม สำหรับเปลี่ยน Text ในป้ายสถานะ
+          const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
+
+          return (
+            <div 
+                key={car.id} 
+                className={`relative p-5 rounded-[2rem] shadow-sm border transition-all ${
+                    car.status === 'busy' 
+                    ? 'bg-white border-red-100 shadow-red-100' 
+                    : 'bg-white border-gray-100'
+                }`}
+            >
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(`/report?car_id=${car.id}`, '_blank')
+                    }}
+                    className="absolute top-4 right-4 bg-gray-50 hover:bg-gray-200 text-gray-400 p-2 rounded-xl transition-colors z-30"
+                >
+                    🖨️
+                </button>
+
+                <div className="flex items-center gap-4">
+                    {/* ✅ อัปเดตสีพื้นหลังรูปให้เป็นสีเทาถ้า Not Activated */}
+                    <div className={`w-20 h-20 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden ${
+                        !car.isActivated ? 'bg-gray-100 text-gray-400' : car.status === 'available' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                    }`}>
+                        {carImageSrc ? (
+                            <img src={carImageSrc} alt={car.car_type} className="w-full h-full object-cover" />
+                        ) : (
+                            '🚗'
+                        )}
+                    </div>
+
+                    <div className="flex-1">
+                        <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
+                        
+                        <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">
+                            {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#742F99]">{car.car_type}</span>
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {/* ✅ อัปเดตสีป้ายสถานะและข้อความเฉพาะ EV */}
+                            <span className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
+                                !car.isActivated ? 'bg-gray-100 text-gray-500' : car.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                                <span className={`w-2 h-2 rounded-full ${!car.isActivated ? 'bg-gray-400' : car.status === 'available' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
+                                {!car.isActivated ? 'Not Activated' : car.status === 'available' ? (isEV ? 'พร้อมใช้งาน' : 'ว่างพร้อมใช้') : (isEV ? 'กำลังชาร์จไฟ' : 'กำลังใช้งาน')}
+                            </span>
+
+                            {car.status === 'busy' && car.activeLog && (
+                                <span className="px-3 py-1 rounded-lg text-xs font-bold bg-orange-50 text-orange-600 flex items-center gap-1">
+                                    🕒 ออก: {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})} น.
+                                </span>
+                            )}
+                        </div>
+                        
+                        {car.status === 'busy' && car.activeLog && (
+                            <p className="text-[10px] text-gray-400 mt-2 ml-1 font-bold">
+                                👤 โดย: <span className="text-gray-600">{car.activeLog.driver_name}</span>
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+          )
+        })}
+        
+        <div className="text-center pt-6 text-gray-300 text-[10px]">
+            PEA Fleet System v2.26 (Unlocked EV Mileage)
+        </div>
+      </div>
+
+      {/* ✅ Modal คำอธิบายการใช้งาน */}
+      {showInstructions && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div 
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={() => setShowInstructions(false)}
+            ></div>
+            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
+                <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] p-5 text-white flex justify-between items-center shadow-md z-10">
+                    <h2 className="text-lg font-black flex items-center gap-2">
+                        <span>📖</span> คู่มือการใช้งานระบบ
+                    </h2>
+                    <button 
+                        onClick={() => setShowInstructions(false)}
+                        className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors text-sm"
+                    >✖</button>
+                </div>
+                <div className="p-5 overflow-y-auto space-y-5 text-gray-700 bg-gray-50">
+                    <div className="bg-white border border-red-200 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="bg-red-300 text-red-700 font-bold p-3 flex items-center gap-2 text-sm">
+                            <span className="text-lg">🚙</span> รถยนต์ทั่วไป (รถใช้น้ำมัน)
+                        </div>
+                        <div className="p-4 space-y-4">
+                            <div className="relative">
+                                <div className="absolute left-[9px] top-6 bottom-[-20px] w-0.5 bg-orange-100"></div>
+                                <h4 className="font-bold text-red-600 text-xs mb-1 flex items-center gap-2">
+                                    <span className="bg-red-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">1</span> 
+                                    การนำรถออก
+                                </h4>
+                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
+                                    สแกน QR Code ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์เริ่มต้น ➔ กรอกสถานที่ ➔ <span className="text-red-600 font-bold">กดยืนยันนำรถออก</span>
+                                </p>
+                            </div>
+                            <div className="relative">
+                                <h4 className="font-bold text-red-600 text-xs mb-1 flex items-center gap-2">
+                                    <span className="bg-red-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">2</span> 
+                                    การคืนรถ
+                                </h4>
+                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
+                                    สแกน QR Code ➔ กรอกเลขไมล์ล่าสุดหลังใช้รถ ➔ กรอกข้อมูลเติมน้ำมัน ➔ <span className="text-red-600 font-bold">กดยืนยันคืนรถ</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-sky-200 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="bg-sky-300 text-sky-700 font-bold p-3 flex items-center gap-2 text-sm">
+                            <span className="text-lg">⚡</span> รถยนต์ไฟฟ้า (EV)
+                        </div>
+                        <div className="p-4 space-y-4">
+                            <div className="relative">
+                                <div className="absolute left-[9px] top-6 bottom-[-20px] w-0.5 bg-green-100"></div>
+                                <h4 className="font-bold text-sky-600 text-xs mb-1 flex items-center gap-2">
+                                    <span className="bg-sky-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">1</span> 
+                                    การเริ่มชาร์จไฟรถ
+                                </h4>
+                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
+                                    สแกน QR Code ➔ กรอกรหัสประจำตัว ➔ กรอกเลขไมล์ ➔ กรอก%แบตก่อนชาร์จ ➔ เลือกสถานี ➔ <span className="text-sky-600 font-bold">กดยืนยันเริ่มชาร์จ</span>
+                                </p>
+                            </div>
+                            <div className="relative">
+                                <h4 className="font-bold text-sky-600 text-xs mb-1 flex items-center gap-2">
+                                    <span className="bg-sky-300 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] z-10 relative">2</span> 
+                                    การเลิกชาร์จไฟรถ
+                                </h4>
+                                <p className="text-[11px] text-gray-500 ml-7 leading-relaxed">
+                                    สแกน QR Code ➔ กรอกปริมาณ%แบตเตอรี่ล่าสุด ➔ <span className="text-sky-600 font-bold">กดยืนยันเลิกชาร์จ</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 border-t bg-white text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <button 
+                        onClick={() => setShowInstructions(false)}
+                        className="w-full bg-[#742F99] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#591d79] transition-colors active:scale-95"
+                    >รับทราบและเข้าใจแล้ว</button>
+                </div>
+            </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==========================================
+// 🎨 Component: กระดานเซ็นชื่อ (Signature Pad) สำหรับ ReportPage
+// ==========================================
+function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [empId, setEmpId] = useState('');
@@ -38,7 +364,10 @@ function SignatureModal({ isOpen, onClose, onSave, title }) {
     setIsLoading(true); setError('');
     try {
         const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', empId).single();
-        if (data) setStaffInfo(data);
+        if (data) {
+            setStaffInfo(data);
+            if (onVerifySuccess) onVerifySuccess(); 
+        }
         else setError('❌ ไม่พบรหัสพนักงานในระบบ');
     } catch (err) { setError('❌ ไม่พบรหัสพนักงานในระบบ'); }
     setIsLoading(false);
@@ -89,8 +418,11 @@ function SignatureModal({ isOpen, onClose, onSave, title }) {
         alert("กรุณาเซ็นชื่อก่อนบันทึกครับ");
         return;
     }
-    onSave(base64Text, staffInfo.full_name, staffInfo.position);
-    onClose();
+    
+    if (window.confirm('ยืนยันการลงชื่อ ใช่หรือไม่?')) {
+        onSave(base64Text, staffInfo.full_name, staffInfo.position);
+        onClose();
+    }
   };
 
   return (
@@ -101,7 +433,7 @@ function SignatureModal({ isOpen, onClose, onSave, title }) {
         </div>
         
         <div className="bg-blue-50/80 border-b border-blue-100 text-blue-700 text-xs py-2 px-4 text-center font-bold flex items-center justify-center gap-2 shadow-sm">
-            <span className="text-lg">📅</span> อนุญาตให้เซ็นเอกสารเฉพาะวันที่ 28 ถึง 5
+            <span className="text-lg">📅</span> อนุญาตให้เซ็นเอกสารเฉพาะวันที่ 28 ถึง 5 ของเดือนถัดไป
         </div>
 
         <div className="p-6">
@@ -173,8 +505,38 @@ function ReportPage() {
 
   const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' })
 
-  const currentDay = today.getDate()
-  const isSigningAllowed = currentDay >= 28 || currentDay <= 5
+  // ✅ State สำหรับเก็บค่าเดือนที่อนุญาตให้เซ็นได้ และเช็คว่าเซ็นได้หรือไม่
+  const [signableMonth, setSignableMonth] = useState(null);
+  const [canSignAny, setCanSignAny] = useState(false);
+  const [isCurrentMonthSignable, setIsCurrentMonthSignable] = useState(false);
+
+  // ✅ ตรรกะใหม่: ตรวจสอบเดือนที่อนุญาตให้เซ็นอย่างถูกต้อง ไม่เกิด Error ตัวแดง
+  useEffect(() => {
+     const d = today;
+     const date = d.getDate();
+     let allowedMonth = null;
+
+     if (date >= 28) {
+         // ถ้าวันนี้วันที่ 28 ขึ้นไป จะเซ็นของเดือนนี้ได้
+         const y = d.getFullYear();
+         const m = String(d.getMonth() + 1).padStart(2, '0');
+         allowedMonth = `${y}-${m}`;
+     } else if (date <= 5) {
+         // ถ้าวันนี้วันที่ 1-5 จะเซ็นของเดือนที่แล้วได้
+         let y = d.getFullYear();
+         let m = d.getMonth();
+         if (m === 0) {
+             y -= 1;
+             m = 12;
+         }
+         allowedMonth = `${y}-${String(m).padStart(2, '0')}`;
+     }
+
+     setSignableMonth(allowedMonth);
+     setCanSignAny(allowedMonth !== null);
+     setIsCurrentMonthSignable(allowedMonth === selectedMonth);
+
+  }, [today, selectedMonth]);
 
   const [scale, setScale] = useState(1);
   const A4_WIDTH_PX = 1123; 
@@ -260,8 +622,8 @@ function ReportPage() {
   }
 
   const openSigModal = (target, title) => {
-      if (!isSigningAllowed) {
-          alert('⚠️ ระบบอนุญาตให้เซ็นชื่อ แก้ไข หรือลบลายเซ็นได้เฉพาะวันที่ 28 ถึง 5 ของเดือนเท่านั้นครับ');
+      if (!canSignAny) {
+          alert('⚠️ นอกเวลาอนุญาต (ระบบให้เซ็นเอกสารได้เฉพาะวันที่ 28 ถึง 5 ของเดือนเท่านั้นครับ)');
           return;
       }
       setSigModal({ isOpen: true, target, title });
@@ -280,7 +642,10 @@ function ReportPage() {
   const endMonthMileage = logs.length > 0 ? logs[logs.length - 1].end_mileage : 0;
   const isEVCar = car?.fuel_type?.toUpperCase() === 'EV' || car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
 
-  // ✅ ระบบคำนวณจำนวนแถวแบบ Dynamic (หน้าทั่วไป = โชว์ได้ 11 ช่อง / หน้าสุดท้าย = 10 ช่องเพื่อเว้นที่ให้แถวรวม)
+  // ✅ ระบบคำนวณจำนวนแถวแบบ Dynamic แยกตามประเภทรถ (EV: 11/10 แถว, น้ำมัน: 8/5 แถว)
+  const maxLastPageRows = isEVCar ? 10 : 5;
+  const maxRegularRows = isEVCar ? 11 : 8;
+
   const pages = [];
   let currentIndex = 0;
   if (logs.length === 0) {
@@ -288,19 +653,15 @@ function ReportPage() {
   } else {
       while (currentIndex < logs.length) {
           let remaining = logs.length - currentIndex;
-          if (remaining <= 10) {
-              // ถ้าเหลือไม่เกิน 10 แสดงว่าจบในหน้านี้ได้เลย (เหลือที่ให้แถวรวมและลายเซ็น)
+          if (remaining <= maxLastPageRows) {
               pages.push(logs.slice(currentIndex, currentIndex + remaining));
               currentIndex += remaining;
           } else {
-              // ถ้าเกิน 10 ให้แสดงเต็มโควต้าหน้าที่ไม่มีแถวรวม คือ 11 ช่อง
-              pages.push(logs.slice(currentIndex, currentIndex + 11));
-              currentIndex += 11;
+              pages.push(logs.slice(currentIndex, currentIndex + maxRegularRows));
+              currentIndex += maxRegularRows;
           }
       }
-      // กรณีพิเศษ: ถ้าหน้าสุดท้ายถูกจัดลงไป 11 ช่องพอดีเป๊ะ จะไม่มีที่ว่างเหลือให้แถวรวม
-      // จึงต้องบังคับเพิ่มหน้าว่างๆ ไปอีก 1 หน้า เพื่อไว้แสดงแถวรวมและลายเซ็นอย่างเดียว
-      if (pages.length > 0 && pages[pages.length - 1].length === 11) {
+      if (pages.length > 0 && pages[pages.length - 1].length > maxLastPageRows) {
           pages.push([]);
       }
   }
@@ -369,6 +730,12 @@ function ReportPage() {
         isOpen={sigModal.isOpen} title={sigModal.title}
         onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
         onSave={(base64Text, fetchedName, fetchedPos) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos)}
+        onVerifySuccess={() => {
+            // ✅ กระโดดเปลี่ยนเดือนให้ตรงกับที่อนุญาตให้เซ็นอัตโนมัติ
+            if (signableMonth && selectedMonth !== signableMonth) {
+                setSelectedMonth(signableMonth);
+            }
+        }}
       />
 
       <div className="w-full fixed top-0 left-0 xl:w-[320px] xl:top-4 xl:left-auto xl:right-4 print:hidden z-50 flex flex-col gap-2 bg-white/95 backdrop-blur-md p-3 shadow-lg xl:shadow-2xl border-b xl:border border-gray-200 xl:rounded-2xl overflow-hidden">
@@ -378,9 +745,18 @@ function ReportPage() {
           <button onClick={() => window.print()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-blue-700 font-bold text-[11px] xl:text-sm flex items-center gap-1 active:scale-95 transition-transform">🖨️ พิมพ์</button>
         </div>
 
-        {!isSigningAllowed && (
+        {/* ✅ ป้ายแจ้งเตือนเรื่องรอบเวลาเซ็นเอกสาร */}
+        {!canSignAny ? (
             <div className="bg-orange-50 border border-orange-200 text-orange-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
-                🔒 หมดเวลาเซ็น (อนุญาตเฉพาะ 28-5)
+                🔒 นอกเวลาอนุญาต (เซ็นได้เฉพาะวันที่ 28 ถึง 5 ของรอบเดือน)
+            </div>
+        ) : selectedMonth !== signableMonth ? (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
+                ℹ️ หากกดเซ็น ระบบจะสลับไปเดือนที่กำหนด ({signableMonth})
+            </div>
+        ) : (
+            <div className="bg-green-50 border border-green-200 text-green-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
+                ✅ สามารถแก้ไขลายเซ็นของเดือนนี้ได้
             </div>
         )}
 
@@ -415,10 +791,11 @@ function ReportPage() {
                         {driverSigText ? (
                             <>
                                 <img src={driverSigText} alt="sig" className="h-6 object-contain mt-3" />
-                                {isSigningAllowed && <button onClick={() => handleDeleteSig('driver')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
+                                {/* ✅ ซ่อนปุ่มลบ ถ้าเปิดดูเดือนอื่นอยู่ (ป้องกันมือลั่นลบผิดเดือน) */}
+                                {isCurrentMonthSignable && <button onClick={() => handleDeleteSig('driver')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
                             </>
                         ) : (
-                            <button onClick={() => openSigModal('driver', isEVCar ? 'เซ็นชื่อผู้รายงาน' : 'เซ็นชื่อผู้ขับยานพาหนะ')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${isSigningAllowed ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                            <button onClick={() => openSigModal('driver', isEVCar ? 'เซ็นชื่อผู้รายงาน' : 'เซ็นชื่อผู้ขับยานพาหนะ')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${canSignAny ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
                                 + เซ็นชื่อ
                             </button>
                         )}
@@ -429,10 +806,11 @@ function ReportPage() {
                         {controllerSigText ? (
                             <>
                                 <img src={controllerSigText} alt="sig" className="h-6 object-contain mt-3" />
-                                {isSigningAllowed && <button onClick={() => handleDeleteSig('controller')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
+                                {/* ✅ ซ่อนปุ่มลบ ถ้าเปิดดูเดือนอื่นอยู่ */}
+                                {isCurrentMonthSignable && <button onClick={() => handleDeleteSig('controller')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
                             </>
                         ) : (
-                            <button onClick={() => openSigModal('controller', 'เซ็นชื่อผู้ควบคุม')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${isSigningAllowed ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                            <button onClick={() => openSigModal('controller', 'เซ็นชื่อผู้ควบคุม')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${canSignAny ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
                                 + เซ็นชื่อ
                             </button>
                         )}
@@ -445,8 +823,7 @@ function ReportPage() {
       <div className="w-full flex flex-col items-center gap-6 print:block print:w-auto print-container">
           {pages.map((pageLogs, pageIndex) => {
             const isLastPage = pageIndex === pages.length - 1;
-            // ✅ หน้าสุดท้ายเป้าหมาย 10 แถว (บวกแถวรวม), หน้าอื่นๆ 11 แถว
-            const targetRows = isLastPage ? 10 : 11;
+            const targetRows = isLastPage ? (isEVCar ? 10 : 5) : (isEVCar ? 11 : 8);
             const emptyRows = Array.from({ length: Math.max(0, targetRows - pageLogs.length) });
 
             return (
@@ -545,6 +922,7 @@ function ReportPage() {
                                                 <td className="border border-black p-0 align-middle"><CheckboxCell checked={false} /></td>
                                             </tr>
                                         ))}
+                                        {/* แถวรวมโชว์เฉพาะหน้าสุดท้าย */}
                                         {isLastPage && (
                                             <tr className="h-[30px] font-normal text-[11px] align-middle bg-gray-50 print:bg-transparent">
                                                 <td colSpan={3} className="border border-black text-right pr-2">รวม</td>
@@ -606,121 +984,165 @@ function ReportPage() {
                         /* ========================================= */
                         /* 🚙 REPORT FORM: STANDARD (รถน้ำมัน) */
                         /* ========================================= */
-                        <div className="flex-1 flex flex-col justify-between">
+                        <div className="flex-1 flex flex-col justify-between pt-4">
                             <div>
-                                <div className="flex justify-between items-end mb-1 font-normal">
-                                    <div className="w-[280px] flex justify-start pl-10">
-                                        <div className="flex flex-col items-center">
-                                            <img src="/pea_logo.png" alt="PEA Logo" className="h-12 mb-1 object-contain" />
-                                            <div className="text-[16px] font-bold leading-tight">การไฟฟ้าส่วนภูมิภาค</div>
-                                            <div className="text-[9px] text-gray-600 uppercase leading-none tracking-tighter">Provincial Electricity Authority</div>
-                                        </div>
+                                {/* Header (Top) */}
+                                <div className="relative font-normal text-[14px] leading-[1.8] text-black">
+                                    <div className="absolute top-0 right-0 text-[12px]">หน้าที่ {pageIndex + 1} / {pages.length}</div>
+                                    
+                                    <div className="text-center mb-4">
+                                        <div className="text-[18px] font-bold">การไฟฟ้าส่วนภูมิภาค</div>
+                                        <div className="text-[18px] font-bold">แบบฟอร์มรายงานการใช้ยานพาหนะหรือเครื่องจักร</div>
                                     </div>
-                                    <div className="text-center flex-grow pb-[2px]">
-                                        <div className="text-[14px]">การไฟฟ้าส่วนภูมิภาค</div>
-                                        <div className="text-[14px]">แบบฟอร์มรายงานการใช้ยานพาหนะหรือเครื่องจักร</div>
+
+                                    <div className="flex items-end mb-1">
+                                        <div className="whitespace-nowrap">จาก<span className="inline-block border-b border-dotted border-black w-[250px] text-center px-2">{fromText}</span></div>
+                                        <div className="whitespace-nowrap mx-2">ถึง (หัวหน้าหน่วยงาน)<span className="inline-block border-b border-dotted border-black w-[250px] text-center px-2">{toText}</span></div>
+                                        <div className="whitespace-nowrap flex-grow text-right pr-2">วันที่<span className="inline-block border-b border-dotted border-black w-[40px] text-center px-1">{today.getDate()}</span>เดือน<span className="inline-block border-b border-dotted border-black w-[100px] text-center px-1">{formatThaiMonth(today)}</span>พ.ศ.<span className="inline-block border-b border-dotted border-black w-[60px] text-center px-1">{formatThaiYear(today)}</span></div>
                                     </div>
-                                    <div className="w-[280px] text-right text-[13px] pb-[2px]">
-                                        หน้าที่ {pageIndex + 1} / {pages.length}
+                                    
+                                    <div className="flex items-end mb-1">
+                                        <div className="whitespace-nowrap w-full">เรื่อง<span className="ml-4">รายงานการใช้ยานพาหนะ / เครื่องจักร</span></div>
+                                    </div>
+
+                                    <div className="flex items-end mb-1">
+                                        <div className="whitespace-nowrap w-full">เรียน<span className="ml-4">(หัวหน้าหน่วยงาน)</span><span className="inline-block border-b border-dotted border-black w-[350px] text-center px-2">{dearText}</span></div>
+                                    </div>
+
+                                    <div className="flex items-end mb-1">
+                                        <div className="whitespace-nowrap ml-10">รายงานการใช้ยานพาหนะ / เครื่องจักร ประจำเดือน</div>
+                                        <span className="inline-block border-b border-dotted border-black w-[150px] mx-1 text-center px-2">{formatThaiMonth(reportDate)}</span>พ.ศ.
+                                        <span className="inline-block border-b border-dotted border-black w-[80px] mx-1 text-center px-2">{formatThaiYear(reportDate)}</span>หมายเลขทะเบียน
+                                        <span className="inline-block border-b border-dotted border-black w-[200px] mx-1 text-center px-2">{car?.plate_number}</span>
+                                    </div>
+
+                                    <div className="flex items-end mb-1">
+                                        <div className="whitespace-nowrap">รหัส<span className="inline-block border-b border-dotted border-black w-[250px] mx-1 text-center px-2"></span></div>
+                                        <div className="whitespace-nowrap">ประเภท<span className="inline-block border-b border-dotted border-black w-[250px] mx-1 text-center px-2">{car?.car_type}</span></div>
+                                        <div className="whitespace-nowrap">ชนิด<span className="inline-block border-b border-dotted border-black w-[200px] mx-1 text-center px-2"></span></div>
+                                    </div>
+
+                                    <div className="flex items-end mb-1">
+                                        <div className="whitespace-nowrap">ชนิดของน้ำมันเชื้อเพลิง<span className="inline-block border-b border-dotted border-black w-[400px] mx-1 text-center px-2">{car?.fuel_type}</span></div>
+                                        <div className="whitespace-nowrap">น้ำมันหล่อลื่น จำนวน<span className="inline-block border-b border-dotted border-black w-[150px] mx-1 text-center px-2"></span>ลิตร</div>
+                                    </div>
+
+                                    <div className="flex items-end mb-4">
+                                        <div className="whitespace-nowrap">เฉลี่ยการใช้น้ำมันเชื้อเพลิง ลิตรละ<span className="inline-block border-b border-dotted border-black w-[200px] mx-1 text-center px-2">{kmPerLiter}</span>กิโลเมตร ,</div>
+                                        <div className="whitespace-nowrap">ชั่วโมงละ<span className="inline-block border-b border-dotted border-black w-[150px] mx-1 text-center px-2"></span>ลิตร</div>
                                     </div>
                                 </div>
 
-                                <div className="text-[13px] space-y-1 mt-1 font-normal">
-                                    <div className="grid grid-cols-3 w-full items-center">
-                                        <div className="flex items-center pl-10">จาก <div className={`border-b border-dotted border-black w-[100px] ml-1 text-center font-normal ${fromText ? 'text-black' : 'text-transparent'}`}>{fromText || '.'}</div></div>
-                                        <div className="flex items-center justify-center whitespace-nowrap">ถึง (หัวหน้าหน่วยงาน) <div className={`border-b border-dotted border-black w-[150px] ml-1 text-center font-normal ${toText ? 'text-black' : 'text-transparent'}`}>{toText || '.'}</div></div>
-                                        <div></div>
-                                    </div>
-                                    <div className="grid grid-cols-3 w-full items-center">
-                                        <div className="flex items-center pl-10">เรื่อง <span className="ml-5 font-normal">รายงานการใช้ยานพาหนะหรือเครื่องจักร</span></div>
-                                        <div className="flex items-center justify-center whitespace-nowrap">วันที่ <span className="border-b border-dotted border-black w-8 text-center mx-1">{today.getDate()}</span> เดือน <span className="border-b border-dotted border-black w-24 text-center mx-1">{formatThaiMonth(today)}</span> ปี <span className="border-b border-dotted border-black w-16 text-center mx-1">{formatThaiYear(today)}</span></div>
-                                        <div></div>
-                                    </div>
-                                    <div className="flex items-center pl-10">เรียน <span className="ml-5">หัวหน้าหน่วยงาน</span> <div className={`border-b border-dotted border-black w-[100px] ml-1 text-center font-normal ${dearText ? 'text-black' : 'text-transparent'}`}>{dearText || '.'}</div></div>
-                                    <div className="flex flex-wrap pt-0.5 items-end leading-relaxed pl-10">
-                                        <span className="ml-12">รายงานการใช้ยานพาหนะ ประจำเดือน</span> <span className="border-b border-dotted border-black min-w-[100px] text-center mx-1">{formatThaiMonth(reportDate)}</span> พ.ศ. <span className="border-b border-dotted border-black min-w-[50px] text-center mx-1">{formatThaiYear(reportDate)}</span> หมายเลขทะเบียน <span className="border-b border-dotted border-black min-w-[100px] text-center mx-1 font-normal">{car?.plate_number}</span> รหัส <span className="border-b border-dotted border-black min-w-[60px] text-center mx-1"></span> ประเภท <span className="border-b border-dotted border-black min-w-[100px] text-center mx-1 font-normal">{car?.car_type}</span> ชนิด <span className="border-b border-dotted border-black min-w-[60px] text-center mx-1"></span>
-                                    </div>
-                                    <div className="flex items-center gap-3 pt-0.5 text-[12px] pl-10 font-normal">
-                                        <span>ชนิดเชื้อเพลิง</span>
-                                        {['แก๊สโซฮอล์ 95', 'แก๊สโซฮอล์ 91', 'แก๊สโซฮอล์ E20', 'แก๊สโซฮอล์ E85', 'ดีเซล'].map(f => (
-                                            <div key={f} className="flex items-center gap-1 font-normal">
-                                                <div className="w-3.5 h-3.5 border border-black flex items-center justify-center text-[11px] relative">{car?.fuel_type === f && <span className="absolute -top-1 font-normal">✓</span>}</div> <span>{f}</span>
-                                            </div>
-                                        ))}
-                                        <span className="ml-2 font-normal">น้ำมันหล่อลื่น จำนวน ................. ลิตร</span>
-                                    </div>
-                                    <div className="flex items-center pt-0.5 text-[12px] pl-10 font-normal">
-                                        อัตราสิ้นเปลืองเชื้อเพลิงยานพาหนะ <span className="border-b border-dotted border-black w-[130px] text-center mx-1 font-normal text-black">{kmPerLiter}</span> กิโลเมตร/ลิตร, <span className="ml-2 font-normal">เครื่องจักร ..................... ลิตร/ชั่วโมง</span>
-                                    </div>
-                                </div>
-
-                                <table className="w-full border-collapse border border-black mt-2 text-[12px] font-normal">
+                                <table className="w-full border-collapse border border-black text-[12px] font-normal text-black">
                                     <thead>
-                                        <tr className="text-center h-[40px] bg-gray-50 print:bg-transparent font-normal">
-                                        <th className="border border-black w-[10%] font-normal">วันที่</th><th className="border border-black w-[14%] font-normal px-1">ชื่อ-ตำแหน่ง<br/>หน่วยงานที่ใช้</th><th className="border border-black w-[14%] font-normal px-1">สถานที่ปฏิบัติงาน</th>
-                                        <th className="border border-black w-[12%] p-0 font-normal"><div className="h-[20px] flex items-center justify-center border-b border-black text-[11px]">เลขระยะทาง</div><div className="h-[20px] flex divide-x divide-black text-[11px]"><div className="w-1/2 flex items-center justify-center text-[10px]">ไป</div><div className="w-1/2 flex items-center justify-center text-[10px]">กลับ</div></div></th>
-                                        <th className="border border-black w-[7%] font-normal text-[10px]">ชั่วโมงการ<br/>ทำงาน</th><th className="border border-black w-[8%] font-normal text-[10px]">น้ำมันที่เติม<br/>(ลิตร)</th><th className="border border-black w-[8%] font-normal text-[10px]">จำนวนเงิน<br/>(บาท)</th><th className="border border-black w-[11%] font-normal text-[11px]">รายการซ่อม</th><th className="border border-black w-[8%] font-normal text-[10px]">จำนวนเงิน<br/>(บาท)</th><th className="border border-black w-[8%] font-normal text-[11px]">หมายเหตุ</th>
+                                        <tr className="text-center bg-white print:bg-transparent font-normal">
+                                            <th rowSpan={2} className="border border-black w-[6%] font-normal">วันที่</th>
+                                            <th rowSpan={2} className="border border-black w-[16%] font-normal px-1 leading-tight">ชื่อ-ตำแหน่ง<br/>หน่วยงานที่ใช้<br/>ยานพาหนะ</th>
+                                            <th rowSpan={2} className="border border-black w-[16%] font-normal px-1">ไปปฏิบัติงานที่ใด</th>
+                                            <th colSpan={2} className="border border-black w-[12%] font-normal">เลขระยะทาง</th>
+                                            <th rowSpan={2} className="border border-black w-[7%] font-normal text-[11px] px-1 leading-tight">ชั่วโมง<br/>ทำงานของ<br/>เครื่องจักร</th>
+                                            <th rowSpan={2} className="border border-black w-[9%] font-normal text-[11px] px-1 leading-tight">น้ำมัน<br/>เชื้อเพลิงที่<br/>เติมแต่ละครั้ง<br/>(ลิตร)</th>
+                                            <th rowSpan={2} className="border border-black w-[8%] font-normal text-[11px] px-1 leading-tight">จำนวนเงิน<br/>(บาท)</th>
+                                            <th rowSpan={2} className="border border-black w-[11%] font-normal text-[12px] px-1">รายการซ่อม</th>
+                                            <th rowSpan={2} className="border border-black w-[8%] font-normal text-[11px] px-1 leading-tight">จำนวนเงิน<br/>(บาท)</th>
+                                            <th rowSpan={2} className="border border-black w-[7%] font-normal text-[12px] px-1">หมายเหตุ</th>
+                                        </tr>
+                                        <tr className="text-center bg-white print:bg-transparent font-normal">
+                                            <th className="border border-black font-normal w-[6%]">ไป</th>
+                                            <th className="border border-black font-normal w-[6%]">กลับ</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {pageLogs.map((log, i) => (
-                                        <tr key={i} className="h-[26px] align-middle font-normal">
-                                            <td className="border border-black text-center">{formatDate(log.start_time)}</td><td className="border border-black px-1 text-center truncate max-w-[120px]">{log.driver_name}</td><td className="border border-black px-1 text-center truncate max-w-[120px]">{log.location}</td>
-                                            <td className="border border-black p-0 h-full font-normal"><div className="flex divide-x divide-black h-[26px]"><div className="w-1/2 flex items-center justify-center">{log.start_mileage}</div><div className="w-1/2 flex items-center justify-center">{log.end_mileage}</div></div></td>
-                                            <td className="border border-black text-center"></td><td className="border border-black text-center">{log.fuel_liters ? Number(log.fuel_liters).toFixed(2) : ''}</td><td className="border border-black text-right px-1">{log.fuel_cost > 0 ? Number(log.fuel_cost).toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td>
+                                        <tr key={i} className="h-[28px] align-middle font-normal text-[12px]">
+                                            <td className="border border-black text-center">{formatDate(log.start_time)}</td>
+                                            <td className="border border-black px-1 text-left truncate max-w-[140px]">{log.driver_name}</td>
+                                            <td className="border border-black px-1 text-left truncate max-w-[140px]">{log.location}</td>
+                                            <td className="border border-black text-center">{log.start_mileage}</td>
+                                            <td className="border border-black text-center">{log.end_mileage}</td>
+                                            <td className="border border-black text-center"></td>
+                                            <td className="border border-black text-center">{log.fuel_liters ? Number(log.fuel_liters).toFixed(2) : ''}</td>
+                                            <td className="border border-black text-center">{log.fuel_cost > 0 ? Number(log.fuel_cost).toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
+                                            <td className="border border-black"></td>
+                                            <td className="border border-black"></td>
+                                            <td className="border border-black"></td>
                                         </tr>
                                         ))}
                                         {emptyRows.map((_, i) => (
-                                        <tr key={`empty-${i}`} className="h-[26px] font-normal">
-                                            <td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black p-0 h-full"><div className="flex divide-x divide-black h-[26px]"><div className="w-1/2"></div><div className="w-1/2"></div></div></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td>
+                                        <tr key={`empty-${i}`} className="h-[28px] font-normal">
+                                            <td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td>
+                                            <td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td>
+                                            <td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td>
+                                            <td className="border border-black"></td><td className="border border-black"></td>
                                         </tr>
                                         ))}
                                         {/* แถวรวมโชว์เฉพาะหน้าสุดท้าย */}
                                         {isLastPage && (
-                                            <tr className="h-[30px] font-normal text-[11px] align-middle bg-gray-50 print:bg-transparent">
-                                                <td colSpan={3} className="border border-black text-right pr-2">รวม</td><td className="border border-black text-center text-black">{totalDistance > 0 ? totalDistance.toLocaleString() + ' กม.' : '-'}</td><td className="border border-black"></td><td className="border border-black text-center text-black">{totalFuelLiters > 0 ? totalFuelLiters.toFixed(2) : ''}</td><td className="border border-black text-right px-1 text-black">{totalFuelCost > 0 ? totalFuelCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td><td className="border border-black"></td><td className="border border-black text-right px-1"></td><td className="border border-black"></td>
+                                            <tr className="h-[28px] font-normal text-[12px] align-middle bg-white print:bg-transparent">
+                                                <td colSpan={3} className="border border-black text-center">รวมทั้งสิ้น</td>
+                                                <td colSpan={2} className="border border-black text-center text-black">{totalDistance > 0 ? totalDistance.toLocaleString() : ''}</td>
+                                                <td className="border border-black"></td>
+                                                <td className="border border-black text-center text-black">{totalFuelLiters > 0 ? totalFuelLiters.toFixed(2) : ''}</td>
+                                                <td className="border border-black text-center text-black">{totalFuelCost > 0 ? totalFuelCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
+                                                <td className="border border-black"></td>
+                                                <td className="border border-black"></td>
+                                                <td className="border border-black"></td>
                                             </tr>
                                         )}
                                     </tbody>
                                 </table>
 
-                                <div className="mt-1 pl-12 text-[13px] font-normal">จึงเรียนเพื่อโปรดทราบ</div>
+                                {isLastPage && (
+                                    <div className="mt-4 flex justify-center w-full">
+                                        <div className="w-[500px] text-[13px] font-normal leading-relaxed space-y-1.5 text-black">
+                                            <div className="flex justify-between items-end">
+                                                <span className="w-[300px]">1. รวมระยะทาง กม. ที่ใช้ในการปฏิบัติงาน</span>
+                                                <span className="border-b border-dotted border-black flex-1 mx-2 text-center">{totalDistance > 0 ? totalDistance.toLocaleString() : ''}</span>
+                                                <span className="w-[50px]">กม.</span>
+                                            </div>
+                                            <div className="flex justify-between items-end">
+                                                <span className="w-[300px]">2. รวมน้ำมันเชื้อเพลิงที่ใช้ในการปฏิบัติงาน</span>
+                                                <span className="border-b border-dotted border-black flex-1 mx-2 text-center">{totalFuelLiters > 0 ? totalFuelLiters.toFixed(2) : ''}</span>
+                                                <span className="w-[50px]">ลิตร</span>
+                                            </div>
+                                            <div className="flex justify-between items-end">
+                                                <span className="w-[300px]">3. อัตราเฉลี่ยน้ำมันเชื้อเพลิง</span>
+                                                <span className="border-b border-dotted border-black flex-1 mx-2 text-center">{kmPerLiter}</span>
+                                                <span className="w-[50px]">กม./ลิตร</span>
+                                            </div>
+                                            <div className="flex justify-between items-end">
+                                                <span className="w-[300px]">4. รวมจำนวนเงินที่ใช้ในการเติมน้ำมัน</span>
+                                                <span className="border-b border-dotted border-black flex-1 mx-2 text-center">{totalFuelCost > 0 ? totalFuelCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</span>
+                                                <span className="w-[50px]">บาท</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             
-                            {/* ✅ ลายเซ็นโชว์ทุกหน้า */}
-                            <div className="mt-auto pb-2 flex justify-center items-center w-full font-normal text-[13px]">
-                                <div className="flex gap-x-28">
-                                    <div className="flex flex-col items-center w-[280px]">
-                                        <div className="flex w-full items-end h-12 mb-1">
-                                            ลงชื่อ 
-                                            <div className="border-b border-dotted border-black flex-grow ml-2 h-full relative flex items-end justify-center pb-1">
-                                                {driverSigText && <img src={driverSigText} alt="signature" className="max-h-12 max-w-full object-contain" />}
-                                            </div>
+                            <div className="mt-auto pb-4 flex justify-between px-16 w-full font-normal text-[13px] text-black">
+                                <div className="flex flex-col items-center w-[250px]">
+                                    <div className="w-full relative h-12 flex items-end justify-center mb-1">
+                                        {driverSigText && <img src={driverSigText} alt="signature" className="absolute bottom-1 max-h-12 max-w-full object-contain" />}
+                                        <div className="w-full flex items-end justify-between text-[13px]">
+                                            <span>(</span>
+                                            <span className="flex-1 border-b border-dotted border-black mx-2 text-center">{driverName}</span>
+                                            <span>)</span>
                                         </div>
-                                        <div className="flex w-full items-end my-1">
-                                            ( <div className="border-b border-dotted border-black flex-grow mx-1 h-5 text-center font-normal">{driverName}</div> )
-                                        </div>
-                                        <div className="flex w-full items-end">
-                                            ตำแหน่ง <div className="border-b border-dotted border-black flex-grow ml-1 h-5 text-center font-normal">{driverPos}</div>
-                                        </div>
-                                        <div className="mt-2 text-center font-normal">ผู้ขับยานพาหนะ</div>
                                     </div>
+                                    <div className="mt-1 text-center font-normal">พขร.(บ) ผู้ดูแลรถยนต์</div>
+                                </div>
 
-                                    <div className="flex flex-col items-center w-[280px]">
-                                        <div className="flex w-full items-end h-12 mb-1">
-                                            ลงชื่อ 
-                                            <div className="border-b border-dotted border-black flex-grow ml-2 h-full relative flex items-end justify-center pb-1">
-                                                {controllerSigText && <img src={controllerSigText} alt="signature" className="max-h-12 max-w-full object-contain" />}
-                                            </div>
+                                <div className="flex flex-col items-center w-[250px]">
+                                    <div className="w-full relative h-12 flex items-end justify-center mb-1">
+                                        {controllerSigText && <img src={controllerSigText} alt="signature" className="absolute bottom-1 max-h-12 max-w-full object-contain" />}
+                                        <div className="w-full flex items-end justify-between text-[13px]">
+                                            <span>(</span>
+                                            <span className="flex-1 border-b border-dotted border-black mx-2 text-center">{controllerName}</span>
+                                            <span>)</span>
                                         </div>
-                                        <div className="flex w-full items-end my-1">
-                                            ( <div className="border-b border-dotted border-black flex-grow mx-1 h-5 text-center font-normal">{controllerName}</div> )
-                                        </div>
-                                        <div className="flex w-full items-end">
-                                            ตำแหน่ง <div className="border-b border-dotted border-black flex-grow ml-1 h-5 text-center font-normal">{controllerPos}</div>
-                                        </div>
-                                        <div className="mt-2 text-center font-normal">ผู้ควบคุม</div>
                                     </div>
+                                    <div className="mt-1 text-center font-normal">ผู้ควบคุมรถยนต์</div>
                                 </div>
                             </div>
                         </div>
@@ -738,7 +1160,7 @@ function ReportPage() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-screen">กำลังโหลดรายงาน...</div>}>
+    <Suspense fallback={<div className="flex justify-center items-center h-screen">กำลังโหลด...</div>}>
       <ReportPage />
     </Suspense>
   )
