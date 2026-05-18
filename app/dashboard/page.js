@@ -3,20 +3,18 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 
-// --- Helper Components for Premium UI ---
-const GlassCard = ({ children, className = '' }) => (
-  <div className={`bg-white/80 backdrop-blur-2xl rounded-[2.5rem] border border-white shadow-[0_10px_40px_rgb(0,0,0,0.03)] p-7 relative overflow-hidden ${className}`}>
+// ── Apple-style helpers ──
+const ACard = ({ children, className = '' }) => (
+  <div className={`bg-white rounded-[20px] overflow-hidden ${className}`}
+       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
     {children}
   </div>
 )
 
-const SectionTitle = ({ icon, title, subtitle }) => (
-  <div className="mb-6 z-10 relative">
-      <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
-          <span className="bg-gradient-to-br from-[#742F99] to-[#A163C1] text-transparent bg-clip-text text-xl drop-shadow-sm">{icon}</span> 
-          {title}
-      </h3>
-      {subtitle && <p className="text-[10px] text-slate-400 font-bold ml-8 mt-1">{subtitle}</p>}
+const SectionLabel = ({ title, subtitle }) => (
+  <div className="mb-4">
+    <h3 className="text-[13px] font-semibold text-[#1d1d1f] tracking-[-0.2px]">{title}</h3>
+    {subtitle && <p className="text-[11px] text-[#6e6e73] mt-0.5">{subtitle}</p>}
   </div>
 )
 
@@ -216,444 +214,378 @@ export default function UltimateDashboard() {
   }, [rawLogs, carsList, timeFilter, customStartDate, customEndDate])
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center font-bold text-[#742F99]">
-        <div className="w-20 h-20 relative flex items-center justify-center">
-             <div className="absolute w-full h-full border-4 border-[#742F99]/20 rounded-full"></div>
-             <div className="absolute w-full h-full border-4 border-t-[#742F99] rounded-full animate-spin"></div>
-             <span className="text-2xl animate-pulse">⚡</span>
-        </div>
-        <p className="tracking-widest mt-4 text-sm font-black animate-pulse">LOADING DASHBOARD...</p>
+    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/>
     </div>
   )
 
-  const maxTrend = Math.max(...analytics.dailyTrend.map(d => d.val), 1);
+  const maxTrend  = Math.max(...analytics.dailyTrend.map(d => d.val), 1);
   const maxHourly = Math.max(...analytics.hourlyTrend.map(d => d.val), 1);
-  const maxLoc = Math.max(...analytics.topLocations.map(l => l.count), 1);
+  const maxLoc    = Math.max(...analytics.topLocations.map(l => l.count), 1);
+
+  /* ─── tiny helpers ─── */
+  const Card = ({ children, className = '', style = {} }) => (
+    <div className={`bg-white rounded-[22px] overflow-hidden ${className}`}
+         style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 20px rgba(0,0,0,0.07)', ...style}}>
+      {children}
+    </div>
+  )
+  const Label = ({ children }) => (
+    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.06em] mb-1">{children}</p>
+  )
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sarabun text-slate-700 pb-20 selection:bg-[#742F99] selection:text-white relative">
-      
-      {/* Background Ornaments */}
-      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-[#742F99]/5 to-transparent -z-10 pointer-events-none"></div>
-      <div className="absolute top-20 right-20 w-96 h-96 bg-purple-300/20 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
-
-      {/* 🟣 PREMIUM NAVIGATION */}
-      <div className="bg-white/70 backdrop-blur-2xl border-b border-white px-6 py-4 sticky top-0 z-50 flex flex-col xl:flex-row gap-6 justify-between items-center shadow-[0_4px_30px_rgb(0,0,0,0.03)]">
-        <div className="flex items-center gap-4">
-           <img src="/pea_logo.png" className="h-12 w-auto object-contain drop-shadow-sm" alt="PEA Logo" />
-           <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-800">FLEET <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#742F99] to-[#A163C1]">INTELLIGENCE</span></h1>
-              <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">Advanced Analytics & Monitoring</p>
-           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-3 bg-white/60 p-2 rounded-3xl border border-white shadow-sm">
-          
-          {timeFilter === 'custom' && (
-            <div className="flex items-center gap-2 bg-[#742F99]/5 border border-[#742F99]/20 p-2 px-4 rounded-2xl shadow-inner transition-all animate-fade-in-right">
-                <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className="text-xs font-bold text-[#742F99] bg-transparent outline-none cursor-pointer font-mono"/>
-                <span className="text-[#742F99]/40 text-xs font-black">➔</span>
-                <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className="text-xs font-bold text-[#742F99] bg-transparent outline-none cursor-pointer font-mono"/>
-            </div>
-          )}
-
-          <div className="flex bg-slate-100/80 p-1 rounded-2xl shadow-inner">
-            {['week', 'month', 'custom', 'all'].map(tf => (
-                <button 
-                    key={tf}
-                    onClick={() => setTimeFilter(tf)} 
-                    className={`px-5 py-2.5 text-[11px] uppercase tracking-wider font-black rounded-xl transition-all duration-300 ${
-                        timeFilter === tf 
-                        ? 'bg-gradient-to-r from-[#742F99] to-[#8B46AC] shadow-lg shadow-[#742F99]/30 text-white scale-100' 
-                        : 'text-slate-500 hover:bg-white hover:text-[#742F99] scale-95'
-                    }`}
-                >
-                    {tf === 'week' ? 'สัปดาห์นี้' : tf === 'month' ? 'เดือนนี้' : tf === 'custom' ? 'กำหนดเอง' : 'ทั้งหมด'}
-                </button>
-            ))}
-          </div>
-
-          <div className="w-px h-8 bg-slate-200 mx-2 hidden md:block"></div>
-
-          <div className="flex gap-2">
-            <button onClick={() => router.push('/')} className="group px-5 py-2.5 bg-white border border-slate-100 rounded-2xl text-xs font-bold hover:border-[#742F99]/30 hover:bg-[#742F99]/5 text-slate-600 hover:text-[#742F99] transition-all shadow-sm flex items-center gap-2">
-                <span className="group-hover:-translate-x-1 transition-transform">⬅</span> หน้าหลัก
-            </button>
-            <button onClick={handleClose} className="px-5 py-2.5 bg-red-50 border border-red-100 rounded-2xl text-xs font-black text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm hover:shadow-red-500/20">
-                ✖ ปิด
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-[1400px] mx-auto p-4 md:p-8 space-y-6 mt-2">
-        
-        {/* 🌟 BENTO GRID ROW 1: CORE KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           <GlassCard className="group hover:-translate-y-1 transition-all duration-500">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-blue-100/50">🛣️</div>
-                <div>
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">ระยะทางสะสม</p>
-                    <h3 className="text-3xl font-black text-slate-800 mt-0.5">{globalStats.totalDistance.toLocaleString()} <span className="text-sm text-slate-400 font-bold">KM</span></h3>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-[11px] font-bold text-[#742F99] mt-5">
-                 <span className="bg-[#742F99]/10 text-[#742F99] px-2.5 py-1 rounded-lg">⚡ {globalStats.totalTrips} ภารกิจ</span>
-                 <span className="text-slate-400 border border-slate-200 px-2.5 py-1 rounded-lg">~{globalStats.avgTripDist} กม./รอบ</span>
-              </div>
-           </GlassCard>
-           
-           <GlassCard className="group hover:-translate-y-1 transition-all duration-500">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-500/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-orange-100/50">⛽</div>
-                <div>
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">ใช้น้ำมันรวม</p>
-                    <h3 className="text-3xl font-black text-slate-800 mt-0.5">{gasolineStats.fuelLiters.toLocaleString(undefined, {maximumFractionDigits:1})} <span className="text-sm text-slate-400 font-bold">L</span></h3>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-[11px] font-bold text-orange-600 mt-5">
-                 <span className="bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-lg">จ่าย ฿{gasolineStats.cost.toLocaleString()}</span>
-                 <span className="text-slate-400">เรท {gasolineStats.efficiency} บ./กม.</span>
-              </div>
-           </GlassCard>
-
-           <GlassCard className="group hover:-translate-y-1 transition-all duration-500 bg-gradient-to-br from-white to-green-50/50 border-green-100/50">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-500/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div className="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-green-200/50">🌱</div>
-                  <span className="text-[9px] font-black bg-green-500 text-white px-3 py-1 rounded-xl uppercase tracking-wider animate-pulse shadow-lg shadow-green-500/30">Green Impact</span>
-              </div>
-              <div className="relative z-10">
-                  <p className="text-green-600/70 text-[10px] font-black uppercase tracking-widest">ลดการปล่อย CO2</p>
-                  <h3 className="text-4xl font-black text-green-600 mt-0.5">{evStats.carbonSaved} <span className="text-lg font-bold">kg</span></h3>
-              </div>
-           </GlassCard>
-
-           <GlassCard className="!p-1 bg-gradient-to-br from-[#742F99] via-[#A163C1] to-[#5b237a] shadow-xl shadow-[#742F99]/20 hover:-translate-y-1 transition-all duration-500 group !border-none">
-              <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
-              <div className="bg-[#742F99]/90 backdrop-blur-md rounded-[2.3rem] p-6 h-full relative overflow-hidden flex flex-col justify-center">
-                <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white opacity-10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-white/20 backdrop-blur-md text-white rounded-xl flex items-center justify-center text-lg shadow-inner border border-white/20">💰</div>
-                    <p className="text-purple-200 text-[10px] font-black uppercase tracking-widest leading-tight">มูลค่าประหยัด<br/>(เทียบใช้น้ำมัน)</p>
-                </div>
-                <h3 className="text-4xl font-black text-white mt-1 drop-shadow-sm">฿{Number(globalStats.fuelSavings).toLocaleString()}</h3>
-              </div>
-           </GlassCard>
-        </div>
-
-        {/* 📈 BENTO GRID ROW 2: ADVANCED CHARTS & FLEET STATUS */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-           
-           {/* Left Block: Charts (8 cols) */}
-           <div className="xl:col-span-8 flex flex-col gap-6">
-               {/* 📊 Chart 1: Daily Trend */}
-               <GlassCard>
-                  <SectionTitle icon="📅" title="ความถี่การใช้งาน (Daily Missions)" subtitle="ดูแนวโน้มปริมาณภารกิจย้อนหลัง" />
-                  <div className="h-56 flex items-end justify-between gap-3 px-2 relative border-b border-slate-100/80 pb-4 pt-10">
-                     {analytics.dailyTrend.map((d, i) => {
-                         const heightPct = (d.val / maxTrend) * 100;
-                         return (
-                             <div key={i} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                                <div className="opacity-0 group-hover:opacity-100 absolute -top-12 transition-all bg-slate-800 text-white text-[11px] px-3 py-1.5 rounded-xl shadow-xl shadow-slate-800/20 font-bold z-10 whitespace-nowrap pointer-events-none -translate-y-2 group-hover:translate-y-0">
-                                    {d.val} ภารกิจ
-                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45 rounded-sm"></div>
-                                </div>
-                                <div className="w-full max-w-[48px] bg-slate-100/50 rounded-t-2xl flex items-end overflow-hidden relative group-hover:bg-[#742F99]/5 transition-colors" style={{height: '100%'}}>
-                                   <div 
-                                      className="w-full bg-gradient-to-t from-[#742F99] via-[#8B46AC] to-[#A163C1] rounded-t-2xl group-hover:brightness-110 transition-all duration-500 ease-out relative shadow-sm" 
-                                      style={{height: `${heightPct}%`}}
-                                   >
-                                      <div className="absolute top-0 left-0 w-full h-1 bg-white/40"></div>
-                                   </div>
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-400 mt-3 whitespace-nowrap group-hover:text-[#742F99] transition-colors">{d.label}</span>
-                             </div>
-                         )
-                     })}
-                     {analytics.dailyTrend.length === 0 && <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm font-bold">ไม่มีข้อมูลในช่วงเวลานี้</div>}
-                  </div>
-               </GlassCard>
-
-               {/* ⏰ Chart 2: Hourly Trend */}
-               <GlassCard>
-                  <SectionTitle icon="⏰" title="ช่วงเวลาหนาแน่น (Hourly Heatmap)" subtitle="วิเคราะห์เวลาที่มีการนำรถออกมากที่สุด (00:00 - 23:00)" />
-                  <div className="h-40 flex items-end justify-between gap-1 relative pb-6 pt-8">
-                     {analytics.hourlyTrend.map((d, i) => {
-                         const heightPct = (d.val / maxHourly) * 100;
-                         const isPeak = heightPct > 70;
-                         return (
-                             <div key={i} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                                {d.val > 0 && (
-                                  <div className="opacity-0 group-hover:opacity-100 absolute -top-8 transition-all bg-slate-800 text-white text-[9px] px-2 py-1 rounded-lg shadow-sm font-bold z-10 whitespace-nowrap pointer-events-none">
-                                      {d.val} งาน
-                                  </div>
-                                )}
-                                <div className="w-full bg-slate-100/50 rounded-t-sm flex items-end overflow-hidden relative" style={{height: '100%'}}>
-                                   <div 
-                                      className={`w-full transition-all duration-500 ease-out rounded-t-sm ${isPeak ? 'bg-gradient-to-t from-orange-500 to-yellow-400 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'bg-gradient-to-t from-blue-400 to-cyan-300'} group-hover:brightness-110`} 
-                                      style={{height: `${heightPct}%`, minHeight: d.val>0 ? '4px' : '0'}}
-                                   ></div>
-                                </div>
-                                <span className={`text-[8px] font-bold mt-2 absolute -bottom-4 whitespace-nowrap transform -rotate-45 origin-top-left ${isPeak ? 'text-orange-500' : 'text-slate-400'}`}>{i % 2 === 0 ? d.label : ''}</span>
-                             </div>
-                         )
-                     })}
-                  </div>
-               </GlassCard>
-           </div>
-
-           {/* Right Block: Status & Eco Score & Locations (4 cols) */}
-           <div className="xl:col-span-4 flex flex-col gap-6">
-              
-              {/* ECO Score Widget (NEW) */}
-              <GlassCard className="bg-gradient-to-br from-green-500 to-emerald-700 text-white !border-none shadow-xl shadow-green-500/20 relative group overflow-hidden">
-                 <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
-                 <div className="flex justify-between items-center z-10 relative">
-                     <div>
-                         <p className="text-green-100 text-[10px] font-black uppercase tracking-widest mb-1">ดัชนีรักษ์โลก (EV Ratio)</p>
-                         <h3 className="text-4xl font-black drop-shadow-md">{globalStats.ecoScore}%</h3>
-                     </div>
-                     <div className="w-16 h-16 rounded-full border-4 border-white/20 flex items-center justify-center relative">
-                         <div className="absolute inset-0 rounded-full border-4 border-white" style={{ clipPath: `polygon(0 0, 100% 0, 100% ${globalStats.ecoScore}%, 0 ${globalStats.ecoScore}%)` }}></div>
-                         <span className="text-2xl drop-shadow-sm">🌍</span>
-                     </div>
-                 </div>
-                 <p className="text-[10px] text-green-50 mt-4 font-bold bg-black/10 inline-block px-3 py-1 rounded-lg backdrop-blur-sm border border-white/10 z-10 relative">สัดส่วนระยะทางที่วิ่งด้วยรถ EV</p>
-              </GlassCard>
-
-              {/* Fleet Status Overview */}
-              <GlassCard>
-                  <SectionTitle icon="🚘" title="สถานะลานจอด" />
-                  <div className="flex items-center gap-6 bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                      <div className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-full bg-white shadow-sm border border-slate-100">
-                          <svg viewBox="0 0 36 36" className="w-16 h-16 rotate-[-90deg]">
-                             <path className="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4"/>
-                             <path className="text-[#742F99] drop-shadow-[0_0_3px_rgba(116,47,153,0.4)]" strokeDasharray={`${globalStats.activeRate}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
-                          </svg>
-                          <div className="absolute flex flex-col items-center mt-0.5">
-                             <span className="text-lg font-black text-[#742F99] leading-none">{globalStats.activeRate}%</span>
-                          </div>
-                      </div>
-                      <div className="flex flex-col gap-2.5 w-full">
-                          <div className="flex justify-between items-center text-xs font-bold">
-                              <span className="flex items-center gap-2 text-red-600"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> วิ่งงาน</span>
-                              <span className="text-slate-800 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">{globalStats.busyCars}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs font-bold">
-                              <span className="flex items-center gap-2 text-green-600"><span className="w-2 h-2 rounded-full bg-green-500"></span> จอดว่าง</span>
-                              <span className="text-slate-800 bg-green-50 px-2 py-0.5 rounded-md border border-green-100">{globalStats.availableCars}</span>
-                          </div>
-                      </div>
-                  </div>
-              </GlassCard>
-
-              {/* Top Locations */}
-              <GlassCard className="flex-1 flex flex-col">
-                  <SectionTitle icon="📍" title="ปลายทางยอดฮิต" />
-                  <div className="space-y-4 flex-1 mt-2">
-                     {analytics.topLocations.map((loc, i) => (
-                        <div key={i} className="flex flex-col gap-1.5 group">
-                            <div className="flex justify-between items-end text-[11px] font-bold">
-                                <span className="text-slate-700 truncate pr-2 flex items-center gap-2">
-                                   <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${i===0 ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-200 text-slate-500'}`}>{i+1}</span>
-                                   {loc.name}
-                                </span>
-                                <span className="text-slate-500 whitespace-nowrap">{loc.count} ครั้ง</span>
-                            </div>
-                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden shadow-inner relative">
-                                <div className="bg-gradient-to-r from-orange-400 to-yellow-400 h-full rounded-full transition-all duration-1000 relative" style={{width: `${(loc.count / maxLoc)*100}%`}}></div>
-                            </div>
-                        </div>
-                     ))}
-                     {analytics.topLocations.length === 0 && <p className="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">ไม่มีข้อมูลปลายทาง</p>}
-                  </div>
-              </GlassCard>
-           </div>
-        </div>
-
-        {/* 📑 ROW 3: COMPREHENSIVE FLEET TABLE */}
-        <GlassCard>
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-              <SectionTitle icon="📋" title="รายงานสรุปรายคัน (Fleet Detail Report)" subtitle="แสดงข้อมูลระยะทาง ปริมาณเชื้อเพลิง และประสิทธิภาพของรถแต่ละคัน" />
-           </div>
-           
-           <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-sm">
-              <table className="w-full text-left border-collapse">
-                 <thead>
-                    <tr className="text-[11px] text-slate-500 uppercase font-black bg-slate-50/80 backdrop-blur-sm">
-                       <th className="py-5 px-6 border-b border-slate-200">ทะเบียนรถ / รุ่น</th>
-                       <th className="py-5 px-6 border-b border-slate-200">สถานะ</th>
-                       <th className="py-5 px-6 border-b border-slate-200 text-center">ใช้งาน (รอบ)</th>
-                       <th className="py-5 px-6 border-b border-slate-200 text-right">ระยะทางรวม</th>
-                       <th className="py-5 px-6 border-b border-slate-200 text-right">ปริมาณ / ค่าใช้จ่าย</th>
-                       <th className="py-5 px-6 border-b border-slate-200 text-center">ประสิทธิภาพ</th>
-                    </tr>
-                 </thead>
-                 <tbody className="divide-y divide-slate-100 text-sm bg-white">
-                    {analytics.fleetTable.map((c, i) => (
-                       <tr key={i} className="hover:bg-[#742F99]/[0.02] transition-colors">
-                          <td className="py-4 px-6">
-                             <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-sm border ${c.type==='EV'?'bg-green-50 border-green-100 text-green-600':'bg-orange-50 border-orange-100 text-orange-600'}`}>
-                                   {c.type==='EV' ? '⚡' : '⛽'}
-                                </div>
-                                <div>
-                                   <p className="font-black text-slate-700 text-base">{c.plate}</p>
-                                   <p className="text-[10px] text-slate-400 font-bold">{c.model} | {c.type}</p>
-                                </div>
-                             </div>
-                          </td>
-                          <td className="py-4 px-6">
-                             <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-full border shadow-sm ${
-                                 c.status === 'available' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
-                             }`}>
-                                 <span className={`w-1.5 h-1.5 rounded-full ${c.status === 'available' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
-                                 {c.status === 'available' ? 'ว่างพร้อมใช้' : 'กำลังใช้งาน'}
-                             </span>
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                             <span className="font-black text-[#742F99] bg-[#742F99]/10 px-3 py-1 rounded-lg border border-[#742F99]/20">{c.trips}</span>
-                          </td>
-                          <td className="py-4 px-6 text-right">
-                             <span className="font-black text-slate-700 text-base">{c.dist.toLocaleString()}</span> <span className="text-[11px] text-slate-400 font-bold">กม.</span>
-                          </td>
-                          <td className="py-4 px-6 text-right font-bold text-slate-600">
-                              {c.type === 'EV' ? (
-                                  <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-100 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-sm">
-                                      ⚡ {c.refillCount} ชาร์จ
-                                  </span>
-                              ) : (
-                                  <div className="flex flex-col items-end gap-1.5">
-                                      <span className="inline-flex items-center gap-1.5 text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm">
-                                          ⛽ {c.fuelLiters.toFixed(1)} L
-                                      </span>
-                                      {c.fuelCost > 0 && (
-                                          <span className="inline-flex items-center gap-1.5 text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm">
-                                              💸 ฿ {c.fuelCost.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                                          </span>
-                                      )}
-                                  </div>
-                              )}
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                             {c.type === 'EV' ? (
-                                <span className="text-[10px] font-black text-white bg-gradient-to-r from-green-400 to-green-600 px-3 py-1 rounded-full uppercase tracking-wider shadow-sm shadow-green-500/20">EV ECO</span>
-                             ) : (
-                                <span className="font-black text-[#742F99] bg-purple-50 px-3 py-1 rounded-lg border border-purple-100">{c.efficiency} <span className="text-[10px] font-normal text-purple-400">บ./กม.</span></span>
-                             )}
-                          </td>
-                       </tr>
-                    ))}
-                    {analytics.fleetTable.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-sm text-slate-400 font-bold bg-slate-50/50">ไม่มีข้อมูลการใช้งานในช่วงเวลานี้</td></tr>}
-                 </tbody>
-              </table>
-           </div>
-        </GlassCard>
-
-        {/* 👥 ROW 4: LEADERBOARDS & LOGS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-           
-           {/* Top Vehicles */}
-           <GlassCard>
-              <SectionTitle icon="⭐️" title="รถที่ถูกใช้งานมากสุด" />
-              <div className="space-y-4">
-                 {analytics.fleetTable.filter(c=>c.dist > 0).slice(0, 3).map((c, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl relative overflow-hidden">
-                       <div className={`absolute left-0 top-0 w-1.5 h-full ${i===0?'bg-yellow-400':i===1?'bg-slate-400':'bg-orange-400'}`}></div>
-                       <div className="flex flex-col ml-2">
-                          <span className="text-sm font-black text-slate-800">{c.plate}</span>
-                          <span className="text-[10px] text-slate-500 font-bold mt-0.5">{c.model}</span>
-                       </div>
-                       <div className="text-right">
-                          <span className="text-base font-black text-[#742F99] block">{c.dist.toLocaleString()} <span className="text-[10px] text-slate-400">กม.</span></span>
-                          <span className="text-[9px] text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm">{c.trips} รอบ</span>
-                       </div>
-                    </div>
-                 ))}
-                 {analytics.fleetTable.filter(c=>c.dist > 0).length === 0 && <div className="h-32 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50"><p className="text-sm text-slate-400 font-bold">ยังไม่มีรถออกวิ่ง</p></div>}
-              </div>
-           </GlassCard>
-
-           {/* Driver Leaderboard */}
-           <GlassCard>
-              <SectionTitle icon="👨‍✈️" title="นักขับยอดเยี่ยม" />
-              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                 {analytics.driverStats.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between group p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 rounded-xl transition-colors">
-                       <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-black text-xs shadow-sm ${
-                              i===0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white' : 
-                              i===1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' : 
-                              i===2 ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white' : 
-                              'bg-slate-100 text-slate-400'
-                          }`}>
-                              {i+1}
-                          </div>
-                          <div className="flex flex-col">
-                             <span className="text-xs font-black text-slate-700">{d.name}</span>
-                             <span className="text-[9px] text-slate-400 mt-0.5 truncate max-w-[120px]">ขับ: {d.carsUsed}</span>
-                          </div>
-                       </div>
-                       <div className="text-right">
-                          <span className="text-sm font-black text-slate-800 block">{d.dist.toLocaleString()} <span className="text-[9px] text-slate-400">กม.</span></span>
-                       </div>
-                    </div>
-                 ))}
-                 {analytics.driverStats.length === 0 && <div className="h-32 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50"><p className="text-sm text-slate-400 font-bold">ไม่มีข้อมูลผู้ขับขี่</p></div>}
-              </div>
-           </GlassCard>
-
-           {/* Vehicle Usage Log */}
-           <GlassCard>
-              <SectionTitle icon="🔍" title="ใครขับคันไหนบ้าง?" />
-              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                 {analytics.carDriverHistory.map((c, i) => (
-                    <div key={i} className="flex flex-col p-4 bg-white border border-slate-100 rounded-2xl relative overflow-hidden hover:border-[#742F99]/30 transition-colors">
-                       <div className="flex justify-between items-center border-b border-slate-50 pb-2 mb-2">
-                          <span className="text-sm font-black text-slate-800">{c.plate}</span>
-                          <span className="text-[9px] bg-[#742F99]/10 text-[#742F99] px-2 py-1 rounded-md font-bold">{c.totalTrips} งาน</span>
-                       </div>
-                       <div className="flex flex-wrap gap-1.5">
-                          {c.drivers.split(', ').map((driverLine, idx) => (
-                             <span key={idx} className="bg-slate-50 text-[10px] text-slate-600 px-2 py-1 rounded-md font-medium border border-slate-100">
-                                {driverLine}
-                             </span>
-                          ))}
-                       </div>
-                    </div>
-                 ))}
-                 {analytics.carDriverHistory.length === 0 && <div className="h-32 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50"><p className="text-sm text-slate-400 font-bold">ไม่มีข้อมูลการใช้รถ</p></div>}
-              </div>
-           </GlassCard>
-
-        </div>
-
-      </div>
-      
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        input[type="date"]::-webkit-calendar-picker-indicator { 
-            cursor: pointer; 
-            filter: invert(27%) sepia(51%) saturate(2878%) hue-rotate(253deg) brightness(83%) contrast(85%);
-            opacity: 0.6;
-            transition: opacity 0.2s;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
-
-        @keyframes fade-in-right {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        .animate-fade-in-right { animation: fade-in-right 0.3s ease-out; }
+    <div className="min-h-screen bg-[#f2f2f7] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
+      <style>{`
+        * { -webkit-font-smoothing: antialiased; }
+        .st::-webkit-scrollbar{width:3px}
+        .st::-webkit-scrollbar-thumb{background:#d2d2d7;border-radius:6px}
+        input[type=date]::-webkit-calendar-picker-indicator{opacity:.4;cursor:pointer}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        .fu{animation:fadeUp .4s ease both}
       `}</style>
+
+      {/* ── Nav ── */}
+      <nav className="sticky top-0 z-50 h-[52px] border-b border-black/[0.06]"
+           style={{background:'rgba(242,242,247,0.88)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)'}}>
+        <div className="max-w-[1440px] mx-auto px-5 h-full flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src="/pea_logo.png" className="h-7 w-auto object-contain" alt="PEA"/>
+            <span className="text-[16px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">Fleet Dashboard</span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            {/* segmented control */}
+            <div className="flex bg-[#dddde0] rounded-[10px] p-[3px] gap-[2px]">
+              {[['week','สัปดาห์'],['month','เดือนนี้'],['custom','กำหนดเอง'],['all','ทั้งหมด']].map(([tf,label]) => (
+                <button key={tf} onClick={() => setTimeFilter(tf)}
+                  className={`px-3.5 py-[5px] text-[12px] font-medium rounded-[8px] transition-all ${
+                    timeFilter===tf ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#6e6e73] hover:text-[#3c3c43]'
+                  }`}>{label}</button>
+              ))}
+            </div>
+            {timeFilter==='custom' && (
+              <div className="flex items-center gap-2 bg-white px-3 py-[5px] rounded-[10px] border border-[#e5e5ea] text-[11px] font-mono"
+                   style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
+                <input type="date" value={customStartDate} onChange={e=>setCustomStartDate(e.target.value)} className="outline-none bg-transparent text-[#1d1d1f]"/>
+                <span className="text-[#c7c7cc]">→</span>
+                <input type="date" value={customEndDate} onChange={e=>setCustomEndDate(e.target.value)} className="outline-none bg-transparent text-[#1d1d1f]"/>
+              </div>
+            )}
+            <div className="w-px h-5 bg-[#d2d2d7]"/>
+            <button onClick={() => router.push('/')}
+              className="flex items-center gap-1.5 text-[13px] text-[#0071e3] active:opacity-50 transition-opacity">
+              <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6l5 5" stroke="#0071e3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              หน้าหลัก
+            </button>
+            <button onClick={handleClose} className="text-[13px] text-[#ff3b30] active:opacity-50 transition-opacity">ปิด</button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-[1440px] mx-auto px-5 pt-6 space-y-4">
+
+        {/* ── Hero KPI row ── */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 fu" style={{animationDelay:'0ms'}}>
+
+          {/* Distance — dark hero card */}
+          <div className="col-span-2 xl:col-span-1 rounded-[22px] p-5 flex flex-col justify-between min-h-[140px]"
+               style={{background:'#1d1d1f', boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
+            <div className="w-10 h-10 rounded-[12px] bg-white/10 flex items-center justify-center text-[20px]">🛣️</div>
+            <div>
+              <p className="text-[11px] font-semibold text-white/50 uppercase tracking-[0.06em] mb-0.5">ระยะทางสะสม</p>
+              <p className="text-[32px] font-bold text-white leading-none tracking-[-1px]">
+                {globalStats.totalDistance.toLocaleString()}
+                <span className="text-[16px] font-normal text-white/50 ml-1">กม.</span>
+              </p>
+              <p className="text-[11px] text-white/40 mt-1">{globalStats.totalTrips} ภารกิจ · ~{globalStats.avgTripDist} กม./รอบ</p>
+            </div>
+          </div>
+
+          {/* Fuel */}
+          <Card className="p-5 flex flex-col justify-between min-h-[140px]">
+            <div className="w-10 h-10 rounded-[12px] bg-[#fff4e0] flex items-center justify-center text-[20px]">⛽</div>
+            <div>
+              <Label>น้ำมันรวม</Label>
+              <p className="text-[28px] font-bold text-[#1d1d1f] leading-none tracking-[-0.8px]">
+                {gasolineStats.fuelLiters.toLocaleString(undefined,{maximumFractionDigits:1})}
+                <span className="text-[14px] font-normal text-[#6e6e73] ml-1">ลิตร</span>
+              </p>
+              <p className="text-[11px] text-[#aeaeb2] mt-1">฿{gasolineStats.cost.toLocaleString()} · {gasolineStats.efficiency} บ./กม.</p>
+            </div>
+          </Card>
+
+          {/* CO2 */}
+          <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#edfbf0 0%,#d4f5e0 100%)'}}>
+            <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center text-[20px]">🌱</div>
+            <div>
+              <Label>ลด CO₂</Label>
+              <p className="text-[28px] font-bold text-[#1a7f37] leading-none tracking-[-0.8px]">
+                {evStats.carbonSaved}
+                <span className="text-[14px] font-normal text-[#1a7f37]/60 ml-1">kg</span>
+              </p>
+              <p className="text-[11px] text-[#1a7f37]/60 mt-1">EV Ratio {globalStats.ecoScore}%</p>
+            </div>
+          </Card>
+
+          {/* Savings */}
+          <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#f0eeff 0%,#e5dbff 100%)'}}>
+            <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center text-[20px]">💰</div>
+            <div>
+              <Label>ประหยัดได้</Label>
+              <p className="text-[28px] font-bold text-[#5e35b1] leading-none tracking-[-0.8px]">
+                ฿{Number(globalStats.fuelSavings).toLocaleString()}
+              </p>
+              <p className="text-[11px] text-[#5e35b1]/60 mt-1">เทียบกับใช้น้ำมัน</p>
+            </div>
+          </Card>
+        </div>
+
+        {/* ── Row 2: Fleet status + Locations ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 fu" style={{animationDelay:'60ms'}}>
+          {/* Fleet status */}
+          <Card className="p-5">
+            <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">ฝูงรถ</p>
+            <p className="text-[12px] text-[#6e6e73] mb-4">ทั้งหมด {globalStats.totalCars} คัน</p>
+            <div className="space-y-2.5">
+              {[
+                {label:'ว่างพร้อมใช้', val:globalStats.availableCars, c:'#34c759', bg:'rgba(52,199,89,0.08)', pulse:false},
+                {label:'กำลังใช้งาน', val:globalStats.busyCars,    c:'#ff3b30', bg:'rgba(255,59,48,0.08)', pulse:true},
+              ].map((s,i)=>(
+                <div key={i} className="flex items-center justify-between px-4 py-3 rounded-[14px]" style={{background:s.bg}}>
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-[9px] h-[9px] rounded-full flex-shrink-0 ${s.pulse?'animate-pulse':''}`} style={{background:s.c, boxShadow:`0 0 0 3px ${s.c}22`}}/>
+                    <span className="text-[14px] font-medium text-[#1d1d1f]">{s.label}</span>
+                  </div>
+                  <span className="text-[22px] font-bold text-[#1d1d1f] leading-none">{s.val}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t border-[rgba(0,0,0,0.05)]">
+              <div className="flex justify-between text-[11px] text-[#6e6e73] mb-2">
+                <span>Utilisation rate</span><span className="font-semibold text-[#1d1d1f]">{globalStats.activeRate}%</span>
+              </div>
+              <div className="h-2 bg-[#e5e5ea] rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700" style={{width:`${globalStats.activeRate}%`, background:'linear-gradient(90deg,#0071e3,#34aadc)'}}/>
+              </div>
+            </div>
+          </Card>
+
+          {/* Top Locations */}
+          <Card className="p-5 lg:col-span-2">
+            <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">📍 ปลายทางยอดนิยม</p>
+            <div className="space-y-3.5">
+              {analytics.topLocations.length===0
+                ? <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>
+                : analytics.topLocations.map((loc,i)=>(
+                  <div key={i} className="flex items-center gap-3.5">
+                    <span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
+                          style={{background:['#ff9500','#aeaeb2','#d2d2d7'][i]||'#e5e5ea', color:i>=2?'#6e6e73':'white'}}>
+                      {i+1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="text-[13px] font-medium text-[#1d1d1f] truncate">{loc.name}</span>
+                        <span className="text-[12px] text-[#6e6e73] ml-3 flex-shrink-0">{loc.count} ครั้ง</span>
+                      </div>
+                      <div className="h-[5px] bg-[#f2f2f7] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-700"
+                             style={{width:`${(loc.count/maxLoc)*100}%`, background:i===0?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#0071e3,#34aadc)'}}/>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </Card>
+        </div>
+
+        {/* ── Row 3: Charts ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-3 fu" style={{animationDelay:'120ms'}}>
+          {/* Daily trend — wider */}
+          <Card className="p-5 xl:col-span-3">
+            <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">📅 ความถี่การใช้งาน</p>
+            <p className="text-[12px] text-[#6e6e73] mb-5">จำนวนภารกิจรายวัน</p>
+            <div className="h-44 flex items-end gap-2 pb-1">
+              {analytics.dailyTrend.length===0
+                ? <p className="text-[12px] text-[#aeaeb2] m-auto">ไม่มีข้อมูล</p>
+                : analytics.dailyTrend.map((d,i)=>{
+                  const pct = (d.val/maxTrend)*100;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center h-full justify-end group">
+                      {d.val>0 && (
+                        <span className="text-[10px] font-semibold text-[#1d1d1f] mb-1 opacity-0 group-hover:opacity-100 transition-opacity">{d.val}</span>
+                      )}
+                      <div className="w-full rounded-t-[7px] transition-all duration-500 group-hover:opacity-90"
+                           style={{height:`${Math.max(pct,2)}%`, background:`linear-gradient(180deg, #0071e3 0%, #34aadc ${100-pct}%)`}}/>
+                      <span className="text-[9px] text-[#aeaeb2] mt-1.5 whitespace-nowrap">{d.label}</span>
+                    </div>
+                  )
+                })}
+            </div>
+          </Card>
+
+          {/* Hourly */}
+          <Card className="p-5 xl:col-span-2">
+            <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">⏰ ช่วงเวลาหนาแน่น</p>
+            <p className="text-[12px] text-[#6e6e73] mb-5">รายชั่วโมง</p>
+            <div className="h-44 flex items-end gap-[3px]">
+              {analytics.hourlyTrend.length===0
+                ? <p className="text-[12px] text-[#aeaeb2] m-auto">ไม่มีข้อมูล</p>
+                : analytics.hourlyTrend.map((d,i)=>{
+                  const pct=(d.val/maxHourly)*100;
+                  const isPeak=pct>65;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center h-full justify-end group">
+                      <div className="w-full rounded-t-[3px] transition-all duration-500"
+                           style={{height:`${Math.max(pct,1.5)}%`, background:isPeak?'linear-gradient(180deg,#ff9500,#ffcc00)':'linear-gradient(180deg,#34c759 0%,#30d158 100%)', opacity:0.5+(pct/200)}}/>
+                      <span className="text-[8px] text-[#c7c7cc] mt-1">{i%6===0?d.label:''}</span>
+                    </div>
+                  )
+                })}
+            </div>
+          </Card>
+        </div>
+
+        {/* ── Fleet Table ── */}
+        <Card className="fu" style={{animationDelay:'180ms'}}>
+          <div className="px-6 py-5 border-b border-[rgba(0,0,0,0.05)] flex items-baseline justify-between">
+            <div>
+              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">รายงานสรุปรายคัน</p>
+              <p className="text-[12px] text-[#6e6e73] mt-0.5">ระยะทาง เชื้อเพลิง และประสิทธิภาพ</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[rgba(0,0,0,0.05)]">
+                  {['ทะเบียน / รุ่น','สถานะ','ภารกิจ','ระยะทาง','เชื้อเพลิง','ประสิทธิภาพ'].map(h=>(
+                    <th key={h} className="px-6 py-3 text-left text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {analytics.fleetTable.map((c,i)=>(
+                  <tr key={i} className="border-b border-[rgba(0,0,0,0.04)] last:border-0 transition-colors hover:bg-[#f9f9fb]">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-[11px] flex items-center justify-center text-[17px] flex-shrink-0"
+                             style={{background:c.type==='EV'?'#edfbf0':'#fff4e0'}}>{c.type==='EV'?'⚡':'⛽'}</div>
+                        <div>
+                          <p className="text-[14px] font-semibold text-[#1d1d1f] leading-tight">{c.plate}</p>
+                          <p className="text-[11px] text-[#aeaeb2]">{c.model}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-[5px] rounded-full ${
+                        c.status==='available'?'bg-[rgba(52,199,89,0.12)] text-[#1a7f37]':'bg-[rgba(255,59,48,0.10)] text-[#d70015]'
+                      }`}>
+                        <span className={`w-[6px] h-[6px] rounded-full ${c.status==='available'?'bg-[#34c759]':'bg-[#ff3b30] animate-pulse'}`}/>
+                        {c.status==='available'?'ว่าง':'ใช้งาน'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-[14px] font-semibold text-[#1d1d1f]">{c.trips}<span className="text-[11px] font-normal text-[#6e6e73] ml-1">รอบ</span></td>
+                    <td className="px-6 py-4 text-[14px] font-semibold text-[#1d1d1f]">{c.dist.toLocaleString()}<span className="text-[11px] font-normal text-[#6e6e73] ml-1">กม.</span></td>
+                    <td className="px-6 py-4">
+                      {c.type==='EV'
+                        ? <span className="text-[12px] font-medium text-[#0071e3]">⚡ {c.refillCount} ครั้ง</span>
+                        : <div>
+                            <span className="text-[13px] font-medium text-[#1d1d1f]">{c.fuelLiters.toFixed(1)} L</span>
+                            {c.fuelCost>0 && <span className="text-[11px] text-[#6e6e73] ml-2">฿{c.fuelCost.toLocaleString(undefined,{minimumFractionDigits:0})}</span>}
+                          </div>
+                      }
+                    </td>
+                    <td className="px-6 py-4">
+                      {c.type==='EV'
+                        ? <span className="text-[11px] font-semibold bg-[rgba(52,199,89,0.12)] text-[#1a7f37] px-2.5 py-[5px] rounded-full">EV</span>
+                        : <span className="text-[13px] font-semibold text-[#1d1d1f]">{c.efficiency}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">บ./กม.</span></span>
+                      }
+                    </td>
+                  </tr>
+                ))}
+                {analytics.fleetTable.length===0 && (
+                  <tr><td colSpan={6} className="text-center py-12 text-[13px] text-[#aeaeb2]">ไม่มีข้อมูลในช่วงเวลานี้</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* ── Bottom 3 cards ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 fu" style={{animationDelay:'240ms'}}>
+          {/* Top vehicles */}
+          <Card className="p-5">
+            <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">🏆 รถยอดนิยม</p>
+            <div>
+              {analytics.fleetTable.filter(c=>c.dist>0).slice(0,3).map((c,i)=>(
+                <div key={i} className="flex items-center gap-3.5 py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold text-white"
+                       style={{background:['linear-gradient(135deg,#ffcc00,#ff9500)','linear-gradient(135deg,#d2d2d7,#aeaeb2)','linear-gradient(135deg,#f4a460,#cd853f)'][i]}}>
+                    {i+1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-[#1d1d1f] truncate">{c.plate}</p>
+                    <p className="text-[11px] text-[#aeaeb2] truncate">{c.model}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[14px] font-semibold text-[#1d1d1f]">{c.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></p>
+                    <p className="text-[11px] text-[#aeaeb2]">{c.trips} รอบ</p>
+                  </div>
+                </div>
+              ))}
+              {analytics.fleetTable.filter(c=>c.dist>0).length===0 && (
+                <p className="text-[12px] text-[#aeaeb2] text-center py-6">ยังไม่มีรถออกวิ่ง</p>
+              )}
+            </div>
+          </Card>
+
+          {/* Driver leaderboard */}
+          <Card className="p-5">
+            <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">👨‍✈️ ผู้ขับดีเด่น</p>
+            <div className="max-h-[240px] overflow-y-auto st">
+              {analytics.driverStats.map((d,i)=>(
+                <div key={i} className="flex items-center gap-3.5 py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px] font-bold"
+                       style={{
+                         background:i===0?'linear-gradient(135deg,#ffcc00,#ff9500)':i===1?'linear-gradient(135deg,#d2d2d7,#aeaeb2)':i===2?'linear-gradient(135deg,#f4a460,#cd853f)':'#f2f2f7',
+                         color:i<=2?'white':'#6e6e73'
+                       }}>
+                    {i+1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[#1d1d1f] truncate">{d.name}</p>
+                    <p className="text-[10px] text-[#aeaeb2] truncate">{d.carsUsed}</p>
+                  </div>
+                  <span className="text-[13px] font-semibold text-[#1d1d1f] flex-shrink-0">{d.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></span>
+                </div>
+              ))}
+              {analytics.driverStats.length===0 && <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>}
+            </div>
+          </Card>
+
+          {/* Who drives what */}
+          <Card className="p-5">
+            <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">🔍 ใครขับคันไหน</p>
+            <div className="max-h-[240px] overflow-y-auto st space-y-0">
+              {analytics.carDriverHistory.map((c,i)=>(
+                <div key={i} className="py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[14px] font-semibold text-[#1d1d1f]">{c.plate}</span>
+                    <span className="text-[11px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">{c.totalTrips} งาน</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.drivers.split(', ').map((dl,idx)=>(
+                      <span key={idx} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">{dl}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {analytics.carDriverHistory.length===0 && <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>}
+            </div>
+          </Card>
+        </div>
+
+      </div>
     </div>
   )
 }
