@@ -1195,6 +1195,23 @@ function CarActionForm({ carId }) {
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
+
+  // helper: แปลง car_type → path รูปรถ (เหมือน CarSelector)
+  const getCarImage = (c) => {
+    if (!c) return null
+    const type = c.car_type || ''
+    if (type.toUpperCase() === 'รถ EV') return '/mg.png'
+    if (type.toUpperCase() === 'รถ EV ทดเเทน') return '/mg2.png'
+    if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
+    if (type.startsWith('รถบรรทุก 2 ตันเเก้ไฟ')) return '/2_ton_truck.png'
+    if (type.startsWith('รถเครน')) return '/crane.png'
+    if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
+    if (type.startsWith('รถกระบะ')) return '/truck.png'
+    if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
+    if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
+    if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
+    return null
+  }
   
   // Inputs
   const [employeeId, setEmployeeId] = useState('')
@@ -1539,292 +1556,357 @@ function CarActionForm({ carId }) {
         </div>
       )}
 
-      {/* ── Nav ── */}
-      <div className="sticky top-0 z-50 h-[52px] flex items-center px-4 border-b border-black/[0.07]"
-           style={{background:'rgba(245,245,247,0.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)'}}>
+      {/* ── Nav (transparent over hero) ── */}
+      <div className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center px-5">
         <button onClick={() => window.location.href = '/'}
-          className="flex items-center gap-1 text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
-          <svg width="9" height="15" viewBox="0 0 9 15" fill="none"><path d="M8 1L1 7.5L8 14" stroke="#0071e3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          className="flex items-center gap-1.5 text-[15px] font-medium active:opacity-60 transition-opacity"
+          style={{color: getCarImage(car) ? 'white' : '#0071e3', textShadow: getCarImage(car) ? '0 1px 4px rgba(0,0,0,0.3)' : 'none'}}>
+          <svg width="9" height="15" viewBox="0 0 9 15" fill="none">
+            <path d="M8 1L1 7.5L8 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           กลับ
         </button>
-      </div>
-
-      {/* ── Car Info Card ── */}
-      <div className="px-4 pt-5 pb-4">
-        <div className="bg-white rounded-[20px] px-5 py-4 flex items-center gap-4"
-             style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-          <div className={`w-[60px] h-[60px] rounded-[14px] flex-shrink-0 flex items-center justify-center text-[28px] ${
-            isEV ? 'bg-[#edf6ff]' : car.status === 'busy' ? 'bg-[#fff2f0]' : 'bg-[#edfbf0]'
-          }`}>
-            {isEV ? '⚡' : '🚗'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[22px] font-bold text-[#1d1d1f] tracking-[-0.5px]">{car.plate_number}</span>
-              {isEV && <span className="text-[11px] font-medium bg-[#edf6ff] text-[#0071e3] px-2 py-0.5 rounded-full">EV</span>}
-            </div>
-            <p className="text-[13px] text-[#6e6e73] mt-0.5">{car.model} · {car.car_type}</p>
-          </div>
+        <div className="ml-auto flex items-center gap-2">
           <button onClick={() => window.open(`/report?car_id=${car.id}`, '_blank')}
-            className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[16px] active:bg-[#e5e5ea] transition-colors flex-shrink-0">
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[15px] transition-all active:scale-90"
+            style={{background:'rgba(255,255,255,0.2)', backdropFilter:'blur(10px)'}}>
             🖨️
           </button>
         </div>
       </div>
 
-      {/* ── Form ── */}
-      <div className="px-4">
-        <div className="bg-white rounded-[20px] overflow-hidden"
-             style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-
-          {/* Form Header */}
-          <div className="px-5 py-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
-            <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">
-              {car.status === 'available'
-                ? (isEV ? '⚡ เริ่มชาร์จรถ' : '🚗 นำรถออก')
-                : (isEV ? '🔌 นำที่ชาร์จออก' : '↩️ คืนรถ')}
+      {/* ── Hero ── */}
+      <div className={`relative w-full overflow-hidden`}
+           style={{height:'55vh', minHeight:'280px', maxHeight:'380px'}}>
+        {/* รูปรถ */}
+        {getCarImage(car) ? (
+          <>
+            <img src={getCarImage(car)} alt={car.car_type}
+              className="absolute inset-0 w-full h-full object-cover"/>
+            {/* dark scrim bottom */}
+            <div className="absolute inset-0"
+                 style={{background:'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)'}}/>
+          </>
+        ) : (
+          <div className={`absolute inset-0 flex items-center justify-center ${
+            isEV ? 'bg-gradient-to-b from-[#a8d4ff] to-[#dbeeff]'
+            : car.status === 'busy' ? 'bg-gradient-to-b from-[#ffb3ae] to-[#ffe5e3]'
+            : 'bg-gradient-to-b from-[#a8f0c4] to-[#d4f5e0]'
+          }`}>
+            <span className="text-[110px] select-none" style={{filter:'drop-shadow(0 8px 24px rgba(0,0,0,0.12))'}}>
+              {isEV ? '⚡' : '🚗'}
             </span>
-            {car.status === 'busy' && (
-              <span className="text-[12px] text-[#6e6e73]">{currentTime.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})} น.</span>
-            )}
           </div>
+        )}
 
-          <div className="px-5 py-4 space-y-4">
-            {car.status === 'available' ? (
-              /* ── ฟอร์มนำรถออก ── */
-              <>
-                {/* รหัสพนักงาน */}
-                <div>
-                  <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">รหัสพนักงาน</label>
-                  <input type="text" value={employeeId}
-                    onChange={e => { setEmployeeId(e.target.value); setStaffError(false); setStaffName('') }}
-                    onBlur={checkStaff} placeholder="กรอกรหัสพนักงาน"
-                    className={`w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none border transition-colors ${
-                      staffError ? 'border-[#ff3b30] bg-[#fff2f0]' : staffName ? 'border-[#34c759] bg-[#edfbf0]' : 'border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f]'
-                    }`}/>
-                  {staffName && <p className="text-[12px] text-[#34c759] font-medium mt-1 ml-1">✓ {staffName}</p>}
-                  {staffError && <p className="text-[12px] text-[#ff3b30] font-medium mt-1 ml-1">ไม่พบรหัสพนักงานนี้</p>}
-                </div>
+        {/* info overlay on hero */}
+        <div className="absolute bottom-0 left-0 right-0 px-5 pb-6">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-white/70 text-[13px] font-medium mb-1"
+                 style={{textShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
+                {car.model} · {car.car_type}
+              </p>
+              <h1 className="text-white text-[34px] font-bold tracking-[-1px] leading-none"
+                  style={{textShadow:'0 2px 12px rgba(0,0,0,0.3)'}}>
+                {car.plate_number}
+              </h1>
+            </div>
+            <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full border ${
+              car.status === 'busy'
+                ? 'bg-[rgba(255,59,48,0.15)] text-white border-[rgba(255,255,255,0.3)]'
+                : 'bg-[rgba(52,199,89,0.2)] text-white border-[rgba(255,255,255,0.3)]'
+            }`} style={{backdropFilter:'blur(12px)', textShadow:'none'}}>
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${car.status === 'busy' ? 'bg-[#ff6b63] animate-pulse' : 'bg-[#4cd964]'}`}/>
+              {car.status === 'busy' ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+            </span>
+          </div>
+        </div>
+      </div>
 
-                {/* เลขไมล์ */}
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="text-[12px] font-medium text-[#6e6e73]">เลขไมล์เริ่มต้น</label>
-                    {isMileageLocked && <span className="text-[11px] text-[#0071e3] font-medium">🔒 ต่อเนื่องจากล่าสุด</span>}
-                  </div>
-                  <input type="number" value={mileage} readOnly={isMileageLocked}
-                    onChange={e => setMileage(e.target.value)}
-                    placeholder={isEV ? "เลขไมล์ล่าสุด" : "เลขไมล์เริ่มต้น"}
-                    className={`w-full px-4 py-3.5 rounded-[14px] text-[16px] font-mono outline-none border transition-colors ${
-                      isMileageLocked ? 'bg-[#f5f5f7] border-[#e5e5ea] text-[#6e6e73] cursor-not-allowed' : 'bg-[#f5f5f7] border-[#e5e5ea] focus:border-[#1d1d1f]'
-                    }`}/>
-                </div>
+      {/* ── Form Sheet (ลอยเหนือ hero) ── */}
+      <div className="relative -mt-5 rounded-t-[28px] bg-[#f2f2f7] pb-16 min-h-[50vh]"
+           style={{boxShadow:'0 -4px 20px rgba(0,0,0,0.08)'}}>
 
-                {isEV ? (
-                  <>
-                    {/* %แบต */}
-                    <div>
-                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">%แบตเตอรี่ก่อนชาร์จ</label>
-                      <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)}
-                        placeholder="0 – 100"
-                        className="w-full px-4 py-3.5 rounded-[14px] text-[16px] text-center font-mono outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
-                    </div>
+        {/* pill handle */}
+        <div className="flex justify-center pt-3 pb-4">
+          <div className="w-10 h-1 rounded-full bg-[#c7c7cc]"/>
+        </div>
 
-                    {/* ประเภทสถานี */}
-                    <div>
-                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">ประเภทสถานีชาร์จ</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {['PEA', 'OTHER'].map(t => (
-                          <button key={t} onClick={() => { setStationType(t); setSubStationType(''); setStationName(''); }}
-                            className={`py-3 rounded-[12px] text-[13px] font-medium border transition-colors ${
-                              stationType === t ? 'bg-[#1d1d1f] border-[#1d1d1f] text-white' : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
-                            }`}>
-                            {t === 'PEA' ? 'สถานี PEA Volta' : 'แบรนด์อื่นๆ'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+        {/* Action label */}
+        <div className="px-5 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center text-[22px] ${
+              car.status === 'available'
+                ? isEV ? 'bg-[#0071e3]' : 'bg-[#34c759]'
+                : 'bg-[#ff3b30]'
+            }`}>
+              {car.status === 'available' ? (isEV ? '⚡' : '🚗') : (isEV ? '🔌' : '↩️')}
+            </div>
+            <div>
+              <p className="text-[18px] font-bold text-[#1d1d1f] tracking-[-0.4px]">
+                {car.status === 'available' ? (isEV ? 'เริ่มชาร์จรถ' : 'นำรถออก') : (isEV ? 'นำที่ชาร์จออก' : 'คืนรถ')}
+              </p>
+              {car.status === 'busy' && (
+                <p className="text-[12px] text-[#6e6e73]">เวลา {currentTime.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.</p>
+              )}
+            </div>
+          </div>
+        </div>
 
-                    {/* สาขา */}
-                    <div>
-                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">ระบุสาขา / แบรนด์</label>
-                      <div className="rounded-[14px] overflow-hidden border border-[#e5e5ea]">
-                        {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt, i, arr) => (
-                          <button key={opt.id} onClick={() => { setSubStationType(opt.id); setStationName(''); }}
-                            className={`w-full flex items-center justify-between px-4 py-3 text-[14px] transition-colors ${
-                              subStationType === opt.id ? 'bg-[#f0f9ff] text-[#0071e3]' : 'bg-white text-[#1d1d1f]'
-                            }`}
-                            style={{borderBottom: i < arr.length-1 ? '0.5px solid rgba(60,60,67,0.1)' : 'none'}}>
-                            <span>{opt.label}</span>
-                            {subStationType === opt.id && (
-                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#0071e3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* ชื่อสถานี input */}
-                    {(() => {
-                      const sel = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
-                      if (!sel || sel.inputType === 'none') return null;
-                      if (sel.inputType === 'text') return (
-                        <div>
-                          <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">รายละเอียดเพิ่มเติม</label>
-                          <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..."
-                            className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
-                        </div>
-                      );
-                      if (sel.inputType === 'dropdown_kfk') return (
-                        <div>
-                          <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">เลือกสาขาของ กฟก.</label>
-                          <select value={stationName} onChange={e => setStationName(e.target.value)}
-                            className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7]">
-                            <option value="" disabled>-- กรุณาเลือก --</option>
-                            {kfkList.map(k => <option key={k} value={k}>{k}</option>)}
-                          </select>
-                        </div>
-                      );
-                      if (sel.inputType === 'dropdown_other') return (
-                        <div>
-                          <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">เลือกแบรนด์สถานี</label>
-                          <select value={stationName} onChange={e => setStationName(e.target.value)}
-                            className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7]">
-                            <option value="" disabled>-- กรุณาเลือก --</option>
-                            {otherBrandList.map(b => <option key={b} value={b}>{b}</option>)}
-                          </select>
-                        </div>
-                      );
-                      return null;
-                    })()}
-                  </>
-                ) : (
-                  /* สถานที่ */
-                  <div>
-                    <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">สถานที่ไปปฏิบัติงาน</label>
-                    <div className="rounded-[14px] overflow-hidden border border-[#e5e5ea]">
-                      {[
-                        {v:'พื้นที่อำเภอกำแพงแสน', l:'1. พื้นที่อำเภอกำแพงแสน'},
-                        {v:'คลังพัสดุนครชัยศรี',    l:'2. คลังพัสดุนครชัยศรี'},
-                        {v:'สำนักงานกฟก.3',         l:'3. สำนักงานกฟก.3'},
-                        {v:'อื่นๆ',                  l:'4. อื่นๆ'},
-                      ].map((item, i) => (
-                        <button key={item.v} onClick={() => setSelectedLocation(item.v)}
-                          className={`w-full flex items-center justify-between px-4 py-3.5 text-[14px] transition-colors ${
-                            selectedLocation === item.v ? 'bg-[#f0f9ff] text-[#0071e3]' : 'bg-white text-[#1d1d1f]'
-                          }`}
-                          style={{borderBottom: i < 3 ? '0.5px solid rgba(60,60,67,0.1)' : 'none'}}>
-                          <span>{item.l}</span>
-                          {selectedLocation === item.v && (
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#0071e3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                    {selectedLocation === 'อื่นๆ' && (
-                      <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)}
-                        placeholder="ระบุสถานที่..." className="w-full mt-2 px-4 py-3.5 rounded-[14px] text-[15px] outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
-                    )}
+        <div className="px-4 space-y-3">
+          {car.status === 'available' ? (
+            <>
+              {/* รหัสพนักงาน */}
+              <div className="bg-white rounded-[20px] px-5 py-4"
+                   style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">รหัสพนักงาน</p>
+                <input type="text" value={employeeId}
+                  onChange={e => { setEmployeeId(e.target.value); setStaffError(false); setStaffName('') }}
+                  onBlur={checkStaff} placeholder="กรอกรหัสพนักงาน"
+                  className={`w-full px-4 py-3.5 rounded-[14px] text-[17px] font-medium outline-none transition-all ${
+                    staffError ? 'bg-[#fff2f0] border-[1.5px] border-[#ff3b30] text-[#d70015]'
+                    : staffName ? 'bg-[#edfbf0] border-[1.5px] border-[#34c759] text-[#1a7f37]'
+                    : 'bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
+                  }`}/>
+                {staffName && (
+                  <div className="flex items-center gap-2 mt-3 bg-[#edfbf0] px-3 py-2.5 rounded-[12px]">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#34c759"/><path d="M5 9l3 3 5-5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span className="text-[14px] font-semibold text-[#1a7f37]">{staffName}</span>
                   </div>
                 )}
-
-                <button onClick={handleTakeOut} disabled={loading}
-                  className={`w-full py-4 rounded-[16px] text-[16px] font-semibold mt-2 transition-colors ${
-                    loading ? 'bg-[#d2d2d7] text-white cursor-not-allowed' : 'bg-[#1d1d1f] text-white active:bg-[#3a3a3c]'
-                  }`}>
-                  {loading ? 'กำลังบันทึก...' : (isEV ? '⚡ ยืนยันเริ่มชาร์จ' : 'ยืนยันนำรถออก')}
-                </button>
-              </>
-            ) : (
-              /* ── ฟอร์มคืนรถ ── */
-              <>
-                {/* ข้อมูลผู้ใช้รถ */}
-                <div className="bg-[#f5f5f7] rounded-[14px] px-4 py-3"
-                     style={{border:'0.5px solid rgba(60,60,67,0.1)'}}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-[8px] h-[8px] rounded-full bg-[#ff3b30] animate-pulse flex-shrink-0"/>
-                    <span className="text-[14px] font-semibold text-[#1d1d1f]">{activeLog?.driver_name}</span>
+                {staffError && (
+                  <div className="flex items-center gap-2 mt-3 bg-[#fff2f0] px-3 py-2.5 rounded-[12px]">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#ff3b30"/><path d="M6 6l6 6M12 6l-6 6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                    <span className="text-[13px] font-medium text-[#d70015]">ไม่พบรหัสพนักงานนี้</span>
                   </div>
-                  {isEV ? (
-                    <div className="mt-1.5 text-[12px] text-[#6e6e73] space-y-0.5">
-                      <p>🔋 แบตก่อนชาร์จ: <span className="font-semibold text-[#1d1d1f]">{activeLog?.battery_before}%</span></p>
-                      <p>📍 สถานี: <span className="text-[#1d1d1f]">{activeLog?.station_name}</span></p>
-                    </div>
-                  ) : (
-                    <p className="text-[12px] text-[#6e6e73] mt-0.5">ไมล์เริ่ม: <span className="font-semibold text-[#1d1d1f]">{activeLog?.start_mileage?.toLocaleString()}</span></p>
+                )}
+              </div>
+
+              {/* เลขไมล์ */}
+              <div className="bg-white rounded-[20px] px-5 py-4"
+                   style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">
+                    {isEV ? 'เลขไมล์ล่าสุด' : 'เลขไมล์เริ่มต้น'}
+                  </p>
+                  {isMileageLocked && (
+                    <span className="text-[11px] font-medium text-[#0071e3] flex items-center gap-1 bg-[#edf6ff] px-2 py-0.5 rounded-full">
+                      🔒 ต่อเนื่อง
+                    </span>
                   )}
                 </div>
+                <input type="number" value={mileage} readOnly={isMileageLocked}
+                  onChange={e => setMileage(e.target.value)}
+                  placeholder="000000"
+                  className={`w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider outline-none transition-all text-center ${
+                    isMileageLocked
+                      ? 'bg-[#f5f5f7] text-[#aeaeb2] cursor-not-allowed border-[1.5px] border-transparent'
+                      : 'bg-[#f5f5f7] text-[#1d1d1f] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
+                  }`}/>
+              </div>
 
-                {isEV ? (
-                  /* %แบตหลัง */
-                  <div>
-                    <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">%แบตเตอรี่หลังชาร์จ</label>
-                    <div className="flex items-center justify-center gap-4 bg-[#f5f5f7] rounded-[14px] px-4 py-4 border border-[#e5e5ea]">
-                      <span className="text-[28px]">🔋</span>
-                      <input type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)}
-                        placeholder="0–100"
-                        className="w-24 py-2 bg-white rounded-[10px] outline-none text-center text-[24px] font-bold text-[#1d1d1f] border border-[#e5e5ea]"/>
-                      <span className="text-[20px] font-semibold text-[#6e6e73]">%</span>
+              {isEV ? (
+                <>
+                  {/* %แบต */}
+                  <div className="bg-white rounded-[20px] px-5 py-4"
+                       style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">แบตเตอรี่ก่อนชาร์จ</p>
+                    <div className="relative flex items-center justify-center">
+                      <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)}
+                        placeholder="0" min="0" max="100"
+                        className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                      <span className="absolute right-5 text-[20px] font-bold text-[#aeaeb2]">%</span>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    {/* เลขไมล์จบ */}
-                    <div>
-                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">เลขไมล์ล่าสุด (จบงาน)</label>
-                      <input type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)}
-                        placeholder="เลขไมล์ปัจจุบัน"
-                        className="w-full px-4 py-3.5 rounded-[14px] text-[16px] font-mono outline-none border border-[#e5e5ea] bg-[#f5f5f7] focus:border-[#1d1d1f] transition-colors"/>
-                    </div>
 
-                    {/* เติมน้ำมัน */}
-                    <div>
-                      <label className="text-[12px] font-medium text-[#6e6e73] mb-1.5 block">มีการเติมน้ำมันหรือไม่?</label>
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        {[{v:true,l:'เติมน้ำมัน'},{v:false,l:'ไม่ได้เติม'}].map(item => (
+                  {/* สถานี */}
+                  <div className="bg-white rounded-[20px] overflow-hidden"
+                       style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                    <div className="px-5 pt-4 pb-3">
+                      <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">ประเภทสถานีชาร์จ</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['PEA','OTHER'].map(t => (
+                          <button key={t} onClick={() => { setStationType(t); setSubStationType(''); setStationName(''); }}
+                            className={`py-3.5 rounded-[14px] text-[13px] font-semibold transition-all active:scale-[0.97] ${
+                              stationType === t ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
+                            }`}>
+                            {t === 'PEA' ? '⚡ PEA Volta' : '🔌 แบรนด์อื่น'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt, i, arr) => (
+                      <button key={opt.id} onClick={() => { setSubStationType(opt.id); setStationName(''); }}
+                        className={`w-full flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors ${
+                          subStationType === opt.id ? 'bg-[#f0f9ff] text-[#0071e3]' : 'text-[#1d1d1f]'
+                        }`}
+                        style={{borderTop:'0.5px solid rgba(60,60,67,0.08)'}}>
+                        {opt.label}
+                        {subStationType === opt.id && (
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#0071e3"/><path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {(() => {
+                    const sel = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
+                    if (!sel || sel.inputType === 'none') return null;
+                    return (
+                      <div className="bg-white rounded-[20px] px-5 py-4"
+                           style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                        <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">รายละเอียด</p>
+                        {sel.inputType === 'text' ? (
+                          <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..."
+                            className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                        ) : (
+                          <select value={stationName} onChange={e => setStationName(e.target.value)}
+                            className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent">
+                            <option value="" disabled>-- กรุณาเลือก --</option>
+                            {(sel.inputType === 'dropdown_kfk' ? kfkList : otherBrandList).map(k => <option key={k} value={k}>{k}</option>)}
+                          </select>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : (
+                /* สถานที่ */
+                <div className="bg-white rounded-[20px] overflow-hidden"
+                     style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                  <div className="px-5 pt-4 pb-0">
+                    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-1">สถานที่ปฏิบัติงาน</p>
+                  </div>
+                  {[
+                    {v:'พื้นที่อำเภอกำแพงแสน', l:'พื้นที่อำเภอกำแพงแสน', icon:'📍'},
+                    {v:'คลังพัสดุนครชัยศรี',    l:'คลังพัสดุนครชัยศรี', icon:'🏭'},
+                    {v:'สำนักงานกฟก.3',         l:'สำนักงาน กฟก.3', icon:'🏢'},
+                    {v:'อื่นๆ',                  l:'อื่นๆ', icon:'📌'},
+                  ].map((item, i) => (
+                    <button key={item.v} onClick={() => setSelectedLocation(item.v)}
+                      className={`w-full flex items-center gap-3 px-5 py-4 text-[15px] font-medium transition-colors ${
+                        selectedLocation === item.v ? 'bg-[#f0f9ff] text-[#0071e3]' : 'text-[#1d1d1f]'
+                      }`}
+                      style={{borderTop:'0.5px solid rgba(60,60,67,0.08)'}}>
+                      <span>{item.icon}</span>
+                      <span className="flex-1 text-left">{item.l}</span>
+                      {selectedLocation === item.v && (
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#0071e3"/><path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      )}
+                    </button>
+                  ))}
+                  {selectedLocation === 'อื่นๆ' && (
+                    <div className="px-5 pb-4 pt-1">
+                      <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)}
+                        placeholder="ระบุสถานที่..."
+                        className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button onClick={handleTakeOut} disabled={loading}
+                className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
+                  loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed' : 'text-white'
+                }`}
+                style={!loading ? {
+                  background:'linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%)',
+                  boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
+                } : {}}>
+                {loading ? 'กำลังบันทึก...' : (isEV ? '⚡  ยืนยันเริ่มชาร์จ' : 'ยืนยันนำรถออก  →')}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* ข้อมูลผู้ใช้รถ */}
+              <div className="bg-white rounded-[20px] px-5 py-4 flex items-center gap-4"
+                   style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                <div className="w-11 h-11 rounded-full bg-[#fff2f0] flex items-center justify-center flex-shrink-0">
+                  <span className="w-3 h-3 rounded-full bg-[#ff3b30] animate-pulse"/>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[16px] font-semibold text-[#1d1d1f] truncate">{activeLog?.driver_name}</p>
+                  {isEV ? (
+                    <p className="text-[12px] text-[#6e6e73]">🔋 {activeLog?.battery_before}% · 📍 {activeLog?.station_name}</p>
+                  ) : (
+                    <p className="text-[12px] text-[#6e6e73]">ออกที่ไมล์ {activeLog?.start_mileage?.toLocaleString()}</p>
+                  )}
+                </div>
+              </div>
+
+              {isEV ? (
+                <div className="bg-white rounded-[20px] px-5 py-4"
+                     style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">แบตเตอรี่หลังชาร์จ</p>
+                  <div className="relative">
+                    <input type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)}
+                      placeholder="0" min="0" max="100"
+                      className="w-full px-4 py-4 rounded-[14px] text-[36px] font-mono font-bold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[24px] font-bold text-[#aeaeb2]">%</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-white rounded-[20px] px-5 py-4"
+                       style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">เลขไมล์ล่าสุด (จบงาน)</p>
+                    <input type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)}
+                      placeholder="000000"
+                      className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                  </div>
+
+                  <div className="bg-white rounded-[20px] overflow-hidden"
+                       style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                    <div className="px-5 pt-4 pb-3">
+                      <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">มีการเติมน้ำมันหรือไม่?</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[{v:true,l:'⛽ เติมน้ำมัน'},{v:false,l:'ไม่ได้เติม'}].map(item => (
                           <button key={String(item.v)} onClick={() => { setHasRefueled(item.v); setFuelLiters(''); setFuelCost(''); }}
-                            className={`py-3 rounded-[12px] text-[14px] font-medium border transition-colors ${
-                              hasRefueled === item.v ? 'bg-[#1d1d1f] border-[#1d1d1f] text-white' : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#1d1d1f]'
+                            className={`py-3.5 rounded-[14px] text-[14px] font-semibold transition-all active:scale-[0.97] ${
+                              hasRefueled === item.v ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
                             }`}>
                             {item.l}
                           </button>
                         ))}
                       </div>
-                      {hasRefueled === true && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[11px] text-[#6e6e73] mb-1 block">ปริมาณ (ลิตร)</label>
-                            <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)}
-                              placeholder="0.00"
-                              className="w-full px-3 py-3 rounded-[12px] text-[15px] text-center font-mono outline-none border border-[#e5e5ea] bg-white focus:border-[#1d1d1f] transition-colors"/>
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-[#6e6e73] mb-1 block">จำนวนเงิน (บาท)</label>
-                            <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)}
-                              placeholder="0"
-                              className="w-full px-3 py-3 rounded-[12px] text-[15px] text-center font-mono outline-none border border-[#e5e5ea] bg-white focus:border-[#1d1d1f] transition-colors"/>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  </>
-                )}
+                    {hasRefueled === true && (
+                      <div className="px-5 pb-4 grid grid-cols-2 gap-3 border-t border-[rgba(0,0,0,0.05)] pt-4">
+                        <div>
+                          <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-2">ปริมาณ (ลิตร)</p>
+                          <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} placeholder="0.00"
+                            className="w-full px-3 py-3.5 rounded-[14px] text-[18px] font-mono font-semibold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-2">จำนวนเงิน (บาท)</p>
+                          <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} placeholder="0"
+                            className="w-full px-3 py-3.5 rounded-[14px] text-[18px] font-mono font-semibold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
-                <button onClick={() => handleReturn(false)} disabled={loading || (!isEV && hasRefueled === null)}
-                  className={`w-full py-4 rounded-[16px] text-[16px] font-semibold mt-2 transition-colors ${
-                    loading ? 'bg-[#d2d2d7] text-white cursor-not-allowed'
-                    : (!isEV && hasRefueled === null) ? 'bg-[#e5e5ea] text-[#aeaeb2] cursor-not-allowed'
-                    : 'bg-[#1d1d1f] text-white active:bg-[#3a3a3c]'
-                  }`}>
-                  {loading ? 'กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จ' : 'ยืนยันคืนรถ')}
-                </button>
+              <button onClick={() => handleReturn(false)} disabled={loading || (!isEV && hasRefueled === null)}
+                className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
+                  loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed'
+                  : (!isEV && hasRefueled === null) ? 'bg-[#e5e5ea] text-[#aeaeb2] cursor-not-allowed'
+                  : 'text-white'
+                }`}
+                style={(!loading && !(!isEV && hasRefueled === null)) ? {
+                  background:'linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%)',
+                  boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
+                } : {}}>
+                {loading ? 'กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จ  →' : 'ยืนยันคืนรถ  →')}
+              </button>
 
-                {!isEV && hasRefueled === null && (
-                  <p className="text-center text-[12px] text-[#ff3b30] font-medium -mt-1">กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่</p>
-                )}
-              </>
-            )}
-          </div>
+              {!isEV && hasRefueled === null && (
+                <p className="text-center text-[12px] text-[#ff3b30] font-medium -mt-1">กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่</p>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
