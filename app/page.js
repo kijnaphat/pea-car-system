@@ -31,19 +31,27 @@ function CarSelector() {
   const fetchCars = async () => {
     try {
       const { data: carsData } = await supabase.from('cars').select('*')
-      const { data: activeLogs } = await supabase.from('trip_logs').select('car_id, start_time, driver_name').eq('is_completed', false)
-      
-      // ✅ ดึงข้อมูล car_id ทั้งหมดใน trip_logs เพื่อเช็คว่าคันไหนเคยใช้งานแล้วบ้าง
-      const { data: allLogs } = await supabase.from('trip_logs').select('car_id')
+      const { data: activeLogs } = await supabase
+        .from('trip_logs')
+        .select('car_id, start_time, driver_name')
+        .eq('is_completed', false)
 
       if (carsData) {
-        // ✅ สร้าง Set เอาไว้ตรวจสอบว่ามีประวัติการใช้รถหรือไม่
-        const activatedSet = new Set(allLogs?.map(l => l.car_id) || [])
+        // เช็คทีละคันว่ามี trip_log ไหม — limit(1) พอ ไม่ต้องดึงทุก row
+        // วิธีนี้แม่นยำ 100% ไม่มีปัญหา limit ตลอดไป
+        const activatedResults = await Promise.all(
+          carsData.map(car =>
+            supabase
+              .from('trip_logs')
+              .select('car_id', { count: 'exact', head: true })
+              .eq('car_id', Number(car.id))
+          )
+        )
 
-        const mergedCars = carsData.map(car => {
-            const log = activeLogs?.find(l => l.car_id === car.id)
-            // ✅ เพิ่ม isActivated เข้าไป
-            return { ...car, activeLog: log, isActivated: activatedSet.has(car.id) }
+        const mergedCars = carsData.map((car, i) => {
+          const log = activeLogs?.find(l => Number(l.car_id) === Number(car.id))
+          const isActivated = (activatedResults[i]?.count ?? 0) > 0
+          return { ...car, activeLog: log, isActivated }
         })
 
         mergedCars.sort((a, b) => {
