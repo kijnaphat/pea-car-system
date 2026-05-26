@@ -92,6 +92,8 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
+    if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
+    if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
     
     return null 
   }
