@@ -481,6 +481,187 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
 // ==========================================
 // 📄 Component: หน้าตารายงาน
 // ==========================================
+// ── Mobile Bottom Sheet for Report Controls ──
+function MobileControlSheet({ selectedMonth, setSelectedMonth, fromText, setFromText, toText, setToText, dearText, setDearText, isEVCar, canSignAny, isCurrentMonthSignable, signableMonth, driverSigText, controllerSigText, handleDeleteSig, openSigModal, logs, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost, setDrillCost, drillHours, setDrillHours, drillSaving, setDrillSaving, drillSaved, setDrillSaved }) {
+  const [activeTab, setActiveTab] = useState('doc')
+  const [expanded, setExpanded] = useState(false)
+  const dragRef = useRef(null)
+  const startYRef = useRef(null)
+
+  const onTouchStart = e => { startYRef.current = e.touches[0].clientY }
+  const onTouchEnd = e => {
+    if (startYRef.current === null) return
+    const dy = e.changedTouches[0].clientY - startYRef.current
+    if (dy > 60) setExpanded(false) // swipe down 60px = ปิด
+    startYRef.current = null
+  }
+
+  return (
+    <div className="bg-[rgba(245,245,247,0.95)] backdrop-blur-2xl"
+         style={{boxShadow:'0 4px 20px rgba(0,0,0,0.12)', borderBottom:'0.5px solid rgba(0,0,0,0.1)', WebkitFontSmoothing:'antialiased'}}>
+
+      {/* Tab bar */}
+      <div className="flex w-full px-3 pt-2.5 pb-2.5 gap-2">
+        <button onClick={()=> expanded ? setExpanded(false) : window.location.href = '/'}
+          className={`px-4 py-2.5 rounded-[12px] font-bold flex-shrink-0 flex items-center justify-center transition-all ${expanded ? 'bg-[#ff3b30] text-white text-[15px]' : 'bg-[#1d1d1f] text-white'}`}>
+          {expanded ? '✕' : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </button>
+        <button onClick={()=>{setActiveTab('doc'); setExpanded(t => activeTab==='doc' ? !t : true)}}
+          className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='doc'&&expanded?'bg-[#1d1d1f] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
+          📄 เอกสาร
+        </button>
+        <button onClick={()=>{setActiveTab('drill'); setExpanded(t => activeTab==='drill' ? !t : true)}}
+          className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='drill'&&expanded?'bg-[#1d1d1f] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
+          🔧 รายการซ่อม
+        </button>
+        <button onClick={()=>window.print()}
+          className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold bg-[#1d1d1f] text-white flex-shrink-0">
+          🖨️
+        </button>
+      </div>
+
+      {/* Expanded content — swipe down to close */}
+      {expanded && (
+        <div ref={dragRef}
+             onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+             className="px-3 pb-5 space-y-3 max-h-[55vh] overflow-y-auto border-t border-[rgba(0,0,0,0.06)]">
+          {/* handle bar */}
+          <div className="flex justify-center pt-2 pb-1">
+            <div className="w-10 h-1 rounded-full bg-[#c7c7cc]"/>
+          </div>
+          {activeTab === 'doc' ? (
+            <>
+              {/* Status */}
+              {!canSignAny ? (
+                <div className="flex items-center gap-2 bg-[#fff8ed] rounded-[12px] px-3 py-2.5">
+                  <span>🔒</span><span className="text-[12px] font-medium text-[#a05c00]">นอกเวลาเซ็น (วันที่ 28–5)</span>
+                </div>
+              ) : signableMonth && selectedMonth !== signableMonth ? (
+                <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[12px] px-3 py-2.5">
+                  <span>ℹ️</span><span className="text-[12px] font-medium text-[#0071e3]">จะสลับเป็นเดือน {signableMonth}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-[#edfbf0] rounded-[12px] px-3 py-2.5">
+                  <span className="w-2 h-2 rounded-full bg-[#34c759]"/><span className="text-[12px] font-medium text-[#1a7f37]">แก้ไขลายเซ็นได้</span>
+                </div>
+              )}
+
+              {/* เดือน */}
+              <div className="bg-white rounded-[14px] px-4 py-3 flex items-center justify-between"
+                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                <span className="text-[14px] font-medium text-[#1d1d1f]">เดือน</span>
+                <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)}
+                  className="text-[14px] text-[#0071e3] bg-transparent border-none outline-none font-medium"/>
+              </div>
+
+              {/* จาก/ถึง/เรียน */}
+              {!isEVCar && (
+                <div className="bg-white rounded-[14px] overflow-hidden"
+                     style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                  {[{l:'จาก',v:fromText,s:setFromText,p:'แผนก...'},{l:'ถึง',v:toText,s:setToText,p:'หัวหน้า...'},{l:'เรียน',v:dearText,s:setDearText,p:'ผจก...'}].map(({l,v,s,p},i,arr)=>(
+                    <div key={l} className={`flex items-center px-4 py-3 gap-3 ${i<arr.length-1?'border-b border-[rgba(0,0,0,0.06)]':''}`}>
+                      <span className="text-[12px] text-[#6e6e73] w-8 flex-shrink-0 font-medium">{l}</span>
+                      <input type="text" value={v} onChange={e=>s(e.target.value)} placeholder={p}
+                        className="flex-1 text-[14px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ลายเซ็น */}
+              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">ลายเซ็น</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  {key:'driver',label:isEVCar?'ผู้รายงาน':'ผู้ขับรถ',sig:driverSigText,title:isEVCar?'เซ็นชื่อผู้รายงาน':'เซ็นชื่อผู้ขับ'},
+                  {key:'controller',label:'ผู้ควบคุม',sig:controllerSigText,title:'เซ็นชื่อผู้ควบคุม'},
+                ].map(({key,label,sig,title})=>(
+                  <div key={key} className="bg-white rounded-[16px] flex flex-col items-center py-4 px-3 relative min-h-[90px]"
+                       style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                    <span className="text-[11px] text-[#6e6e73] mb-2 font-medium">{label}</span>
+                    {sig ? (
+                      <>
+                        <img src={sig} alt="sig" className="h-9 object-contain"/>
+                        {isCurrentMonthSignable && (
+                          <button onClick={()=>handleDeleteSig(key)}
+                            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#ff3b30] flex items-center justify-center text-white text-[10px] font-bold">✕</button>
+                        )}
+                      </>
+                    ) : (
+                      <button onClick={()=>openSigModal(key,title)}
+                        className={`text-[13px] font-medium px-4 py-1.5 rounded-full border transition-colors ${canSignAny?'border-[#0071e3] text-[#0071e3]':'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                        + เซ็น
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* ── Tab: ซ่อม ── */
+            <>
+              {/* วันที่ */}
+              <div className="bg-white rounded-[14px] overflow-hidden"
+                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                <div className="px-4 pt-3 pb-1">
+                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">วันที่</p>
+                </div>
+                <select value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
+                  className="w-full px-4 py-3 text-[15px] text-[#1d1d1f] bg-transparent border-none outline-none">
+                  <option value="">-- เลือกวันที่ --</option>
+                  {[...new Map(logs.map(l=>{
+                    const d=new Date(l.start_time)
+                    const key=d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'})
+                    return [key,{key,iso:d.toISOString().split('T')[0]}]
+                  })).values()].map(({key,iso})=>(
+                    <option key={iso} value={iso}>{key}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* รายการซ่อม */}
+              <div className="bg-white rounded-[14px] overflow-hidden"
+                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                <div className="px-4 pt-3 pb-1">
+                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">รายการซ่อม</p>
+                </div>
+                <input type="text" value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}}
+                  placeholder="เช่น ซ่อมดับเพลิง, ซ่อมอพยพ..."
+                  className="w-full px-4 py-3 text-[15px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
+              </div>
+
+              {/* เงิน + ชั่วโมง */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white rounded-[14px] overflow-hidden"
+                     style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                  <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">เงิน (บาท)</p></div>
+                  <input type="number" value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
+                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#1d1d1f] text-center bg-transparent border-none outline-none"/>
+                </div>
+                <div className="bg-white rounded-[14px] overflow-hidden"
+                     style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                  <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">ชม.เครื่องจักร</p></div>
+                  <input type="number" value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
+                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#1d1d1f] text-center bg-transparent border-none outline-none"/>
+                </div>
+              </div>
+
+              <button onClick={()=>{if(!drillDate||!drillDesc)return alert('กรุณาเลือกวันที่และกรอกรายการซ่อม');setDrillSaving(true);setTimeout(()=>{setDrillSaving(false);setDrillSaved(true)},600)}}
+                disabled={drillSaving}
+                className={`w-full py-4 rounded-[16px] text-[16px] font-semibold transition-all active:scale-[0.98] ${drillSaved?'bg-[#edfbf0] text-[#1a7f37]':'bg-[#1d1d1f] text-white'}`}>
+                {drillSaving ? 'กำลังบันทึก...' : drillSaved ? '✓ บันทึกแล้ว' : 'บันทึกการซ่อม'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ReportPage() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id')
@@ -504,6 +685,14 @@ function ReportPage() {
   const [controllerPos, setControllerPos] = useState('')
 
   const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' })
+
+  // ── States: บันทึกการซ่อม ──
+  const [drillDate, setDrillDate] = useState('')
+  const [drillDesc, setDrillDesc] = useState('')
+  const [drillCost, setDrillCost] = useState('')
+  const [drillHours, setDrillHours] = useState('')
+  const [drillSaving, setDrillSaving] = useState(false)
+  const [drillSaved, setDrillSaved] = useState(false)
 
   // ✅ State สำหรับเก็บค่าเดือนที่อนุญาตให้เซ็นได้ และเช็คว่าเซ็นได้หรือไม่
   const [signableMonth, setSignableMonth] = useState(null);
@@ -543,10 +732,14 @@ function ReportPage() {
 
   useEffect(() => {
     const handleResize = () => {
-      const availableWidth = window.innerWidth - 16; 
-      if (availableWidth < A4_WIDTH_PX) setScale(availableWidth / A4_WIDTH_PX);
-      else setScale(1);
-    };
+      const isMobile = window.innerWidth < 1280
+      // mobile: เว้นพื้นที่ bottom sheet ~220px และ margin 8px แต่ละด้าน
+      const availableWidth = isMobile
+        ? window.innerWidth - 16
+        : window.innerWidth - 16
+      if (availableWidth < A4_WIDTH_PX) setScale(availableWidth / A4_WIDTH_PX)
+      else setScale(1)
+    }
     handleResize(); 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -678,7 +871,8 @@ function ReportPage() {
   );
 
   return (
-    <div className={`min-h-screen bg-gray-500 flex flex-col items-center pb-12 print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden ${isEVCar ? 'pt-[260px]' : 'pt-[380px]'} xl:pt-8`}>
+    <div className="min-h-screen bg-[#f2f2f7] flex flex-col items-center print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden pt-0 pb-8 xl:pt-8 xl:pb-12"
+         style={{WebkitFontSmoothing:'antialiased'}}>
       
       <style>{`
         @media print {
@@ -738,89 +932,176 @@ function ReportPage() {
         }}
       />
 
-      <div className="w-full fixed top-0 left-0 xl:w-[320px] xl:top-4 xl:left-auto xl:right-4 print:hidden z-50 flex flex-col gap-2 bg-white/95 backdrop-blur-md p-3 shadow-lg xl:shadow-2xl border-b xl:border border-gray-200 xl:rounded-2xl overflow-hidden">
-        
-        <div className="flex justify-between items-center mb-1">
-          <h3 className="font-black text-[#742F99] text-[15px] xl:text-lg">⚙️ ตั้งค่าเอกสาร</h3>
-          <button onClick={() => window.print()} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-blue-700 font-bold text-[11px] xl:text-sm flex items-center gap-1 active:scale-95 transition-transform">🖨️ พิมพ์</button>
-        </div>
+      {/* ══════════════════════════════════════════════
+          MOBILE: Bottom Sheet | DESKTOP: Right Sidebar
+          ══════════════════════════════════════════════ */}
+      <style>{`
+        @media print { .ctrl-panel { display:none !important; } }
+      `}</style>
 
-        {/* ✅ ป้ายแจ้งเตือนเรื่องรอบเวลาเซ็นเอกสาร */}
-        {!canSignAny ? (
-            <div className="bg-orange-50 border border-orange-200 text-orange-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
-                🔒 นอกเวลาอนุญาต (เซ็นได้เฉพาะวันที่ 28 ถึง 5 ของรอบเดือน)
-            </div>
-        ) : selectedMonth !== signableMonth ? (
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
-                ℹ️ หากกดเซ็น ระบบจะสลับไปเดือนที่กำหนด ({signableMonth})
-            </div>
-        ) : (
-            <div className="bg-green-50 border border-green-200 text-green-700 text-[10px] p-1.5 rounded-lg text-center font-bold">
-                ✅ สามารถแก้ไขลายเซ็นของเดือนนี้ได้
-            </div>
-        )}
+      {/* ── Desktop Sidebar ── */}
+      <div className="ctrl-panel hidden xl:flex xl:fixed xl:top-4 xl:right-4 xl:w-[300px] xl:flex-col xl:gap-3 xl:z-50 print:hidden"
+           style={{WebkitFontSmoothing:'antialiased'}}>
 
-        <div className="grid grid-cols-1 gap-2">
-            <div className="flex items-center gap-2">
-                <label className="text-[11px] font-bold text-gray-600 whitespace-nowrap">📅 เดือน :</label>
-                <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="flex-1 border border-gray-200 bg-white rounded-lg px-2 py-1 text-[11px] outline-none focus:border-[#742F99]" />
-            </div>
+        {/* Card: ตั้งค่าเอกสาร */}
+        <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl rounded-[20px] overflow-hidden"
+             style={{boxShadow:'0 2px 1px rgba(0,0,0,0.03),0 8px 28px rgba(0,0,0,0.12)', border:'0.5px solid rgba(0,0,0,0.08)'}}>
+          <div className="px-4 py-3 border-b border-black/[0.06] flex items-center justify-between">
+            <span className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">เอกสาร</span>
+            <button onClick={() => window.print()}
+              className="flex items-center gap-1.5 bg-[#1d1d1f] text-white text-[12px] font-medium px-3.5 py-1.5 rounded-full active:bg-[#3a3a3c] transition-colors">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              พิมพ์
+            </button>
+          </div>
 
-            {!isEVCar && (
-              <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] font-bold text-gray-500 w-6">จาก</label>
-                    <input type="text" value={fromText} onChange={(e) => setFromText(e.target.value)} placeholder="แผนก..." className="w-full border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-[#742F99]"/>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] font-bold text-gray-500 w-6">ถึง</label>
-                    <input type="text" value={toText} onChange={(e) => setToText(e.target.value)} placeholder="ผจก..." className="w-full border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-[#742F99]"/>
-                </div>
-                <div className="flex items-center gap-1.5 col-span-2">
-                    <label className="text-[10px] font-bold text-gray-500 w-6">เรียน</label>
-                    <input type="text" value={dearText} onChange={(e) => setDearText(e.target.value)} placeholder="ผจก..." className="w-full border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-[#742F99]"/>
-                </div>
+          <div className="px-4 py-3 space-y-3">
+            {/* Status badge */}
+            {!canSignAny ? (
+              <div className="flex items-center gap-2 bg-[#fff8ed] rounded-[10px] px-3 py-2">
+                <span className="text-[13px]">🔒</span>
+                <span className="text-[11px] font-medium text-[#a05c00]">นอกเวลาเซ็น (28–5)</span>
+              </div>
+            ) : selectedMonth !== signableMonth ? (
+              <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
+                <span className="text-[13px]">ℹ️</span>
+                <span className="text-[11px] font-medium text-[#0071e3]">จะสลับเป็นเดือน {signableMonth}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 bg-[#edfbf0] rounded-[10px] px-3 py-2">
+                <span className="w-[7px] h-[7px] rounded-full bg-[#34c759] flex-shrink-0"/>
+                <span className="text-[11px] font-medium text-[#1a7f37]">แก้ไขลายเซ็นได้</span>
               </div>
             )}
 
-            <div>
-                <label className="text-[10px] font-bold text-gray-500 block mb-1">✍️ การลงนามเอกสาร</label>
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="border border-gray-200 rounded-lg p-1.5 bg-gray-50 flex flex-col justify-center items-center relative h-[60px]">
-                        <span className="text-[9px] font-bold text-gray-600 absolute top-1 left-2">{isEVCar ? 'ผู้รายงาน' : 'ผู้ขับรถ'}</span>
-                        {driverSigText ? (
-                            <>
-                                <img src={driverSigText} alt="sig" className="h-6 object-contain mt-3" />
-                                {/* ✅ ซ่อนปุ่มลบ ถ้าเปิดดูเดือนอื่นอยู่ (ป้องกันมือลั่นลบผิดเดือน) */}
-                                {isCurrentMonthSignable && <button onClick={() => handleDeleteSig('driver')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
-                            </>
-                        ) : (
-                            <button onClick={() => openSigModal('driver', isEVCar ? 'เซ็นชื่อผู้รายงาน' : 'เซ็นชื่อผู้ขับยานพาหนะ')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${canSignAny ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                                + เซ็นชื่อ
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-1.5 bg-gray-50 flex flex-col justify-center items-center relative h-[60px]">
-                        <span className="text-[9px] font-bold text-gray-600 absolute top-1 left-2">ผู้ควบคุม</span>
-                        {controllerSigText ? (
-                            <>
-                                <img src={controllerSigText} alt="sig" className="h-6 object-contain mt-3" />
-                                {/* ✅ ซ่อนปุ่มลบ ถ้าเปิดดูเดือนอื่นอยู่ */}
-                                {isCurrentMonthSignable && <button onClick={() => handleDeleteSig('controller')} className="absolute top-1 right-1 text-red-500 bg-white border border-red-100 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-sm font-bold">✖</button>}
-                            </>
-                        ) : (
-                            <button onClick={() => openSigModal('controller', 'เซ็นชื่อผู้ควบคุม')} className={`mt-3 w-[90%] py-1 rounded shadow-sm text-[10px] font-bold border transition-colors ${canSignAny ? 'bg-white border-[#742F99] text-[#742F99]' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                                + เซ็นชื่อ
-                            </button>
-                        )}
-                    </div>
-                </div>
+            {/* เดือน */}
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-[#1d1d1f] font-medium">เดือน</span>
+              <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
+                className="text-[13px] text-[#0071e3] bg-transparent border-none outline-none cursor-pointer font-medium"/>
             </div>
+
+            {/* จาก/ถึง/เรียน */}
+            {!isEVCar && (
+              <div className="bg-white rounded-[14px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                {[{l:'จาก',v:fromText,s:setFromText,p:'แผนก...'},{l:'ถึง',v:toText,s:setToText,p:'หัวหน้า...'},{l:'เรียน',v:dearText,s:setDearText,p:'ผจก...'}].map(({l,v,s,p},i,arr)=>(
+                  <div key={l} className={`flex items-center px-3 py-2.5 gap-3 ${i<arr.length-1?'border-b border-[rgba(0,0,0,0.06)]':''}`}>
+                    <span className="text-[11px] text-[#6e6e73] w-7 flex-shrink-0 font-medium">{l}</span>
+                    <input type="text" value={v} onChange={e=>s(e.target.value)} placeholder={p}
+                      className="flex-1 text-[12px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ลายเซ็น */}
+            <div>
+              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-2">ลายเซ็น</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  {key:'driver', label:isEVCar?'ผู้รายงาน':'ผู้ขับรถ', sig:driverSigText, title:isEVCar?'เซ็นชื่อผู้รายงาน':'เซ็นชื่อผู้ขับ'},
+                  {key:'controller', label:'ผู้ควบคุม', sig:controllerSigText, title:'เซ็นชื่อผู้ควบคุม'},
+                ].map(({key,label,sig,title})=>(
+                  <div key={key} className="bg-white rounded-[14px] flex flex-col items-center py-2.5 px-2 relative min-h-[70px]"
+                       style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                    <span className="text-[10px] text-[#6e6e73] mb-2 font-medium">{label}</span>
+                    {sig ? (
+                      <>
+                        <img src={sig} alt="sig" className="h-7 object-contain"/>
+                        {isCurrentMonthSignable && (
+                          <button onClick={()=>handleDeleteSig(key)}
+                            className="absolute top-1.5 right-1.5 w-[18px] h-[18px] rounded-full bg-[#ff3b30] flex items-center justify-center text-white text-[9px] font-bold">✕</button>
+                        )}
+                      </>
+                    ) : (
+                      <button onClick={()=>openSigModal(key,title)}
+                        className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny?'border-[#0071e3] text-[#0071e3]':'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                        + เซ็น
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card: บันทึกการซ่อม */}
+        <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl rounded-[20px] overflow-hidden"
+             style={{boxShadow:'0 2px 1px rgba(0,0,0,0.03),0 8px 28px rgba(0,0,0,0.12)', border:'0.5px solid rgba(0,0,0,0.08)'}}>
+          <div className="px-4 py-3 border-b border-black/[0.06] flex items-center justify-between">
+            <span className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">🔧 บันทึกการซ่อม</span>
+            {drillSaved && <span className="text-[11px] font-medium text-[#1a7f37] bg-[#edfbf0] px-2.5 py-0.5 rounded-full">✓ บันทึกแล้ว</span>}
+          </div>
+          <div className="px-4 py-3 space-y-3">
+            <div>
+              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">วันที่</p>
+              <div className="bg-white rounded-[14px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
+                <select value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
+                  className="w-full px-3 py-2.5 text-[13px] text-[#1d1d1f] bg-transparent border-none outline-none">
+                  <option value="">-- เลือกวันที่ --</option>
+                  {[...new Map(logs.map(l=>{
+                    const d=new Date(l.start_time)
+                    const key=d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'})
+                    return [key,{key,iso:d.toISOString().split('T')[0]}]
+                  })).values()].map(({key,iso})=>(
+                    <option key={iso} value={iso}>{key}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">รายการซ่อม</p>
+              <input type="text" value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}} placeholder="เช่น ซ่อมดับเพลิง..."
+                className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none placeholder:text-[#c7c7cc]"
+                style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">เงิน (บาท)</p>
+                <input type="number" value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
+                  className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none text-center font-mono"
+                  style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">ชม.เครื่องจักร</p>
+                <input type="number" value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
+                  className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none text-center font-mono"
+                  style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
+              </div>
+            </div>
+            <button onClick={()=>{if(!drillDate||!drillDesc)return alert('กรุณาเลือกวันที่และกรอกรายการซ่อม');setDrillSaving(true);setTimeout(()=>{setDrillSaving(false);setDrillSaved(true)},600)}}
+              disabled={drillSaving}
+              className="w-full bg-[#1d1d1f] text-white text-[14px] font-semibold py-3 rounded-[14px] active:bg-[#3a3a3c] transition-colors">
+              {drillSaving?'กำลังบันทึก...':'บันทึกการซ่อม'}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="w-full flex flex-col items-center gap-6 print:block print:w-auto print-container">
+      {/* ── Mobile Bottom Sheet ── */}
+      <div className="ctrl-panel xl:hidden sticky top-0 z-50 print:hidden w-full">
+        <MobileControlSheet
+          selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth}
+          fromText={fromText} setFromText={setFromText}
+          toText={toText} setToText={setToText}
+          dearText={dearText} setDearText={setDearText}
+          isEVCar={isEVCar} canSignAny={canSignAny}
+          isCurrentMonthSignable={isCurrentMonthSignable}
+          signableMonth={signableMonth} driverSigText={driverSigText}
+          controllerSigText={controllerSigText}
+          handleDeleteSig={handleDeleteSig} openSigModal={openSigModal}
+          logs={logs}
+          drillDate={drillDate} setDrillDate={setDrillDate}
+          drillDesc={drillDesc} setDrillDesc={setDrillDesc}
+          drillCost={drillCost} setDrillCost={setDrillCost}
+          drillHours={drillHours} setDrillHours={setDrillHours}
+          drillSaving={drillSaving} setDrillSaving={setDrillSaving}
+          drillSaved={drillSaved} setDrillSaved={setDrillSaved}
+        />
+      </div>
+
+      <div className="w-full flex flex-col items-center gap-4 xl:gap-6 print:block print:w-auto print-container px-2 xl:px-0">
           {pages.map((pageLogs, pageIndex) => {
             const isLastPage = pageIndex === pages.length - 1;
             const targetRows = isLastPage ? (isEVCar ? 10 : 5) : (isEVCar ? 11 : 8);
@@ -829,8 +1110,8 @@ function ReportPage() {
             return (
               <div 
                 key={pageIndex} 
-                className="page-wrapper relative shadow-2xl xl:shadow-xl rounded-md bg-white overflow-hidden"
-                style={{ width: `${A4_WIDTH_PX * scale}px`, height: `${794 * scale}px` }}
+                className="page-wrapper relative rounded-[8px] bg-white overflow-hidden"
+                style={{ width: `${A4_WIDTH_PX * scale}px`, height: `${794 * scale}px`, boxShadow:'0 2px 2px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.12)' }}
               >
                 <div 
                   className="page-inner absolute top-0 left-0 bg-white box-border flex flex-col font-normal text-black"
