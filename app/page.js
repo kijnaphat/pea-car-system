@@ -1388,51 +1388,53 @@ function CarActionForm({ carId }) {
           return; // หยุดการทำงาน ไม่ให้ยืมรถใหม่
       }
 
-      // 3. เตรียมข้อมูลที่จะ Insert
-      const insertData = {
-        car_id: carId, 
-        driver_name: currentName, 
-        driver_position: currentPosition,
-        start_mileage: parseFloat(mileage || 0), 
-        start_time: new Date().toISOString(), 
-        is_completed: false
-      }
+
+      // 3. เตรียมข้อมูล
+      let finalLocation = ''
+      let finalStationName = ''
+      let finalStationType = ''
+      let finalBattBefore = null
 
       if (isEV) {
-          const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
-          const label = selectedOption ? selectedOption.label.replace(/ \(.+\)/, '') : '';
-          const finalStationName = (selectedOption?.inputType !== 'none' && stationName) ? `${label}: ${stationName}` : label;
-
-          insertData.location = finalStationName; 
-          insertData.battery_before = parseInt(battBefore);
-          insertData.station_type = stationType;
-          insertData.station_name = finalStationName;
+        const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType)
+        const label = selectedOption ? selectedOption.label.replace(/ \(.+\)/, '') : ''
+        finalStationName = (selectedOption?.inputType !== 'none' && stationName) ? `${label}: ${stationName}` : label
+        finalLocation = finalStationName
+        finalStationType = stationType
+        finalBattBefore = parseInt(battBefore)
       } else {
-          insertData.location = finalLocation;
+        finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
       }
 
-      // 4. บันทึกข้อมูล
-      const { error } = await supabase.from('trip_logs').insert(insertData)
+      // 4. เรียก RPC — atomic transaction ป้องกัน race condition
+      const { data: result, error } = await supabase.rpc('take_car_out', {
+        p_car_id:          Number(carId),
+        p_driver_name:     currentName,
+        p_driver_position: currentPosition,
+        p_start_mileage:   parseInt(mileage || 0),
+        p_location:        finalLocation,
+        p_battery_before:  finalBattBefore,
+        p_station_type:    finalStationType || null,
+        p_station_name:    finalStationName || null,
+      })
+
       if (error) throw error
-      await supabase.from('cars').update({ status: 'busy' }).eq('id', carId)
-      
-      if (isEV) {
-          alert(`✅ บันทึกเริ่มการชาร์จสำเร็จ!\nสถานะรถเปลี่ยนเป็น "กำลังใช้งาน"\nเมื่อชาร์จเสร็จ กรุณาสแกน QR เพื่อนำที่ชาร์จออก`)
-          window.location.href = '/'
-      } else {
-          alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${currentName}`)
-          window.location.href = '/'
-      }
+      if (result?.error) { alert('⚠️ ' + result.error); setLoading(false); return }
 
-    } catch (err) { 
-        alert('Error: ' + err.message) 
-        setLoading(false) 
-    } 
+      if (isEV) {
+        alert(`✅ บันทึกเริ่มการชาร์จสำเร็จ!\nเมื่อชาร์จเสร็จ กรุณาสแกน QR เพื่อนำที่ชาร์จออก`)
+      } else {
+        alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${currentName}`)
+      }
+      window.location.href = '/'
+
+    } catch (err) {
+      alert('Error: ' + err.message)
+      setLoading(false)
+    }
   }
 
-  // ✅ คืนรถ หรือ ถอดสายชาร์จ EV (อัปเดตรองรับ skipConfirm)
   const handleReturn = async (skipConfirm = false) => {
-    // ✅ ตรวจสอบจาก fuel_type
     const isEV = car?.fuel_type?.toUpperCase() === 'EV';
     const startM = parseFloat(activeLog.start_mileage)
 
@@ -1447,13 +1449,9 @@ function CarActionForm({ carId }) {
         if (endM < startM) {
             return alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
         }
-
-        // ✅ บังคับตรวจสอบว่าเติมน้ำมันหรือยัง ถ้ามีเติมน้ำมันแล้วแต่ไม่กรอกให้แจ้งเตือน
         if (hasRefueled === true && (!fuelLiters || !fuelCost)) {
              return alert('กรุณากรอกข้อมูล ปริมาณน้ำมัน (ลิตร) และ จำนวนเงิน (บาท) ให้ครบถ้วน')
         }
-
-        // ✅ แจ้งเตือน Popup ตรวจสอบเลขไมล์ก่อนบันทึกจริง (เฉพาะรถน้ำมัน)
         if (skipConfirm !== true) {
             setShowReturnConfirm(true);
             return;
@@ -1463,35 +1461,23 @@ function CarActionForm({ carId }) {
     setLoading(true)
 
     try {
-      const { data: latestCar } = await supabase.from('cars').select('status').eq('id', carId).single()
-      if (latestCar.status === 'available') {
-         alert('⚠️ รายการนี้ถูกคืนไปเรียบร้อยแล้วครับ')
-         window.location.href = '/'
-         return
-      }
+      // เรียก RPC — atomic transaction ดึง latestLog + update พร้อมกันใน DB
+      const { data: result, error } = await supabase.rpc('return_car', {
+        p_car_id:       Number(carId),
+        p_end_mileage:  isEV ? null : parseInt(endMileage),
+        p_fuel_liters:  (!isEV && hasRefueled && fuelLiters) ? parseFloat(fuelLiters) : 0,
+        p_fuel_cost:    (!isEV && hasRefueled && fuelCost) ? parseFloat(fuelCost) : 0,
+        p_battery_after: isEV ? parseInt(battAfter) : null,
+      })
 
-      const updateData = {
-        end_time: new Date().toISOString(),
-        is_completed: true
-      }
+      if (error) throw error
+      if (result?.error) { alert('⚠️ ' + result.error); setLoading(false); return }
 
-      if (isEV) {
-          updateData.end_mileage = startM 
-          updateData.battery_after = parseInt(battAfter)
-      } else {
-          updateData.end_mileage = parseFloat(endMileage)
-          updateData.fuel_liters = (hasRefueled && fuelLiters) ? parseFloat(fuelLiters) : 0
-          updateData.fuel_cost = (hasRefueled && fuelCost) ? parseFloat(fuelCost) : 0
-      }
-
-      await supabase.from('trip_logs').update(updateData).eq('id', activeLog.id)
-      await supabase.from('cars').update({ status: 'available' }).eq('id', carId)
-      
       alert('✅ บันทึกข้อมูลเรียบร้อย ขอบคุณครับ!')
       window.location.href = '/'
-    } catch (err) { 
-        alert('Error: ' + err.message)
-        setLoading(false)
+    } catch (err) {
+      alert('Error: ' + err.message)
+      setLoading(false)
     }
   }
 
