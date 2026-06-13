@@ -835,9 +835,9 @@ function ReportPage() {
   const endMonthMileage = logs.length > 0 ? logs[logs.length - 1].end_mileage : 0;
   const isEVCar = car?.fuel_type?.toUpperCase() === 'EV' || car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
 
-  // ✅ ระบบคำนวณจำนวนแถวแบบ Dynamic แยกตามประเภทรถ (EV: 11/10 แถว, น้ำมัน: 8/5 แถว)
-  const maxLastPageRows = isEVCar ? 10 : 5;
-  const maxRegularRows = isEVCar ? 11 : 8;
+  // ✅ ระบบคำนวณจำนวนแถวแบบ Dynamic แยกตามประเภทรถ (EV: 12 แถว, น้ำมัน: 8/5 แถว)
+  const maxLastPageRows = isEVCar ? 12 : 5;
+  const maxRegularRows = isEVCar ? 12 : 8;
 
   const pages = [];
   let currentIndex = 0;
@@ -1104,7 +1104,7 @@ function ReportPage() {
       <div className="w-full flex flex-col items-center gap-4 xl:gap-6 print:block print:w-auto print-container px-2 xl:px-0">
           {pages.map((pageLogs, pageIndex) => {
             const isLastPage = pageIndex === pages.length - 1;
-            const targetRows = isLastPage ? (isEVCar ? 10 : 5) : (isEVCar ? 11 : 8);
+            const targetRows = isLastPage ? (isEVCar ? 12 : 5) : (isEVCar ? 12 : 8);
             const emptyRows = Array.from({ length: Math.max(0, targetRows - pageLogs.length) });
 
             return (
@@ -1203,14 +1203,6 @@ function ReportPage() {
                                                 <td className="border border-black p-0 align-middle"><CheckboxCell checked={false} /></td>
                                             </tr>
                                         ))}
-                                        {/* แถวรวมโชว์เฉพาะหน้าสุดท้าย */}
-                                        {isLastPage && (
-                                            <tr className="h-[30px] font-normal text-[11px] align-middle bg-gray-50 print:bg-transparent">
-                                                <td colSpan={3} className="border border-black text-right pr-2">รวม</td>
-                                                <td colSpan={2} className="border border-black text-center text-black"></td>
-                                                <td colSpan={6} className="border border-black text-center text-black"></td>
-                                            </tr>
-                                        )}
                                     </tbody>
                                 </table>
                                 
