@@ -18,37 +18,6 @@ const SectionLabel = ({ title, subtitle }) => (
   </div>
 )
 
-// Mapping สำหรับประเภทการใช้งานตามทะเบียนรถ
-const usageMapping = {
-  '86-7731 นฐ.': 'ช่วยในงานมิเตอร์และปฏิบัติการ',
-  '3ฒภ-2638 กทม.': '-',
-  '87-7389 นฐ.': '-',
-  '89-5029 นฐ.': 'งานด้านซ่อมย่อย',
-  '87-6548 นฐ.': 'งานด้านตัดต้นไม้',
-  '85-4386 กทม.': 'งานด้านซ่อมย่อย',
-  '93-0386 กทม.': 'งานด้านซ่อมย่อย',
-  '84-2366 นฐ.': 'งานด้านงานก่อสร้าง',
-  '83-8313 นฐ.': 'งานด้านงานก่อสร้าง',
-  '86-2954 นฐ.': 'งานด้านงานก่อสร้าง',
-  '85-1836 นฐ.': 'งานด้านงานก่อสร้าง',
-  '90-1548 นฐ.': 'งานด้านสายสื่อสาร',
-  '90-7606 นฐ.': '-',
-  '85-4934 นฐ.': 'งานด้าน hotline',
-  '3ขถ-4125 กทม.': 'สำรวจขยายเขตและมิเตอร์',
-  '4ขธ-7141 กทม.': 'เบิกพัสดุ และใช้ในงานด้านบริการ',
-  '2ขข-7406 กทม.': 'ใช้ในงานด้านมิเตอร์',
-  '2ขข-7431 กทม.': 'งานด้านบัญชีและการตามหนี้',
-  '3ขถ-4124 กทม.': 'งานด้านมิเตอร์และหม้อแปลง',
-  '89-8909 นฐ.': 'งานด้านงานก่อสร้างและซ่อมย่อย',
-  '90-2436 นฐ.': 'งานด้านงานก่อสร้าง',
-  '90-4910 นฐ.': 'งานด้านประกาศดับไฟ',
-  '6ขฆ-6169 กทม.': '-',
-  '90-5582 นฐ.': 'งานด้านหม้อแปลง',
-  '7ขฆ 7833 กทม.': 'งานด้านปฏิบัติการ',
-  '1 นฌ 4526 กทม.': 'งานด้านบริการและบัญชี',
-  '88-9179 กทม.': 'งานด้านงานก่อสร้าง'
-}
-
 export default function UltimateDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -170,20 +139,18 @@ export default function UltimateDashboard() {
         const startMil = cLogs.length > 0 ? Math.min(...cLogs.map(l => l.start_mileage)) : '-'
         const endMil = cLogs.length > 0 ? Math.max(...cLogs.map(l => l.end_mileage)) : '-'
 
-        const mappedMainUsage = usageMapping[c.plate_number] || '-'
-
+        // ✅ แก้ไขตรงนี้: ดึงค่าจาก Object `c` (รถยนต์) โดยตรง
         pData.push({
           no: index + 1,
           plate: c.plate_number,
           brand: c.model || '-',
           type: c.car_type || '-', 
-          budget: 'ทำการ', 
-          plan: 'ปฏิบัติการ',
+          budget: c.budget || '-',           // 👈 ดึง budget 
+          plan: c.department || '-',         // 👈 ดึง department (ระวางแผน)
           startMil: startMil,
           endMil: endMil,
           dist: totalD,
-          mainUsage: mappedMainUsage, 
-          // ✅ เพิ่มจำนวนเงินลงในช่องหมายเหตุตอนพิมพ์
+          mainUsage: c.usage_type || '-',    // 👈 ดึง usage_type
           remark: repairCount > 0 ? `ซ่อม ${repairCount} ครั้ง (${totalRepairCost.toLocaleString()} บ.)` : 'FD'
         })
 
