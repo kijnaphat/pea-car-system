@@ -482,7 +482,14 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
 // 📄 Component: หน้าตารายงาน
 // ==========================================
 // ── Mobile Bottom Sheet for Report Controls ──
-function MobileControlSheet({ selectedMonth, setSelectedMonth, fromText, setFromText, toText, setToText, dearText, setDearText, isEVCar, canSignAny, isCurrentMonthSignable, signableMonth, driverSigText, controllerSigText, handleDeleteSig, openSigModal, logs, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost, setDrillCost, drillHours, setDrillHours, drillSaving, setDrillSaving, drillSaved, setDrillSaved }) {
+function MobileControlSheet({ 
+  selectedMonth, setSelectedMonth, fromText, setFromText, toText, setToText, dearText, setDearText, 
+  isEVCar, canSignAny, isCurrentMonthSignable, signableMonth, driverSigText, controllerSigText, 
+  handleDeleteSig, openSigModal, logs, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost, 
+  setDrillCost, drillHours, setDrillHours, drillSaving, setDrillSaving, drillSaved, setDrillSaved,
+  // ✅ เพิ่ม Props ด้านล่างนี้เพื่อแก้ปัญหา Error บน Mobile
+  handleSaveDoc, docSaving, docSaved 
+}) {
   const [activeTab, setActiveTab] = useState('doc')
   const [expanded, setExpanded] = useState(false)
   const dragRef = useRef(null)
@@ -525,10 +532,11 @@ function MobileControlSheet({ selectedMonth, setSelectedMonth, fromText, setFrom
       </div>
 
       {/* Expanded content — swipe down to close */}
+      {/* ✅ แก้ไข: ขยายความสูง max-h เป็น 75vh และเพิ่ม padding-bottom เป็น pb-32 เพื่อให้เลื่อนไม่ติดแถบ Safari */}
       {expanded && (
         <div ref={dragRef}
              onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-             className="px-3 pb-5 space-y-3 max-h-[55vh] overflow-y-auto border-t border-[rgba(0,0,0,0.06)]">
+             className="px-3 pb-32 space-y-3 max-h-[75vh] overflow-y-auto border-t border-[rgba(0,0,0,0.06)]">
           {/* handle bar */}
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-[#c7c7cc]"/>
@@ -573,8 +581,8 @@ function MobileControlSheet({ selectedMonth, setSelectedMonth, fromText, setFrom
               )}
 
               {/* ลายเซ็น */}
-              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">ลายเซ็น</p>
-              <div className="grid grid-cols-2 gap-3">
+              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] pt-2">ลายเซ็น</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 {[
                   {key:'driver',label:isEVCar?'ผู้รายงาน':'ผู้ขับรถ',sig:driverSigText,title:isEVCar?'เซ็นชื่อผู้รายงาน':'เซ็นชื่อผู้ขับ'},
                   {key:'controller',label:'ผู้ควบคุม',sig:controllerSigText,title:'เซ็นชื่อผู้ควบคุม'},
@@ -599,6 +607,16 @@ function MobileControlSheet({ selectedMonth, setSelectedMonth, fromText, setFrom
                   </div>
                 ))}
               </div>
+
+              {/* ปุ่มบันทึกข้อความ (จาก/ถึง/เรียน) */}
+              {!isEVCar && (
+                <button onClick={handleSaveDoc} disabled={docSaving}
+                  className={`w-full py-3 rounded-[14px] text-[14px] font-semibold transition-all active:scale-[0.98] ${
+                    docSaved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#1d1d1f] text-white hover:bg-[#3a3a3c]'
+                  }`}>
+                  {docSaving ? 'กำลังบันทึก...' : docSaved ? '✓ บันทึกข้อความแล้ว' : 'บันทึกเอกสาร'}
+                </button>
+              )}
             </>
           ) : (
             /* ── Tab: ซ่อม ── */
@@ -686,7 +704,6 @@ function ReportPage() {
 
   const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' })
 
-  // ── States: บันทึกการซ่อม ──
   const [drillDate, setDrillDate] = useState('')
   const [drillDesc, setDrillDesc] = useState('')
   const [drillCost, setDrillCost] = useState('')
@@ -694,24 +711,23 @@ function ReportPage() {
   const [drillSaving, setDrillSaving] = useState(false)
   const [drillSaved, setDrillSaved] = useState(false)
 
-  // ✅ State สำหรับเก็บค่าเดือนที่อนุญาตให้เซ็นได้ และเช็คว่าเซ็นได้หรือไม่
+  const [docSaving, setDocSaving] = useState(false)
+  const [docSaved, setDocSaved] = useState(false)
+
   const [signableMonth, setSignableMonth] = useState(null);
   const [canSignAny, setCanSignAny] = useState(false);
   const [isCurrentMonthSignable, setIsCurrentMonthSignable] = useState(false);
 
-  // ✅ ตรรกะใหม่: ตรวจสอบเดือนที่อนุญาตให้เซ็นอย่างถูกต้อง ไม่เกิด Error ตัวแดง
   useEffect(() => {
      const d = today;
      const date = d.getDate();
      let allowedMonth = null;
 
      if (date >= 28) {
-         // ถ้าวันนี้วันที่ 28 ขึ้นไป จะเซ็นของเดือนนี้ได้
          const y = d.getFullYear();
          const m = String(d.getMonth() + 1).padStart(2, '0');
          allowedMonth = `${y}-${m}`;
      } else if (date <= 5) {
-         // ถ้าวันนี้วันที่ 1-5 จะเซ็นของเดือนที่แล้วได้
          let y = d.getFullYear();
          let m = d.getMonth();
          if (m === 0) {
@@ -727,13 +743,36 @@ function ReportPage() {
 
   }, [today, selectedMonth]);
 
+  useEffect(() => {
+    if (carId) {
+      const savedFrom = localStorage.getItem(`doc_from_${carId}`)
+      const savedTo = localStorage.getItem(`doc_to_${carId}`)
+      const savedDear = localStorage.getItem(`doc_dear_${carId}`)
+      if (savedFrom) setFromText(savedFrom)
+      if (savedTo) setToText(savedTo)
+      if (savedDear) setDearText(savedDear)
+    }
+  }, [carId])
+
+  const handleSaveDoc = () => {
+    setDocSaving(true)
+    localStorage.setItem(`doc_from_${carId}`, fromText)
+    localStorage.setItem(`doc_to_${carId}`, toText)
+    localStorage.setItem(`doc_dear_${carId}`, dearText)
+    
+    setTimeout(() => {
+      setDocSaving(false)
+      setDocSaved(true)
+      setTimeout(() => setDocSaved(false), 2000)
+    }, 400)
+  }
+
   const [scale, setScale] = useState(1);
   const A4_WIDTH_PX = 1123; 
 
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 1280
-      // mobile: เว้นพื้นที่ bottom sheet ~220px และ margin 8px แต่ละด้าน
       const availableWidth = isMobile
         ? window.innerWidth - 16
         : window.innerWidth - 16
@@ -785,7 +824,6 @@ function ReportPage() {
   useEffect(() => {
     if (carId) fetchData()
     setToday(new Date())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carId, selectedMonth])
 
   const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos) => {
@@ -835,7 +873,6 @@ function ReportPage() {
   const endMonthMileage = logs.length > 0 ? logs[logs.length - 1].end_mileage : 0;
   const isEVCar = car?.fuel_type?.toUpperCase() === 'EV' || car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
 
-  // ✅ ระบบคำนวณจำนวนแถวแบบ Dynamic แยกตามประเภทรถ (EV: 12 แถว, น้ำมัน: 8/5 แถว)
   const maxLastPageRows = isEVCar ? 12 : 5;
   const maxRegularRows = isEVCar ? 12 : 8;
 
@@ -925,16 +962,12 @@ function ReportPage() {
         onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
         onSave={(base64Text, fetchedName, fetchedPos) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos)}
         onVerifySuccess={() => {
-            // ✅ กระโดดเปลี่ยนเดือนให้ตรงกับที่อนุญาตให้เซ็นอัตโนมัติ
             if (signableMonth && selectedMonth !== signableMonth) {
                 setSelectedMonth(signableMonth);
             }
         }}
       />
 
-      {/* ══════════════════════════════════════════════
-          MOBILE: Bottom Sheet | DESKTOP: Right Sidebar
-          ══════════════════════════════════════════════ */}
       <style>{`
         @media print { .ctrl-panel { display:none !important; } }
       `}</style>
@@ -997,7 +1030,7 @@ function ReportPage() {
             {/* ลายเซ็น */}
             <div>
               <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-2">ลายเซ็น</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 {[
                   {key:'driver', label:isEVCar?'ผู้รายงาน':'ผู้ขับรถ', sig:driverSigText, title:isEVCar?'เซ็นชื่อผู้รายงาน':'เซ็นชื่อผู้ขับ'},
                   {key:'controller', label:'ผู้ควบคุม', sig:controllerSigText, title:'เซ็นชื่อผู้ควบคุม'},
@@ -1023,6 +1056,17 @@ function ReportPage() {
                 ))}
               </div>
             </div>
+
+            {/* ปุ่มบันทึกเอกสาร สำหรับ Desktop */}
+            {!isEVCar && (
+              <button onClick={handleSaveDoc} disabled={docSaving}
+                className={`w-full py-2 rounded-[10px] text-[12px] font-semibold transition-all active:scale-[0.98] ${
+                  docSaved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#1d1d1f] text-white hover:bg-[#3a3a3c]'
+                }`}>
+                {docSaving ? 'กำลังบันทึก...' : docSaved ? '✓ บันทึกข้อมูลแล้ว' : 'บันทึกเอกสาร'}
+              </button>
+            )}
+
           </div>
         </div>
 
@@ -1098,6 +1142,7 @@ function ReportPage() {
           drillHours={drillHours} setDrillHours={setDrillHours}
           drillSaving={drillSaving} setDrillSaving={setDrillSaving}
           drillSaved={drillSaved} setDrillSaved={setDrillSaved}
+          handleSaveDoc={handleSaveDoc} docSaving={docSaving} docSaved={docSaved}
         />
       </div>
 
@@ -1270,7 +1315,7 @@ function ReportPage() {
 
                                     <div className="flex items-end mb-1">
                                         <div className="whitespace-nowrap">จาก<span className="inline-block border-b border-dotted border-black w-[250px] text-center px-2">{fromText}</span></div>
-                                        <div className="whitespace-nowrap mx-2">ถึง (หัวหน้าหน่วยงาน)<span className="inline-block border-b border-dotted border-black w-[250px] text-center px-2">{toText}</span></div>
+                                        <div className="whitespace-nowrap mx-2">ถึง <span className="inline-block border-b border-dotted border-black w-[250px] text-center px-2">{toText}</span></div>
                                         <div className="whitespace-nowrap flex-grow text-right pr-2">วันที่<span className="inline-block border-b border-dotted border-black w-[40px] text-center px-1">{today.getDate()}</span>เดือน<span className="inline-block border-b border-dotted border-black w-[100px] text-center px-1">{formatThaiMonth(today)}</span>พ.ศ.<span className="inline-block border-b border-dotted border-black w-[60px] text-center px-1">{formatThaiYear(today)}</span></div>
                                     </div>
                                     
@@ -1279,7 +1324,7 @@ function ReportPage() {
                                     </div>
 
                                     <div className="flex items-end mb-1">
-                                        <div className="whitespace-nowrap w-full">เรียน<span className="ml-4">(หัวหน้าหน่วยงาน)</span><span className="inline-block border-b border-dotted border-black w-[350px] text-center px-2">{dearText}</span></div>
+                                        <div className="whitespace-nowrap w-full">เรียน<span className="ml-4"></span><span className="inline-block border-b border-dotted border-black w-[350px] text-center px-2">{dearText}</span></div>
                                     </div>
 
                                     <div className="flex items-end mb-1">

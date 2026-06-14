@@ -29,10 +29,19 @@ export default function UltimateDashboard() {
   })
   const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().split('T')[0])
 
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${yyyy}-${mm}`;
+  })
+
+  // State เก็บข้อมูลดิบ
   const [rawLogs, setRawLogs] = useState([])
   const [carsList, setCarsList] = useState([])
   const [repairLogs, setRepairLogs] = useState([]) 
   
+  // State สำหรับแสดงผล Dashboard
   const [globalStats, setGlobalStats] = useState({
     totalDistance: 0, totalTrips: 0, fuelSavings: 0, activeRate: 0, availableCars: 0, totalCars: 0, busyCars: 0, avgTripDist: 0, ecoScore: 0
   })
@@ -46,7 +55,6 @@ export default function UltimateDashboard() {
 
   const [printData, setPrintData] = useState([])
   const [printReasons, setPrintReasons] = useState({})
-  
   const [showPrintModal, setShowPrintModal] = useState(false)
 
   const handleClose = () => {
@@ -58,55 +66,107 @@ export default function UltimateDashboard() {
     window.print()
   }
 
+  // ✅ 1. ดึงข้อมูลและกรองวันที่จาก Database โดยตรง (Future-Proof สำหรับข้อมูล 500k records)
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchFilteredData = async () => {
+      setLoading(true)
       try {
-        const { data: logs } = await supabase.from('trip_logs').select('*, cars(*)').eq('is_completed', true).order('start_time', { ascending: false })
+        // ดึงรถและประวัติซ่อม
         const { data: cars } = await supabase.from('cars').select('*')
-        const { data: repairs } = await supabase.from('repair_logs').select('*') 
+        const { data: repairs } = await supabase.from('repair_logs').select('*')
+        if (cars) setCarsList(cars)
+        if (repairs) setRepairLogs(repairs)
 
-        if (logs && cars) {
-          setRawLogs(logs)
-          setCarsList(cars)
+        // กำหนดวันที่เริ่มต้นและสิ้นสุด ตาม Filter ที่เลือก
+        const now = new Date()
+        let startDate = new Date(0)
+        let endDate = new Date()
+        let isAllTime = timeFilter === 'all'
+
+        if (timeFilter === 'week') {
+          const day = now.getDay()
+          const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+          startDate = new Date(now.setDate(diff))
+          startDate.setHours(0,0,0,0)
+          endDate = new Date(startDate)
+          endDate.setDate(startDate.getDate() + 6)
+          endDate.setHours(23,59,59,999)
+        } else if (timeFilter === 'month') {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          startDate.setHours(0,0,0,0)
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+          endDate.setHours(23,59,59,999)
+        } else if (timeFilter === 'select_month' && selectedMonth) {
+          const [year, month] = selectedMonth.split('-')
+          startDate = new Date(year, parseInt(month) - 1, 1)
+          startDate.setHours(0,0,0,0)
+          endDate = new Date(year, parseInt(month), 0)
+          endDate.setHours(23,59,59,999)
+        } else if (timeFilter === 'custom') {
+          startDate = new Date(customStartDate)
+          startDate.setHours(0,0,0,0)
+          endDate = new Date(customEndDate)
+          endDate.setHours(23,59,59,999)
         }
-        if (repairs) {
-          setRepairLogs(repairs)
+
+        // ดึงข้อมูล trip_logs แบบ Pagination ทีละ 1000 แถว
+        let allLogs = []
+        let hasMore = true
+        let from = 0
+        const step = 1000
+
+        while (hasMore) {
+          let query = supabase
+            .from('trip_logs')
+            .select('*, cars(*)')
+            .eq('is_completed', true)
+            .order('start_time', { ascending: false })
+            .range(from, from + step - 1)
+
+          // แนบ Filter วันที่ไปกับ Query ถ้าไม่ใช่โหมดดึงทั้งหมด
+          if (!isAllTime) {
+            query = query.gte('start_time', startDate.toISOString())
+                         .lte('start_time', endDate.toISOString())
+          }
+
+          const { data: logsChunk, error } = await query
+
+          if (error) {
+            console.error('Error fetching logs:', error)
+            break
+          }
+
+          if (logsChunk && logsChunk.length > 0) {
+            allLogs = [...allLogs, ...logsChunk]
+            if (logsChunk.length < step) {
+              hasMore = false // ข้อมูลหมดแล้ว
+            } else {
+              from += step // ขยับไปดึง 1000 แถวถัดไป
+            }
+          } else {
+            hasMore = false
+          }
         }
-      } catch (err) { 
-        console.error(err) 
-      } finally { 
-        setLoading(false) 
+
+        setRawLogs(allLogs)
+
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
       }
     }
-    fetchData()
-  }, [])
 
+    // Trigger การดึงข้อมูลใหม่ทุกครั้งที่ผู้ใช้เปลี่ยน Filter เวลา
+    fetchFilteredData()
+  }, [timeFilter, selectedMonth, customStartDate, customEndDate])
+
+  // ✅ 2. ประมวลผลข้อมูล (ไม่ต้องกรองวันที่ซ้ำแล้ว เพราะ Database กรองมาให้แล้ว)
   useEffect(() => {
-    if (rawLogs.length === 0 || carsList.length === 0) return
+    if (carsList.length === 0) return
 
-    const now = new Date()
-    let startDate = new Date(0) 
-    let endDate = new Date() 
-
-    if (timeFilter === 'week') {
-      const day = now.getDay()
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1) 
-      startDate = new Date(now.setDate(diff))
-      startDate.setHours(0,0,0,0)
-    } else if (timeFilter === 'month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-      startDate.setHours(0,0,0,0)
-    } else if (timeFilter === 'custom') {
-      startDate = new Date(customStartDate)
-      startDate.setHours(0,0,0,0)
-      endDate = new Date(customEndDate)
-      endDate.setHours(23,59,59,999) 
-    }
-
-    const filteredLogs = rawLogs.filter(l => {
-        const logDate = new Date(l.start_time)
-        return logDate >= startDate && logDate <= endDate
-    })
+    // rawLogs ตอนนี้คือข้อมูลที่ถูกกรองช่วงเวลามาเรียบร้อยแล้ว
+    const filteredLogs = rawLogs 
 
     const gasLogs = filteredLogs.filter(l => l.cars?.fuel_type?.toUpperCase() !== 'EV' && !l.cars?.plate_number?.includes('6ขฆ'))
     const gCost = gasLogs.reduce((s, l) => s + (l.fuel_cost || 0), 0)
@@ -139,18 +199,17 @@ export default function UltimateDashboard() {
         const startMil = cLogs.length > 0 ? Math.min(...cLogs.map(l => l.start_mileage)) : '-'
         const endMil = cLogs.length > 0 ? Math.max(...cLogs.map(l => l.end_mileage)) : '-'
 
-        // ✅ แก้ไขตรงนี้: ดึงค่าจาก Object `c` (รถยนต์) โดยตรง
         pData.push({
           no: index + 1,
           plate: c.plate_number,
           brand: c.model || '-',
           type: c.car_type || '-', 
-          budget: c.budget || '-',           // 👈 ดึง budget 
-          plan: c.department || '-',         // 👈 ดึง department (ระวางแผน)
+          budget: c.budget || '-',
+          plan: c.department || '-',
           startMil: startMil,
           endMil: endMil,
           dist: totalD,
-          mainUsage: c.usage_type || '-',    // 👈 ดึง usage_type
+          mainUsage: c.usage_type || '-',
           remark: repairCount > 0 ? `ซ่อม ${repairCount} ครั้ง (${totalRepairCost.toLocaleString()} บ.)` : 'FD'
         })
 
@@ -249,7 +308,7 @@ export default function UltimateDashboard() {
       carDriverHistory: carDriverList
     })
 
-  }, [rawLogs, carsList, timeFilter, customStartDate, customEndDate, repairLogs])
+  }, [rawLogs, carsList, repairLogs])
 
   if (loading) return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
@@ -271,17 +330,25 @@ export default function UltimateDashboard() {
     <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.06em] mb-1">{children}</p>
   )
 
+  const getReportTitleDate = () => {
+    if (timeFilter === 'month') return new Date().toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+    if (timeFilter === 'select_month') return new Date(`${selectedMonth}-01`).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+    if (timeFilter === 'custom') return `${customStartDate} ถึง ${customEndDate}`;
+    if (timeFilter === 'week') return 'สัปดาห์นี้';
+    return 'ทั้งหมด';
+  }
+
   return (
     <>
       <style>{`
         * { -webkit-font-smoothing: antialiased; }
         .st::-webkit-scrollbar{width:3px}
         .st::-webkit-scrollbar-thumb{background:#d2d2d7;border-radius:6px}
-        input[type=date]::-webkit-calendar-picker-indicator{opacity:.4;cursor:pointer}
+        input[type=date]::-webkit-calendar-picker-indicator,
+        input[type=month]::-webkit-calendar-picker-indicator {opacity:.4;cursor:pointer}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         .fu{animation:fadeUp .4s ease both}
 
-        /* ── Input สาเหตุตอนอยู่บนหน้าจอปกติ ── */
         .reason-input {
           width: 100%;
           min-width: 80px;
@@ -299,65 +366,47 @@ export default function UltimateDashboard() {
           background: #f5f5f7;
         }
 
-        /* CSS จัดการเรื่อง Print */
         .print-area { display: none; }
 
         @media print {
-          /* ซ่อนทุกอย่างที่อยู่บนเว็บตอนสั่งพิมพ์ */
           .no-print { display: none !important; }
-          
-          /* แสดงเฉพาะส่วนที่เป็นเอกสารเตรียมพิมพ์ */
           .print-area { 
             display: block !important; 
             font-family: 'Sarabun', sans-serif; 
             width: 100%;
           }
-          @page {
-            size: landscape; 
-            margin: 15mm;
-          }
+          @page { size: landscape; margin: 15mm; }
           body { 
-            background: white !important; 
-            margin: 0; 
-            padding: 0;
-            -webkit-print-color-adjust: exact;
+            background: white !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact;
           }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; page-break-after: auto; }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
           table.report-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11px;
-            margin-top: 10px;
+            width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px;
           }
           table.report-table th, table.report-table td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-            text-align: center;
+            border: 1px solid #000; padding: 4px 6px; text-align: center;
+          }
+          table.report-table th.no-border-print {
+            border: none !important; background-color: transparent !important;
           }
           table.report-table th {
-            font-weight: bold;
-            background-color: #f2f2f2 !important; 
+            font-weight: bold; background-color: #f2f2f2 !important; 
           }
           .text-left { text-align: left !important; }
-          
-          /* ซ่อนกรอบ Input ตอนพิมพ์ (ให้เนียนเหมือนข้อความบนกระดาษ) */
           .reason-input {
-            border: none !important;
-            background: transparent !important;
-            padding: 0 !important;
-            color: black !important;
+            border: none !important; background: transparent !important; padding: 0 !important; color: black !important;
           }
-          .reason-input::placeholder {
-            color: transparent;
-          }
+          .reason-input::placeholder { color: transparent; }
         }
       `}</style>
 
-      {/* ── Modal จัดการเอกสารและสั่งพิมพ์ (โผล่มาตอนกดปุ่ม สั่งพิมพ์) ── */}
+      {/* ── Modal สั่งพิมพ์ ── */}
       {showPrintModal && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 no-print fu">
           <div className="bg-white rounded-[24px] w-full max-w-7xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            
-            {/* Header Modal */}
             <div className="px-6 py-4 border-b border-[#e5e5ea] flex justify-between items-center bg-[#f9f9fb]">
               <div>
                 <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">📄 จัดการเอกสารเตรียมพิมพ์</h3>
@@ -375,25 +424,23 @@ export default function UltimateDashboard() {
               </div>
             </div>
 
-            {/* Body Modal (ตารางแบบ Interactive) */}
             <div className="overflow-auto p-6 bg-white st">
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', fontFamily: 'Sarabun, sans-serif' }}>
-                  บัญชีรถยนต์การไฟฟ้าส่วนภูมิภาคเขต ก.3 การไฟฟ้าส่วนภูมิภาคสาขากำแพงแสน ประจำเดือน {
-                  timeFilter === 'month' ? new Date().toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) : 
-                  timeFilter === 'custom' ? `${customStartDate} ถึง ${customEndDate}` : 'พฤษภาคม 2569'
-                }</h2>
-              </div>
-              
               <table className="w-full border-collapse font-sarabun text-[11px]" style={{ minWidth: '1000px' }}>
                 <thead>
+                  <tr>
+                    <th colSpan="14" className="border-0 bg-transparent py-4 text-center">
+                      <h2 style={{ fontSize: '18px', fontWeight: 'bold', fontFamily: 'Sarabun, sans-serif' }}>
+                        บัญชีรถยนต์การไฟฟ้าส่วนภูมิภาคเขต ก.3 การไฟฟ้าส่วนภูมิภาคสาขากำแพงแสน ประจำเดือน {getReportTitleDate()}
+                      </h2>
+                    </th>
+                  </tr>
                   <tr>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%]">อันดับที่</th>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[9%]">หมายเลขทะเบียน</th>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[7%]">ยี่ห้อ</th>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[12%]">ชนิดและลักษณะ</th>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[5%]">งบ</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">ระวางแผน</th>
+                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">ประจำแผนก</th>
                     <th colSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5">เลขไมล์</th>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">รวมระยะทาง<br/>กม.</th>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[16%]">ประเภทการใช้งานส่วนใหญ่</th>
@@ -449,7 +496,7 @@ export default function UltimateDashboard() {
         </div>
       )}
 
-      {/* ── UI หน้า Dashboard ปกติ ── */}
+      {/* ── Dashboard ปกติ ── */}
       <div className="no-print min-h-screen bg-[#f2f2f7] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
         <nav className="sticky top-0 z-50 h-[52px] border-b border-black/[0.06]"
              style={{background:'rgba(242,242,247,0.88)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)'}}>
@@ -460,13 +507,21 @@ export default function UltimateDashboard() {
             </div>
             <div className="flex items-center gap-2.5">
               <div className="flex bg-[#dddde0] rounded-[10px] p-[3px] gap-[2px]">
-                {[['week','สัปดาห์'],['month','เดือนนี้'],['custom','กำหนดเอง'],['all','ทั้งหมด']].map(([tf,label]) => (
+                {[['week','สัปดาห์'],['month','เดือนนี้'],['select_month','เลือกเดือน'],['custom','กำหนดเอง'],['all','ทั้งหมด']].map(([tf,label]) => (
                   <button key={tf} onClick={() => setTimeFilter(tf)}
                     className={`px-3.5 py-[5px] text-[12px] font-medium rounded-[8px] transition-all ${
                       timeFilter===tf ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#6e6e73] hover:text-[#3c3c43]'
                     }`}>{label}</button>
                 ))}
               </div>
+              
+              {timeFilter==='select_month' && (
+                <div className="flex items-center gap-2 bg-white px-3 py-[5px] rounded-[10px] border border-[#e5e5ea] text-[11px] font-mono"
+                     style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
+                  <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)} className="outline-none bg-transparent text-[#1d1d1f]"/>
+                </div>
+              )}
+
               {timeFilter==='custom' && (
                 <div className="flex items-center gap-2 bg-white px-3 py-[5px] rounded-[10px] border border-[#e5e5ea] text-[11px] font-mono"
                      style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
@@ -475,9 +530,9 @@ export default function UltimateDashboard() {
                   <input type="date" value={customEndDate} onChange={e=>setCustomEndDate(e.target.value)} className="outline-none bg-transparent text-[#1d1d1f]"/>
                 </div>
               )}
+
               <div className="w-px h-5 bg-[#d2d2d7] mx-1"/>
               
-              {/* ✅ ปุ่มเปิด Modal สั่งพิมพ์ (Dashboard สะอาดๆ) */}
               <button onClick={() => setShowPrintModal(true)}
                 className="flex items-center gap-1.5 text-[12px] font-medium bg-[#1d1d1f] text-white px-4 py-1.5 rounded-[8px] shadow-sm hover:bg-[#3a3a3c] transition-colors border border-transparent">
                 🖨️ สั่งพิมพ์
@@ -654,7 +709,6 @@ export default function UltimateDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  {/* ✅ เปลี่ยนหัวตารางตรงนี้ เพิ่ม "ค่าซ่อม" มาเป็นอีกคอลัมน์ */}
                   <tr className="border-b border-[rgba(0,0,0,0.05)]">
                     {['ทะเบียน / รุ่น','สถานะ','ภารกิจ','ระยะทาง','เชื้อเพลิง','ประสิทธิภาพ', 'รายการซ่อม', 'ค่าซ่อม'].map(h=>(
                       <th key={h} className="px-6 py-3 text-left text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] whitespace-nowrap">{h}</th>
@@ -700,7 +754,6 @@ export default function UltimateDashboard() {
                         }
                       </td>
                       
-                      {/* ✅ แยกจำนวนรายการซ่อม และจำนวนเงิน ออกจากกันให้ชัดเจน */}
                       <td className="px-6 py-4">
                         {c.repairCount > 0 ? (
                           <span className="text-[13px] font-medium text-[#d70015] flex items-center gap-1">
@@ -801,17 +854,17 @@ export default function UltimateDashboard() {
         </div>
       </div>
 
-      {/* ── ส่วนที่แสดงเฉพาะตอนสั่งพิมพ์ (ซ่อนอยู่ตลอดเวลาจนกว่าจะกดพิมพ์) ── */}
+      {/* ── พิมพ์ ── */}
       <div className="print-area">
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>บัญชีรถยนต์การไฟฟ้าส่วนภูมิภาคเขต ก.3 การไฟฟ้าส่วนภูมิภาคสาขากำแพงแสน ประจำเดือน {
-            timeFilter === 'month' ? new Date().toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }) : 
-            timeFilter === 'custom' ? `${customStartDate} ถึง ${customEndDate}` : 'พฤษภาคม 2569'
-          }</h2>
-        </div>
-
         <table className="report-table">
           <thead>
+            <tr>
+              <th colSpan="14" className="no-border-print" style={{ paddingBottom: '20px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, fontFamily: 'Sarabun, sans-serif' }}>
+                  บัญชีรถยนต์การไฟฟ้าส่วนภูมิภาคเขต ก.3 การไฟฟ้าส่วนภูมิภาคสาขากำแพงแสน ประจำเดือน {getReportTitleDate()}
+                </h2>
+              </th>
+            </tr>
             <tr>
               <th rowSpan="2" style={{width: '4%'}}>อันดับที่</th>
               <th rowSpan="2" style={{width: '9%'}}>หมายเลขทะเบียน</th>
@@ -854,7 +907,10 @@ export default function UltimateDashboard() {
                   <td>{isComplete ? '/' : ''}</td>
                   <td>{!isComplete ? '/' : ''}</td>
                   
-                  <td>{customReason}</td>
+                  <td>
+                    <span className="no-print">{customReason}</span>
+                    <span className="print-area">{customReason}</span>
+                  </td>
                   
                   <td>{row.remark}</td>
                 </tr>
