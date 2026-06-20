@@ -1,19 +1,25 @@
 'use client'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 // --- Main Component ---
-function App() {
+function MainApp() {
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const carId = searchParams.get('car_id') 
 
-  // 1. ถ้ามี car_id -> ไปหน้าฟอร์ม
+  // 1. ถ้า URL มีคำว่า /report ให้แสดงหน้ารายงาน
+  if (pathname && pathname.includes('/report')) {
+    return <ReportPage />
+  }
+
+  // 2. ถ้ามี car_id -> ไปหน้าฟอร์มสแกนรถ
   if (carId) {
     return <CarActionForm carId={carId} />
   }
 
-  // 2. ถ้าไม่มี -> ไปหน้า Home
+  // 3. ถ้าไม่มี -> ไปหน้า Home (Dashboard เลือกรถ)
   return <CarSelector />
 }
 
@@ -84,6 +90,8 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
+    if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
+    if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
     
     return null 
   }
@@ -363,7 +371,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
     if (!empId) return;
     setIsLoading(true); setError('');
     try {
-        const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', empId).single();
+        const { data } = await supabase.from('staff').select('id, full_name, position').eq('staff_code', empId).single();
         if (data) {
             setStaffInfo(data);
             if (onVerifySuccess) onVerifySuccess(); 
@@ -420,7 +428,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
     }
     
     if (window.confirm('ยืนยันการลงชื่อ ใช่หรือไม่?')) {
-        onSave(base64Text, staffInfo.full_name, staffInfo.position);
+        onSave(base64Text, staffInfo.full_name, staffInfo.position, staffInfo.id);
         onClose();
     }
   };
@@ -487,7 +495,6 @@ function MobileControlSheet({
   isEVCar, canSignAny, isCurrentMonthSignable, signableMonth, driverSigText, controllerSigText, 
   handleDeleteSig, openSigModal, logs, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost, 
   setDrillCost, drillHours, setDrillHours, drillSaving, setDrillSaving, drillSaved, setDrillSaved,
-  // ✅ เพิ่ม Props ด้านล่างนี้เพื่อแก้ปัญหา Error บน Mobile
   handleSaveDoc, docSaving, docSaved 
 }) {
   const [activeTab, setActiveTab] = useState('doc')
@@ -532,7 +539,6 @@ function MobileControlSheet({
       </div>
 
       {/* Expanded content — swipe down to close */}
-      {/* ✅ แก้ไข: ขยายความสูง max-h เป็น 75vh และเพิ่ม padding-bottom เป็น pb-32 เพื่อให้เลื่อนไม่ติดแถบ Safari */}
       {expanded && (
         <div ref={dragRef}
              onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
@@ -718,6 +724,14 @@ function ReportPage() {
   const [canSignAny, setCanSignAny] = useState(false);
   const [isCurrentMonthSignable, setIsCurrentMonthSignable] = useState(false);
 
+  // 🟢 เพิ่มฟังก์ชัน extractTaskOnly เพื่อตัดคำเอาเฉพาะประเภทงาน
+  const extractTaskOnly = (locationString) => {
+      if (!locationString) return '';
+      // ข้อความใน DB ถูกบันทึกแบบ: "[แผนก - ประเภทงาน] พื้นที่"
+      const match = locationString.match(/\[.*? - (.*?)\]/);
+      return match ? match[1].trim() : locationString;
+  };
+
   useEffect(() => {
      const d = today;
      const date = d.getDate();
@@ -804,7 +818,7 @@ function ReportPage() {
     const { data: sigData } = await supabase
       .from('report_signatures')
       .select('*')
-      .eq('car_id', String(carId))
+      .eq('car_id', Number(carId))
       .eq('report_month', selectedMonth)
       .single()
 
@@ -826,30 +840,32 @@ function ReportPage() {
     setToday(new Date())
   }, [carId, selectedMonth])
 
-  const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos) => {
+  const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos, staffId = null) => {
     try {
-        const { data: existing } = await supabase.from('report_signatures').select('id').eq('car_id', String(carId)).eq('report_month', selectedMonth).single()
+        const { data: existing } = await supabase.from('report_signatures').select('id').eq('car_id', Number(carId)).eq('report_month', selectedMonth).single()
 
         const payload = {}
         if (target === 'driver') {
             payload.driver_sig = base64Text; payload.driver_name = fetchedName; payload.driver_pos = fetchedPos;
+            payload.driver_staff_id = staffId;
             setDriverSigText(base64Text); setDriverName(fetchedName); setDriverPos(fetchedPos);
         } else {
             payload.controller_sig = base64Text; payload.controller_name = fetchedName; payload.controller_pos = fetchedPos;
+            payload.controller_staff_id = staffId;
             setControllerSigText(base64Text); setControllerName(fetchedName); setControllerPos(fetchedPos);
         }
 
         if (existing) {
             await supabase.from('report_signatures').update(payload).eq('id', existing.id)
         } else {
-            await supabase.from('report_signatures').insert([{ ...payload, car_id: String(carId), report_month: selectedMonth }])
+            await supabase.from('report_signatures').insert([{ ...payload, car_id: Number(carId), report_month: selectedMonth }])
         }
     } catch (err) { alert('เกิดข้อผิดพลาดในการบันทึกลายเซ็น: ' + err.message) }
   }
 
   const handleDeleteSig = async (target) => {
       if(!confirm('ต้องการลบลายเซ็นนี้ใช่หรือไม่?')) return;
-      await saveSignatureToDB(target, null, '', '');
+      await saveSignatureToDB(target, null, '', '', null);
   }
 
   const openSigModal = (target, title) => {
@@ -960,7 +976,7 @@ function ReportPage() {
       <SignatureModal 
         isOpen={sigModal.isOpen} title={sigModal.title}
         onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
-        onSave={(base64Text, fetchedName, fetchedPos) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos)}
+        onSave={(base64Text, fetchedName, fetchedPos, staffId) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos, staffId)}
         onVerifySuccess={() => {
             if (signableMonth && selectedMonth !== signableMonth) {
                 setSelectedMonth(signableMonth);
@@ -1248,6 +1264,13 @@ function ReportPage() {
                                                 <td className="border border-black p-0 align-middle"><CheckboxCell checked={false} /></td>
                                             </tr>
                                         ))}
+                                        {isLastPage && (
+                                            <tr className="h-[30px] font-normal text-[11px] align-middle bg-gray-50 print:bg-transparent">
+                                                <td colSpan={3} className="border border-black text-right pr-2">รวม</td>
+                                                <td colSpan={2} className="border border-black text-center text-black"></td>
+                                                <td colSpan={6} className="border border-black text-center text-black"></td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                                 
@@ -1375,7 +1398,12 @@ function ReportPage() {
                                         <tr key={i} className="h-[28px] align-middle font-normal text-[12px]">
                                             <td className="border border-black text-center">{formatDate(log.start_time)}</td>
                                             <td className="border border-black px-1 text-left truncate max-w-[140px]">{log.driver_name}</td>
-                                            <td className="border border-black px-1 text-left truncate max-w-[140px]">{log.location}</td>
+                                            
+                                            {/* 🟢 ดึงข้อมูลแสดงแค่ ประเภทงาน */}
+                                            <td className="border border-black px-1 text-left truncate max-w-[140px]">
+                                                {extractTaskOnly(log.location)}
+                                            </td>
+
                                             <td className="border border-black text-center">{log.start_mileage}</td>
                                             <td className="border border-black text-center">{log.end_mileage}</td>
                                             <td className="border border-black text-center"></td>
@@ -1479,7 +1507,7 @@ function ReportPage() {
 export default function Page() {
   return (
     <Suspense fallback={<div className="flex justify-center items-center h-screen">กำลังโหลด...</div>}>
-      <ReportPage />
+      <MainApp />
     </Suspense>
   )
 }

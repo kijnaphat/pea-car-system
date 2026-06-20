@@ -5,6 +5,14 @@ import { useSearchParams, useRouter } from 'next/navigation'
 
 // --- Main Component ---
 export default function App() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center"><div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/></div>}>
+      <MainApp />
+    </Suspense>
+  )
+}
+
+function MainApp() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id') 
 
@@ -24,8 +32,6 @@ function CarSelector() {
   const router = useRouter()
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
-  
-  // ✅ State สำหรับควบคุมการเปิด/ปิดหน้าต่างคู่มือ
   const [showInstructions, setShowInstructions] = useState(false)
 
   const fetchCars = async () => {
@@ -37,8 +43,6 @@ function CarSelector() {
         .eq('is_completed', false)
 
       if (carsData) {
-        // เช็คทีละคันว่ามี trip_log ไหม — limit(1) พอ ไม่ต้องดึงทุก row
-        // วิธีนี้แม่นยำ 100% ไม่มีปัญหา limit ตลอดไป
         const activatedResults = await Promise.all(
           carsData.map(car =>
             supabase
@@ -75,15 +79,10 @@ function CarSelector() {
     return () => clearInterval(interval)
   }, [])
 
-  // ฟังก์ชันช่วยดึงรูปภาพรถตามประเภท
   const getCarImage = (car) => {
     const type = car.car_type || ''
-    
-    // ✅ เช็คว่าเป็นรถ EV หรือไม่ (ดูจาก fuel_type แทนทะเบียน)
     if (car.car_type?.toUpperCase() === 'รถ EV') return '/mg.png'
     if (car.car_type?.toUpperCase() === 'รถ EV ทดเเทน') return '/mg2.png'
-    
-    // เช็คตามคำขึ้นต้นของประเภทรถ
     if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
     if (type.startsWith('รถบรรทุก 2 ตันเเก้ไฟ')) return '/2_ton_truck.png'
     if (type.startsWith('รถเครน')) return '/crane.png'
@@ -94,7 +93,6 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
     if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
     if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
-    
     return null 
   }
 
@@ -124,7 +122,6 @@ function CarSelector() {
       </nav>
 
       <div className="max-w-[600px] mx-auto px-4">
-
         {/* ── Hero ── */}
         <div className="pt-9 pb-8">
           <h1 className="text-[38px] font-bold tracking-[-1.5px] leading-[1.05] text-[#1d1d1f]">ยานพาหนะ</h1>
@@ -173,7 +170,6 @@ function CarSelector() {
             return (
               <div className="row-tap bg-white relative flex items-center gap-4 px-4 py-4 active:bg-[#f5f5f7] transition-colors"
                    style={{borderBottom: isLast ? 'none' : '0.5px solid rgba(60,60,67,0.1)'}}>
-                {/* รูปรถ */}
                 <div className="w-[76px] h-[76px] flex-shrink-0 rounded-[18px] overflow-hidden flex items-center justify-center"
                      style={{background: imgBg}}>
                   {carImageSrc
@@ -182,7 +178,6 @@ function CarSelector() {
                     : <span className="text-[36px]">🚗</span>}
                 </div>
 
-                {/* ข้อมูล */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className={`text-[20px] font-semibold tracking-[-0.5px] leading-tight ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
@@ -218,7 +213,6 @@ function CarSelector() {
                   )}
                 </div>
 
-                {/* ขวา */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
                     className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors">
@@ -234,7 +228,6 @@ function CarSelector() {
 
           return (
             <div className="space-y-5">
-              {/* กำลังใช้งาน */}
               {busyCars.length > 0 && (
                 <div>
                   <div className="flex items-baseline justify-between mb-2 px-1">
@@ -248,7 +241,6 @@ function CarSelector() {
                 </div>
               )}
 
-              {/* ว่างพร้อมใช้ */}
               {availableCars.length > 0 && (
                 <div>
                   <div className="flex items-baseline justify-between mb-2 px-1">
@@ -276,13 +268,9 @@ function CarSelector() {
                onClick={() => setShowInstructions(false)}/>
           <div className="relative w-full max-w-[440px] bg-[#f5f5f7] rounded-t-[26px] sm:rounded-[26px] z-10 max-h-[92vh] flex flex-col overflow-hidden"
                style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
-
-            {/* handle */}
             <div className="sm:hidden flex justify-center pt-3 pb-0">
               <div className="w-9 h-1 rounded-full bg-[#c7c7cc]"/>
             </div>
-
-            {/* header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-black/[0.06]">
               <span className="text-[18px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">คู่มือการใช้งาน</span>
               <button onClick={() => setShowInstructions(false)}
@@ -290,10 +278,7 @@ function CarSelector() {
                 ✕
               </button>
             </div>
-
-            {/* body */}
             <div className="overflow-y-auto px-5 py-4 space-y-3">
-              {/* น้ำมัน */}
               <div className="bg-white rounded-[16px] overflow-hidden"
                    style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
                 <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
@@ -316,7 +301,6 @@ function CarSelector() {
                 </div>
               </div>
 
-              {/* EV */}
               <div className="bg-white rounded-[16px] overflow-hidden"
                    style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
                 <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
@@ -339,8 +323,6 @@ function CarSelector() {
                 </div>
               </div>
             </div>
-
-            {/* footer */}
             <div className="px-5 pt-3 pb-8 border-t border-black/[0.05]">
               <button onClick={() => setShowInstructions(false)}
                 className="w-full bg-[#1d1d1f] text-white text-[16px] font-semibold py-4 rounded-[16px] active:bg-[#3a3a3c] transition-colors tracking-[-0.2px]">
@@ -355,7 +337,7 @@ function CarSelector() {
 }
 
 // ==========================================
-// 🎨 Component: กระดานเซ็นชื่อ (Signature Pad) สำหรับ ReportPage
+// 🎨 Component: กระดานเซ็นชื่อ (Signature Pad)
 // ==========================================
 function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
   const canvasRef = useRef(null);
@@ -367,7 +349,6 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
 
   useEffect(() => {
     if (isOpen) { setEmpId(''); setStaffInfo(null); setError(''); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {
@@ -388,7 +369,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
     if (!empId) return;
     setIsLoading(true); setError('');
     try {
-        const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', empId).single();
+        const { data } = await supabase.from('staff').select('id, full_name, position').eq('staff_code', empId).single();
         if (data) {
             setStaffInfo(data);
             if (onVerifySuccess) onVerifySuccess(); 
@@ -443,7 +424,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
         alert("กรุณาเซ็นชื่อก่อนบันทึกครับ");
         return;
     }
-    onSave(base64Text, staffInfo.full_name, staffInfo.position);
+    onSave(base64Text, staffInfo.full_name, staffInfo.position, staffInfo.id);
     onClose();
   };
 
@@ -452,24 +433,17 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
          style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
       <div className="bg-[#f5f5f7] w-full max-w-md rounded-t-[24px] sm:rounded-[24px] overflow-hidden flex flex-col"
            style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)', WebkitFontSmoothing:'antialiased'}}>
-
-        {/* handle (mobile) */}
         <div className="sm:hidden flex justify-center pt-3 pb-1">
           <div className="w-9 h-[4px] rounded-full bg-[#c7c7cc]"/>
         </div>
-
-        {/* Header */}
         <div className="px-5 pt-4 pb-4 flex items-center justify-between border-b border-[rgba(0,0,0,0.06)]">
           <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">✍️ {title}</span>
           <button onClick={onClose} className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3a3a3c] font-semibold active:bg-[#d1d1d6] transition-colors">✕</button>
         </div>
-
-        {/* Notice */}
         <div className="mx-5 mt-3 flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
           <span className="text-[13px]">📅</span>
           <span className="text-[12px] font-medium text-[#0071e3]">เซ็นได้เฉพาะวันที่ 28–5 ของรอบเดือน</span>
         </div>
-
         <div className="p-5">
           {!staffInfo ? (
             <div className="space-y-4">
@@ -497,7 +471,6 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* confirmed user */}
               <div className="bg-white rounded-[14px] px-4 py-3 flex items-center justify-between"
                    style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
                 <div>
@@ -510,10 +483,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
                 <button onClick={() => setStaffInfo(null)}
                   className="text-[12px] text-[#0071e3] font-medium active:opacity-60">เปลี่ยน</button>
               </div>
-
               <p className="text-[12px] text-[#6e6e73] text-center">ใช้นิ้วเซ็นชื่อในกรอบด้านล่าง</p>
-
-              {/* canvas */}
               <div className="bg-white rounded-[14px] p-3 flex justify-center"
                    style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
                 <canvas ref={canvasRef} width={300} height={140}
@@ -522,7 +492,6 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
                   onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
                   onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} />
               </div>
-
               <div className="flex gap-3">
                 <button onClick={clearCanvas}
                   className="flex-1 py-3.5 rounded-[14px] bg-[#e5e5ea] text-[#1d1d1f] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
@@ -568,7 +537,6 @@ function ReportPage() {
 
   const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' })
 
-  // ✅ ตรรกะใหม่: คำนวณเดือนที่ระบบอนุญาตให้เซ็นได้ ณ วันนี้
   const [signableMonth, setSignableMonth] = useState(null);
   const [canSignAny, setCanSignAny] = useState(false);
   const [isCurrentMonthSignable, setIsCurrentMonthSignable] = useState(false);
@@ -579,12 +547,10 @@ function ReportPage() {
      let allowedMonth = null;
 
      if (date >= 28) {
-         // ถ้าวันนี้วันที่ 28 ขึ้นไป จะเซ็นของเดือนนี้ได้
          const y = d.getFullYear();
          const m = String(d.getMonth() + 1).padStart(2, '0');
          allowedMonth = `${y}-${m}`;
      } else if (date <= 5) {
-         // ถ้าวันนี้วันที่ 1-5 จะเซ็นของเดือนที่แล้วได้
          let y = d.getFullYear();
          let m = d.getMonth();
          if (m === 0) {
@@ -634,7 +600,7 @@ function ReportPage() {
     const { data: sigData } = await supabase
       .from('report_signatures')
       .select('*')
-      .eq('car_id', String(carId))
+      .eq('car_id', Number(carId))
       .eq('report_month', selectedMonth)
       .single()
 
@@ -654,33 +620,34 @@ function ReportPage() {
   useEffect(() => {
     if (carId) fetchData()
     setToday(new Date())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carId, selectedMonth])
 
-  const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos) => {
+  const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos, staffId = null) => {
     try {
-        const { data: existing } = await supabase.from('report_signatures').select('id').eq('car_id', String(carId)).eq('report_month', selectedMonth).single()
+        const { data: existing } = await supabase.from('report_signatures').select('id').eq('car_id', Number(carId)).eq('report_month', selectedMonth).single()
 
         const payload = {}
         if (target === 'driver') {
             payload.driver_sig = base64Text; payload.driver_name = fetchedName; payload.driver_pos = fetchedPos;
+            payload.driver_staff_id = staffId;
             setDriverSigText(base64Text); setDriverName(fetchedName); setDriverPos(fetchedPos);
         } else {
             payload.controller_sig = base64Text; payload.controller_name = fetchedName; payload.controller_pos = fetchedPos;
+            payload.controller_staff_id = staffId;
             setControllerSigText(base64Text); setControllerName(fetchedName); setControllerPos(fetchedPos);
         }
 
         if (existing) {
             await supabase.from('report_signatures').update(payload).eq('id', existing.id)
         } else {
-            await supabase.from('report_signatures').insert([{ ...payload, car_id: String(carId), report_month: selectedMonth }])
+            await supabase.from('report_signatures').insert([{ ...payload, car_id: Number(carId), report_month: selectedMonth }])
         }
     } catch (err) { alert('เกิดข้อผิดพลาดในการบันทึกลายเซ็น: ' + err.message) }
   }
 
   const handleDeleteSig = async (target) => {
       if(!confirm('ต้องการลบลายเซ็นนี้ใช่หรือไม่?')) return;
-      await saveSignatureToDB(target, null, '', '');
+      await saveSignatureToDB(target, null, '', '', null);
   }
 
   const openSigModal = (target, title) => {
@@ -690,6 +657,12 @@ function ReportPage() {
       }
       setSigModal({ isOpen: true, target, title });
   }
+
+  const extractTaskOnly = (locationString) => {
+      if (!locationString) return '';
+      const match = locationString.match(/\[.*? - (.*?)\]/);
+      return match ? match[1].trim() : locationString;
+  };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'numeric', year: '2-digit' }) : ''
   const formatThaiMonth = (d) => d ? new Date(d).toLocaleDateString('th-TH', { month: 'long' }) : ''
@@ -738,7 +711,6 @@ function ReportPage() {
 
   return (
     <div className={`min-h-screen bg-gray-500 flex flex-col items-center pb-12 print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden ${isEVCar ? 'pt-[260px]' : 'pt-[380px]'} xl:pt-8`}>
-      
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 0; }
@@ -788,21 +760,18 @@ function ReportPage() {
       <SignatureModal 
         isOpen={sigModal.isOpen} title={sigModal.title}
         onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
-        onSave={(base64Text, fetchedName, fetchedPos) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos)}
+        onSave={(base64Text, fetchedName, fetchedPos, staffId) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos, staffId)}
         onVerifySuccess={() => {
-            // ✅ กระโดดเปลี่ยนเดือนให้ตรงกับที่อนุญาตให้เซ็นอัตโนมัติ
             if (signableMonth && selectedMonth !== signableMonth) {
                 setSelectedMonth(signableMonth);
             }
         }}
       />
 
-      {/* ── Settings Panel ── Apple style ── */}
+      {/* ── Settings Panel ── */}
       <div className="w-full fixed top-0 left-0 xl:w-[300px] xl:top-4 xl:left-auto xl:right-4 print:hidden z-50"
            style={{WebkitFontSmoothing:'antialiased'}}>
         <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl border-b border-[rgba(0,0,0,0.1)] xl:border xl:border-[rgba(0,0,0,0.08)] xl:rounded-[20px] xl:shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden">
-
-          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(0,0,0,0.06)]">
             <span className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">เอกสาร</span>
             <button onClick={() => window.print()}
@@ -813,7 +782,6 @@ function ReportPage() {
             </button>
           </div>
 
-          {/* Status badge */}
           <div className="px-4 py-2 border-b border-[rgba(0,0,0,0.06)]">
             {!canSignAny ? (
               <div className="flex items-center gap-2 bg-[#fff3cd] rounded-[10px] px-3 py-2">
@@ -834,14 +802,12 @@ function ReportPage() {
           </div>
 
           <div className="px-4 py-3 space-y-3">
-            {/* เดือน */}
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-[#1d1d1f] font-medium">เดือน</span>
               <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}
                 className="text-[13px] text-[#0071e3] font-medium bg-transparent border-none outline-none cursor-pointer" />
             </div>
 
-            {/* จาก / ถึง / เรียน */}
             {!isEVCar && (
               <div className="bg-white rounded-[12px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
                 {[
@@ -858,11 +824,9 @@ function ReportPage() {
               </div>
             )}
 
-            {/* ลายเซ็น */}
             <div>
               <p className="text-[11px] text-[#6e6e73] font-medium mb-2 tracking-[-0.1px]">ลายเซ็น</p>
               <div className="grid grid-cols-2 gap-2">
-                {/* ผู้ขับ/ผู้รายงาน */}
                 <div className="bg-white rounded-[12px] overflow-hidden flex flex-col items-center py-2 px-1 relative" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)', minHeight:'70px'}}>
                   <span className="text-[10px] text-[#6e6e73] mb-1.5">{isEVCar ? 'ผู้รายงาน' : 'ผู้ขับรถ'}</span>
                   {driverSigText ? (
@@ -881,7 +845,6 @@ function ReportPage() {
                   )}
                 </div>
 
-                {/* ผู้ควบคุม */}
                 <div className="bg-white rounded-[12px] overflow-hidden flex flex-col items-center py-2 px-1 relative" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)', minHeight:'70px'}}>
                   <span className="text-[10px] text-[#6e6e73] mb-1.5">ผู้ควบคุม</span>
                   {controllerSigText ? (
@@ -912,15 +875,9 @@ function ReportPage() {
             const emptyRows = Array.from({ length: Math.max(0, targetRows - pageLogs.length) });
 
             return (
-              <div 
-                key={pageIndex} 
-                className="page-wrapper relative shadow-2xl xl:shadow-xl rounded-md bg-white overflow-hidden"
-                style={{ width: `${A4_WIDTH_PX * scale}px`, height: `${794 * scale}px` }}
-              >
-                <div 
-                  className="page-inner absolute top-0 left-0 bg-white box-border flex flex-col font-normal text-black"
-                  style={{ width: `${A4_WIDTH_PX}px`, height: `794px`, padding: '25px 38px 30px 38px', transform: `scale(${scale})`, transformOrigin: 'top left' }}
-                >
+              <div key={pageIndex} className="page-wrapper relative shadow-2xl xl:shadow-xl rounded-md bg-white overflow-hidden" style={{ width: `${A4_WIDTH_PX * scale}px`, height: `${794 * scale}px` }}>
+                <div className="page-inner absolute top-0 left-0 bg-white box-border flex flex-col font-normal text-black" style={{ width: `${A4_WIDTH_PX}px`, height: `794px`, padding: '25px 38px 30px 38px', transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                    
                     {/* ========================================= */}
                     {/* ⚡ REPORT FORM: EV */}
                     {/* ========================================= */}
@@ -971,7 +928,6 @@ function ReportPage() {
                                             const stName = log.station_name || '';
                                             const stType = log.station_type || '';
                                             const getDetail = (text) => text.includes(':') ? text.split(':')[1].trim() : text;
-
                                             const isHQ = stName.includes('สำนักงานใหญ่') || stName.includes('HQ');
                                             const isKFK = stName.includes('กฟก.');
                                             const isBangchak = stName.includes('บางจาก');
@@ -1007,7 +963,6 @@ function ReportPage() {
                                                 <td className="border border-black p-0 align-middle"><CheckboxCell checked={false} /></td>
                                             </tr>
                                         ))}
-                                        {/* แถวรวมโชว์เฉพาะหน้าสุดท้าย */}
                                         {isLastPage && (
                                             <tr className="h-[30px] font-normal text-[11px] align-middle bg-gray-50 print:bg-transparent">
                                                 <td colSpan={3} className="border border-black text-right pr-2">รวม</td>
@@ -1023,7 +978,6 @@ function ReportPage() {
                                 </div>
                             </div>
                             
-                            {/* ✅ ลายเซ็นโชว์ทุกหน้า */}
                             <div className="mt-auto pb-2 flex justify-between items-end px-4 font-normal">
                                 <div className="text-sm">
                                     <p className="mb-2">เลขไมล์ต้นเดือน................<span className="font-normal ml-2">{startMonthMileage.toLocaleString()}</span>........................</p>
@@ -1128,7 +1082,12 @@ function ReportPage() {
                                     <tbody>
                                         {pageLogs.map((log, i) => (
                                         <tr key={i} className="h-[26px] align-middle font-normal">
-                                            <td className="border border-black text-center">{formatDate(log.start_time)}</td><td className="border border-black px-1 text-center truncate max-w-[120px]">{log.driver_name}</td><td className="border border-black px-1 text-center truncate max-w-[120px]">{log.location}</td>
+                                            <td className="border border-black text-center">{formatDate(log.start_time)}</td><td className="border border-black px-1 text-center truncate max-w-[120px]">{log.driver_name}</td>
+                                            
+                                            <td className="border border-black px-1 text-center truncate max-w-[120px]">
+                                                {extractTaskOnly(log.location)}
+                                            </td>
+
                                             <td className="border border-black p-0 h-full font-normal"><div className="flex divide-x divide-black h-[26px]"><div className="w-1/2 flex items-center justify-center">{log.start_mileage}</div><div className="w-1/2 flex items-center justify-center">{log.end_mileage}</div></div></td>
                                             <td className="border border-black text-center"></td><td className="border border-black text-center">{log.fuel_liters ? Number(log.fuel_liters).toFixed(2) : ''}</td><td className="border border-black text-right px-1">{log.fuel_cost > 0 ? Number(log.fuel_cost).toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td>
                                         </tr>
@@ -1138,7 +1097,6 @@ function ReportPage() {
                                             <td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black p-0 h-full"><div className="flex divide-x divide-black h-[26px]"><div className="w-1/2"></div><div className="w-1/2"></div></div></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td><td className="border border-black"></td>
                                         </tr>
                                         ))}
-                                        {/* แถวรวมโชว์เฉพาะหน้าสุดท้าย */}
                                         {isLastPage && (
                                             <tr className="h-[30px] font-normal text-[11px] align-middle bg-gray-50 print:bg-transparent">
                                                 <td colSpan={3} className="border border-black text-right pr-2">รวม</td><td className="border border-black text-center text-black">{totalDistance > 0 ? totalDistance.toLocaleString() + ' กม.' : '-'}</td><td className="border border-black"></td><td className="border border-black text-center text-black">{totalFuelLiters > 0 ? totalFuelLiters.toFixed(2) : ''}</td><td className="border border-black text-right px-1 text-black">{totalFuelCost > 0 ? totalFuelCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td><td className="border border-black"></td><td className="border border-black text-right px-1"></td><td className="border border-black"></td>
@@ -1199,14 +1157,13 @@ function ReportPage() {
 }
 
 // ==========================================
-// 2. หน้าฟอร์มบันทึก (Action Form)
+// 2. หน้าฟอร์มบันทึก (Action Form) - อัปเดตใหม่
 // ==========================================
 function CarActionForm({ carId }) {
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
 
-  // helper: แปลง car_type → path รูปรถ (เหมือน CarSelector)
   const getCarImage = (c) => {
     if (!c) return null
     const type = c.car_type || ''
@@ -1222,7 +1179,7 @@ function CarActionForm({ carId }) {
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
     return null
   }
-  
+
   // Inputs
   const [employeeId, setEmployeeId] = useState('')
   const [staffName, setStaffName] = useState('') 
@@ -1230,16 +1187,62 @@ function CarActionForm({ carId }) {
   const [staffError, setStaffError] = useState(false)
   const [mileage, setMileage] = useState('')
   const [isMileageLocked, setIsMileageLocked] = useState(false)
-  const [selectedLocation, setSelectedLocation] = useState('') 
-  const [customLocation, setCustomLocation] = useState('') 
   
-  // Return Inputs
+  const [departmentsList, setDepartmentsList] = useState([])
+  const [areasList, setAreasList] = useState([])
+
+  const [selectedDept, setSelectedDept] = useState('')
+  const [selectedTask, setSelectedTask] = useState('')
+  const [customTask, setCustomTask] = useState('') 
+  const [selectedArea, setSelectedArea] = useState('')
+  const [customArea, setCustomArea] = useState('')
+
+  const [selectModal, setSelectModal] = useState({ isOpen: false, type: '', title: '', options: [] })
+
+  const openSelectModal = (type) => {
+    if (type === 'task') {
+      const deptData = departmentsList.find(d => d.name === selectedDept);
+      setSelectModal({ isOpen: true, type: 'task', title: 'เลือกประเภทงาน', options: deptData ? deptData.tasks : [] });
+    } else if (type === 'area') {
+      setSelectModal({ isOpen: true, type: 'area', title: 'เลือกพื้นที่ปฏิบัติงาน', options: areasList });
+    }
+  }
+
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const { data: deptData, error: deptError } = await supabase.from('departments').select(`id, name, tasks(name)`);
+        if (deptError) console.error("Supabase Dept Error:", deptError);
+        if (deptData && deptData.length > 0) {
+          const formatted = deptData.map(d => {
+            let tasks = d.tasks ? d.tasks.map(t => t.name) : [];
+            tasks = tasks.filter(t => t !== 'งานอื่นๆ' && t !== 'อื่นๆ');
+            tasks.unshift('อื่นๆ'); 
+            return { name: d.name, tasks };
+          });
+          setDepartmentsList(formatted);
+        }
+
+        const { data: areaData, error: areaError } = await supabase.from('operation_areas').select('name');
+        if (areaError) console.error("Supabase Area Error:", areaError);
+        if (areaData && areaData.length > 0) {
+          let areas = areaData.map(a => a.name);
+          areas = areas.filter(a => a !== 'อื่นๆ');
+          areas.unshift('อื่นๆ'); 
+          setAreasList(areas);
+        }
+      } catch (err) {
+        console.error("Fetch Data Failed:", err);
+      }
+    };
+    fetchDropdownData();
+  }, []);
+  
   const [endMileage, setEndMileage] = useState('')
   const [fuelLiters, setFuelLiters] = useState('')
   const [fuelCost, setFuelCost] = useState('')
   const [hasRefueled, setHasRefueled] = useState(null)
 
-  // EV Inputs
   const [battBefore, setBattBefore] = useState('')
   const [battAfter, setBattAfter] = useState('')
   const [stationType, setStationType] = useState('PEA') 
@@ -1249,17 +1252,12 @@ function CarActionForm({ carId }) {
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
 
-  // ✅ State สำหรับควบคุมการแสดง Popup แจ้งเตือนเรื่องการเซ็นเอกสาร (ใหม่)
   const [isSignReminderDismissed, setIsSignReminderDismissed] = useState(false)
-  
-  // ✅ State สำหรับควบคุมการแสดง Popup ยืนยันเลขไมล์
   const [showReturnConfirm, setShowReturnConfirm] = useState(false)
 
-  // ตัวเลือก Dropdown
   const kfkList = ['กฟจ.นฐ.', 'กฟส.นช.', 'กฟส.บลน.', 'กฟจ.สพ.', 'กฟส.อมง.', 'กฟส.ศปจ.', 'กฟจ.สค.','กฟส.กทบ.','กฟจ.กจ.','กฟส.ทมง.','กฟส.ทมก.','กฟส.สขบ.'];
   const otherBrandList = ['EA Anywhere', 'EV Station', 'MEA EV', 'EGAT', 'Emergency charger'];
 
-  // Config ตัวเลือกสถานี
   const peaOptions = [
       { id: 'HQ', label: 'สำนักงานใหญ่ (สนญ.)', inputType: 'none' },
       { id: 'PEA_OFFICE', label: 'กฟก. (เลือกสาขา)', inputType: 'dropdown_kfk' }, 
@@ -1281,8 +1279,6 @@ function CarActionForm({ carId }) {
       const { data: c } = await supabase.from('cars').select('*').eq('id', carId).single()
       if (c) {
         setCar(c)
-        
-        // ✅ ตรวจสอบว่าเป็นรถ EV ไหมจากคอลัมน์ fuel_type
         const isThisCarEV = c?.fuel_type?.toUpperCase() === 'EV';
 
         if (c.status === 'available') {
@@ -1295,11 +1291,9 @@ function CarActionForm({ carId }) {
              .single()
            
            if (isThisCarEV) {
-               // ✅ ถ้ารถเป็น EV ปลดล็อกช่องเลขไมล์ และให้เว้นว่างบังคับพิมพ์ใหม่
                setMileage('')
                setIsMileageLocked(false)
            } else if (l?.end_mileage) {
-               // ถ้ารถน้ำมัน ดึงเลขไมล์เดิมมาแสดงและล็อกการแก้ไข
                setMileage(l.end_mileage.toString())
                setIsMileageLocked(true)
            } else {
@@ -1316,38 +1310,46 @@ function CarActionForm({ carId }) {
 
   const checkStaff = async () => {
     if (employeeId.length < 4) return
-    const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', employeeId).single()
+    const { data, error } = await supabase
+      .from('staff')
+      .select(`full_name, position, departments ( name )`)
+      .eq('staff_code', employeeId)
+      .single()
+
     if (data) {
-        setStaffName(data.full_name); setStaffPosition(data.position); setStaffError(false)
+        setStaffName(data.full_name); 
+        setStaffPosition(data.position); 
+        setStaffError(false);
+
+        if (data.departments?.name) {
+          if (selectedDept !== data.departments.name) {
+            setSelectedDept(data.departments.name);
+            setSelectedTask(''); 
+            setCustomTask('');
+          }
+        }
     } else {
-        setStaffName(''); setStaffPosition(''); setStaffError(true)
+        setStaffName(''); 
+        setStaffPosition(''); 
+        setStaffError(true);
+        setSelectedDept('');
     }
   }
 
-  // ✅ นำรถออก หรือ เริ่มชาร์จ EV
+  const resetStaff = () => {
+    setStaffName('');
+    setEmployeeId('');
+    setStaffPosition('');
+    setStaffError(false);
+  }
+
   const handleTakeOut = async () => {
-    let currentName = staffName
-    let currentPosition = staffPosition
-
-    if (!currentName) {
-        const { data } = await supabase.from('staff').select('full_name, position').eq('staff_code', employeeId).single()
-        if (data) { 
-            currentName = data.full_name; 
-            currentPosition = data.position;
-            setStaffPosition(data.position);
-        }
-    }
-
-    if (!currentName) { setStaffError(true); alert('❌ ไม่พบรหัสพนักงานในระบบ'); return }
-
-    // Validation
     const isEV = car?.fuel_type?.toUpperCase() === 'EV';
-    const finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
     
-    if (!employeeId) return alert('กรุณากรอกรหัสพนักงาน')
-    
+    if (!staffName) return alert('กรุณาระบุรหัสพนักงานให้ถูกต้องก่อน');
+    if (!mileage) return alert('กรุณากรอกเลขไมล์เริ่มต้น');
+
     if (isEV) {
-        if (!mileage) return alert('กรุณากรอกเลขไมล์เริ่มต้น')
         if (!battBefore) return alert('กรุณากรอก % แบตเตอรี่ก่อนชาร์จ')
         if (!subStationType) return alert('กรุณาระบุประเภทสถานีชาร์จ')
         
@@ -1356,13 +1358,16 @@ function CarActionForm({ carId }) {
             return alert('กรุณาระบุชื่อสถานี/สาขาให้ครบถ้วน')
         }
     } else {
-        if (!mileage || !finalLocation) return alert('กรุณากรอกข้อมูลให้ครบถ้วน')
+        if (!selectedDept || !selectedTask || !selectedArea) {
+            return alert('กรุณาเลือก แผนก, งาน และ พื้นที่ปฏิบัติงาน ให้ครบถ้วน')
+        }
+        if (selectedTask === 'อื่นๆ' && !customTask) return alert('กรุณาระบุประเภทงานอื่นๆ')
+        if (selectedArea === 'อื่นๆ' && !customArea) return alert('กรุณาระบุพื้นที่ปฏิบัติงานอื่นๆ')
     }
     
     setLoading(true)
 
     try {
-      // 1. เช็คสิทธิป้องกันรถคันนี้ถูกคนอื่นตัดหน้ายืมไปก่อน
       const { data: latestCar } = await supabase.from('cars').select('status').eq('id', carId).single()
       if (latestCar.status === 'busy') {
          alert('⚠️ รถคันนี้เพิ่งถูกบุคคลอื่นทำรายการนำออกไปแล้วครับ')
@@ -1370,26 +1375,19 @@ function CarActionForm({ carId }) {
          return
       }
 
-      // 2. 🌟 NEW: เช็คว่าพนักงานคนนี้ มีค้างคืนรถคันอื่นอยู่ไหม? (ห้ามยืมซ้อน)
       const { data: activeTrips } = await supabase
           .from('trip_logs')
-          .select(`
-              car_id,
-              cars ( plate_number )
-          `)
-          .eq('driver_name', currentName)
+          .select(`car_id, cars ( plate_number )`)
+          .eq('driver_name', staffName)
           .eq('is_completed', false);
 
       if (activeTrips && activeTrips.length > 0) {
-          // ดึงทะเบียนรถคันที่ติดอยู่ออกมาบอกพนักงาน
           const busyPlate = activeTrips[0].cars?.plate_number || 'รถคันเดิม';
-          alert(`⚠️ ไม่อนุญาตให้ทำรายการ!\nคุณ ${currentName} ยังไม่ได้ทำรายการคืนรถทะเบียน [ ${busyPlate} ]\n\nกรุณาสแกนเพื่อคืนรถคันเดิมให้เรียบร้อยก่อนครับ`);
+          alert(`⚠️ ไม่อนุญาตให้ทำรายการ!\nคุณ ${staffName} ยังไม่ได้ทำรายการคืนรถทะเบียน [ ${busyPlate} ]\n\nกรุณาสแกนเพื่อคืนรถคันเดิมให้เรียบร้อยก่อนครับ`);
           setLoading(false);
-          return; // หยุดการทำงาน ไม่ให้ยืมรถใหม่
+          return;
       }
 
-
-      // 3. เตรียมข้อมูล
       let finalLocation = ''
       let finalStationName = ''
       let finalStationType = ''
@@ -1403,14 +1401,15 @@ function CarActionForm({ carId }) {
         finalStationType = stationType
         finalBattBefore = parseInt(battBefore)
       } else {
-        finalLocation = selectedLocation === 'อื่นๆ' ? customLocation : selectedLocation
+        const actualTask = selectedTask === 'อื่นๆ' ? customTask : selectedTask;
+        const actualArea = selectedArea === 'อื่นๆ' ? customArea : selectedArea;
+        finalLocation = `[${selectedDept} - ${actualTask}] ${actualArea}`;
       }
 
-      // 4. เรียก RPC — atomic transaction ป้องกัน race condition
       const { data: result, error } = await supabase.rpc('take_car_out', {
         p_car_id:          Number(carId),
-        p_driver_name:     currentName,
-        p_driver_position: currentPosition,
+        p_driver_name:     staffName,
+        p_driver_position: staffPosition,
         p_start_mileage:   parseInt(mileage || 0),
         p_location:        finalLocation,
         p_battery_before:  finalBattBefore,
@@ -1424,7 +1423,7 @@ function CarActionForm({ carId }) {
       if (isEV) {
         alert(`✅ บันทึกเริ่มการชาร์จสำเร็จ!\nเมื่อชาร์จเสร็จ กรุณาสแกน QR เพื่อนำที่ชาร์จออก`)
       } else {
-        alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${currentName}`)
+        alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${staffName}`)
       }
       window.location.href = '/'
 
@@ -1461,7 +1460,6 @@ function CarActionForm({ carId }) {
     setLoading(true)
 
     try {
-      // เรียก RPC — atomic transaction ดึง latestLog + update พร้อมกันใน DB
       const { data: result, error } = await supabase.rpc('return_car', {
         p_car_id:       Number(carId),
         p_end_mileage:  isEV ? null : parseInt(endMileage),
@@ -1494,7 +1492,11 @@ function CarActionForm({ carId }) {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] font-sarabun pb-16" style={{WebkitFontSmoothing:'antialiased'}}>
-      <style>{`* { -webkit-font-smoothing: antialiased; }`}</style>
+      <style>{`
+        * { -webkit-font-smoothing: antialiased; }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeDown { animation: fadeDown 0.3s ease-out forwards; }
+      `}</style>
 
       {/* ── Popup เซ็นเอกสาร ── */}
       {showSignReminder && (
@@ -1574,12 +1576,10 @@ function CarActionForm({ carId }) {
       {/* ── Hero ── */}
       <div className={`relative w-full overflow-hidden`}
            style={{height:'55vh', minHeight:'280px', maxHeight:'380px'}}>
-        {/* รูปรถ */}
         {getCarImage(car) ? (
           <>
             <img src={getCarImage(car)} alt={car.car_type}
               className="absolute inset-0 w-full h-full object-cover"/>
-            {/* dark scrim bottom */}
             <div className="absolute inset-0"
                  style={{background:'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)'}}/>
           </>
@@ -1595,7 +1595,6 @@ function CarActionForm({ carId }) {
           </div>
         )}
 
-        {/* info overlay on hero */}
         <div className="absolute bottom-0 left-0 right-0 px-5 pb-6">
           <div className="flex items-end justify-between">
             <div>
@@ -1620,16 +1619,14 @@ function CarActionForm({ carId }) {
         </div>
       </div>
 
-      {/* ── Form Sheet (ลอยเหนือ hero) ── */}
+      {/* ── Form Sheet ── */}
       <div className="relative -mt-5 rounded-t-[28px] bg-[#f2f2f7] pb-16 min-h-[50vh]"
            style={{boxShadow:'0 -4px 20px rgba(0,0,0,0.08)'}}>
 
-        {/* pill handle */}
         <div className="flex justify-center pt-3 pb-4">
           <div className="w-10 h-1 rounded-full bg-[#c7c7cc]"/>
         </div>
 
-        {/* Action label */}
         <div className="px-5 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center text-[22px] ${
@@ -1653,169 +1650,232 @@ function CarActionForm({ carId }) {
         <div className="px-4 space-y-3">
           {car.status === 'available' ? (
             <>
-              {/* รหัสพนักงาน */}
-              <div className="bg-white rounded-[20px] px-5 py-4"
-                   style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">รหัสพนักงาน</p>
-                <input type="text" value={employeeId}
-                  onChange={e => { setEmployeeId(e.target.value); setStaffError(false); setStaffName('') }}
-                  onBlur={checkStaff} placeholder="กรอกรหัสพนักงาน"
-                  className={`w-full px-4 py-3.5 rounded-[14px] text-[17px] font-medium outline-none transition-all ${
-                    staffError ? 'bg-[#fff2f0] border-[1.5px] border-[#ff3b30] text-[#d70015]'
-                    : staffName ? 'bg-[#edfbf0] border-[1.5px] border-[#34c759] text-[#1a7f37]'
-                    : 'bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
-                  }`}/>
-                {staffName && (
-                  <div className="flex items-center gap-2 mt-3 bg-[#edfbf0] px-3 py-2.5 rounded-[12px]">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#34c759"/><path d="M5 9l3 3 5-5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span className="text-[14px] font-semibold text-[#1a7f37]">{staffName}</span>
-                  </div>
-                )}
-                {staffError && (
-                  <div className="flex items-center gap-2 mt-3 bg-[#fff2f0] px-3 py-2.5 rounded-[12px]">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#ff3b30"/><path d="M6 6l6 6M12 6l-6 6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                    <span className="text-[13px] font-medium text-[#d70015]">ไม่พบรหัสพนักงานนี้</span>
-                  </div>
-                )}
-              </div>
-
-              {/* เลขไมล์ */}
+              {/* ================================== */}
+              {/* 🟢 STEP 1: รหัสพนักงาน (บังคับทำก่อน) */}
+              {/* ================================== */}
               <div className="bg-white rounded-[20px] px-5 py-4"
                    style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                 <div className="flex justify-between items-center mb-3">
-                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">
-                    {isEV ? 'เลขไมล์ล่าสุด' : 'เลขไมล์เริ่มต้น'}
-                  </p>
-                  {isMileageLocked && (
-                    <span className="text-[11px] font-medium text-[#0071e3] flex items-center gap-1 bg-[#edf6ff] px-2 py-0.5 rounded-full">
-                      🔒 ต่อเนื่อง
-                    </span>
+                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">1. ระบุตัวตนผู้ขับขี่</p>
+                  {staffName && (
+                    <button onClick={resetStaff} className="text-[12px] font-medium text-[#0071e3] active:opacity-60">
+                      เปลี่ยนรหัส
+                    </button>
                   )}
                 </div>
-                <input type="number" value={mileage} readOnly={isMileageLocked}
-                  onChange={e => setMileage(e.target.value)}
-                  placeholder="000000"
-                  className={`w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider outline-none transition-all text-center ${
-                    isMileageLocked
-                      ? 'bg-[#f5f5f7] text-[#aeaeb2] cursor-not-allowed border-[1.5px] border-transparent'
-                      : 'bg-[#f5f5f7] text-[#1d1d1f] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
-                  }`}/>
-              </div>
 
-              {isEV ? (
-                <>
-                  {/* %แบต */}
-                  <div className="bg-white rounded-[20px] px-5 py-4"
-                       style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">แบตเตอรี่ก่อนชาร์จ</p>
-                    <div className="relative flex items-center justify-center">
-                      <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)}
-                        placeholder="0" min="0" max="100"
-                        className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
-                      <span className="absolute right-5 text-[20px] font-bold text-[#aeaeb2]">%</span>
+                {!staffName ? (
+                  <>
+                    <input type="text" value={employeeId}
+                      onChange={e => { setEmployeeId(e.target.value); setStaffError(false); }}
+                      onBlur={checkStaff} 
+                      onKeyDown={e => e.key === 'Enter' && checkStaff()}
+                      placeholder="กรอกรหัสพนักงาน แล้วกด Enter"
+                      className={`w-full px-4 py-3.5 rounded-[14px] text-[17px] font-medium outline-none transition-all ${
+                        staffError ? 'bg-[#fff2f0] border-[1.5px] border-[#ff3b30] text-[#d70015]'
+                        : 'bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
+                      }`}/>
+                    {staffError && (
+                      <div className="flex items-center gap-2 mt-3 bg-[#fff2f0] px-3 py-2.5 rounded-[12px]">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#ff3b30"/><path d="M6 6l6 6M12 6l-6 6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                        <span className="text-[13px] font-medium text-[#d70015]">ไม่พบรหัสพนักงานนี้</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center gap-3 bg-[#edfbf0] px-4 py-3 rounded-[14px] animate-fadeDown">
+                    <div className="w-10 h-10 rounded-full bg-[#34c759]/20 flex items-center justify-center text-[20px]">
+                      👨‍🔧
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-bold text-[#1a7f37]">{staffName}</p>
+                      <p className="text-[12px] text-[#248a3d]">{staffPosition}</p>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {/* สถานี */}
-                  <div className="bg-white rounded-[20px] overflow-hidden"
+              {/* ================================== */}
+              {/* 🟢 STEP 2: เลขไมล์ และ รายละเอียดงาน (จะโชว์ก็ต่อเมื่อมี staffName แล้ว) */}
+              {/* ================================== */}
+              {!staffName ? (
+                 <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                    <span className="text-[40px] mb-2 drop-shadow-sm">🔒</span>
+                    <p className="text-[14px] font-medium text-[#6e6e73]">กรุณาระบุรหัสพนักงานเพื่อทำรายการต่อ</p>
+                 </div>
+              ) : (
+                <div className="space-y-3 animate-fadeDown">
+                  {/* เลขไมล์ */}
+                  <div className="bg-white rounded-[20px] px-5 py-4"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                    <div className="px-5 pt-4 pb-3">
-                      <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">ประเภทสถานีชาร์จ</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {['PEA','OTHER'].map(t => (
-                          <button key={t} onClick={() => { setStationType(t); setSubStationType(''); setStationName(''); }}
-                            className={`py-3.5 rounded-[14px] text-[13px] font-semibold transition-all active:scale-[0.97] ${
-                              stationType === t ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
-                            }`}>
-                            {t === 'PEA' ? '⚡ PEA Volta' : '🔌 แบรนด์อื่น'}
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">
+                        {isEV ? '2. เลขไมล์ล่าสุด' : '2. เลขไมล์เริ่มต้น'}
+                      </p>
+                      {isMileageLocked && (
+                        <span className="text-[11px] font-medium text-[#0071e3] flex items-center gap-1 bg-[#edf6ff] px-2 py-0.5 rounded-full">
+                          🔒 ต่อเนื่อง
+                        </span>
+                      )}
+                    </div>
+                    <input type="number" value={mileage} readOnly={isMileageLocked}
+                      onChange={e => setMileage(e.target.value)}
+                      placeholder="000000"
+                      className={`w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider outline-none transition-all text-center ${
+                        isMileageLocked
+                          ? 'bg-[#f5f5f7] text-[#aeaeb2] cursor-not-allowed border-[1.5px] border-transparent'
+                          : 'bg-[#f5f5f7] text-[#1d1d1f] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
+                      }`}/>
+                  </div>
+
+                  {isEV ? (
+                    <>
+                      {/* %แบต */}
+                      <div className="bg-white rounded-[20px] px-5 py-4"
+                           style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                        <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">3. แบตเตอรี่ก่อนชาร์จ</p>
+                        <div className="relative flex items-center justify-center">
+                          <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)}
+                            placeholder="0" min="0" max="100"
+                            className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                          <span className="absolute right-5 text-[20px] font-bold text-[#aeaeb2]">%</span>
+                        </div>
+                      </div>
+
+                      {/* สถานี */}
+                      <div className="bg-white rounded-[20px] overflow-hidden"
+                           style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                        <div className="px-5 pt-4 pb-3">
+                          <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">4. ประเภทสถานีชาร์จ</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {['PEA','OTHER'].map(t => (
+                              <button key={t} onClick={() => { setStationType(t); setSubStationType(''); setStationName(''); }}
+                                className={`py-3.5 rounded-[14px] text-[13px] font-semibold transition-all active:scale-[0.97] ${
+                                  stationType === t ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
+                                }`}>
+                                {t === 'PEA' ? '⚡ PEA Volta' : '🔌 แบรนด์อื่น'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt) => (
+                          <button key={opt.id} onClick={() => { setSubStationType(opt.id); setStationName(''); }}
+                            className={`w-full flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors ${
+                              subStationType === opt.id ? 'bg-[#f0f9ff] text-[#0071e3]' : 'text-[#1d1d1f]'
+                            }`}
+                            style={{borderTop:'0.5px solid rgba(60,60,67,0.08)'}}>
+                            {opt.label}
+                            {subStationType === opt.id && (
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#0071e3"/><path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            )}
                           </button>
                         ))}
                       </div>
-                    </div>
-                    {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt, i, arr) => (
-                      <button key={opt.id} onClick={() => { setSubStationType(opt.id); setStationName(''); }}
-                        className={`w-full flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors ${
-                          subStationType === opt.id ? 'bg-[#f0f9ff] text-[#0071e3]' : 'text-[#1d1d1f]'
-                        }`}
-                        style={{borderTop:'0.5px solid rgba(60,60,67,0.08)'}}>
-                        {opt.label}
-                        {subStationType === opt.id && (
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#0071e3"/><path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
 
-                  {(() => {
-                    const sel = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
-                    if (!sel || sel.inputType === 'none') return null;
-                    return (
-                      <div className="bg-white rounded-[20px] px-5 py-4"
-                           style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                        <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">รายละเอียด</p>
-                        {sel.inputType === 'text' ? (
-                          <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..."
-                            className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
-                        ) : (
-                          <select value={stationName} onChange={e => setStationName(e.target.value)}
-                            className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent">
-                            <option value="" disabled>-- กรุณาเลือก --</option>
-                            {(sel.inputType === 'dropdown_kfk' ? kfkList : otherBrandList).map(k => <option key={k} value={k}>{k}</option>)}
-                          </select>
-                        )}
+                      {(() => {
+                        const sel = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
+                        if (!sel || sel.inputType === 'none') return null;
+                        return (
+                          <div className="bg-white rounded-[20px] px-5 py-4"
+                               style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                            <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">รายละเอียด</p>
+                            {sel.inputType === 'text' ? (
+                              <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..."
+                                className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                            ) : (
+                              <select value={stationName} onChange={e => setStationName(e.target.value)}
+                                className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent">
+                                <option value="" disabled>-- กรุณาเลือก --</option>
+                                {(sel.inputType === 'dropdown_kfk' ? kfkList : otherBrandList).map(k => <option key={k} value={k}>{k}</option>)}
+                              </select>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    /* สถานที่ (รูปแบบ Modern App UI) */
+                    <div className="bg-white rounded-[20px] overflow-hidden"
+                         style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                      <div className="px-5 pt-4 pb-3 border-b border-[rgba(0,0,0,0.05)]">
+                        <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">3. รายละเอียดการปฏิบัติงาน</p>
                       </div>
-                    );
-                  })()}
-                </>
-              ) : (
-                /* สถานที่ */
-                <div className="bg-white rounded-[20px] overflow-hidden"
-                     style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                  <div className="px-5 pt-4 pb-0">
-                    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-1">สถานที่ปฏิบัติงาน</p>
-                  </div>
-                  {[
-                    {v:'พื้นที่อำเภอกำแพงแสน', l:'พื้นที่อำเภอกำแพงแสน', icon:'📍'},
-                    {v:'คลังพัสดุนครชัยศรี',    l:'คลังพัสดุนครชัยศรี', icon:'🏭'},
-                    {v:'สำนักงานกฟก.3',         l:'สำนักงาน กฟก.3', icon:'🏢'},
-                    {v:'อื่นๆ',                  l:'อื่นๆ', icon:'📌'},
-                  ].map((item, i) => (
-                    <button key={item.v} onClick={() => setSelectedLocation(item.v)}
-                      className={`w-full flex items-center gap-3 px-5 py-4 text-[15px] font-medium transition-colors ${
-                        selectedLocation === item.v ? 'bg-[#f0f9ff] text-[#0071e3]' : 'text-[#1d1d1f]'
-                      }`}
-                      style={{borderTop:'0.5px solid rgba(60,60,67,0.08)'}}>
-                      <span>{item.icon}</span>
-                      <span className="flex-1 text-left">{item.l}</span>
-                      {selectedLocation === item.v && (
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#0071e3"/><path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      )}
-                    </button>
-                  ))}
-                  {selectedLocation === 'อื่นๆ' && (
-                    <div className="px-5 pb-4 pt-1">
-                      <input type="text" value={customLocation} onChange={e => setCustomLocation(e.target.value)}
-                        placeholder="ระบุสถานที่..."
-                        className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                      
+                      <div className="px-5 py-4 space-y-5">
+                        
+                        {/* แผนก */}
+                        <div>
+                          <p className="text-[13px] font-medium text-[#1d1d1f] mb-2.5">แผนก</p>
+                          <div className={`w-full px-4 py-3.5 rounded-[14px] border-[1.5px] flex items-center justify-between transition-colors ${
+                            selectedDept ? 'bg-[#edfbf0] border-[#34c759]' : 'bg-[#f5f5f7] border-transparent'
+                          }`}>
+                            <span className={`text-[15px] ${selectedDept ? 'text-[#1a7f37] font-semibold' : 'text-[#aeaeb2] font-medium'}`}>
+                              {selectedDept || 'กรุณากรอกรหัสพนักงาน...'}
+                            </span>
+                            {selectedDept && (
+                              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#34c759"/><path d="M5 9l3 3 5-5.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* เลือกงาน */}
+                        <div className={`transition-opacity ${!selectedDept ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                          <p className="text-[13px] font-medium text-[#1d1d1f] mb-2.5">ประเภทงาน</p>
+                          <button onClick={() => openSelectModal('task')}
+                            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-[14px] text-[15px] outline-none border-[1.5px] transition-all ${
+                              selectedTask ? 'bg-[#f0f9ff] border-[#0071e3] text-[#0071e3]' : 'bg-[#f5f5f7] border-transparent text-[#6e6e73]'
+                            }`}>
+                            <span className="truncate">{selectedTask || '-- แตะเพื่อเลือกงาน --'}</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                          </button>
+                          {selectedTask === 'อื่นๆ' && (
+                            <div className="mt-2 animate-fadeIn">
+                              <input type="text" value={customTask} onChange={e => setCustomTask(e.target.value)}
+                                placeholder="✍️ ระบุประเภทงาน..." autoFocus
+                                className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* เลือกพื้นที่ */}
+                        <div className="pt-3 border-t border-[rgba(0,0,0,0.05)]">
+                          <p className="text-[13px] font-medium text-[#1d1d1f] mb-2.5">พื้นที่ปฏิบัติงาน</p>
+                          <button onClick={() => openSelectModal('area')}
+                            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-[14px] text-[15px] outline-none border-[1.5px] transition-all ${
+                              selectedArea ? 'bg-[#f0f9ff] border-[#0071e3] text-[#0071e3]' : 'bg-[#f5f5f7] border-transparent text-[#6e6e73]'
+                            }`}>
+                            <span className="truncate">{selectedArea || '-- แตะเพื่อเลือกพื้นที่ --'}</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                          </button>
+                          {selectedArea === 'อื่นๆ' && (
+                            <div className="mt-2 animate-fadeIn">
+                              <input type="text" value={customArea} onChange={e => setCustomArea(e.target.value)}
+                                placeholder="📍 ระบุสถานที่..." autoFocus
+                                className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
+
+                  {/* 🟢 ปุ่มยืนยัน */}
+                  <button onClick={handleTakeOut} disabled={loading}
+                    className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
+                      loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed' : 'text-white'
+                    }`}
+                    style={!loading ? {
+                      background:'linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%)',
+                      boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
+                    } : {}}>
+                    {loading ? 'กำลังบันทึก...' : (isEV ? '⚡ ยืนยันเริ่มชาร์จ' : 'ยืนยันนำรถออก')}
+                  </button>
                 </div>
               )}
-
-              <button onClick={handleTakeOut} disabled={loading}
-                className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
-                  loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed' : 'text-white'
-                }`}
-                style={!loading ? {
-                  background:'linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%)',
-                  boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
-                } : {}}>
-                {loading ? 'กำลังบันทึก...' : (isEV ? '⚡  ยืนยันเริ่มชาร์จ' : 'ยืนยันนำรถออก  →')}
-              </button>
             </>
           ) : (
             <>
-              {/* ข้อมูลผู้ใช้รถ */}
+              {/* ข้อมูลผู้ใช้รถ (ใช้สำหรับตอนคืนรถ เหมือนเดิม) */}
               <div className="bg-white rounded-[20px] px-5 py-4 flex items-center gap-4"
                    style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                 <div className="w-11 h-11 rounded-full bg-[#fff2f0] flex items-center justify-center flex-shrink-0">
@@ -1905,6 +1965,57 @@ function CarActionForm({ carId }) {
           )}
         </div>
       </div>
+
+      {/* ── Modal แบบ List เลือกอย่างเดียว (ไม่มีช่อง Search) ── */}
+      {selectModal.isOpen && (
+        <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/40"
+               style={{backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)'}}
+               onClick={() => setSelectModal({ ...selectModal, isOpen: false })}/>
+          
+          <div className="relative w-full max-w-[440px] bg-[#f2f2f7] rounded-t-[24px] sm:rounded-[24px] z-10 max-h-[75vh] flex flex-col overflow-hidden animate-slideUp"
+               style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 bg-white border-b border-[rgba(0,0,0,0.05)] z-10">
+              <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">{selectModal.title}</span>
+              <button onClick={() => setSelectModal({ ...selectModal, isOpen: false })}
+                className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3c3c43] font-bold active:bg-[#d1d1d6]">
+                ✕
+              </button>
+            </div>
+
+            {/* List ตัวเลือก (Scroll ได้ถ้าข้อมูลเยอะ) */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {selectModal.options.map((opt) => {
+                  const isSelected = (selectModal.type === 'task' ? selectedTask : selectedArea) === opt;
+                  const isOther = opt === 'อื่นๆ' || opt === 'งานอื่นๆ';
+                  
+                  return (
+                    <button key={opt}
+                      onClick={() => {
+                        if (selectModal.type === 'task') { setSelectedTask(opt); setCustomTask(''); }
+                        else { setSelectedArea(opt); setCustomArea(''); }
+                        setSelectModal({ ...selectModal, isOpen: false });
+                      }}
+                      className={`w-full flex items-center justify-between px-5 py-4 rounded-[14px] bg-white text-left transition-all active:scale-[0.98] ${
+                        isSelected ? 'border-[1.5px] border-[#0071e3] shadow-[0_2px_8px_rgba(0,113,227,0.12)]' : 'border-[1.5px] border-transparent shadow-sm'
+                      }`}>
+                      <div className="flex items-center gap-3">
+                        {isOther && <span className="text-[18px]">✏️</span>}
+                        <span className={`text-[15px] ${isSelected ? 'text-[#0071e3] font-semibold' : isOther ? 'text-[#ff9f0a] font-medium' : 'text-[#1d1d1f]'}`}>
+                          {opt}
+                        </span>
+                      </div>
+                      {isSelected && <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#0071e3"/><path d="M7 12l3 3 7-7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </button>
+                  )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
