@@ -93,6 +93,7 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
     if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
     if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
+    if (type.startsWith('TEST_CAR')) return '/scooter.png'
     return null 
   }
 
@@ -289,13 +290,13 @@ function CarSelector() {
                   <div>
                     <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การนำรถออก</p>
                     <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → รหัสประจำตัว → เลขไมล์เริ่มต้น → สถานที่ → <span className="font-semibold text-[#1d1d1f]">ยืนยันนำรถออก</span>
+                      สแกน QR Code → กรอกรหัสพนักงาน → เลขไมล์เริ่มต้น → เลือกแผนก/ประเภทงาน/พื้นที่ → <span className="font-semibold text-[#1d1d1f]">ยืนยันนำรถออก</span>
                     </p>
                   </div>
                   <div className="border-t border-[#f2f2f7] pt-3.5">
                     <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การคืนรถ</p>
                     <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → เลขไมล์ล่าสุด → ข้อมูลเติมน้ำมัน → <span className="font-semibold text-[#1d1d1f]">ยืนยันคืนรถ</span>
+                      สแกน QR Code → เลขไมล์ล่าสุด (จบงาน) → เลือกว่ามีการเติมน้ำมันหรือไม่ (ระบุลิตร/บาท) → <span className="font-semibold text-[#1d1d1f]">ยืนยันคืนรถ</span>
                     </p>
                   </div>
                 </div>
@@ -311,13 +312,13 @@ function CarSelector() {
                   <div>
                     <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การเริ่มชาร์จ</p>
                     <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → รหัสประจำตัว → เลขไมล์ → %แบตก่อนชาร์จ → สถานี → <span className="font-semibold text-[#1d1d1f]">ยืนยันเริ่มชาร์จ</span>
+                      สแกน QR Code → กรอกรหัสพนักงาน → เลขไมล์ → ระบุ %แบตก่อนชาร์จ → เลือกสถานีชาร์จ → <span className="font-semibold text-[#1d1d1f]">ยืนยันเริ่มชาร์จ</span>
                     </p>
                   </div>
                   <div className="border-t border-[#f2f2f7] pt-3.5">
-                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การเลิกชาร์จ</p>
+                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การเลิกชาร์จ (นำที่ชาร์จออก)</p>
                     <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → %แบตเตอรี่ล่าสุด → <span className="font-semibold text-[#1d1d1f]">ยืนยันเลิกชาร์จ</span>
+                      สแกน QR Code → ระบุ %แบตเตอรี่ล่าสุด (หลังชาร์จ) → <span className="font-semibold text-[#1d1d1f]">ยืนยันเลิกชาร์จ</span>
                     </p>
                   </div>
                 </div>
@@ -1177,6 +1178,9 @@ function CarActionForm({ carId }) {
     if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
     if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
+    if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
+    if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
+    if (type.startsWith('TEST_CAR')) return '/scooter.png'
     return null
   }
 
