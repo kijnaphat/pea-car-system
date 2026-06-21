@@ -160,29 +160,46 @@ export default function AdminDashboard() {
     setIsSubmitting(true)
     const { table, newData } = updateModal
     try {
-      const { error } = await supabase.from(table).update(newData).eq('id', editingId)
+      // 🔧 อัปเดต: เติม .select() เพื่อดักจับ Silent Failure
+      const { data, error } = await supabase.from(table).update(newData).eq('id', editingId).select()
+      
       if (error) throw error; 
+      if (!data || data.length === 0) throw new Error('บันทึกไม่สำเร็จ (อาจติดสิทธิ์ RLS หรือหาข้อมูลไม่พบ)');
+
       alert('✅ แก้ไขข้อมูลสำเร็จ')
       setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })
       cancelEdit(); fetchData(); if(table === 'departments') fetchDepartmentsOptions()
-    } catch (error) { alert('❌ เกิดข้อผิดพลาด: ' + error.message) } finally { setIsSubmitting(false) }
+    } catch (error) { 
+      alert('❌ เกิดข้อผิดพลาด: ' + error.message) 
+    } finally { 
+      setIsSubmitting(false) 
+    }
   }
 
   // ================= 🗑️ ฟังก์ชันลบข้อมูล =================
-  const confirmDelete = (table, data) => {
-    setDeleteModal({ isOpen: true, table, data })
+  const confirmDelete = (table, itemData) => {
+    // เปลี่ยนชื่อตัวแปรกันงงเวลาส่งเข้า state
+    setDeleteModal({ isOpen: true, table, data: itemData })
   }
 
   const executeDelete = async () => {
     setIsSubmitting(true)
-    const { table, data } = deleteModal
+    const { table, data: itemToDelete } = deleteModal
     try {
-      const { error } = await supabase.from(table).delete().eq('id', data.id)
+      // 🔧 อัปเดต: เติม .select() เพื่อดักจับ Silent Failure ตอนลบ
+      const { data, error } = await supabase.from(table).delete().eq('id', itemToDelete.id).select()
+      
       if (error) throw error; 
+      if (!data || data.length === 0) throw new Error('ลบข้อมูลไม่สำเร็จ (อาจติดสิทธิ์ RLS หรือไม่มีข้อมูลนี้อยู่)');
+
       alert('🗑️ ลบข้อมูลสำเร็จ')
       setDeleteModal({ isOpen: false, table: '', data: null })
       fetchData(); if(table === 'departments') fetchDepartmentsOptions()
-    } catch (error) { alert('❌ ลบข้อมูลไม่สำเร็จ (อาจมีการอ้างอิงข้อมูลนี้อยู่): ' + error.message) } finally { setIsSubmitting(false) }
+    } catch (error) { 
+      alert('❌ ลบข้อมูลไม่สำเร็จ: ' + error.message) 
+    } finally { 
+      setIsSubmitting(false) 
+    }
   }
 
 
