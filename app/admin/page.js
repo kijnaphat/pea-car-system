@@ -8,12 +8,11 @@ const initialStaffData = { staff_code: '', full_name: '', position: '', departme
 const initialTaskData = { name: '', department_id: '' }
 const initialDepartmentData = { name: '' }
 
-// ชื่อฟิลด์ภาษาไทยสำหรับแสดงในหน้าต่างเปรียบเทียบ
 const fieldLabels = {
-  plate_number: 'ทะเบียนรถ', model: 'ยี่ห้อ/รุ่น', car_type: 'ประเภทรถ', fuel_type: 'ชนิดพลังงาน', 
-  budget: 'งบประมาณ', department: 'สังกัด(ข้อความ)', usage_type: 'การใช้งาน', ownership_type: 'กรรมสิทธิ์',
-  staff_code: 'รหัสพนักงาน', full_name: 'ชื่อ-นามสกุล', position: 'ตำแหน่ง', department_id: 'ID แผนก',
-  name: 'ชื่อ/รายละเอียด'
+  plate_number: 'ป้ายทะเบียน', model: 'ยี่ห้อ/รุ่น', car_type: 'ประเภทรถ', fuel_type: 'กินน้ำมัน/ไฟฟ้า', 
+  budget: 'งบจัดหา', department: 'สังกัด(เขียนเอา)', usage_type: 'เอาไปทำไร', ownership_type: 'รถใคร?',
+  staff_code: 'รหัสลับ', full_name: 'ชื่อ-สกุล', position: 'ตำแหน่ง/ทรง', department_id: 'รหัสซุ้ม',
+  name: 'ชื่อลายแทง'
 }
 
 export default function AdminDashboard() {
@@ -36,11 +35,9 @@ export default function AdminDashboard() {
   const [departmentsList, setDepartmentsList] = useState([])
   const [departmentsOptions, setDepartmentsOptions] = useState([])
 
-  // ================= State สำหรับ Modal ยืนยัน =================
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, table: '', data: null })
   const [updateModal, setUpdateModal] = useState({ isOpen: false, table: '', oldData: null, newData: null })
 
-  // 1. ตรวจสอบ Session 
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -78,8 +75,10 @@ export default function AdminDashboard() {
   }, [activeMenu, loadingSession, fetchData])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
+    if(confirm('หนีงานป่าวเนี่ย? จะชิ่งหรอถามจริง! 🤨')) {
+        await supabase.auth.signOut()
+        router.push('/admin/login')
+    }
   }
 
   const cancelEdit = () => {
@@ -88,17 +87,10 @@ export default function AdminDashboard() {
     setTaskData(initialTaskData); setDepartmentData(initialDepartmentData)
   }
 
-  // ================= 🛠️ 1. เตรียมข้อมูลลงฟอร์ม (ลบข้อมูล Join ออก "ทุกตาราง" อัตโนมัติ) =================
   const handleEdit = (type, data) => {
     setEditingId(data.id)
-    
-    // 🛡️ ป้องกันแบบ Dynamic: คัดกรองเอาเฉพาะข้อมูลพื้นฐาน (Primitive Types) ตัดข้อมูลที่เป็น Object/Array ทิ้งทั้งหมด
-    const cleanData = {}
-    Object.keys(data).forEach(key => {
-      if (typeof data[key] !== 'object' || data[key] === null) {
-        cleanData[key] = data[key]
-      }
-    })
+    const cleanData = { ...data }
+    delete cleanData.departments 
 
     if (type === 'cars') setCarData(cleanData)
     if (type === 'staff') setStaffData({ ...cleanData, department_id: cleanData.department_id || '' })
@@ -108,319 +100,356 @@ export default function AdminDashboard() {
     document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })
   }
 
-  // ================= 🛠️ 2. ตรวจสอบก่อนบันทึก (เปิด Modal และเคลียร์ข้อมูลขยะ) =================
   const handlePreSubmit = (e, table, currentFormState) => {
     e.preventDefault()
-    
-    // 🛡️ กรองข้อมูลฟอร์มก่อนนำไปเปรียบเทียบหรืออัปเดต ไม่ส่ง id หรือ created_at กลับไปอัปเดตทับ
     const payload = { ...currentFormState }
-    delete payload.id
-    delete payload.created_at
+    delete payload.id; delete payload.created_at; delete payload.departments 
 
     if (payload.department_id !== undefined) {
       payload.department_id = payload.department_id ? parseInt(payload.department_id) : null
     }
 
     if (editingId) {
-      // ดึงข้อมูลเก่ามาเปรียบเทียบ
       let oldData = null;
       if (table === 'cars') oldData = carsList.find(item => item.id === editingId)
       if (table === 'staff') oldData = staffList.find(item => item.id === editingId)
       if (table === 'tasks') oldData = tasksList.find(item => item.id === editingId)
       if (table === 'departments') oldData = departmentsList.find(item => item.id === editingId)
       
-      // 🛡️ กรองข้อมูลเก่าแบบ Dynamic เพื่อลบพวก Object ที่ไป Join เผื่อมาทิ้งให้หมดเช่นกัน
-      const cleanOldData = {}
-      if (oldData) {
-        Object.keys(oldData).forEach(key => {
-          if (typeof oldData[key] !== 'object' || oldData[key] === null) {
-            cleanOldData[key] = oldData[key]
-          }
-        })
-      }
-      
+      const cleanOldData = { ...oldData }; delete cleanOldData.departments 
       setUpdateModal({ isOpen: true, table, oldData: cleanOldData, newData: payload })
     } else {
       executeInsert(table, payload)
     }
   }
 
-  // ================= 💾 ฟังก์ชันบันทึกข้อมูล =================
   const executeInsert = async (table, payload) => {
     setIsSubmitting(true)
     try {
       const { error } = await supabase.from(table).insert([payload])
       if (error) throw error; 
-      alert('✅ เพิ่มข้อมูลสำเร็จ')
+      alert('🚀 บรื้นนน! ยัดข้อมูลลงฐานสำเร็จแบบเบรกแตก!')
       cancelEdit(); fetchData(); if(table === 'departments') fetchDepartmentsOptions()
-    } catch (error) { alert('❌ เกิดข้อผิดพลาด: ' + error.message) } finally { setIsSubmitting(false) }
+    } catch (error) { alert('💥 แหกโค้งจ้า! พังเฉย: ' + error.message) } finally { setIsSubmitting(false) }
   }
 
   const executeUpdate = async () => {
     setIsSubmitting(true)
     const { table, newData } = updateModal
     try {
-      // 🔧 อัปเดต: เติม .select() เพื่อดักจับ Silent Failure
       const { data, error } = await supabase.from(table).update(newData).eq('id', editingId).select()
-      
       if (error) throw error; 
-      if (!data || data.length === 0) throw new Error('บันทึกไม่สำเร็จ (อาจติดสิทธิ์ RLS หรือหาข้อมูลไม่พบ)');
-
-      alert('✅ แก้ไขข้อมูลสำเร็จ')
+      if (!data || data.length === 0) throw new Error('หาตัวไม่เจอ หนีไปไหนแล้ว?');
+      alert('🔧 จูนกล่องดันรางเรียบร้อย แรงทะลุไมล์!')
       setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })
       cancelEdit(); fetchData(); if(table === 'departments') fetchDepartmentsOptions()
-    } catch (error) { 
-      alert('❌ เกิดข้อผิดพลาด: ' + error.message) 
-    } finally { 
-      setIsSubmitting(false) 
-    }
+    } catch (error) { alert('😭 น็อตหวาน! จูนไม่เข้า: ' + error.message) } finally { setIsSubmitting(false) }
   }
 
-  // ================= 🗑️ ฟังก์ชันลบข้อมูล =================
-  const confirmDelete = (table, itemData) => {
-    // เปลี่ยนชื่อตัวแปรกันงงเวลาส่งเข้า state
-    setDeleteModal({ isOpen: true, table, data: itemData })
-  }
+  const confirmDelete = (table, itemData) => setDeleteModal({ isOpen: true, table, data: itemData })
 
   const executeDelete = async () => {
     setIsSubmitting(true)
     const { table, data: itemToDelete } = deleteModal
     try {
-      // 🔧 อัปเดต: เติม .select() เพื่อดักจับ Silent Failure ตอนลบ
       const { data, error } = await supabase.from(table).delete().eq('id', itemToDelete.id).select()
-      
       if (error) throw error; 
-      if (!data || data.length === 0) throw new Error('ลบข้อมูลไม่สำเร็จ (อาจติดสิทธิ์ RLS หรือไม่มีข้อมูลนี้อยู่)');
-
-      alert('🗑️ ลบข้อมูลสำเร็จ')
+      if (!data || data.length === 0) throw new Error('ลบไม่ได้เฉย ผีหลอก!');
+      alert('🗑️ ตุยเย่! ข้อมูลปลิวไปคุยกับรากมะม่วงแล้วจ้า 🥭')
       setDeleteModal({ isOpen: false, table: '', data: null })
       fetchData(); if(table === 'departments') fetchDepartmentsOptions()
-    } catch (error) { 
-      alert('❌ ลบข้อมูลไม่สำเร็จ: ' + error.message) 
-    } finally { 
-      setIsSubmitting(false) 
-    }
+    } catch (error) { alert('💢 เหนียวเกิ๊น! ลบไม่ออกโว้ย: ' + error.message) } finally { setIsSubmitting(false) }
   }
 
-
   if (loadingSession) return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen bg-[#088cb3] flex items-center justify-center relative overflow-hidden">
+      <div className="text-center z-10 active:scale-90 transition-transform cursor-pointer hover-engine-shake">
+        <img src="/scooter.png" alt="Loading Scooter" className="w-64 mx-auto mb-4 animate-super-float drop-shadow-[0_20px_30px_rgba(0,0,0,0.3)]" />
+        <p className="text-2xl font-black text-white animate-pulse tracking-widest uppercase mt-8">รอแป๊บนะวัยรุ่น เครื่องมันเย็น...</p>
+      </div>
     </div>
   )
 
+  // เปลี่ยนชื่อกลับเป็นแบบเดิม แต่ใส่ desc แบบกวนๆ
   const sidebarMenus = [
-    { id: 'cars', icon: '🚗', title: 'จัดการรถยนต์', desc: 'ข้อมูลรถทั้งหมด' },
-    { id: 'staff', icon: '👥', title: 'พนักงาน', desc: 'รายชื่อผู้ขับขี่/พนักงาน' },
-    { id: 'tasks', icon: '📋', title: 'ตารางงาน', desc: 'การใช้งานรถยนต์' },
-    { id: 'departments', icon: '🏢', title: 'แผนก', desc: 'จัดการสังกัด' },
+    { id: 'cars', icon: '🛵', title: '1. จัดการรถยนต์', desc: 'รถแต่งซิ่งหรือวิ่งทิพย์' },
+    { id: 'staff', icon: '😎', title: '2. พนักงาน', desc: 'รวมพลคนตึงๆ ทั้งนั้น' },
+    { id: 'tasks', icon: '🗺️', title: '3. ตารางงาน', desc: 'จะแว้นไปไหนต่อไหนว่ามา' },
+    { id: 'departments', icon: '🏢', title: '4. แผนก', desc: 'อยู่ซุ้มไหน ซอยไหน' },
   ]
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
-  const inputStyle = "w-full p-3.5 bg-slate-50 text-slate-800 rounded-xl border border-slate-200 outline-none focus:border-[#742F99] focus:ring-4 focus:ring-[#742F99]/10 transition-all text-sm font-medium"
-  const labelStyle = "text-xs font-bold text-slate-500 mb-1.5 block uppercase tracking-wider"
+  
+  const inputStyle = "w-full rounded-full border-2 border-gray-100 px-5 py-3.5 text-sm font-bold text-gray-700 focus:outline-none focus:border-[#a42f56] focus:ring-4 focus:ring-[#a42f56]/20 transition-all placeholder-gray-300 bg-gray-50/50 shadow-inner focus:scale-[1.02] focus:bg-white"
+  const labelStyle = "text-[12px] font-black text-gray-500 mb-1.5 block uppercase tracking-wider ml-3"
 
   return (
-    <div className="flex h-screen bg-[#F1F5F9] font-sarabun overflow-hidden relative">
+    <div className="flex h-screen bg-[#F1F6F9] font-sans overflow-hidden relative">
       
-      {/* 🔴 Modal: ยืนยันการลบข้อมูล */}
+      {/* 🏍️ GIANT Floating Motorbikes in Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <img src="/scooter.png" alt="bg-scooter" className="absolute top-[-10%] left-[-15%] w-[45rem] opacity-[0.04] animate-super-float blur-[2px]" />
+        <img src="/scooter.png" alt="bg-scooter" className="absolute top-[30%] right-[-10%] w-[55rem] opacity-[0.03] animate-super-float-slow rotate-[15deg] blur-[1px]" />
+        <img src="/scooter.png" alt="bg-scooter" className="absolute bottom-[-20%] left-[20%] w-[40rem] opacity-[0.05] animate-super-float-fast -rotate-[10deg]" />
+      </div>
+
+      <style>{`
+        @keyframes superFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(5deg); } }
+        @keyframes superFloatSlow { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-40px) rotate(-5deg); } }
+        @keyframes superFloatFast { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(8deg); } }
+        .animate-super-float { animation: superFloat 6s ease-in-out infinite; }
+        .animate-super-float-slow { animation: superFloatSlow 8s ease-in-out infinite; }
+        .animate-super-float-fast { animation: superFloatFast 4s ease-in-out infinite; }
+        
+        @keyframes engineShake { 
+          0%, 100% { transform: translateX(0) rotate(0deg) scale(1); } 
+          25% { transform: translateX(-5px) rotate(-4deg) scale(1.05); } 
+          75% { transform: translateX(5px) rotate(4deg) scale(1.05); } 
+        }
+        .hover-engine-shake:hover { animation: engineShake 0.15s ease-in-out; cursor: pointer; }
+      `}</style>
+      
+      {/* 🔴 Delete Modal: กวนโสตประสาท */}
       {deleteModal.isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl scale-100 transition-transform">
-            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">⚠️</div>
-            <h3 className="text-xl font-black text-center text-slate-800 mb-2">ยืนยันการลบข้อมูล?</h3>
-            <p className="text-center text-slate-500 text-sm mb-6">คุณกำลังจะลบข้อมูลนี้ การกระทำนี้ไม่สามารถกู้คืนได้</p>
+        <div className="fixed inset-0 bg-[#088cb3]/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[3rem] p-8 w-full max-w-md shadow-[0_30px_60px_rgba(0,0,0,0.4)] text-center transform transition-all active:scale-90 duration-200 border-8 border-red-500 relative overflow-hidden">
+            <img src="/scooter.png" alt="Crash" className="absolute -top-10 -right-10 w-48 opacity-20 rotate-[130deg]" />
+            <div className="mb-2 flex justify-center hover-engine-shake relative z-10">
+                <img src="/scooter.png" alt="Crash" className="w-36 drop-shadow-2xl rotate-[160deg]" />
+            </div>
+            <h3 className="text-3xl font-black text-gray-900 mb-2 relative z-10">เอาจริงดิ? ลบหรอ!?</h3>
+            <p className="text-gray-500 text-sm mb-6 relative z-10">ใจคอทำด้วยไรเนี่ย ลบแล้วกู้คืนไม่ได้นะโว้ยยยย!</p>
             
-            <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl mb-6 text-sm text-center">
-              <p className="font-bold text-slate-700">
+            <div className="bg-red-50 text-[#a42f56] p-5 rounded-3xl mb-8 border-4 border-dashed border-red-200 font-black shadow-inner relative z-10">
+              <p className="text-xl break-words">
                 {deleteModal.data.plate_number || deleteModal.data.full_name || deleteModal.data.name}
               </p>
-              <p className="text-xs text-slate-400 mt-1">ID: {deleteModal.data.id}</p>
             </div>
 
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteModal({ isOpen: false, table: '', data: null })} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ยกเลิก</button>
-              <button onClick={executeDelete} disabled={isSubmitting} className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-500/30">
-                {isSubmitting ? 'กำลังลบ...' : 'ลบข้อมูล'}
+            <div className="flex gap-4 relative z-10">
+              <button onClick={() => setDeleteModal({ isOpen: false, table: '', data: null })} className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full font-bold transition-all active:scale-75 active:rotate-[-5deg]">มือลั่น โทษที!</button>
+              <button onClick={executeDelete} disabled={isSubmitting} className="flex-1 py-4 bg-[#a42f56] hover:bg-[#8b2749] text-white rounded-full font-black transition-all shadow-xl shadow-[#a42f56]/40 active:scale-75 active:rotate-[5deg] hover-engine-shake">
+                {isSubmitting ? 'กำลังส่งลงหลุม...' : 'เออ! บดมันทิ้งเลย!'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🟡 Modal: ยืนยันการแก้ไขข้อมูล (เปรียบเทียบ) */}
+      {/* 🟡 Update Modal: เช็กอะไหล่กวนๆ */}
       {updateModal.isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-xl">📝</div>
-              <h3 className="text-xl font-black text-slate-800">ยืนยันการเปลี่ยนแปลงข้อมูล</h3>
+        <div className="fixed inset-0 bg-[#088cb3]/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[3rem] p-8 w-full max-w-2xl shadow-[0_30px_60px_rgba(0,0,0,0.4)] max-h-[90vh] flex flex-col relative overflow-hidden border-8 border-yellow-400">
+            <img src="/scooter.png" alt="Bg Scooter" className="absolute -bottom-20 -left-20 w-80 opacity-10 rotate-12 pointer-events-none" />
+
+            <div className="flex items-center gap-6 mb-6 border-b-4 border-gray-100 pb-6 relative z-10">
+              <img src="/scooter.png" alt="Fix" className="w-28 animate-super-float drop-shadow-xl hover-engine-shake" />
+              <div>
+                <h3 className="text-3xl font-black text-gray-900">🔍 ส่องดูดิ๊ แก้ไรไปบ้าง!</h3>
+                <p className="text-gray-500 text-base font-bold mt-1">ประกอบผิดเดี๋ยวล้อหลุดกลางทางนะเว้ย</p>
+              </div>
             </div>
-            <p className="text-slate-500 text-sm mb-4">โปรดตรวจสอบข้อมูลที่มีการแก้ไขก่อนกดยืนยัน</p>
             
-            <div className="overflow-y-auto flex-1 bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3 mb-6">
+            <div className="overflow-y-auto flex-1 bg-gray-50 rounded-3xl p-5 space-y-3 mb-6 border-2 border-gray-100 shadow-inner relative z-10">
               {Object.keys(updateModal.newData).map(key => {
-                // ข้ามฟิลด์ id, created_at, หรือฟิลด์ที่ไม่ได้เปลี่ยนแปลง
                 if (key === 'id' || key === 'created_at' || updateModal.oldData[key] === updateModal.newData[key]) return null;
                 return (
-                  <div key={key} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <div className="sm:w-1/3 text-xs font-bold text-slate-400 uppercase tracking-wider">{fieldLabels[key] || key}</div>
-                    <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm">
-                      <span className="bg-red-50 text-red-500 px-2 py-1 rounded-md line-through break-all w-full sm:w-auto">{updateModal.oldData[key] || '-'}</span>
-                      <span className="hidden sm:inline text-slate-300">➡️</span>
-                      <span className="bg-green-50 text-green-600 px-2 py-1 rounded-md font-bold break-all w-full sm:w-auto">{updateModal.newData[key] || '-'}</span>
+                  <div key={key} className="bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4 transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
+                    <div className="sm:w-1/3 text-[11px] font-black text-gray-400 uppercase tracking-widest pl-2">{fieldLabels[key] || key}</div>
+                    <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm font-black">
+                      <span className="text-red-400 line-through w-full sm:w-auto bg-red-50/50 px-3 py-1.5 rounded-xl border border-red-100">{updateModal.oldData[key] || 'ไม่มีข้อมูล (ว่างจัด)'}</span>
+                      <span className="hidden sm:inline text-gray-300 text-xl animate-pulse">➡️</span>
+                      <span className="text-[#088cb3] w-full sm:w-auto bg-[#088cb3]/10 px-3 py-1.5 rounded-xl border border-[#088cb3]/20 text-base">{updateModal.newData[key] || 'ลบทิ้งเฉย (ว่าง)'}</span>
                     </div>
                   </div>
                 )
               })}
             </div>
 
-            <div className="flex gap-3 mt-auto shrink-0">
-              <button onClick={() => setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })} className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">ย้อนกลับไปแก้ไข</button>
-              <button onClick={executeUpdate} disabled={isSubmitting} className="flex-1 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-orange-500/30">
-                {isSubmitting ? 'กำลังบันทึก...' : '💾 ยืนยันการอัปเดต'}
+            <div className="flex gap-4 mt-auto shrink-0 relative z-10">
+              <button onClick={() => setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })} className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full font-black transition-all active:scale-90 active:rotate-[-3deg]">มือลั่น! กลับไปแก้ก่อน</button>
+              <button onClick={executeUpdate} disabled={isSubmitting} className="flex-1 py-4 bg-[#088cb3] hover:bg-[#067292] text-white rounded-full font-black transition-all shadow-xl shadow-[#088cb3]/40 active:scale-90 active:rotate-[3deg] hover-engine-shake">
+                {isSubmitting ? 'กำลังอัดน็อต...' : '💾 อัดน็อตแน่นๆ เซฟเลย!'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 📱 Overlay มือถือ */}
-      {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>}
+      {isSidebarOpen && <div className="fixed inset-0 bg-[#088cb3]/80 z-40 lg:hidden backdrop-blur-md" onClick={() => setIsSidebarOpen(false)}></div>}
 
-      {/* 👈 Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 w-[280px] bg-[#0F0F13] text-slate-300 flex flex-col transition-transform duration-300 z-50 shadow-2xl ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-black/20 shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-tr from-[#742F99] to-[#b04deb] rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-purple-900/50">PEA</div>
-            <div>
-              <h1 className="font-bold text-white text-lg leading-tight">Admin<span className="text-purple-400">Panel</span></h1>
-              <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Fleet System</p>
-            </div>
+      {/* 👈 Sidebar: ธีมสีฟ้า #088cb3 */}
+      <aside className={`fixed lg:static inset-y-0 left-0 w-[300px] bg-[#088cb3] text-white flex flex-col transition-transform duration-300 z-50 shadow-2xl ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} rounded-r-[3rem] lg:rounded-none overflow-hidden`}>
+        
+        <div className="h-32 flex items-center gap-4 px-8 border-b-2 border-white/10 shrink-0 relative z-10">
+          <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-[#088cb3] font-black text-4xl shadow-xl hover-engine-shake active:scale-75 transition-all cursor-pointer">
+            P
           </div>
-          <button className="lg:hidden text-slate-400 text-2xl" onClick={() => setIsSidebarOpen(false)}>&times;</button>
+          <div>
+            <h1 className="font-black text-white text-2xl leading-tight tracking-tight drop-shadow-md">PEA Fleet</h1>
+            <p className="text-[11px] text-[#a42f56] bg-white px-2 py-0.5 rounded-full uppercase tracking-widest font-black mt-2 inline-block shadow-sm">แอดมินขาซิ่ง</p>
+          </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-          <p className="text-[11px] font-bold text-slate-500 mb-4 px-2 uppercase tracking-widest">Main Menu</p>
+        <nav className="flex-1 overflow-y-auto py-8 px-5 space-y-3 relative z-10">
           {sidebarMenus.map(menu => (
             <button 
               key={menu.id} 
               onClick={() => { setActiveMenu(menu.id); setIsSidebarOpen(false) }}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all text-left ${activeMenu === menu.id ? 'bg-[#742F99]/10 text-white shadow-inner relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1.5 before:bg-purple-500 before:rounded-r-full' : 'hover:bg-white/5 text-slate-400'}`}
+              className={`w-full flex items-center gap-5 px-5 py-4 rounded-3xl transition-all text-left group active:scale-90 active:rotate-[-2deg] duration-150 ${activeMenu === menu.id ? 'bg-white text-[#088cb3] shadow-[0_15px_30px_rgba(0,0,0,0.2)]' : 'hover:bg-white/10 text-white/80 hover:text-white border border-transparent hover:border-white/20'}`}
             >
-              <span className={`text-xl ${activeMenu === menu.id ? 'text-purple-400 drop-shadow-md' : 'grayscale opacity-70'}`}>{menu.icon}</span>
+              <span className={`text-4xl transition-transform ${activeMenu === menu.id ? 'animate-super-float drop-shadow-md' : 'group-hover:scale-125 group-hover:rotate-12'}`}>{menu.icon}</span>
               <div>
-                <p className="font-bold text-sm">{menu.title}</p>
-                <p className={`text-[10px] ${activeMenu === menu.id ? 'text-purple-300/80' : 'text-slate-500 hidden sm:block'}`}>{menu.desc}</p>
+                <p className="font-black text-sm tracking-wide">{menu.title}</p>
+                <p className={`text-[10px] font-bold ${activeMenu === menu.id ? 'text-[#088cb3]/70' : 'text-white/50'}`}>{menu.desc}</p>
               </div>
             </button>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/5 shrink-0">
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/5 hover:bg-red-500/10 hover:text-red-400 transition-colors text-sm font-bold"><span>🚪</span> ออกจากระบบ</button>
+        {/* รถใหญ่แอบอยู่ท้าย Sidebar */}
+        <div className="relative mt-auto pointer-events-none">
+           <img src="/scooter.png" alt="Big Sidebar Scooter" className="w-72 absolute bottom-0 -right-12 opacity-30 drop-shadow-2xl translate-y-10 hover:-translate-y-2 transition-transform duration-500" />
+        </div>
+
+        <div className="p-6 shrink-0 relative z-10 bg-gradient-to-t from-[#067292] to-transparent pt-10">
+          <button onClick={handleLogout} className="w-full py-4 rounded-full bg-[#a42f56] text-white transition-all text-sm font-black shadow-xl shadow-[#a42f56]/50 hover-engine-shake active:scale-90 active:rotate-[4deg] border-2 border-white/20 hover:border-white/50 backdrop-blur-md">
+             หนีกลับบ้าน (Logout) 🏃‍♂️💨
+          </button>
         </div>
       </aside>
 
-      {/* 👉 Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#F8FAFC]">
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 shrink-0 z-10 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg" onClick={() => setIsSidebarOpen(true)}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+      {/* 👉 Main Content */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden z-10 relative">
+        
+        {/* Header */}
+        <header className="h-28 bg-white/80 backdrop-blur-xl flex items-center justify-between px-8 sm:px-12 shrink-0 z-20 shadow-sm border-b-2 border-gray-100">
+          <div className="flex items-center gap-5">
+            <button className="lg:hidden p-3 bg-gray-100 text-gray-600 rounded-2xl transition-all active:scale-75 active:rotate-180" onClick={() => setIsSidebarOpen(true)}>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
             </button>
-            <span className="text-2xl hidden sm:block">{activeMenuObj?.icon}</span>
-            <h2 className="text-lg sm:text-xl font-black text-slate-800">{activeMenuObj?.title}</h2>
+            <span className="text-5xl hidden sm:block animate-super-float drop-shadow-md">{activeMenuObj?.icon}</span>
+            <div>
+                <h2 className="text-[#088cb3] font-black text-[10px] tracking-widest uppercase mb-1 bg-[#088cb3]/10 inline-block px-2 py-0.5 rounded-md">หอบังคับการ</h2>
+                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-none drop-shadow-sm">{activeMenuObj?.title}</h1>
+            </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 px-3 sm:px-4 py-2 rounded-full border border-slate-200">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div><span className="text-[10px] sm:text-xs font-bold text-slate-600">Admin Online</span>
+          <div className="hidden sm:flex items-center gap-4 bg-[#088cb3]/5 px-6 py-3 rounded-full border-2 border-[#088cb3]/20 shadow-inner active:scale-90 active:rotate-3 transition-all cursor-pointer hover-engine-shake">
+            <img src="/scooter.png" alt="mini scooter" className="w-12 animate-super-float-fast drop-shadow-md" />
+            <span className="text-xs font-black text-[#088cb3] uppercase tracking-widest">Admin สแตนด์บายพร้อมบวก</span>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 scroll-smooth">
-          <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 pb-10">
+        {/* Content Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 scroll-smooth relative z-10">
+          <div className="max-w-6xl mx-auto space-y-12 pb-24">
 
-            {/* --- ส่วนที่ 1: ฟอร์ม --- */}
-            <div id="form-section" className="bg-white p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
-              <div className={`absolute top-0 left-0 w-full h-1.5 ${editingId ? 'bg-amber-400' : 'bg-gradient-to-r from-[#742F99] to-[#b04deb]'}`}></div>
+            {/* ส่วนที่ 1: ฟอร์ม - กล่องใหญ่สะใจ มี Action ดึ๋งๆ */}
+            <div id="form-section" className="bg-white/95 backdrop-blur-md p-8 sm:p-12 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border-2 border-gray-100 relative overflow-hidden group hover:border-[#088cb3]/30 transition-colors duration-500">
               
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-                <h3 className="text-base sm:text-lg font-black text-slate-800 flex items-center gap-2">
-                  {editingId ? <span className="text-amber-500">✏️ กำลังแก้ไข (ID: {editingId})</span> : <span className="text-[#742F99]">➕ เพิ่มข้อมูลใหม่</span>}
+              {/* รถแอบตรงมุมฟอร์ม */}
+              <img src="/scooter.png" alt="Corner Scooter" className="absolute -top-10 -right-10 w-72 opacity-10 rotate-[20deg] pointer-events-none group-hover:rotate-[35deg] group-hover:scale-110 transition-transform duration-700" />
+
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-10 relative z-10">
+                <h3 className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center gap-4">
+                  {editingId ? 
+                    <span className="text-[#088cb3] flex items-center gap-3"><span className="text-4xl animate-spin drop-shadow-md">⚙️</span> กำลังจับจูนเครื่อง (ID: {editingId})</span> : 
+                    <span className="text-[#a42f56] flex items-center gap-3"><span className="text-4xl hover-engine-shake drop-shadow-md cursor-pointer">✨</span> ยัดข้อมูลเถื่อนลงอู่ (หยอกๆ)</span>
+                  }
                 </h3>
-                {editingId && <button onClick={cancelEdit} className="text-xs w-full sm:w-auto bg-slate-100 text-slate-600 px-4 py-2 rounded-lg font-bold hover:bg-slate-200">❌ ยกเลิก</button>}
+                {editingId && <button onClick={cancelEdit} className="text-sm w-full sm:w-auto bg-gray-100 text-gray-500 px-8 py-3.5 rounded-full font-black hover:bg-gray-200 hover:text-gray-800 transition-all active:scale-75 active:rotate-3 shadow-inner border border-gray-200">❌ ไม่แก้ละ เหนื่อย!</button>}
               </div>
 
+              <div className="relative z-10">
               {activeMenu === 'cars' && (
-                <form onSubmit={(e) => handlePreSubmit(e, 'cars', carData)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                  <div className="sm:col-span-1 lg:col-span-1"><label className={labelStyle}>ทะเบียนรถ *</label><input type="text" required value={carData.plate_number} onChange={e => setCarData({...carData, plate_number: e.target.value})} className={inputStyle} /></div>
-                  <div className="sm:col-span-1 lg:col-span-2"><label className={labelStyle}>ยี่ห้อ / รุ่น</label><input type="text" value={carData.model} onChange={e => setCarData({...carData, model: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>ประเภทรถ (car_type)</label><input type="text" value={carData.car_type} onChange={e => setCarData({...carData, car_type: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>ชนิดพลังงาน (fuel_type)</label><select value={carData.fuel_type} onChange={e => setCarData({...carData, fuel_type: e.target.value})} className={inputStyle}><option value="Gas">🛢️ Gas/Diesel</option><option value="EV">⚡ EV</option></select></div>
-                  <div><label className={labelStyle}>กรรมสิทธิ์ (ownership_type)</label><input type="text" value={carData.ownership_type} onChange={e => setCarData({...carData, ownership_type: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>สังกัดแผนก (department)</label><input type="text" value={carData.department} onChange={e => setCarData({...carData, department: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>การใช้งาน (usage_type)</label><input type="text" value={carData.usage_type} onChange={e => setCarData({...carData, usage_type: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>งบประมาณ (budget)</label><input type="text" value={carData.budget} onChange={e => setCarData({...carData, budget: e.target.value})} className={inputStyle} /></div>
-                  <div className="sm:col-span-2 lg:col-span-3 mt-2 sm:mt-4 pt-4 border-t border-slate-100 flex justify-end">
-                    <button type="submit" className={`w-full sm:w-auto px-8 py-3.5 text-white rounded-xl font-bold shadow-lg transition-all ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#742F99] hover:bg-[#5e237c]'}`}>{editingId ? 'ตรวจสอบการแก้ไข' : '➕ เพิ่มรถยนต์คันใหม่'}</button>
+                <form onSubmit={(e) => handlePreSubmit(e, 'cars', carData)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="sm:col-span-1 lg:col-span-1"><label className={labelStyle}>ป้ายทะเบียน (อย่าเถื่อน) *</label><input type="text" required placeholder="กข 1234 หรือ ป้ายแดง?" value={carData.plate_number} onChange={e => setCarData({...carData, plate_number: e.target.value})} className={inputStyle} /></div>
+                  <div className="sm:col-span-1 lg:col-span-2"><label className={labelStyle}>ยี่ห้อ / รุ่น (ทรงเชงหรือทรงช่าง?)</label><input type="text" placeholder="เช่น Honda เวฟ 110i แต่งเต็ม" value={carData.model} onChange={e => setCarData({...carData, model: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ประเภทรถ</label><input type="text" placeholder="มอเตอร์ไซค์, ซาเล้ง" value={carData.car_type} onChange={e => setCarData({...carData, car_type: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>กินน้ำมันหรือซดไฟ?</label><select value={carData.fuel_type} onChange={e => setCarData({...carData, fuel_type: e.target.value})} className={inputStyle}><option value="Gas">🛢️ น้ำมัน (Gas) สายเบิร์น</option><option value="EV">⚡ ไฟฟ้า (EV) สายเงียบ</option></select></div>
+                  <div><label className={labelStyle}>รถใคร? (กรรมสิทธิ์)</label><input type="text" placeholder="ของหลวง หรือ ขโมยมาหยอกๆ" value={carData.ownership_type} onChange={e => setCarData({...carData, ownership_type: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>อยู่ซุ้มไหน? (พิมพ์ชื่อแผนก)</label><input type="text" placeholder="เช่น กฟล. แก๊งซิ่ง" value={carData.department} onChange={e => setCarData({...carData, department: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>เอาไปทำไร? (การใช้งาน)</label><input type="text" placeholder="ขับไปซื้อแกง หรือ ออกทริป" value={carData.usage_type} onChange={e => setCarData({...carData, usage_type: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>งบจัดหา (อย่ามุบมิบ)</label><input type="text" placeholder="กี่บาท ว่ามา..." value={carData.budget} onChange={e => setCarData({...carData, budget: e.target.value})} className={inputStyle} /></div>
+                  
+                  <div className="sm:col-span-2 lg:col-span-3 mt-6 flex justify-end">
+                    <button type="submit" className={`w-full sm:w-auto px-12 py-5 text-white rounded-full font-black shadow-xl transition-all text-base hover-engine-shake active:scale-90 active:rotate-[-3deg] ${editingId ? 'bg-[#088cb3] hover:bg-[#067292] shadow-[#088cb3]/40 border-b-4 border-[#065b75]' : 'bg-[#a42f56] hover:bg-[#8b2749] shadow-[#a42f56]/40 border-b-4 border-[#7a1f3c]'}`}>
+                      {editingId ? '🔧 บันทึกข้อมูลจูนเครื่อง!' : '🚀 กระทืบคันเร่ง ดันรถเข้าอู่!'}
+                    </button>
                   </div>
                 </form>
               )}
 
               {activeMenu === 'staff' && (
-                <form onSubmit={(e) => handlePreSubmit(e, 'staff', staffData)} className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                  <div><label className={labelStyle}>รหัสพนักงาน *</label><input type="text" required value={staffData.staff_code} onChange={e => setStaffData({...staffData, staff_code: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>ชื่อ-นามสกุล *</label><input type="text" required value={staffData.full_name} onChange={e => setStaffData({...staffData, full_name: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>ตำแหน่ง</label><input type="text" value={staffData.position} onChange={e => setStaffData({...staffData, position: e.target.value})} className={inputStyle} /></div>
+                <form onSubmit={(e) => handlePreSubmit(e, 'staff', staffData)} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div><label className={labelStyle}>รหัสลับตัวตึง *</label><input type="text" required placeholder="ใส่รหัสซะ!" value={staffData.staff_code} onChange={e => setStaffData({...staffData, staff_code: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ชื่อ-นามสกุล (พร้อมฉายา) *</label><input type="text" required placeholder="เช่น บอย ซอยตัน" value={staffData.full_name} onChange={e => setStaffData({...staffData, full_name: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ตำแหน่ง (ทรงไหนบอกมา)</label><input type="text" placeholder="เช่น หัวหน้าแก๊ง, สายหมอบ" value={staffData.position} onChange={e => setStaffData({...staffData, position: e.target.value})} className={inputStyle} /></div>
                   <div>
-                    <label className={labelStyle}>สังกัดแผนก</label>
-                    <select value={staffData.department_id} onChange={e => setStaffData({...staffData, department_id: e.target.value})} className={inputStyle}><option value="">-- ไม่ระบุ --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
+                    <label className={labelStyle}>สังกัดซุ้ม</label>
+                    <select value={staffData.department_id} onChange={e => setStaffData({...staffData, department_id: e.target.value})} className={inputStyle}><option value="">-- เป็นพวกไร้สังกัด (หมาป่าเดียวดาย) --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
                   </div>
-                  <div className="sm:col-span-2 mt-2 sm:mt-4 pt-4 border-t border-slate-100 flex justify-end">
-                    <button type="submit" className={`w-full sm:w-auto px-8 py-3.5 text-white rounded-xl font-bold shadow-lg transition-all ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#742F99] hover:bg-[#5e237c]'}`}>{editingId ? 'ตรวจสอบการแก้ไข' : '➕ เพิ่มพนักงานใหม่'}</button>
+                  <div className="sm:col-span-2 mt-6 flex justify-end">
+                    <button type="submit" className={`w-full sm:w-auto px-12 py-5 text-white rounded-full font-black shadow-xl transition-all text-base hover-engine-shake active:scale-90 active:rotate-[3deg] ${editingId ? 'bg-[#088cb3] hover:bg-[#067292] shadow-[#088cb3]/40 border-b-4 border-[#065b75]' : 'bg-[#a42f56] hover:bg-[#8b2749] shadow-[#a42f56]/40 border-b-4 border-[#7a1f3c]'}`}>
+                      {editingId ? '😎 อัปเดตทรงนักบิด' : '🛵 เซ็นสัญญา รับคนเข้าแก๊ง!'}
+                    </button>
                   </div>
                 </form>
               )}
 
               {activeMenu === 'tasks' && (
-                <form onSubmit={(e) => handlePreSubmit(e, 'tasks', taskData)} className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                  <div><label className={labelStyle}>ชื่องาน / ภารกิจ *</label><input type="text" required value={taskData.name} onChange={e => setTaskData({...taskData, name: e.target.value})} className={inputStyle} /></div>
+                <form onSubmit={(e) => handlePreSubmit(e, 'tasks', taskData)} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div><label className={labelStyle}>ชื่อลายแทง (ไปแว้นไหน) *</label><input type="text" required placeholder="เช่น ไปรับสาวหน้าปากซอย" value={taskData.name} onChange={e => setTaskData({...taskData, name: e.target.value})} className={inputStyle} /></div>
                   <div>
-                    <label className={labelStyle}>เชื่อมโยงแผนก</label>
-                    <select value={taskData.department_id} onChange={e => setTaskData({...taskData, department_id: e.target.value})} className={inputStyle}><option value="">-- ไม่ระบุ --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
+                    <label className={labelStyle}>โยนงานให้ซุ้มไหน?</label>
+                    <select value={taskData.department_id} onChange={e => setTaskData({...taskData, department_id: e.target.value})} className={inputStyle}><option value="">-- ไปคนเดียวเฟี้ยวๆ --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
                   </div>
-                  <div className="sm:col-span-2 mt-2 sm:mt-4 pt-4 border-t border-slate-100 flex justify-end">
-                    <button type="submit" className={`w-full sm:w-auto px-8 py-3.5 text-white rounded-xl font-bold shadow-lg transition-all ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#742F99] hover:bg-[#5e237c]'}`}>{editingId ? 'ตรวจสอบการแก้ไข' : '➕ สร้างงานใหม่'}</button>
+                  <div className="sm:col-span-2 mt-6 flex justify-end">
+                    <button type="submit" className={`w-full sm:w-auto px-12 py-5 text-white rounded-full font-black shadow-xl transition-all text-base hover-engine-shake active:scale-90 active:-rotate-3 ${editingId ? 'bg-[#088cb3] shadow-[#088cb3]/40 border-b-4 border-[#065b75]' : 'bg-[#a42f56] shadow-[#a42f56]/40 border-b-4 border-[#7a1f3c]'}`}>
+                      {editingId ? '🗺️ เปลี่ยนลายแทงกะทันหัน' : '🏁 แจกเควส สร้างภารกิจ!'}
+                    </button>
                   </div>
                 </form>
               )}
 
               {activeMenu === 'departments' && (
-                <form onSubmit={(e) => handlePreSubmit(e, 'departments', departmentData)} className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-5 items-end">
-                  <div className="sm:col-span-3"><label className={labelStyle}>ชื่อแผนก *</label><input type="text" required value={departmentData.name} onChange={e => setDepartmentData({...departmentData, name: e.target.value})} className={inputStyle} /></div>
-                  <div className="sm:col-span-1 mt-2 sm:mt-0">
-                    <button type="submit" className={`w-full py-3.5 text-white rounded-xl font-bold shadow-lg transition-all ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#742F99] hover:bg-[#5e237c]'}`}>{editingId ? 'ตรวจสอบการแก้ไข' : '➕ เพิ่มแผนก'}</button>
+                <form onSubmit={(e) => handlePreSubmit(e, 'departments', departmentData)} className="grid grid-cols-1 sm:grid-cols-4 gap-6 items-end">
+                  <div className="sm:col-span-3"><label className={labelStyle}>ชื่อซุ้ม / ชื่อแก๊งใหม่ *</label><input type="text" required placeholder="เช่น กฟล. แก๊งลูกหมู" value={departmentData.name} onChange={e => setDepartmentData({...departmentData, name: e.target.value})} className={inputStyle} /></div>
+                  <div className="sm:col-span-1 mt-4 sm:mt-0">
+                    <button type="submit" className={`w-full py-5 text-white rounded-full font-black shadow-xl transition-all text-base hover-engine-shake active:scale-90 active:rotate-3 ${editingId ? 'bg-[#088cb3] shadow-[#088cb3]/40 border-b-4 border-[#065b75]' : 'bg-[#a42f56] shadow-[#a42f56]/40 border-b-4 border-[#7a1f3c]'}`}>
+                      {editingId ? '🏢 โมดิฟายซุ้มเดิม' : '🏢 ตั้งซุ้มใหม่ เบ่งบารมี!'}
+                    </button>
                   </div>
                 </form>
               )}
+              </div>
             </div>
 
-            {/* --- ส่วนที่ 2: ตาราง --- */}
-            <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <h3 className="text-[11px] sm:text-sm font-black text-slate-500 uppercase tracking-widest">📄 รายการข้อมูล</h3>
-                <span className="bg-[#742F99]/10 text-[#742F99] py-1 px-3 rounded-full text-[10px] sm:text-xs font-bold">{activeMenu === 'cars' ? carsList.length : activeMenu === 'staff' ? staffList.length : activeMenu === 'tasks' ? tasksList.length : departmentsList.length} รายการ</span>
+            {/* ส่วนที่ 2: รายการข้อมูล - ตารางยุบยับ */}
+            <div className="bg-white/95 backdrop-blur-md rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border-2 border-gray-100 overflow-hidden transition-all">
+              <div className="p-8 border-b-2 border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h3 className="text-sm font-black text-gray-600 uppercase tracking-widest flex items-center gap-3">
+                  <img src="/scooter.png" alt="icon" className="w-12 animate-super-float-fast drop-shadow-lg" /> รายการของในโกดัง
+                </h3>
+                <span className="bg-[#088cb3] text-white py-2 px-6 rounded-full text-sm font-black shadow-md active:scale-75 transition-transform cursor-pointer hover-engine-shake">
+                  โผล่มาแล้ว {activeMenu === 'cars' ? carsList.length : activeMenu === 'staff' ? staffList.length : activeMenu === 'tasks' ? tasksList.length : departmentsList.length} ตัว
+                </span>
               </div>
 
-              <div className="overflow-x-auto p-2 sm:p-4">
+              <div className="overflow-x-auto p-4 sm:p-8 scroll-smooth">
                 {activeMenu === 'cars' && (
-                  <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
-                    <thead><tr><th className="p-3 text-slate-400 font-bold uppercase text-xs">ทะเบียน</th><th className="p-3 text-slate-400 font-bold uppercase text-xs">รุ่น/ประเภท</th><th className="p-3 text-slate-400 font-bold uppercase text-xs">แผนก</th><th className="p-3 text-center text-slate-400 font-bold uppercase text-xs w-24">จัดการ</th></tr></thead>
-                    <tbody className="divide-y divide-slate-50">
+                  <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                    <thead><tr className="border-b-4 border-gray-100"><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">ทะเบียนรถ</th><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">ทรงรถ/รุ่น</th><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">ซดอะไร</th><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">แก๊งไหนคุม</th><th className="pb-4 pt-2 px-5 text-center text-gray-400 font-black uppercase text-xs tracking-widest w-36">จะเอายังไง?</th></tr></thead>
+                    <tbody className="divide-y-2 divide-gray-50">
                       {carsList.map(item => (
-                        <tr key={item.id} className="hover:bg-slate-50 lg:group">
-                          <td className="p-3 font-bold text-[#742F99]">{item.plate_number}</td><td className="p-3"><p className="text-slate-800 font-medium">{item.model}</p><p className="text-xs text-slate-500">{item.car_type}</p></td><td className="p-3 text-slate-600">{item.department || '-'}</td>
-                          <td className="p-3 flex justify-center gap-1 opacity-100 lg:opacity-50 lg:group-hover:opacity-100"><button onClick={() => handleEdit('cars', item)} className="p-2 bg-slate-100 hover:bg-amber-100 rounded-lg">✏️</button><button onClick={() => confirmDelete('cars', item)} className="p-2 bg-slate-100 hover:bg-red-100 rounded-lg">🗑️</button></td>
+                        <tr key={item.id} className="hover:bg-[#088cb3]/5 transition-all group active:scale-[0.98] cursor-pointer">
+                          <td className="p-5 font-black text-[#088cb3] text-xl">{item.plate_number}</td>
+                          <td className="p-5"><p className="text-gray-900 font-black text-base">{item.model || 'ไม่มีรุ่น (รถประกอบเองอ่อ)'}</p><p className="text-xs text-gray-400 font-bold mt-1">{item.car_type || 'รถไรวะดูไม่ออก'}</p></td>
+                          <td className="p-5"><span className={`px-4 py-2 text-xs font-black rounded-full shadow-sm border-b-2 ${item.fuel_type === 'EV' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`}>{item.fuel_type === 'EV' ? '⚡ ซดไฟเงียบๆ' : '🛢️ น้ำมันสายเบิร์น'}</span></td>
+                          <td className="p-5 text-gray-600 text-sm font-bold">{item.department || 'ลอยนวล (ไม่ระบุ)'}</td>
+                          <td className="p-5 flex justify-center gap-3">
+                            <button onClick={() => handleEdit('cars', item)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-[#088cb3] hover:text-white text-gray-500 rounded-2xl transition-all border-2 border-gray-200 shadow-sm text-xl active:scale-50 active:rotate-45">✏️</button>
+                            <button onClick={() => confirmDelete('cars', item)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-gray-500 rounded-2xl transition-all border-2 border-gray-200 shadow-sm text-xl active:scale-50 active:-rotate-45 hover-engine-shake">🗑️</button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -428,13 +457,19 @@ export default function AdminDashboard() {
                 )}
 
                 {activeMenu === 'staff' && (
-                  <table className="w-full text-left text-sm whitespace-nowrap min-w-[600px]">
-                    <thead><tr><th className="p-3 text-slate-400 font-bold uppercase text-xs">รหัส</th><th className="p-3 text-slate-400 font-bold uppercase text-xs">ชื่อ-นามสกุล</th><th className="p-3 text-slate-400 font-bold uppercase text-xs">ตำแหน่ง</th><th className="p-3 text-slate-400 font-bold uppercase text-xs">แผนก</th><th className="p-3 text-center text-slate-400 font-bold uppercase text-xs w-24">จัดการ</th></tr></thead>
-                    <tbody className="divide-y divide-slate-50">
+                  <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+                    <thead><tr className="border-b-4 border-gray-100"><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">รหัสลับ</th><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">ชื่อฉายา</th><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">ทรงไหน</th><th className="pb-4 pt-2 px-5 text-gray-400 font-black uppercase text-xs tracking-widest">เด็กซุ้มไหน</th><th className="pb-4 pt-2 px-5 text-center text-gray-400 font-black uppercase text-xs tracking-widest w-36">จะเอายังไง?</th></tr></thead>
+                    <tbody className="divide-y-2 divide-gray-50">
                       {staffList.map(item => (
-                        <tr key={item.id} className="hover:bg-slate-50 lg:group">
-                          <td className="p-3 font-bold text-slate-600">{item.staff_code}</td><td className="p-3 font-medium text-slate-800">{item.full_name}</td><td className="p-3 text-slate-500">{item.position || '-'}</td><td className="p-3 text-[#742F99] font-medium bg-[#742F99]/5 rounded-lg inline-block mt-1">{item.departments?.name || '-'}</td>
-                          <td className="p-3 flex justify-center gap-1 opacity-100 lg:opacity-50 lg:group-hover:opacity-100"><button onClick={() => handleEdit('staff', item)} className="p-2 bg-slate-100 hover:bg-amber-100 rounded-lg">✏️</button><button onClick={() => confirmDelete('staff', item)} className="p-2 bg-slate-100 hover:bg-red-100 rounded-lg">🗑️</button></td>
+                        <tr key={item.id} className="hover:bg-[#a42f56]/5 transition-all group active:scale-[0.98] cursor-pointer">
+                          <td className="p-5 font-bold text-gray-400 text-base">{item.staff_code}</td>
+                          <td className="p-5 font-black text-gray-900 text-lg flex items-center gap-3"><img src="/scooter.png" className="w-10 drop-shadow-md group-hover:animate-super-float-fast group-hover:rotate-12 transition-transform" alt="avt" /> {item.full_name}</td>
+                          <td className="p-5 text-gray-500 text-sm font-bold">{item.position || 'ทรงโจร (ไม่ระบุ)'}</td>
+                          <td className="p-5"><span className="text-xs font-black text-[#a42f56] bg-[#a42f56]/10 px-4 py-2 rounded-full shadow-inner border border-[#a42f56]/20">{item.departments?.name || 'หมาป่าเดียวดาย'}</span></td>
+                          <td className="p-5 flex justify-center gap-3">
+                            <button onClick={() => handleEdit('staff', item)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-[#a42f56] hover:text-white text-gray-500 rounded-2xl transition-all border-2 border-gray-200 shadow-sm text-xl active:scale-50 active:rotate-45">✏️</button>
+                            <button onClick={() => confirmDelete('staff', item)} className="w-12 h-12 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-gray-500 rounded-2xl transition-all border-2 border-gray-200 shadow-sm text-xl active:scale-50 active:-rotate-45 hover-engine-shake">🗑️</button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -442,19 +477,18 @@ export default function AdminDashboard() {
                 )}
 
                 {(activeMenu === 'tasks' || activeMenu === 'departments') && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-2 sm:p-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {(activeMenu === 'tasks' ? tasksList : departmentsList).map(item => (
-                      <div key={item.id} className="p-4 sm:p-5 border border-slate-100 rounded-2xl hover:shadow-md hover:border-[#742F99]/30 transition-all bg-white lg:group flex flex-col justify-between">
-                        <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ID: {item.id}</span>
-                            <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleEdit(activeMenu, item)} className="p-1.5 text-slate-400 hover:text-amber-500 bg-slate-50 hover:bg-amber-50 rounded">✏️</button>
-                              <button onClick={() => confirmDelete(activeMenu, item)} className="p-1.5 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded">🗑️</button>
-                            </div>
-                          </div>
-                          <p className={`font-black text-base sm:text-lg ${activeMenu === 'departments' ? 'text-[#742F99]' : 'text-slate-800'}`}>{item.name}</p>
-                          {activeMenu === 'tasks' && <p className="text-[11px] sm:text-xs text-slate-500 mt-2 font-medium bg-slate-100 inline-block px-2 py-1 rounded-md">🏢 {item.departments?.name || 'ไม่ระบุแผนก'}</p>}
+                      <div key={item.id} className="p-8 border-2 border-gray-100 rounded-[3rem] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all bg-white relative overflow-hidden group active:scale-95 active:rotate-1 cursor-pointer">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-[100%] group-hover:bg-[#088cb3]/10 transition-colors duration-500"></div>
+                        <img src="/scooter.png" className="absolute -bottom-10 -right-5 w-40 opacity-10 group-hover:opacity-30 group-hover:scale-125 group-hover:-rotate-[20deg] transition-all duration-500" alt="bg" />
+                        
+                        <h4 className="font-black text-gray-900 text-2xl mb-3 tracking-tight relative z-10 leading-tight">{item.name}</h4>
+                        {activeMenu === 'tasks' && <p className="text-xs text-gray-500 font-black mb-6 uppercase tracking-wider relative z-10 bg-gray-100 inline-block px-4 py-1.5 rounded-full border border-gray-200 shadow-inner">สังกัดซุ้ม: {item.departments?.name || 'ไม่มีสังกัด!'}</p>}
+                        
+                        <div className="flex gap-3 mt-6 relative z-10">
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(activeMenu, item) }} className="px-6 py-3.5 text-xs font-black bg-white hover:bg-[#088cb3] hover:text-white rounded-full transition-all text-gray-600 border-2 border-gray-200 shadow-sm active:scale-75 active:rotate-6">โมดิฟาย (Edit)</button>
+                          <button onClick={(e) => { e.stopPropagation(); confirmDelete(activeMenu, item) }} className="px-6 py-3.5 text-xs font-black bg-white hover:bg-red-500 hover:text-white rounded-full transition-all text-gray-600 border-2 border-gray-200 shadow-sm active:scale-75 active:-rotate-6 hover-engine-shake">บดทิ้ง (Delete)</button>
                         </div>
                       </div>
                     ))}
