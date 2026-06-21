@@ -33,21 +33,14 @@ function CarSelector() {
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
   const [showInstructions, setShowInstructions] = useState(false)
-  const [errorMsg, setErrorMsg] = useState(null) // 🌟 เพิ่ม State เก็บ Error
 
   const fetchCars = async () => {
     try {
-      setErrorMsg(null) // รีเซ็ต error ก่อนดึงใหม่
-      const { data: carsData, error: carsError } = await supabase.from('cars').select('*')
-      
-      if (carsError) throw carsError // โยน error ออกมาถ้า Supabase มีปัญหา
-
-      const { data: activeLogs, error: logsError } = await supabase
+      const { data: carsData } = await supabase.from('cars').select('*')
+      const { data: activeLogs } = await supabase
         .from('trip_logs')
         .select('car_id, start_time, driver_name')
         .eq('is_completed', false)
-
-      if (logsError) throw logsError
 
       if (carsData) {
         const activatedResults = await Promise.all(
@@ -68,17 +61,13 @@ function CarSelector() {
         mergedCars.sort((a, b) => {
             if (a.status === 'busy' && b.status !== 'busy') return -1 
             if (a.status !== 'busy' && b.status === 'busy') return 1  
-            // ป้องกันพังกรณี plate_number เป็น null
-            const plateA = a.plate_number || ''
-            const plateB = b.plate_number || ''
-            return plateA.localeCompare(plateB)
+            return a.plate_number.localeCompare(b.plate_number)
         })
 
         setCars(mergedCars)
       }
     } catch (err) {
-      console.error("Fetch Data Error:", err)
-      setErrorMsg(err.message || "ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (อาจถูกบล็อกโดย Network หรือ Extension)") 
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -127,10 +116,18 @@ function CarSelector() {
       <nav className="sticky top-0 z-50 h-[52px] flex items-center justify-between px-5 border-b border-black/[0.07]"
            style={{background:'rgba(245,245,247,0.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)'}}>
         <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">PEA Fleet</span>
-        <button onClick={() => router.push('/dashboard')}
-          className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
-          Dashboard
-        </button>
+        
+        {/* เพิ่มกลุ่มปุ่มกดไว้ด้านขวา */}
+        <div className="flex items-center gap-4">
+          <button onClick={() => router.push('/admin')}
+            className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
+            Admin
+          </button>
+          <button onClick={() => router.push('/dashboard')}
+            className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
+            Dashboard
+          </button>
+        </div>
       </nav>
 
       <div className="max-w-[600px] mx-auto px-4">
@@ -167,121 +164,107 @@ function CarSelector() {
           </div>
         </div>
 
-        {/* ── Car List / Error Message ── */}
-        {errorMsg ? (
-          <div className="bg-[#fff2f0] border border-[#ff3b30]/30 rounded-[18px] p-6 text-center shadow-sm">
-             <div className="text-[36px] mb-2">⚠️</div>
-             <p className="text-[16px] font-semibold text-[#d70015]">เกิดข้อผิดพลาดในการแสดงข้อมูล</p>
-             <p className="text-[13px] text-[#d70015] mt-1">{errorMsg}</p>
-             <div className="mt-4 pt-4 border-t border-[#ff3b30]/20 text-[12px] text-[#d70015] opacity-80 text-left">
-                <strong>คำแนะนำเบื้องต้น:</strong><br/>
-                - หากเปิดในคอมพิวเตอร์ ลองปิด AdBlock หรือโหมดป้องกันการติดตาม<br/>
-                - หากใช้เครือข่ายองค์กร (LAN/Wi-Fi) อาจถูกบล็อกการเชื่อมต่อกับ Database<br/>
-                - ลองเปิดเว็บนี้ด้วย "หน้าต่างไม่ระบุตัวตน (Incognito Mode)"
-             </div>
-          </div>
-        ) : (
-          (() => {
-            const busyCars = cars.filter(c => c.status === 'busy')
-            const availableCars = cars.filter(c => c.status !== 'busy')
+        {/* ── Car List ── */}
+        {(() => {
+          const busyCars = cars.filter(c => c.status === 'busy')
+          const availableCars = cars.filter(c => c.status !== 'busy')
 
-            const CarRow = ({ car, isLast }) => {
-              const carImageSrc = getCarImage(car)
-              const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
-              const isBusy = car.status === 'busy'
-              const statusDot = !car.isActivated ? '#aeaeb2' : isBusy ? '#ff3b30' : isEV ? '#0071e3' : '#34c759'
-              const imgBg = !car.isActivated ? '#f5f5f7' : isBusy ? '#fff2f0' : isEV ? '#edf6ff' : '#edfbf0'
-
-              return (
-                <div className="row-tap bg-white relative flex items-center gap-4 px-4 py-4 active:bg-[#f5f5f7] transition-colors"
-                     style={{borderBottom: isLast ? 'none' : '0.5px solid rgba(60,60,67,0.1)'}}>
-                  <div className="w-[76px] h-[76px] flex-shrink-0 rounded-[18px] overflow-hidden flex items-center justify-center"
-                       style={{background: imgBg}}>
-                    {carImageSrc
-                      ? <img src={carImageSrc} alt={car.car_type}
-                          className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
-                      : <span className="text-[36px]">🚗</span>}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[20px] font-semibold tracking-[-0.5px] leading-tight ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
-                        {car.plate_number}
-                      </span>
-                      <span className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${isBusy ? 'animate-pulse' : ''}`}
-                            style={{background: statusDot}}/>
-                    </div>
-                    <p className="text-[13px] truncate mt-0.5 leading-snug">
-                      <span className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#6e3fa3]'}>
-                        {car.car_type}
-                      </span>
-                    </p>
-                    <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                      <span className={`text-[12px] font-medium px-2.5 py-[3px] rounded-full ${
-                        !car.isActivated ? 'bg-[#f5f5f7] text-[#aeaeb2]'
-                        : isBusy ? 'bg-[#fff2f0] text-[#ff3b30]'
-                        : isEV ? 'bg-[#edf6ff] text-[#0071e3]'
-                        : 'bg-[#edfbf0] text-[#248a3d]'
-                      }`}>
-                        {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
-                      </span>
-                      {isBusy && car.activeLog && (
-                        <span className="text-[12px] text-[#aeaeb2]">
-                          ออก {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
-                        </span>
-                      )}
-                    </div>
-                    {isBusy && car.activeLog && (
-                      <p className="text-[13px] text-[#1d1d1f] mt-1 font-medium truncate">
-                        👤 {car.activeLog.driver_name}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
-                      className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors">
-                      🖨️
-                    </button>
-                    <svg width="7" height="12" viewBox="0 0 7 12" fill="none" className="opacity-[0.2] flex-shrink-0">
-                      <path d="M1 1l5 5-5 5" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                </div>
-              )
-            }
+          const CarRow = ({ car, isLast }) => {
+            const carImageSrc = getCarImage(car)
+            const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
+            const isBusy = car.status === 'busy'
+            const statusDot = !car.isActivated ? '#aeaeb2' : isBusy ? '#ff3b30' : isEV ? '#0071e3' : '#34c759'
+            const imgBg = !car.isActivated ? '#f5f5f7' : isBusy ? '#fff2f0' : isEV ? '#edf6ff' : '#edfbf0'
 
             return (
-              <div className="space-y-5">
-                {busyCars.length > 0 && (
-                  <div>
-                    <div className="flex items-baseline justify-between mb-2 px-1">
-                      <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">กำลังใช้งาน</h2>
-                      <span className="text-[13px] text-[#aeaeb2]">{busyCars.length} คัน</span>
-                    </div>
-                    <div className="rounded-[18px] overflow-hidden"
-                         style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-                      {busyCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === busyCars.length - 1}/>)}
-                    </div>
-                  </div>
-                )}
+              <div className="row-tap bg-white relative flex items-center gap-4 px-4 py-4 active:bg-[#f5f5f7] transition-colors"
+                   style={{borderBottom: isLast ? 'none' : '0.5px solid rgba(60,60,67,0.1)'}}>
+                <div className="w-[76px] h-[76px] flex-shrink-0 rounded-[18px] overflow-hidden flex items-center justify-center"
+                     style={{background: imgBg}}>
+                  {carImageSrc
+                    ? <img src={carImageSrc} alt={car.car_type}
+                        className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
+                    : <span className="text-[36px]">🚗</span>}
+                </div>
 
-                {availableCars.length > 0 && (
-                  <div>
-                    <div className="flex items-baseline justify-between mb-2 px-1">
-                      <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">พร้อมใช้งาน</h2>
-                      <span className="text-[13px] text-[#aeaeb2]">{availableCars.length} คัน</span>
-                    </div>
-                    <div className="rounded-[18px] overflow-hidden"
-                         style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-                      {availableCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === availableCars.length - 1}/>)}
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[20px] font-semibold tracking-[-0.5px] leading-tight ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
+                      {car.plate_number}
+                    </span>
+                    <span className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${isBusy ? 'animate-pulse' : ''}`}
+                          style={{background: statusDot}}/>
                   </div>
-                )}
+                  <p className="text-[13px] truncate mt-0.5 leading-snug">
+                    <span className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#6e3fa3]'}>
+                      {car.car_type}
+                    </span>
+                  </p>
+                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                    <span className={`text-[12px] font-medium px-2.5 py-[3px] rounded-full ${
+                      !car.isActivated ? 'bg-[#f5f5f7] text-[#aeaeb2]'
+                      : isBusy ? 'bg-[#fff2f0] text-[#ff3b30]'
+                      : isEV ? 'bg-[#edf6ff] text-[#0071e3]'
+                      : 'bg-[#edfbf0] text-[#248a3d]'
+                    }`}>
+                      {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+                    </span>
+                    {isBusy && car.activeLog && (
+                      <span className="text-[12px] text-[#aeaeb2]">
+                        ออก {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
+                      </span>
+                    )}
+                  </div>
+                  {isBusy && car.activeLog && (
+                    <p className="text-[13px] text-[#1d1d1f] mt-1 font-medium truncate">
+                      👤 {car.activeLog.driver_name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
+                    className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors">
+                    🖨️
+                  </button>
+                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none" className="opacity-[0.2] flex-shrink-0">
+                    <path d="M1 1l5 5-5 5" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
               </div>
             )
-          })()
-        )}
+          }
+
+          return (
+            <div className="space-y-5">
+              {busyCars.length > 0 && (
+                <div>
+                  <div className="flex items-baseline justify-between mb-2 px-1">
+                    <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">กำลังใช้งาน</h2>
+                    <span className="text-[13px] text-[#aeaeb2]">{busyCars.length} คัน</span>
+                  </div>
+                  <div className="rounded-[18px] overflow-hidden"
+                       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
+                    {busyCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === busyCars.length - 1}/>)}
+                  </div>
+                </div>
+              )}
+
+              {availableCars.length > 0 && (
+                <div>
+                  <div className="flex items-baseline justify-between mb-2 px-1">
+                    <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">พร้อมใช้งาน</h2>
+                    <span className="text-[13px] text-[#aeaeb2]">{availableCars.length} คัน</span>
+                  </div>
+                  <div className="rounded-[18px] overflow-hidden"
+                       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
+                    {availableCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === availableCars.length - 1}/>)}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         <p className="text-center text-[11px] text-[#d2d2d7] mt-10">PEA Fleet System v2.26</p>
       </div>
