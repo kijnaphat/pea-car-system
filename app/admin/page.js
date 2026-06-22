@@ -7,12 +7,13 @@ const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: '
 const initialStaffData = { staff_code: '', full_name: '', position: '', department_id: '' }
 const initialTaskData = { name: '', department_id: '' }
 const initialDepartmentData = { name: '' }
+const initialOperationAreaData = { name: '' } // 📍 เพิ่ม Initial State สำหรับสถานที่
 
 const fieldLabels = {
   plate_number: 'ป้ายทะเบียน', model: 'ยี่ห้อ/รุ่น', car_type: 'ประเภทรถ', fuel_type: 'กินน้ำมัน/ไฟฟ้า', 
   budget: 'งบจัดหา', department: 'สังกัด(เขียนเอา)', usage_type: 'เอาไปทำไร', ownership_type: 'รถใคร?',
   staff_code: 'รหัสลับ', full_name: 'ชื่อ-สกุล', position: 'ตำแหน่ง/ทรง', department_id: 'รหัสซุ้ม',
-  name: 'ชื่อลายแทง'
+  name: 'ชื่อ (ลายแทง/ซุ้ม/สถานที่)' // 📍 ปรับชื่อ label ให้ครอบคลุม
 }
 
 export default function AdminDashboard() {
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
   const [staffData, setStaffData] = useState(initialStaffData)
   const [taskData, setTaskData] = useState(initialTaskData)
   const [departmentData, setDepartmentData] = useState(initialDepartmentData)
+  const [operationAreaData, setOperationAreaData] = useState(initialOperationAreaData) // 📍 State ของฟอร์มสถานที่
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
   const [staffList, setStaffList] = useState([])
   const [tasksList, setTasksList] = useState([])
   const [departmentsList, setDepartmentsList] = useState([])
+  const [operationAreasList, setOperationAreasList] = useState([]) // 📍 State เก็บข้อมูลสถานที่จาก DB
   const [departmentsOptions, setDepartmentsOptions] = useState([])
 
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, table: '', data: null })
@@ -66,6 +69,9 @@ export default function AdminDashboard() {
       } else if (activeMenu === 'departments') {
         const { data } = await supabase.from('departments').select('*').order('created_at', { ascending: false })
         setDepartmentsList(data || [])
+      } else if (activeMenu === 'operation_areas') { // 📍 ดึงข้อมูลตาราง operation_areas
+        const { data } = await supabase.from('operation_areas').select('*').order('created_at', { ascending: false })
+        setOperationAreasList(data || [])
       }
     } catch (error) { console.error('Error:', error.message) }
   }, [activeMenu])
@@ -85,6 +91,7 @@ export default function AdminDashboard() {
     setEditingId(null)
     setCarData(initialCarData); setStaffData(initialStaffData)
     setTaskData(initialTaskData); setDepartmentData(initialDepartmentData)
+    setOperationAreaData(initialOperationAreaData) // 📍 รีเซ็ตสถานที่
   }
 
   const handleEdit = (type, data) => {
@@ -96,6 +103,7 @@ export default function AdminDashboard() {
     if (type === 'staff') setStaffData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'tasks') setTaskData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'departments') setDepartmentData(cleanData)
+    if (type === 'operation_areas') setOperationAreaData(cleanData) // 📍 ดึงข้อมูลสถานที่มาแก้
     
     document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })
   }
@@ -115,6 +123,7 @@ export default function AdminDashboard() {
       if (table === 'staff') oldData = staffList.find(item => item.id === editingId)
       if (table === 'tasks') oldData = tasksList.find(item => item.id === editingId)
       if (table === 'departments') oldData = departmentsList.find(item => item.id === editingId)
+      if (table === 'operation_areas') oldData = operationAreasList.find(item => item.id === editingId) // 📍 หา oldData สถานที่
       
       const cleanOldData = { ...oldData }; delete cleanOldData.departments 
       setUpdateModal({ isOpen: true, table, oldData: cleanOldData, newData: payload })
@@ -170,12 +179,12 @@ export default function AdminDashboard() {
     </div>
   )
 
-  // เปลี่ยนชื่อกลับเป็นแบบเดิม แต่ใส่ desc แบบกวนๆ
   const sidebarMenus = [
     { id: 'cars', icon: '🛵', title: '1. จัดการรถยนต์', desc: 'รถแต่งซิ่งหรือวิ่งทิพย์' },
     { id: 'staff', icon: '😎', title: '2. พนักงาน', desc: 'รวมพลคนตึงๆ ทั้งนั้น' },
     { id: 'tasks', icon: '🗺️', title: '3. ตารางงาน', desc: 'จะแว้นไปไหนต่อไหนว่ามา' },
     { id: 'departments', icon: '🏢', title: '4. แผนก', desc: 'อยู่ซุ้มไหน ซอยไหน' },
+    { id: 'operation_areas', icon: '📍', title: '5. สถานที่', desc: 'จุดเกิดเหตุ / จุดนัดหมาย' }, // 📍 เพิ่มเมนูที่ 5
   ]
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
   
@@ -277,7 +286,7 @@ export default function AdminDashboard() {
 
       {isSidebarOpen && <div className="fixed inset-0 bg-[#088cb3]/80 z-40 lg:hidden backdrop-blur-md" onClick={() => setIsSidebarOpen(false)}></div>}
 
-      {/* 👈 Sidebar: ธีมสีฟ้า #088cb3 */}
+      {/* 👈 Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 w-[300px] bg-[#088cb3] text-white flex flex-col transition-transform duration-300 z-50 shadow-2xl ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} rounded-r-[3rem] lg:rounded-none overflow-hidden`}>
         
         <div className="h-32 flex items-center gap-4 px-8 border-b-2 border-white/10 shrink-0 relative z-10">
@@ -306,7 +315,6 @@ export default function AdminDashboard() {
           ))}
         </nav>
 
-        {/* รถใหญ่แอบอยู่ท้าย Sidebar */}
         <div className="relative mt-auto pointer-events-none">
            <img src="/scooter.png" alt="Big Sidebar Scooter" className="w-72 absolute bottom-0 -right-12 opacity-30 drop-shadow-2xl translate-y-10 hover:-translate-y-2 transition-transform duration-500" />
         </div>
@@ -343,10 +351,9 @@ export default function AdminDashboard() {
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 scroll-smooth relative z-10">
           <div className="max-w-6xl mx-auto space-y-12 pb-24">
 
-            {/* ส่วนที่ 1: ฟอร์ม - กล่องใหญ่สะใจ มี Action ดึ๋งๆ */}
+            {/* ส่วนที่ 1: ฟอร์ม */}
             <div id="form-section" className="bg-white/95 backdrop-blur-md p-8 sm:p-12 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] border-2 border-gray-100 relative overflow-hidden group hover:border-[#088cb3]/30 transition-colors duration-500">
               
-              {/* รถแอบตรงมุมฟอร์ม */}
               <img src="/scooter.png" alt="Corner Scooter" className="absolute -top-10 -right-10 w-72 opacity-10 rotate-[20deg] pointer-events-none group-hover:rotate-[35deg] group-hover:scale-110 transition-transform duration-700" />
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-10 relative z-10">
@@ -360,6 +367,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="relative z-10">
+              {/* ฟอร์มรถ */}
               {activeMenu === 'cars' && (
                 <form onSubmit={(e) => handlePreSubmit(e, 'cars', carData)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="sm:col-span-1 lg:col-span-1"><label className={labelStyle}>ป้ายทะเบียน (อย่าเถื่อน) *</label><input type="text" required placeholder="กข 1234 หรือ ป้ายแดง?" value={carData.plate_number} onChange={e => setCarData({...carData, plate_number: e.target.value})} className={inputStyle} /></div>
@@ -379,6 +387,7 @@ export default function AdminDashboard() {
                 </form>
               )}
 
+              {/* ฟอร์มพนักงาน */}
               {activeMenu === 'staff' && (
                 <form onSubmit={(e) => handlePreSubmit(e, 'staff', staffData)} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div><label className={labelStyle}>รหัสลับตัวตึง *</label><input type="text" required placeholder="ใส่รหัสซะ!" value={staffData.staff_code} onChange={e => setStaffData({...staffData, staff_code: e.target.value})} className={inputStyle} /></div>
@@ -396,6 +405,7 @@ export default function AdminDashboard() {
                 </form>
               )}
 
+              {/* ฟอร์มตารางงาน */}
               {activeMenu === 'tasks' && (
                 <form onSubmit={(e) => handlePreSubmit(e, 'tasks', taskData)} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div><label className={labelStyle}>ชื่อลายแทง (ไปแว้นไหน) *</label><input type="text" required placeholder="เช่น ไปรับสาวหน้าปากซอย" value={taskData.name} onChange={e => setTaskData({...taskData, name: e.target.value})} className={inputStyle} /></div>
@@ -411,6 +421,7 @@ export default function AdminDashboard() {
                 </form>
               )}
 
+              {/* ฟอร์มแผนก */}
               {activeMenu === 'departments' && (
                 <form onSubmit={(e) => handlePreSubmit(e, 'departments', departmentData)} className="grid grid-cols-1 sm:grid-cols-4 gap-6 items-end">
                   <div className="sm:col-span-3"><label className={labelStyle}>ชื่อซุ้ม / ชื่อแก๊งใหม่ *</label><input type="text" required placeholder="เช่น กฟล. แก๊งลูกหมู" value={departmentData.name} onChange={e => setDepartmentData({...departmentData, name: e.target.value})} className={inputStyle} /></div>
@@ -421,17 +432,32 @@ export default function AdminDashboard() {
                   </div>
                 </form>
               )}
+
+              {/* 📍 ฟอร์มสถานที่ (operation_areas) */}
+              {activeMenu === 'operation_areas' && (
+                <form onSubmit={(e) => handlePreSubmit(e, 'operation_areas', operationAreaData)} className="grid grid-cols-1 sm:grid-cols-4 gap-6 items-end">
+                  <div className="sm:col-span-3">
+                    <label className={labelStyle}>ชื่อสถานที่ / จุดเกิดเหตุ *</label>
+                    <input type="text" required placeholder="เช่น ท้ายซอย 4, ลานกว้างหน้าห้าง" value={operationAreaData.name} onChange={e => setOperationAreaData({...operationAreaData, name: e.target.value})} className={inputStyle} />
+                  </div>
+                  <div className="sm:col-span-1 mt-4 sm:mt-0">
+                    <button type="submit" className={`w-full py-5 text-white rounded-full font-black shadow-xl transition-all text-base hover-engine-shake active:scale-90 active:rotate-3 ${editingId ? 'bg-[#088cb3] shadow-[#088cb3]/40 border-b-4 border-[#065b75]' : 'bg-[#a42f56] shadow-[#a42f56]/40 border-b-4 border-[#7a1f3c]'}`}>
+                      {editingId ? '📍 ย้ายจุดนัดพบ' : '📍 ปักหมุดที่ใหม่!'}
+                    </button>
+                  </div>
+                </form>
+              )}
               </div>
             </div>
 
-            {/* ส่วนที่ 2: รายการข้อมูล - ตารางยุบยับ */}
+            {/* ส่วนที่ 2: รายการข้อมูล */}
             <div className="bg-white/95 backdrop-blur-md rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border-2 border-gray-100 overflow-hidden transition-all">
               <div className="p-8 border-b-2 border-gray-100 bg-gray-50 flex justify-between items-center">
                 <h3 className="text-sm font-black text-gray-600 uppercase tracking-widest flex items-center gap-3">
                   <img src="/scooter.png" alt="icon" className="w-12 animate-super-float-fast drop-shadow-lg" /> รายการของในโกดัง
                 </h3>
                 <span className="bg-[#088cb3] text-white py-2 px-6 rounded-full text-sm font-black shadow-md active:scale-75 transition-transform cursor-pointer hover-engine-shake">
-                  โผล่มาแล้ว {activeMenu === 'cars' ? carsList.length : activeMenu === 'staff' ? staffList.length : activeMenu === 'tasks' ? tasksList.length : departmentsList.length} ตัว
+                  โผล่มาแล้ว {activeMenu === 'cars' ? carsList.length : activeMenu === 'staff' ? staffList.length : activeMenu === 'tasks' ? tasksList.length : activeMenu === 'departments' ? departmentsList.length : operationAreasList.length} ตัว
                 </span>
               </div>
 
@@ -476,9 +502,10 @@ export default function AdminDashboard() {
                   </table>
                 )}
 
-                {(activeMenu === 'tasks' || activeMenu === 'departments') && (
+                {/* 📍 แสดงเป็นแบบกล่องการ์ดเหมือนกัน สำหรับ งาน, แผนก, และสถานที่ */}
+                {(activeMenu === 'tasks' || activeMenu === 'departments' || activeMenu === 'operation_areas') && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(activeMenu === 'tasks' ? tasksList : departmentsList).map(item => (
+                    {(activeMenu === 'tasks' ? tasksList : activeMenu === 'departments' ? departmentsList : operationAreasList).map(item => (
                       <div key={item.id} className="p-8 border-2 border-gray-100 rounded-[3rem] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all bg-white relative overflow-hidden group active:scale-95 active:rotate-1 cursor-pointer">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-[100%] group-hover:bg-[#088cb3]/10 transition-colors duration-500"></div>
                         <img src="/scooter.png" className="absolute -bottom-10 -right-5 w-40 opacity-10 group-hover:opacity-30 group-hover:scale-125 group-hover:-rotate-[20deg] transition-all duration-500" alt="bg" />

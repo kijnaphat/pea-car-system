@@ -168,7 +168,6 @@ export default function UltimateDashboard() {
   useEffect(() => {
     if (carsList.length === 0) return
 
-    // ⚡️ ฟังก์ชันแปลงตัวเลขให้ชัวร์ (ลบลูกน้ำ และอักขระแปลกปลอมออก) เพื่อแก้บัคการคำนวณ
     const parseNum = (val) => {
         if (val === null || val === undefined || val === '') return 0;
         const strVal = String(val).replace(/,/g, '').replace(/[^\d.-]/g, '');
@@ -176,7 +175,6 @@ export default function UltimateDashboard() {
         return isNaN(parsed) ? 0 : parsed;
     };
 
-    // ✅ ฟังก์ชันเช็คประเภทรถ
     const isEVCar = (c) => String(c.fuel_type || '').trim().toUpperCase() === 'EV';
     const isRentalCar = (c) => String(c.ownership_type || '').trim() === 'รถเช่า' || String(c.ownership_type || '').includes('เช่า');
 
@@ -192,7 +190,6 @@ export default function UltimateDashboard() {
     
     const filteredLogs = rawLogs.filter(l => allowedCarIds.has(String(l.car_id)));
 
-    // ⚡️ ฟังก์ชันคำนวณระยะทางจาก trip_logs สำหรับกรณี Fallback หรือผู้ขับขี่
     const getLogDistance = (l) => {
         const start = parseNum(l.start_mileage);
         const end = parseNum(l.end_mileage);
@@ -206,19 +203,16 @@ export default function UltimateDashboard() {
         const cLogs = filteredLogs.filter(l => String(l.car_id) === String(c.id));
         const isEV = evCarIds.has(String(c.id));
         
-        // ⚡️ หาไมล์ต้นเดือน และ ปลายเดือน
         const validStartLogs = cLogs.filter(l => parseNum(l.start_mileage) > 0);
         const validEndLogs = cLogs.filter(l => parseNum(l.end_mileage) > 0);
         
         const minStartMil = validStartLogs.length > 0 ? Math.min(...validStartLogs.map(l => parseNum(l.start_mileage))) : 0;
         const maxEndMil = validEndLogs.length > 0 ? Math.max(...validEndLogs.map(l => parseNum(l.end_mileage))) : 0;
 
-        // ⚡️ คำนวณระยะทางรวม: ไมล์ล่าสุด ลบ ไมล์เริ่มต้น (ตามที่ต้องการ)
         let totalD = 0;
         if (maxEndMil > minStartMil && minStartMil > 0) {
             totalD = maxEndMil - minStartMil;
         } else {
-            // Fallback ถ้ารถวิ่งแค่รอบเดียว หรือกรอกไมล์ไม่ครบ
             totalD = cLogs.reduce((s, l) => s + getLogDistance(l), 0);
             if (totalD === 0) {
                 totalD = parseNum(c.mileage) || parseNum(c.current_mileage) || parseNum(c.distance) || 0;
@@ -235,6 +229,31 @@ export default function UltimateDashboard() {
 
         const startMil = minStartMil > 0 ? minStartMil : '-';
         const endMil = maxEndMil > 0 ? maxEndMil : '-';
+
+        // ⚡️ คำนวณประเภทงานและพื้นที่ปฏิบัติงานสำหรับ รถยอดนิยม
+        const purposes = {};
+        const locations = {};
+        cLogs.forEach(l => {
+            let p = 'งานทั่วไป';
+            if (isEV) {
+                p = 'ชาร์จรถ EV';
+            } else if (l.location && l.location !== '-') {
+                const matchP = l.location.match(/\[.*? - (.*?)\]/);
+                p = matchP ? matchP[1].trim() : l.location;
+                if(p.length > 25) p = p.substring(0, 25) + '...';
+            }
+            purposes[p] = (purposes[p] || 0) + 1;
+
+            let a = 'ไม่ระบุพื้นที่';
+            if (isEV) {
+                a = l.station_name || l.location || 'สถานีชาร์จ';
+            } else if (l.location && l.location !== '-') {
+                const matchA = l.location.match(/\]\s*(.*)/);
+                a = matchA && matchA[1] ? matchA[1].trim() : l.location;
+                if(a.length > 25) a = a.substring(0, 25) + '...';
+            }
+            locations[a] = (locations[a] || 0) + 1;
+        });
 
         return {
           id: c.id,
@@ -256,7 +275,9 @@ export default function UltimateDashboard() {
           repairCount: repairCount,
           repairCost: totalRepairCost,
           startMil: startMil,
-          endMil: endMil
+          endMil: endMil,
+          workTypes: Object.entries(purposes).map(([p, count]) => `${p} (${count})`).join(', '),
+          areas: Object.entries(locations).map(([a, count]) => `${a} (${count})`).join(', ')
         }
     }).sort((a,b) => a.dist !== b.dist ? b.dist - a.dist : b.trips - a.trips); 
 
@@ -276,36 +297,34 @@ export default function UltimateDashboard() {
     }));
     setPrintData(pData);
 
-    // 3. ดึง Global Stats จาก Fleet Data
+    // 3. ดึง Global Stats
     const evDist = fleetData.filter(c => c.type === 'EV').reduce((s, c) => s + c.dist, 0);
     const gDist = fleetData.filter(c => c.type !== 'EV').reduce((s, c) => s + c.dist, 0);
     const totalDist = gDist + evDist;
     const totalTrips = filteredLogs.length;
 
-    // ข้อมูลรถน้ำมันเฉพาะ
     const gasLogs = filteredLogs.filter(l => !evCarIds.has(String(l.car_id)));
     const gCost = gasLogs.reduce((s, l) => s + parseNum(l.fuel_cost), 0);
     const gLiters = gasLogs.reduce((s, l) => s + parseNum(l.fuel_liters), 0);
 
-    // ข้อมูลรถ EV เฉพาะ
     const evLogs = filteredLogs.filter(l => evCarIds.has(String(l.car_id)));
     const evCharges = evLogs.filter(l => parseNum(l.battery_after) > 0);
     const battGains = evCharges.map(l => (parseNum(l.battery_after) - parseNum(l.battery_before)));
     const avgCharge = battGains.length > 0 ? (battGains.reduce((a,b)=>a+b,0)/battGains.length) : 0;
 
+    // 4. ข้อมูลพนักงาน
     const driverMap = {}
     const locMap = {}
     const hourlyMap = Array(24).fill(0)
 
     filteredLogs.forEach(l => {
-      // ⚡️ เก็บรวบรวมประเภทงาน (purpose) แยกตามผู้ขับ
-      if (!driverMap[l.driver_name]) driverMap[l.driver_name] = { trips: 0, dist: 0, cars: new Set(), purposes: {} }
+      if (!driverMap[l.driver_name]) driverMap[l.driver_name] = { logs: [], cars: new Set(), purposes: {}, locations: {} }
       
-      driverMap[l.driver_name].trips++
-      driverMap[l.driver_name].dist += getLogDistance(l);
+      driverMap[l.driver_name].logs.push(l);
       
       if (l.cars?.plate_number) driverMap[l.driver_name].cars.add(l.cars.plate_number)
       
+      // ดึงประเภทงาน (purpose)
       let p = 'งานทั่วไป';
       if (l.cars?.fuel_type?.toUpperCase() === 'EV') {
           p = 'ชาร์จรถ EV';
@@ -314,8 +333,18 @@ export default function UltimateDashboard() {
           p = match ? match[1].trim() : l.location;
           if(p.length > 25) p = p.substring(0, 25) + '...';
       }
-      
       driverMap[l.driver_name].purposes[p] = (driverMap[l.driver_name].purposes[p] || 0) + 1;
+
+      // ⚡️ ดึงพื้นที่ปฏิบัติงาน (location/area) ให้ผู้ขับ
+      let a = 'ไม่ระบุพื้นที่';
+      if (l.cars?.fuel_type?.toUpperCase() === 'EV') {
+          a = l.station_name || l.location || 'สถานีชาร์จ';
+      } else if (l.location && l.location !== '-') {
+          const matchA = l.location.match(/\]\s*(.*)/);
+          a = matchA && matchA[1] ? matchA[1].trim() : l.location;
+          if(a.length > 25) a = a.substring(0, 25) + '...';
+      }
+      driverMap[l.driver_name].locations[a] = (driverMap[l.driver_name].locations[a] || 0) + 1;
 
       if (l.location && l.location !== '-') {
           locMap[l.location] = (locMap[l.location] || 0) + 1
@@ -324,13 +353,35 @@ export default function UltimateDashboard() {
       hourlyMap[hour]++
     })
     
-    const driverList = Object.entries(driverMap).map(([name, data]) => ({
-      name, 
-      trips: data.trips, 
-      dist: data.dist, 
-      carsUsed: Array.from(data.cars).join(', '),
-      workTypes: Object.entries(data.purposes).map(([p, count]) => `${p} (${count})`).join(', ')
-    })).sort((a,b) => a.dist !== b.dist ? b.dist - a.dist : b.trips - a.trips)
+    const driverList = Object.entries(driverMap).map(([name, data]) => {
+      let driverTotalDist = 0;
+      const logsByCar = {};
+      data.logs.forEach(l => {
+          if (!logsByCar[l.car_id]) logsByCar[l.car_id] = [];
+          logsByCar[l.car_id].push(l);
+      });
+      
+      Object.keys(logsByCar).forEach(cId => {
+          const cLogs = logsByCar[cId];
+          const allMils = cLogs.flatMap(l => [parseNum(l.start_mileage), parseNum(l.end_mileage)]).filter(m => m > 0);
+          if (allMils.length > 0) {
+              const minM = Math.min(...allMils);
+              const maxM = Math.max(...allMils);
+              if (maxM > minM) {
+                  driverTotalDist += (maxM - minM);
+              }
+          }
+      });
+
+      return {
+        name, 
+        trips: data.logs.length, 
+        dist: driverTotalDist, 
+        carsUsed: Array.from(data.cars).join(', '),
+        workTypes: Object.entries(data.purposes).map(([p, count]) => `${p} (${count})`).join(', '),
+        areas: Object.entries(data.locations).map(([a, count]) => `${a} (${count})`).join(', ') // เพิ่ม Areas กลับไปโชว์
+      }
+    }).sort((a,b) => a.dist !== b.dist ? b.dist - a.dist : b.trips - a.trips)
 
     const topLocationsList = Object.entries(locMap).map(([name, count]) => ({
         name, count
@@ -970,21 +1021,32 @@ export default function UltimateDashboard() {
               <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">🏆 รถยอดนิยม</p>
               <div className="max-h-[240px] overflow-y-auto st pr-2">
                 {analytics.fleetTable.filter(c=>c.dist>0 || c.trips>0).map((c,i)=>(
-                  <div key={i} className="flex items-center gap-3.5 py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
-                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold"
-                         style={{
-                           background: i===0 ? 'linear-gradient(135deg,#ffcc00,#ff9500)' : i===1 ? 'linear-gradient(135deg,#d2d2d7,#aeaeb2)' : i===2 ? 'linear-gradient(135deg,#f4a460,#cd853f)' : '#f2f2f7',
-                           color: i<=2 ? 'white' : '#6e6e73'
-                         }}>
-                      {i+1}
+                  <div key={i} className="flex flex-col py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold"
+                           style={{
+                             background: i===0 ? 'linear-gradient(135deg,#ffcc00,#ff9500)' : i===1 ? 'linear-gradient(135deg,#d2d2d7,#aeaeb2)' : i===2 ? 'linear-gradient(135deg,#f4a460,#cd853f)' : '#f2f2f7',
+                             color: i<=2 ? 'white' : '#6e6e73'
+                           }}>
+                        {i+1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-semibold text-[#1d1d1f] truncate">{c.plate}</p>
+                        <p className="text-[11px] text-[#aeaeb2] truncate">{c.model}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[14px] font-semibold text-[#1d1d1f]">{c.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></p>
+                        <p className="text-[11px] text-[#aeaeb2]">{c.trips} รอบ</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-[#1d1d1f] truncate">{c.plate}</p>
-                      <p className="text-[11px] text-[#aeaeb2] truncate">{c.model}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-[14px] font-semibold text-[#1d1d1f]">{c.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></p>
-                      <p className="text-[11px] text-[#aeaeb2]">{c.trips} รอบ</p>
+                    {/* ✅ เพิ่มป้ายกำกับ ประเภทงาน และ พื้นที่ สำหรับรถยอดนิยม */}
+                    <div className="flex flex-wrap gap-1.5 pl-[46px] mt-1.5">
+                      {c.workTypes && c.workTypes !== '' ? c.workTypes.split(', ').map((wt,idx)=>(
+                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">💼 {wt}</span>
+                      )) : null}
+                      {c.areas && c.areas !== '' ? c.areas.split(', ').map((ar,idx)=>(
+                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full">📍 {ar}</span>
+                      )) : null}
                     </div>
                   </div>
                 ))}
@@ -1017,11 +1079,14 @@ export default function UltimateDashboard() {
                         <span className="text-[13px] font-semibold text-[#1d1d1f]">{d.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></span>
                       </div>
                     </div>
-                    {/* ✅ แสดงประเภทงานด้วยสไตล์ป้ายกำกับเหมือน "ใครขับคันไหน" */}
+                    {/* ✅ เพิ่มป้ายกำกับ พื้นที่ปฏิบัติงาน ตามคำขอ (มีของเดิมคือประเภทงานอยู่แล้ว) */}
                     <div className="flex flex-wrap gap-1.5 pl-[34px]">
                       {d.workTypes && d.workTypes !== '' ? d.workTypes.split(', ').map((wt,idx)=>(
-                        <span key={idx} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">{wt}</span>
+                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">💼 {wt}</span>
                       )) : <span className="text-[10px] text-[#aeaeb2]">ไม่มีข้อมูลงาน</span>}
+                      {d.areas && d.areas !== '' ? d.areas.split(', ').map((ar,idx)=>(
+                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full">📍 {ar}</span>
+                      )) : null}
                     </div>
                   </div>
                 ))}
