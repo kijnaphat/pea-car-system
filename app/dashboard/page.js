@@ -168,68 +168,82 @@ export default function UltimateDashboard() {
   useEffect(() => {
     if (carsList.length === 0) return
 
+    // ⚡️ ฟังก์ชันแปลงตัวเลขให้ชัวร์ (ลบลูกน้ำ และอักขระแปลกปลอมออก) เพื่อแก้บัคการคำนวณ
+    const parseNum = (val) => {
+        if (val === null || val === undefined || val === '') return 0;
+        const strVal = String(val).replace(/,/g, '').replace(/[^\d.-]/g, '');
+        const parsed = parseFloat(strVal);
+        return isNaN(parsed) ? 0 : parsed;
+    };
+
+    // ✅ ฟังก์ชันเช็คประเภทรถ
+    const isEVCar = (c) => String(c.fuel_type || '').trim().toUpperCase() === 'EV';
+    const isRentalCar = (c) => String(c.ownership_type || '').trim() === 'รถเช่า' || String(c.ownership_type || '').includes('เช่า');
+
     const filteredCarsList = carsList.filter(c => {
-      const isEV = c.fuel_type?.toUpperCase() === 'EV' || c.plate_number?.includes('6ขฆ');
-      // ⚡️ เงื่อนไขเช็คว่าเป็นรถเช่าหรือไม่
-      const isRental = c.budget?.includes('เช่า') || c.ownership === 'รถเช่า';
-      
-      if (carCategoryFilter === 'ev') return isEV;
-      if (carCategoryFilter === 'rental') return isRental;
-      if (carCategoryFilter === 'pea') return !isRental;
+      if (carCategoryFilter === 'ev') return isEVCar(c);
+      if (carCategoryFilter === 'rental') return isRentalCar(c);
+      if (carCategoryFilter === 'pea') return !isRentalCar(c);
       return true; 
     });
 
-    const allowedCarIds = new Set(filteredCarsList.map(c => c.id));
+    const allowedCarIds = new Set(filteredCarsList.map(c => String(c.id)));
+    const evCarIds = new Set(carsList.filter(c => isEVCar(c)).map(c => String(c.id)));
     
-    const filteredLogs = rawLogs.filter(l => allowedCarIds.has(l.car_id));
+    const filteredLogs = rawLogs.filter(l => allowedCarIds.has(String(l.car_id)));
 
-    const gasLogs = filteredLogs.filter(l => l.cars?.fuel_type?.toUpperCase() !== 'EV' && !l.cars?.plate_number?.includes('6ขฆ'))
-    const gCost = gasLogs.reduce((s, l) => s + (l.fuel_cost || 0), 0)
-    const gDist = gasLogs.reduce((s, l) => s + (l.end_mileage - l.start_mileage), 0)
-    const gLiters = gasLogs.reduce((s, l) => s + (l.fuel_liters || 0), 0)
+    // ⚡️ ฟังก์ชันคำนวณระยะทางจาก trip_logs สำหรับกรณี Fallback หรือผู้ขับขี่
+    const getLogDistance = (l) => {
+        const start = parseNum(l.start_mileage);
+        const end = parseNum(l.end_mileage);
+        if (end > start) return end - start;
+        if (parseNum(l.distance) > 0) return parseNum(l.distance); 
+        return 0;
+    }
 
-    const evLogs = filteredLogs.filter(l => l.cars?.fuel_type?.toUpperCase() === 'EV' || l.cars?.plate_number?.includes('6ขฆ'))
-    const evDist = evLogs.reduce((s, l) => s + (l.end_mileage - l.start_mileage), 0)
-    const evCharges = evLogs.filter(l => l.battery_after > 0)
-    const battGains = evCharges.map(l => (l.battery_after - l.battery_before))
-    const avgCharge = battGains.length > 0 ? (battGains.reduce((a,b)=>a+b,0)/battGains.length) : 0
-
-    const totalDist = gDist + evDist
-    const totalTrips = filteredLogs.length
-
-    const pData = []
-
+    // 1. สร้างและคำนวณข้อมูล fleetData ของแต่ละคัน (หาไมล์ปลายเดือน - ไมล์ต้นเดือน)
     const fleetData = filteredCarsList.map((c, index) => {
-        const cLogs = filteredLogs.filter(l => l.car_id === c.id)
-        const totalD = cLogs.reduce((s, l) => s + (l.end_mileage - l.start_mileage), 0)
-        const totalC = cLogs.reduce((s, l) => s + (l.fuel_cost || 0), 0)
-        const totalL = cLogs.reduce((s, l) => s + (l.fuel_liters || 0), 0)
-        const chargeCount = cLogs.filter(l => l.battery_after > 0 || l.fuel_liters > 0).length
-        const isEV = c.fuel_type?.toUpperCase() === 'EV' || c.plate_number?.includes('6ขฆ')
+        const cLogs = filteredLogs.filter(l => String(l.car_id) === String(c.id));
+        const isEV = evCarIds.has(String(c.id));
+        
+        // ⚡️ หาไมล์ต้นเดือน และ ปลายเดือน
+        const validStartLogs = cLogs.filter(l => parseNum(l.start_mileage) > 0);
+        const validEndLogs = cLogs.filter(l => parseNum(l.end_mileage) > 0);
+        
+        const minStartMil = validStartLogs.length > 0 ? Math.min(...validStartLogs.map(l => parseNum(l.start_mileage))) : 0;
+        const maxEndMil = validEndLogs.length > 0 ? Math.max(...validEndLogs.map(l => parseNum(l.end_mileage))) : 0;
 
-        const cRepairs = repairLogs.filter(r => r.car_id === c.id) 
-        const totalRepairCost = cRepairs.reduce((s, r) => s + (r.cost || 0), 0)
-        const repairCount = cRepairs.length
+        // ⚡️ คำนวณระยะทางรวม: ไมล์ล่าสุด ลบ ไมล์เริ่มต้น (ตามที่ต้องการ)
+        let totalD = 0;
+        if (maxEndMil > minStartMil && minStartMil > 0) {
+            totalD = maxEndMil - minStartMil;
+        } else {
+            // Fallback ถ้ารถวิ่งแค่รอบเดียว หรือกรอกไมล์ไม่ครบ
+            totalD = cLogs.reduce((s, l) => s + getLogDistance(l), 0);
+            if (totalD === 0) {
+                totalD = parseNum(c.mileage) || parseNum(c.current_mileage) || parseNum(c.distance) || 0;
+            }
+        }
 
-        const startMil = cLogs.length > 0 ? Math.min(...cLogs.map(l => l.start_mileage)) : '-'
-        const endMil = cLogs.length > 0 ? Math.max(...cLogs.map(l => l.end_mileage)) : '-'
+        const totalC = cLogs.reduce((s, l) => s + parseNum(l.fuel_cost), 0);
+        const totalL = cLogs.reduce((s, l) => s + parseNum(l.fuel_liters), 0);
+        const chargeCount = cLogs.filter(l => parseNum(l.battery_after) > 0 || parseNum(l.fuel_liters) > 0).length;
 
-        pData.push({
-          no: index + 1,
-          plate: c.plate_number,
-          brand: c.model || '-',
-          type: c.car_type || '-', 
-          budget: c.budget || '-',
-          plan: c.department || '-',
-          startMil: startMil,
-          endMil: endMil,
-          dist: totalD,
-          mainUsage: c.usage_type || '-',
-          remark: repairCount > 0 ? `ซ่อม ${repairCount} ครั้ง (${totalRepairCost.toLocaleString()} บ.)` : 'FD'
-        })
+        const cRepairs = repairLogs.filter(r => String(r.car_id) === String(c.id));
+        const totalRepairCost = cRepairs.reduce((s, r) => s + parseNum(r.cost), 0);
+        const repairCount = cRepairs.length;
+
+        const startMil = minStartMil > 0 ? minStartMil : '-';
+        const endMil = maxEndMil > 0 ? maxEndMil : '-';
 
         return {
+          id: c.id,
           plate: c.plate_number,
+          brand: c.model || '-',
+          car_type: c.car_type || '-', 
+          budget: c.budget || '-',
+          plan: c.department || '-',
+          mainUsage: c.usage_type || '-',
           type: isEV ? 'EV' : 'Gasoline',
           dist: totalD,
           trips: cLogs.length,
@@ -240,21 +254,68 @@ export default function UltimateDashboard() {
           status: c.status,
           model: c.model,
           repairCount: repairCount,
-          repairCost: totalRepairCost
+          repairCost: totalRepairCost,
+          startMil: startMil,
+          endMil: endMil
         }
-    }).sort((a,b) => b.dist - a.dist)
+    }).sort((a,b) => a.dist !== b.dist ? b.dist - a.dist : b.trips - a.trips); 
 
-    setPrintData(pData) 
+    // 2. ซิงค์ข้อมูลกับระบบสั่งพิมพ์ให้เป็นลำดับเดียวกัน
+    const pData = fleetData.map((c, index) => ({
+        no: index + 1,
+        plate: c.plate,
+        brand: c.brand,
+        type: c.car_type, 
+        budget: c.budget,
+        plan: c.plan,
+        startMil: c.startMil,
+        endMil: c.endMil,
+        dist: c.dist,
+        mainUsage: c.mainUsage,
+        remark: c.repairCount > 0 ? `ซ่อม ${c.repairCount} ครั้ง (${c.repairCost.toLocaleString()} บ.)` : '-'
+    }));
+    setPrintData(pData);
+
+    // 3. ดึง Global Stats จาก Fleet Data
+    const evDist = fleetData.filter(c => c.type === 'EV').reduce((s, c) => s + c.dist, 0);
+    const gDist = fleetData.filter(c => c.type !== 'EV').reduce((s, c) => s + c.dist, 0);
+    const totalDist = gDist + evDist;
+    const totalTrips = filteredLogs.length;
+
+    // ข้อมูลรถน้ำมันเฉพาะ
+    const gasLogs = filteredLogs.filter(l => !evCarIds.has(String(l.car_id)));
+    const gCost = gasLogs.reduce((s, l) => s + parseNum(l.fuel_cost), 0);
+    const gLiters = gasLogs.reduce((s, l) => s + parseNum(l.fuel_liters), 0);
+
+    // ข้อมูลรถ EV เฉพาะ
+    const evLogs = filteredLogs.filter(l => evCarIds.has(String(l.car_id)));
+    const evCharges = evLogs.filter(l => parseNum(l.battery_after) > 0);
+    const battGains = evCharges.map(l => (parseNum(l.battery_after) - parseNum(l.battery_before)));
+    const avgCharge = battGains.length > 0 ? (battGains.reduce((a,b)=>a+b,0)/battGains.length) : 0;
 
     const driverMap = {}
     const locMap = {}
     const hourlyMap = Array(24).fill(0)
 
     filteredLogs.forEach(l => {
-      if (!driverMap[l.driver_name]) driverMap[l.driver_name] = { trips: 0, dist: 0, cars: new Set() }
+      // ⚡️ เก็บรวบรวมประเภทงาน (purpose) แยกตามผู้ขับ
+      if (!driverMap[l.driver_name]) driverMap[l.driver_name] = { trips: 0, dist: 0, cars: new Set(), purposes: {} }
+      
       driverMap[l.driver_name].trips++
-      driverMap[l.driver_name].dist += (l.end_mileage - l.start_mileage)
+      driverMap[l.driver_name].dist += getLogDistance(l);
+      
       if (l.cars?.plate_number) driverMap[l.driver_name].cars.add(l.cars.plate_number)
+      
+      let p = 'งานทั่วไป';
+      if (l.cars?.fuel_type?.toUpperCase() === 'EV') {
+          p = 'ชาร์จรถ EV';
+      } else if (l.location && l.location !== '-') {
+          const match = l.location.match(/\[.*? - (.*?)\]/);
+          p = match ? match[1].trim() : l.location;
+          if(p.length > 25) p = p.substring(0, 25) + '...';
+      }
+      
+      driverMap[l.driver_name].purposes[p] = (driverMap[l.driver_name].purposes[p] || 0) + 1;
 
       if (l.location && l.location !== '-') {
           locMap[l.location] = (locMap[l.location] || 0) + 1
@@ -264,8 +325,12 @@ export default function UltimateDashboard() {
     })
     
     const driverList = Object.entries(driverMap).map(([name, data]) => ({
-      name, trips: data.trips, dist: data.dist, carsUsed: Array.from(data.cars).join(', ')
-    })).sort((a,b) => b.dist - a.dist)
+      name, 
+      trips: data.trips, 
+      dist: data.dist, 
+      carsUsed: Array.from(data.cars).join(', '),
+      workTypes: Object.entries(data.purposes).map(([p, count]) => `${p} (${count})`).join(', ')
+    })).sort((a,b) => a.dist !== b.dist ? b.dist - a.dist : b.trips - a.trips)
 
     const topLocationsList = Object.entries(locMap).map(([name, count]) => ({
         name, count
@@ -273,14 +338,14 @@ export default function UltimateDashboard() {
 
     const carDriverMap = {}
     filteredCarsList.forEach(c => {
-      const cLogs = filteredLogs.filter(l => l.car_id === c.id)
+      const cLogs = filteredLogs.filter(l => String(l.car_id) === String(c.id))
       if (cLogs.length > 0) {
         const drivers = {}
         cLogs.forEach(l => {
           drivers[l.driver_name] = (drivers[l.driver_name] || 0) + 1
         })
         carDriverMap[c.plate_number] = {
-           type: c.fuel_type?.toUpperCase() === 'EV' || c.plate_number?.includes('6ขฆ') ? 'EV' : 'GAS',
+           type: evCarIds.has(String(c.id)) ? 'EV' : 'GAS',
            totalTrips: cLogs.length,
            drivers: Object.entries(drivers).map(([name, count]) => `${name} (${count})`).join(', ')
         }
@@ -337,7 +402,7 @@ export default function UltimateDashboard() {
         `}</style>
         
         <div className="max-w-3xl w-full z-10 animate-slide-up flex flex-col items-center">
-          {/* Header Section (กระชับขึ้น) */}
+          {/* Header Section */}
           <div className="text-center mb-6 md:mb-8 flex-shrink-0">
             <img src="/pea_logo.png" className="h-10 md:h-12 mx-auto mb-3 object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/>
             <h1 className="text-[24px] md:text-[34px] font-bold text-[#1d1d1f] tracking-[-1px] leading-tight mb-1">
@@ -389,9 +454,6 @@ export default function UltimateDashboard() {
     )
   }
 
-  // =====================================================================
-  // Loading State สำหรับ Dashboard
-  // =====================================================================
   if (loading && !showWelcome) return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
       <div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/>
@@ -553,7 +615,7 @@ export default function UltimateDashboard() {
                         <td className="border border-[#d2d2d7] p-1.5 text-center">{row.plan}</td>
                         <td className="border border-[#d2d2d7] p-1.5 text-center">{row.startMil}</td>
                         <td className="border border-[#d2d2d7] p-1.5 text-center">{row.endMil}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.dist > 0 ? row.dist : ''}</td>
+                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.dist}</td>
                         <td className="border border-[#d2d2d7] p-1.5 text-left">{row.mainUsage}</td>
                         <td className="border border-[#d2d2d7] p-1.5 text-center font-bold">{isComplete ? '/' : ''}</td>
                         <td className="border border-[#d2d2d7] p-1.5 text-center font-bold">{!isComplete ? '/' : ''}</td>
@@ -662,18 +724,34 @@ export default function UltimateDashboard() {
               </div>
             </div>
 
-            <Card className="p-5 flex flex-col justify-between min-h-[140px]">
-              <div className="w-10 h-10 rounded-[12px] bg-[#fff4e0] flex items-center justify-center text-[20px]">⛽</div>
-              <div className="mt-4 md:mt-0">
-                <Label>น้ำมันรวม</Label>
-                <p className="text-[28px] font-bold text-[#1d1d1f] leading-none tracking-[-0.8px]">
-                  {gasolineStats.fuelLiters.toLocaleString(undefined,{maximumFractionDigits:1})}
-                  <span className="text-[14px] font-normal text-[#6e6e73] ml-1">ลิตร</span>
-                </p>
-                <p className="text-[11px] text-[#aeaeb2] mt-1">฿{gasolineStats.cost.toLocaleString()} · {gasolineStats.efficiency} บ./กม.</p>
-              </div>
-            </Card>
+            {/* ✅ อัปเดต Card 2 ให้เปลี่ยนเป็นข้อมูลการชาร์จถ้าระบุรถ EV */}
+            {carCategoryFilter === 'ev' ? (
+              <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%)'}}>
+                <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center text-[20px]">⚡</div>
+                <div className="mt-4 md:mt-0">
+                  <Label>สถิติการชาร์จไฟ</Label>
+                  <p className="text-[28px] font-bold text-[#0071e3] leading-none tracking-[-0.8px]">
+                    {evStats.charges}
+                    <span className="text-[14px] font-normal text-[#0071e3]/60 ml-1">ครั้ง</span>
+                  </p>
+                  <p className="text-[11px] text-[#0071e3]/60 mt-1">ชาร์จเพิ่มเฉลี่ย {evStats.avgGain}% / ครั้ง</p>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-5 flex flex-col justify-between min-h-[140px]">
+                <div className="w-10 h-10 rounded-[12px] bg-[#fff4e0] flex items-center justify-center text-[20px]">⛽</div>
+                <div className="mt-4 md:mt-0">
+                  <Label>น้ำมันรวม</Label>
+                  <p className="text-[28px] font-bold text-[#1d1d1f] leading-none tracking-[-0.8px]">
+                    {gasolineStats.fuelLiters.toLocaleString(undefined,{maximumFractionDigits:1})}
+                    <span className="text-[14px] font-normal text-[#6e6e73] ml-1">ลิตร</span>
+                  </p>
+                  <p className="text-[11px] text-[#aeaeb2] mt-1">฿{gasolineStats.cost.toLocaleString()} · {gasolineStats.efficiency} บ./กม.</p>
+                </div>
+              </Card>
+            )}
 
+            {/* ✅ อัปเดต Card 3 เปลี่ยน Subtitle เป็นประหยัดน้ำมันสำหรับรถ EV */}
             <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#edfbf0 0%,#d4f5e0 100%)'}}>
               <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center text-[20px]">🌱</div>
               <div className="mt-4 md:mt-0">
@@ -682,7 +760,9 @@ export default function UltimateDashboard() {
                   {evStats.carbonSaved}
                   <span className="text-[14px] font-normal text-[#1a7f37]/60 ml-1">kg</span>
                 </p>
-                <p className="text-[11px] text-[#1a7f37]/60 mt-1">EV Ratio {globalStats.ecoScore}%</p>
+                <p className="text-[11px] text-[#1a7f37]/60 mt-1">
+                  {carCategoryFilter === 'ev' ? `เทียบเท่าประหยัดน้ำมัน ~${(evStats.carbonSaved / 2.3).toFixed(1)} ลิตร` : `EV Ratio ${globalStats.ecoScore}%`}
+                </p>
               </div>
             </Card>
 
@@ -727,7 +807,9 @@ export default function UltimateDashboard() {
             </Card>
 
             <Card className="p-5 lg:col-span-2">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">📍 ปลายทางยอดนิยม</p>
+              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">
+                {carCategoryFilter === 'ev' ? '📍 สถานีชาร์จยอดนิยม' : '📍 ปลายทางยอดนิยม'}
+              </p>
               <div className="space-y-3.5">
                 {analytics.topLocations.length===0
                   ? <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>
@@ -756,7 +838,9 @@ export default function UltimateDashboard() {
 
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-3 fu" style={{animationDelay:'120ms'}}>
             <Card className="p-5 xl:col-span-3">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">📅 ความถี่การใช้งาน</p>
+              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">
+                📅 {carCategoryFilter === 'ev' ? 'ความถี่การนำรถไปชาร์จ' : 'ความถี่การใช้งาน'}
+              </p>
               <p className="text-[12px] text-[#6e6e73] mb-5">จำนวนภารกิจรายวัน</p>
               <div className="h-44 flex items-end gap-2 pb-1 overflow-x-auto st">
                 {analytics.dailyTrend.length===0
@@ -809,7 +893,7 @@ export default function UltimateDashboard() {
               <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="border-b border-[rgba(0,0,0,0.05)]">
-                    {['ทะเบียน / รุ่น','สถานะ','ภารกิจ','ระยะทาง','เชื้อเพลิง','ประสิทธิภาพ', 'รายการซ่อม', 'ค่าซ่อม'].map(h=>(
+                    {['ทะเบียน / รุ่น','สถานะ','ภารกิจ','ระยะทาง','เชื้อเพลิง', carCategoryFilter === 'ev' ? 'ระยะทาง/ชาร์จ' : 'ประสิทธิภาพ', 'รายการซ่อม', 'ค่าซ่อม'].map(h=>(
                       <th key={h} className="px-4 md:px-6 py-3 text-left text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -848,7 +932,7 @@ export default function UltimateDashboard() {
                       </td>
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         {c.type==='EV'
-                          ? <span className="text-[11px] font-semibold bg-[rgba(52,199,89,0.12)] text-[#1a7f37] px-2.5 py-[5px] rounded-full">EV</span>
+                          ? <span className="text-[13px] font-semibold text-[#1a7f37]">{c.trips > 0 ? (c.dist / c.trips).toFixed(1) : 0}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">กม./ครั้ง</span></span>
                           : <span className="text-[13px] font-semibold text-[#1d1d1f]">{c.efficiency}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">บ./กม.</span></span>
                         }
                       </td>
@@ -884,11 +968,14 @@ export default function UltimateDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 fu" style={{animationDelay:'240ms'}}>
             <Card className="p-5">
               <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">🏆 รถยอดนิยม</p>
-              <div>
-                {analytics.fleetTable.filter(c=>c.dist>0).slice(0,3).map((c,i)=>(
+              <div className="max-h-[240px] overflow-y-auto st pr-2">
+                {analytics.fleetTable.filter(c=>c.dist>0 || c.trips>0).map((c,i)=>(
                   <div key={i} className="flex items-center gap-3.5 py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
-                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold text-white"
-                         style={{background:['linear-gradient(135deg,#ffcc00,#ff9500)','linear-gradient(135deg,#d2d2d7,#aeaeb2)','linear-gradient(135deg,#f4a460,#cd853f)'][i]}}>
+                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold"
+                         style={{
+                           background: i===0 ? 'linear-gradient(135deg,#ffcc00,#ff9500)' : i===1 ? 'linear-gradient(135deg,#d2d2d7,#aeaeb2)' : i===2 ? 'linear-gradient(135deg,#f4a460,#cd853f)' : '#f2f2f7',
+                           color: i<=2 ? 'white' : '#6e6e73'
+                         }}>
                       {i+1}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -901,7 +988,7 @@ export default function UltimateDashboard() {
                     </div>
                   </div>
                 ))}
-                {analytics.fleetTable.filter(c=>c.dist>0).length===0 && (
+                {analytics.fleetTable.filter(c=>c.dist>0 || c.trips>0).length===0 && (
                   <p className="text-[12px] text-[#aeaeb2] text-center py-6">ยังไม่มีรถออกวิ่ง</p>
                 )}
               </div>
@@ -909,21 +996,33 @@ export default function UltimateDashboard() {
 
             <Card className="p-5">
               <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">👨‍✈️ ผู้ขับดีเด่น</p>
-              <div className="max-h-[240px] overflow-y-auto st">
+              <div className="max-h-[240px] overflow-y-auto st space-y-0">
                 {analytics.driverStats.map((d,i)=>(
-                  <div key={i} className="flex items-center gap-3.5 py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
-                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[12px] font-bold"
-                         style={{
-                           background:i===0?'linear-gradient(135deg,#ffcc00,#ff9500)':i===1?'linear-gradient(135deg,#d2d2d7,#aeaeb2)':i===2?'linear-gradient(135deg,#f4a460,#cd853f)':'#f2f2f7',
-                           color:i<=2?'white':'#6e6e73'
-                         }}>
-                      {i+1}
+                  <div key={i} className="py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold"
+                             style={{
+                               background:i===0?'linear-gradient(135deg,#ffcc00,#ff9500)':i===1?'linear-gradient(135deg,#d2d2d7,#aeaeb2)':i===2?'linear-gradient(135deg,#f4a460,#cd853f)':'#f2f2f7',
+                               color:i<=2?'white':'#6e6e73'
+                             }}>
+                          {i+1}
+                        </div>
+                        <div>
+                          <span className="text-[14px] font-semibold text-[#1d1d1f] block leading-tight">{d.name}</span>
+                          {d.carsUsed && <span className="text-[10px] text-[#aeaeb2]">{d.carsUsed}</span>}
+                        </div>
+                      </div>
+                      <div className="text-right flex flex-col items-end">
+                        <span className="text-[13px] font-semibold text-[#1d1d1f]">{d.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></span>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium text-[#1d1d1f] truncate">{d.name}</p>
-                      <p className="text-[10px] text-[#aeaeb2] truncate">{d.carsUsed}</p>
+                    {/* ✅ แสดงประเภทงานด้วยสไตล์ป้ายกำกับเหมือน "ใครขับคันไหน" */}
+                    <div className="flex flex-wrap gap-1.5 pl-[34px]">
+                      {d.workTypes && d.workTypes !== '' ? d.workTypes.split(', ').map((wt,idx)=>(
+                        <span key={idx} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">{wt}</span>
+                      )) : <span className="text-[10px] text-[#aeaeb2]">ไม่มีข้อมูลงาน</span>}
                     </div>
-                    <span className="text-[13px] font-semibold text-[#1d1d1f] flex-shrink-0">{d.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></span>
                   </div>
                 ))}
                 {analytics.driverStats.length===0 && <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>}
@@ -931,7 +1030,9 @@ export default function UltimateDashboard() {
             </Card>
 
             <Card className="p-5">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">🔍 ใครขับคันไหน</p>
+              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">
+                {carCategoryFilter === 'ev' ? '🔌 ใครนำรถไปชาร์จ' : '🔍 ใครขับคันไหน'}
+              </p>
               <div className="max-h-[240px] overflow-y-auto st space-y-0">
                 {analytics.carDriverHistory.map((c,i)=>(
                   <div key={i} className="py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
@@ -1000,7 +1101,7 @@ export default function UltimateDashboard() {
                   <td>{row.plan}</td>
                   <td>{row.startMil}</td>
                   <td>{row.endMil}</td>
-                  <td>{row.dist > 0 ? row.dist : ''}</td>
+                  <td style={{textAlign: 'center'}}>{row.dist}</td>
                   <td className="text-left">{row.mainUsage}</td>
                   
                   <td>{isComplete ? '/' : ''}</td>
