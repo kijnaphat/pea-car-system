@@ -267,34 +267,37 @@ function CarSelector() {
                   
                   {/* ผู้ขับขี่ปัจจุบัน (กรณีรถไม่ว่าง) */}
                   {isBusy && car.activeLog && (
-                    <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[13px] text-[#1d1d1f] font-medium truncate">
-                        👤 {car.activeLog.driver_name}
-                        </p>
-                        <button onClick={(e) => handleCallClick(e, car.activeLog.driver_name)}
-                            className="w-[26px] h-[26px] bg-[#edfbf0] text-[#248a3d] rounded-full flex items-center justify-center text-[12px] hover:bg-[#d1f2da] active:scale-95 transition-all"
-                            title="โทรหาผู้ขับ">
-                            📞
-                        </button>
-                    </div>
+                    <p className="text-[13px] text-[#1d1d1f] mt-1 font-medium truncate">
+                      👤 {car.activeLog.driver_name}
+                    </p>
                   )}
 
                   {/* ผู้ขับขี่ล่าสุด (กรณีรถว่าง พร้อมใช้) */}
                   {!isBusy && car.lastLog && (
-                    <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[13px] text-[#6e6e73] font-medium truncate">
-                        👤 {car.lastLog.driver_name} <span className="text-[11px] text-[#aeaeb2]">(ล่าสุด)</span>
-                        </p>
-                        <button onClick={(e) => handleCallClick(e, car.lastLog.driver_name)}
-                            className="w-[26px] h-[26px] bg-[#f5f5f7] text-[#6e6e73] rounded-full flex items-center justify-center text-[12px] hover:bg-[#e5e5ea] active:scale-95 transition-all"
-                            title="โทรหาผู้ขับล่าสุด">
-                            📞
-                        </button>
-                    </div>
+                    <p className="text-[13px] text-[#6e6e73] mt-1 font-medium truncate">
+                      👤 {car.lastLog.driver_name} <span className="text-[11px] text-[#aeaeb2]">(ล่าสุด)</span>
+                    </p>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* ปุ่มโทรออกหาผู้ขับ */}
+                  {isBusy && car.activeLog && (
+                    <button onClick={(e) => handleCallClick(e, car.activeLog.driver_name)}
+                        className="w-[36px] h-[36px] bg-[#edfbf0] text-[#248a3d] rounded-full flex items-center justify-center text-[15px] active:bg-[#d1f2da] transition-colors"
+                        title="โทรหาผู้ขับ">
+                        📞
+                    </button>
+                  )}
+                  {!isBusy && car.lastLog && (
+                    <button onClick={(e) => handleCallClick(e, car.lastLog.driver_name)}
+                        className="w-[36px] h-[36px] bg-[#f5f5f7] text-[#6e6e73] rounded-full flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors"
+                        title="โทรหาผู้ขับล่าสุด">
+                        📞
+                    </button>
+                  )}
+
+                  {/* ปุ่มปริ้น */}
                   <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
                     className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors">
                     🖨️
