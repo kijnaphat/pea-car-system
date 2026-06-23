@@ -33,6 +33,9 @@ function CarSelector() {
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
   const [showInstructions, setShowInstructions] = useState(false)
+  
+  // State สำหรับ Modal โทรออก
+  const [callModal, setCallModal] = useState({ isOpen: false, driverName: '', phone: '', loading: false, error: '' })
 
   const fetchCars = async () => {
     try {
@@ -44,18 +47,34 @@ function CarSelector() {
 
       if (carsData) {
         const activatedResults = await Promise.all(
-          carsData.map(car =>
-            supabase
+          carsData.map(async (car) => {
+            const { count } = await supabase
               .from('trip_logs')
               .select('car_id', { count: 'exact', head: true })
               .eq('car_id', Number(car.id))
-          )
+
+            let lastLog = null
+            if (car.status !== 'busy') {
+              const { data } = await supabase
+                .from('trip_logs')
+                .select('*')
+                .eq('car_id', Number(car.id))
+                .eq('is_completed', true)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
+              if (data) lastLog = data
+            }
+
+            return { count, lastLog }
+          })
         )
 
         const mergedCars = carsData.map((car, i) => {
           const log = activeLogs?.find(l => Number(l.car_id) === Number(car.id))
           const isActivated = (activatedResults[i]?.count ?? 0) > 0
-          return { ...car, activeLog: log, isActivated }
+          const lastLog = activatedResults[i]?.lastLog
+          return { ...car, activeLog: log, lastLog, isActivated }
         })
 
         mergedCars.sort((a, b) => {
@@ -78,6 +97,22 @@ function CarSelector() {
     const interval = setInterval(fetchCars, 5000) 
     return () => clearInterval(interval)
   }, [])
+
+  // ฟังก์ชันคลิกปุ่มโทร
+  const handleCallClick = async (e, driverName) => {
+    e.stopPropagation();
+    setCallModal({ isOpen: true, driverName, phone: '', loading: true, error: '' });
+    try {
+        const { data, error } = await supabase.from('staff').select('phone').eq('full_name', driverName).single();
+        if (data && data.phone) {
+            setCallModal({ isOpen: true, driverName, phone: data.phone, loading: false, error: '' });
+        } else {
+            setCallModal({ isOpen: true, driverName, phone: '', loading: false, error: 'ไม่พบเบอร์โทรศัพท์ในระบบ' });
+        }
+    } catch (err) {
+        setCallModal({ isOpen: true, driverName, phone: '', loading: false, error: 'เกิดข้อผิดพลาดในการค้นหาเบอร์โทร' });
+    }
+  }
 
   const getCarImage = (car) => {
     const type = car.car_type || ''
@@ -209,16 +244,53 @@ function CarSelector() {
                     }`}>
                       {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
                     </span>
+                    
+                    {/* เวลาออก (กรณีรถไม่ว่าง) */}
                     {isBusy && car.activeLog && (
                       <span className="text-[12px] text-[#aeaeb2]">
-                        ออก {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
+                        ออก {new Date(car.activeLog.start_time).toLocaleDateString('th-TH', {day:'numeric', month:'short'})} {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
                       </span>
                     )}
+
+                    {/* เวลาคืน (กรณีรถว่าง พร้อมใช้) */}
+                    {!isBusy && car.lastLog && (() => {
+                        const returnTime = car.lastLog.end_time || car.lastLog.updated_at || car.lastLog.created_at || car.lastLog.start_time;
+                        if (!returnTime) return null;
+                        const d = new Date(returnTime);
+                        return (
+                          <span className="text-[12px] text-[#aeaeb2]">
+                            คืน {d.toLocaleDateString('th-TH', {day:'numeric', month:'short'})} {d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
+                          </span>
+                        )
+                    })()}
                   </div>
+                  
+                  {/* ผู้ขับขี่ปัจจุบัน (กรณีรถไม่ว่าง) */}
                   {isBusy && car.activeLog && (
-                    <p className="text-[13px] text-[#1d1d1f] mt-1 font-medium truncate">
-                      👤 {car.activeLog.driver_name}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <p className="text-[13px] text-[#1d1d1f] font-medium truncate">
+                        👤 {car.activeLog.driver_name}
+                        </p>
+                        <button onClick={(e) => handleCallClick(e, car.activeLog.driver_name)}
+                            className="w-[26px] h-[26px] bg-[#edfbf0] text-[#248a3d] rounded-full flex items-center justify-center text-[12px] hover:bg-[#d1f2da] active:scale-95 transition-all"
+                            title="โทรหาผู้ขับ">
+                            📞
+                        </button>
+                    </div>
+                  )}
+
+                  {/* ผู้ขับขี่ล่าสุด (กรณีรถว่าง พร้อมใช้) */}
+                  {!isBusy && car.lastLog && (
+                    <div className="flex items-center gap-2 mt-1">
+                        <p className="text-[13px] text-[#6e6e73] font-medium truncate">
+                        👤 {car.lastLog.driver_name} <span className="text-[11px] text-[#aeaeb2]">(ล่าสุด)</span>
+                        </p>
+                        <button onClick={(e) => handleCallClick(e, car.lastLog.driver_name)}
+                            className="w-[26px] h-[26px] bg-[#f5f5f7] text-[#6e6e73] rounded-full flex items-center justify-center text-[12px] hover:bg-[#e5e5ea] active:scale-95 transition-all"
+                            title="โทรหาผู้ขับล่าสุด">
+                            📞
+                        </button>
+                    </div>
                   )}
                 </div>
 
@@ -339,6 +411,39 @@ function CarSelector() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Modal โทรออกหาคนขับ ── */}
+      {callModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCallModal({...callModal, isOpen: false})}/>
+            <div className="relative w-full max-w-[320px] bg-white rounded-[24px] p-6 z-10 shadow-2xl flex flex-col items-center text-center animate-fadeDown">
+                <div className="w-16 h-16 bg-[#edfbf0] rounded-full flex items-center justify-center text-[28px] mb-4">📞</div>
+                <h3 className="text-[18px] font-semibold text-[#1d1d1f] mb-1">โทรหาผู้ขับขี่</h3>
+                <p className="text-[14px] text-[#6e6e73] mb-4">{callModal.driverName}</p>
+                
+                {callModal.loading ? (
+                <div className="w-6 h-6 border-2 border-[#d2d2d7] border-t-[#0071e3] rounded-full animate-spin my-4"/>
+                ) : callModal.error ? (
+                <p className="text-[14px] text-[#ff3b30] font-medium bg-[#fff2f0] px-4 py-2 rounded-lg mb-4 w-full">{callModal.error}</p>
+                ) : (
+                <p className="text-[20px] font-bold text-[#1d1d1f] tracking-wider mb-6 bg-[#f5f5f7] px-6 py-3 rounded-xl w-full">{callModal.phone}</p>
+                )}
+
+                <div className="flex gap-3 w-full">
+                <button onClick={() => setCallModal({...callModal, isOpen: false})}
+                    className="flex-1 py-3 bg-[#f5f5f7] text-[#1d1d1f] rounded-[14px] font-medium active:bg-[#e5e5ea] transition-colors">
+                    ยกเลิก
+                </button>
+                <button 
+                    onClick={() => { window.location.href = `tel:${callModal.phone}`; setCallModal({...callModal, isOpen: false}); }}
+                    disabled={!callModal.phone}
+                    className={`flex-1 py-3 rounded-[14px] font-medium transition-colors ${callModal.phone ? 'bg-[#34c759] text-white active:bg-[#248a3d]' : 'bg-[#e5e5ea] text-[#aeaeb2] cursor-not-allowed'}`}>
+                    โทรออก
+                </button>
+                </div>
+            </div>
         </div>
       )}
     </div>
@@ -1206,17 +1311,18 @@ function CarActionForm({ carId }) {
   const [selectedDept, setSelectedDept] = useState('')
   const [selectedTask, setSelectedTask] = useState('')
   const [customTask, setCustomTask] = useState('') 
-  const [selectedArea, setSelectedArea] = useState('')
-  const [customArea, setCustomArea] = useState('')
+  
+  // ให้พื้นที่สามารถเพิ่มได้หลายอัน
+  const [selectedAreas, setSelectedAreas] = useState([{ type: '', custom: '' }])
 
-  const [selectModal, setSelectModal] = useState({ isOpen: false, type: '', title: '', options: [] })
+  const [selectModal, setSelectModal] = useState({ isOpen: false, type: '', title: '', options: [], targetIndex: null })
 
-  const openSelectModal = (type) => {
+  const openSelectModal = (type, targetIndex = null) => {
     if (type === 'task') {
       const deptData = departmentsList.find(d => d.name === selectedDept);
-      setSelectModal({ isOpen: true, type: 'task', title: 'เลือกประเภทงาน', options: deptData ? deptData.tasks : [] });
+      setSelectModal({ isOpen: true, type: 'task', title: 'เลือกประเภทงาน', options: deptData ? deptData.tasks : [], targetIndex: null });
     } else if (type === 'area') {
-      setSelectModal({ isOpen: true, type: 'area', title: 'เลือกพื้นที่ปฏิบัติงาน', options: areasList });
+      setSelectModal({ isOpen: true, type: 'area', title: 'เลือกพื้นที่ปฏิบัติงาน', options: areasList, targetIndex });
     }
   }
 
@@ -1370,11 +1476,17 @@ function CarActionForm({ carId }) {
             return alert('กรุณาระบุชื่อสถานี/สาขาให้ครบถ้วน')
         }
     } else {
-        if (!selectedDept || !selectedTask || !selectedArea) {
-            return alert('กรุณาเลือก แผนก, งาน และ พื้นที่ปฏิบัติงาน ให้ครบถ้วน')
+        if (!selectedDept || !selectedTask) {
+            return alert('กรุณาเลือก แผนก และ ประเภทงาน ให้ครบถ้วน')
         }
         if (selectedTask === 'อื่นๆ' && !customTask) return alert('กรุณาระบุประเภทงานอื่นๆ')
-        if (selectedArea === 'อื่นๆ' && !customArea) return alert('กรุณาระบุพื้นที่ปฏิบัติงานอื่นๆ')
+        
+        // เช็คความครบถ้วนของพื้นที่ปฏิบัติงาน (หลายพื้นที่)
+        const hasEmptyAreaType = selectedAreas.some(a => !a.type);
+        if (hasEmptyAreaType) return alert('กรุณาเลือกพื้นที่ปฏิบัติงานให้ครบ หรือลบช่องที่ไม่ได้ใช้ออก');
+        
+        const hasMissingCustom = selectedAreas.some(a => a.type === 'อื่นๆ' && !a.custom);
+        if (hasMissingCustom) return alert('กรุณาระบุพื้นที่ปฏิบัติงานอื่นๆ ให้ครบถ้วน');
     }
     
     setLoading(true)
@@ -1414,8 +1526,8 @@ function CarActionForm({ carId }) {
         finalBattBefore = parseInt(battBefore)
       } else {
         const actualTask = selectedTask === 'อื่นๆ' ? customTask : selectedTask;
-        const actualArea = selectedArea === 'อื่นๆ' ? customArea : selectedArea;
-        finalLocation = `[${selectedDept} - ${actualTask}] ${actualArea}`;
+        const actualAreas = selectedAreas.map(a => a.type === 'อื่นๆ' ? a.custom : a.type);
+        finalLocation = `[${selectedDept} - ${actualTask}] ${actualAreas.join(', ')}`;
       }
 
       const { data: result, error } = await supabase.rpc('take_car_out', {
@@ -1849,24 +1961,55 @@ function CarActionForm({ carId }) {
                           )}
                         </div>
 
-                        {/* เลือกพื้นที่ */}
+                        {/* เลือกพื้นที่หลายจุด */}
                         <div className="pt-3 border-t border-[rgba(0,0,0,0.05)]">
-                          <p className="text-[13px] font-medium text-[#1d1d1f] mb-2.5">พื้นที่ปฏิบัติงาน</p>
-                          <button onClick={() => openSelectModal('area')}
-                            className={`w-full flex items-center justify-between px-4 py-3.5 rounded-[14px] text-[15px] outline-none border-[1.5px] transition-all ${
-                              selectedArea ? 'bg-[#f0f9ff] border-[#0071e3] text-[#0071e3]' : 'bg-[#f5f5f7] border-transparent text-[#6e6e73]'
-                            }`}>
-                            <span className="truncate">{selectedArea || '-- แตะเพื่อเลือกพื้นที่ --'}</span>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                          </button>
-                          {selectedArea === 'อื่นๆ' && (
-                            <div className="mt-2 animate-fadeIn">
-                              <input type="text" value={customArea} onChange={e => setCustomArea(e.target.value)}
-                                placeholder="📍 ระบุสถานที่..." autoFocus
-                                className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
-                            </div>
-                          )}
+                          <div className="flex items-center justify-between mb-2.5">
+                            <p className="text-[13px] font-medium text-[#1d1d1f]">พื้นที่ปฏิบัติงาน</p>
+                            <button onClick={() => setSelectedAreas([...selectedAreas, { type: '', custom: '' }])}
+                              className="text-[12px] font-semibold text-[#0071e3] bg-[#edf6ff] px-2.5 py-1 rounded-full active:scale-95 transition-all">
+                              + เพิ่มพื้นที่
+                            </button>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {selectedAreas.map((area, index) => (
+                              <div key={index} className="flex gap-2">
+                                <div className="flex-1 space-y-2">
+                                  <button onClick={() => openSelectModal('area', index)}
+                                    className={`w-full flex items-center justify-between px-4 py-3.5 rounded-[14px] text-[15px] outline-none border-[1.5px] transition-all ${
+                                      area.type ? 'bg-[#f0f9ff] border-[#0071e3] text-[#0071e3]' : 'bg-[#f5f5f7] border-transparent text-[#6e6e73]'
+                                    }`}>
+                                    <span className="truncate">{area.type || '-- แตะเพื่อเลือกพื้นที่ --'}</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                  </button>
+                                  {area.type === 'อื่นๆ' && (
+                                    <div className="animate-fadeIn">
+                                      <input type="text" value={area.custom} 
+                                        onChange={e => {
+                                          const newA = [...selectedAreas];
+                                          newA[index].custom = e.target.value;
+                                          setSelectedAreas(newA);
+                                        }}
+                                        placeholder="📍 ระบุสถานที่..." autoFocus
+                                        className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
+                                    </div>
+                                  )}
+                                </div>
+                                {selectedAreas.length > 1 && (
+                                  <button onClick={() => {
+                                      const newA = [...selectedAreas];
+                                      newA.splice(index, 1);
+                                      setSelectedAreas(newA);
+                                    }}
+                                    className="w-[48px] h-auto flex items-center justify-center bg-[#fff2f0] text-[#ff3b30] rounded-[14px] flex-shrink-0 active:scale-95 transition-all">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
+
                       </div>
                     </div>
                   )}
@@ -1978,7 +2121,7 @@ function CarActionForm({ carId }) {
         </div>
       </div>
 
-      {/* ── Modal แบบ List เลือกอย่างเดียว (ไม่มีช่อง Search) ── */}
+      {/* ── Modal แบบ List เลือกอย่างเดียว ── */}
       {selectModal.isOpen && (
         <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/40"
@@ -1997,17 +2140,24 @@ function CarActionForm({ carId }) {
               </button>
             </div>
 
-            {/* List ตัวเลือก (Scroll ได้ถ้าข้อมูลเยอะ) */}
+            {/* List ตัวเลือก */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {selectModal.options.map((opt) => {
-                  const isSelected = (selectModal.type === 'task' ? selectedTask : selectedArea) === opt;
+                  const isSelected = (selectModal.type === 'task' ? selectedTask : selectedAreas[selectModal.targetIndex]?.type) === opt;
                   const isOther = opt === 'อื่นๆ' || opt === 'งานอื่นๆ';
                   
                   return (
                     <button key={opt}
                       onClick={() => {
-                        if (selectModal.type === 'task') { setSelectedTask(opt); setCustomTask(''); }
-                        else { setSelectedArea(opt); setCustomArea(''); }
+                        if (selectModal.type === 'task') { 
+                            setSelectedTask(opt); 
+                            setCustomTask(''); 
+                        } else if (selectModal.type === 'area') { 
+                            const newA = [...selectedAreas];
+                            newA[selectModal.targetIndex].type = opt;
+                            newA[selectModal.targetIndex].custom = '';
+                            setSelectedAreas(newA);
+                        }
                         setSelectModal({ ...selectModal, isOpen: false });
                       }}
                       className={`w-full flex items-center justify-between px-5 py-4 rounded-[14px] bg-white text-left transition-all active:scale-[0.98] ${
