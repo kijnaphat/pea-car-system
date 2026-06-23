@@ -211,100 +211,99 @@ function CarSelector() {
             const statusDot = !car.isActivated ? '#aeaeb2' : isBusy ? '#ff3b30' : isEV ? '#0071e3' : '#34c759'
             const imgBg = !car.isActivated ? '#f5f5f7' : isBusy ? '#fff2f0' : isEV ? '#edf6ff' : '#edfbf0'
 
+            const logData = isBusy ? car.activeLog : car.lastLog
+            const driverName = logData?.driver_name
+
+            let timeString = null
+            if (isBusy && car.activeLog) {
+              const d = new Date(car.activeLog.start_time)
+              timeString = `ออก ${d.toLocaleDateString('th-TH', {day:'numeric', month:'short'})} ${d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.`
+            } else if (!isBusy && car.lastLog) {
+              const returnTime = car.lastLog.end_time || car.lastLog.updated_at || car.lastLog.created_at || car.lastLog.start_time
+              if (returnTime) {
+                const d = new Date(returnTime)
+                timeString = `คืน ${d.toLocaleDateString('th-TH', {day:'numeric', month:'short'})} ${d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.`
+              }
+            }
+
             return (
-              <div className="row-tap bg-white relative flex items-center gap-4 px-4 py-4 active:bg-[#f5f5f7] transition-colors"
+              <div className="bg-white relative p-4 transition-colors"
                    style={{borderBottom: isLast ? 'none' : '0.5px solid rgba(60,60,67,0.1)'}}>
-                <div className="w-[76px] h-[76px] flex-shrink-0 rounded-[18px] overflow-hidden flex items-center justify-center"
-                     style={{background: imgBg}}>
-                  {carImageSrc
-                    ? <img src={carImageSrc} alt={car.car_type}
-                        className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
-                    : <span className="text-[36px]">🚗</span>}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[20px] font-semibold tracking-[-0.5px] leading-tight ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
-                      {car.plate_number}
-                    </span>
-                    <span className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${isBusy ? 'animate-pulse' : ''}`}
-                          style={{background: statusDot}}/>
+                
+                {/* Top: Car Info */}
+                <div className="flex gap-3.5">
+                  <div className="w-[64px] h-[64px] flex-shrink-0 rounded-[14px] overflow-hidden flex items-center justify-center"
+                       style={{background: imgBg}}>
+                    {carImageSrc
+                      ? <img src={carImageSrc} alt={car.car_type}
+                          className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
+                      : <span className="text-[32px]">🚗</span>}
                   </div>
-                  <p className="text-[13px] truncate mt-0.5 leading-snug">
-                    <span className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#6e3fa3]'}>
-                      {car.car_type}
-                    </span>
-                  </p>
-                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                    <span className={`text-[12px] font-medium px-2.5 py-[3px] rounded-full ${
-                      !car.isActivated ? 'bg-[#f5f5f7] text-[#aeaeb2]'
-                      : isBusy ? 'bg-[#fff2f0] text-[#ff3b30]'
-                      : isEV ? 'bg-[#edf6ff] text-[#0071e3]'
-                      : 'bg-[#edfbf0] text-[#248a3d]'
-                    }`}>
-                      {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
-                    </span>
-                    
-                    {/* เวลาออก (กรณีรถไม่ว่าง) */}
-                    {isBusy && car.activeLog && (
-                      <span className="text-[12px] text-[#aeaeb2]">
-                        ออก {new Date(car.activeLog.start_time).toLocaleDateString('th-TH', {day:'numeric', month:'short'})} {new Date(car.activeLog.start_time).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[18px] font-bold tracking-[-0.5px] leading-tight truncate ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
+                        {car.plate_number}
                       </span>
-                    )}
-
-                    {/* เวลาคืน (กรณีรถว่าง พร้อมใช้) */}
-                    {!isBusy && car.lastLog && (() => {
-                        const returnTime = car.lastLog.end_time || car.lastLog.updated_at || car.lastLog.created_at || car.lastLog.start_time;
-                        if (!returnTime) return null;
-                        const d = new Date(returnTime);
-                        return (
-                          <span className="text-[12px] text-[#aeaeb2]">
-                            คืน {d.toLocaleDateString('th-TH', {day:'numeric', month:'short'})} {d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.
-                          </span>
-                        )
-                    })()}
+                      <span className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${isBusy ? 'animate-pulse' : ''}`}
+                            style={{background: statusDot}}/>
+                    </div>
+                    
+                    {/* ปรับขนาดให้เท่ากับ 📞 (36x36) และเพิ่ม mr-1.5 ให้ขอบขวาตรงกันพอดี */}
+                    <div className="mt-0.5 flex items-center justify-between gap-2">
+                      <p className="text-[13px] truncate leading-snug">
+                        <span className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#6e3fa3]'}>
+                          {car.car_type}
+                        </span>
+                      </p>
+                      
+                      <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
+                        className="w-[36px] h-[36px] rounded-[10px] bg-white flex items-center justify-center text-[15px] active:scale-95 transition-all text-[#3c3c43] hover:bg-[#f5f5f7] shadow-sm border border-[rgba(0,0,0,0.04)] flex-shrink-0 mr-1.5"
+                        title="พิมพ์รายงาน">
+                        🖨️
+                      </button>
+                    </div>
+                    
+                    <div className="mt-1 flex items-center gap-2 flex-wrap">
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                        !car.isActivated ? 'bg-[#f5f5f7] text-[#aeaeb2]'
+                        : isBusy ? 'bg-[#fff2f0] text-[#ff3b30]'
+                        : isEV ? 'bg-[#edf6ff] text-[#0071e3]'
+                        : 'bg-[#edfbf0] text-[#248a3d]'
+                      }`}>
+                        {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+                      </span>
+                      
+                      {timeString && (
+                        <span className="text-[12px] text-[#aeaeb2]">
+                          {timeString}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* ผู้ขับขี่ปัจจุบัน (กรณีรถไม่ว่าง) */}
-                  {isBusy && car.activeLog && (
-                    <p className="text-[13px] text-[#1d1d1f] mt-1 font-medium truncate">
-                      👤 {car.activeLog.driver_name}
-                    </p>
-                  )}
-
-                  {/* ผู้ขับขี่ล่าสุด (กรณีรถว่าง พร้อมใช้) */}
-                  {!isBusy && car.lastLog && (
-                    <p className="text-[13px] text-[#6e6e73] mt-1 font-medium truncate">
-                      👤 {car.lastLog.driver_name} <span className="text-[11px] text-[#aeaeb2]">(ล่าสุด)</span>
-                    </p>
-                  )}
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* ปุ่มโทรออกหาผู้ขับ */}
-                  {isBusy && car.activeLog && (
-                    <button onClick={(e) => handleCallClick(e, car.activeLog.driver_name)}
-                        className="w-[36px] h-[36px] bg-[#edfbf0] text-[#248a3d] rounded-full flex items-center justify-center text-[15px] active:bg-[#d1f2da] transition-colors"
-                        title="โทรหาผู้ขับ">
-                        📞
-                    </button>
-                  )}
-                  {!isBusy && car.lastLog && (
-                    <button onClick={(e) => handleCallClick(e, car.lastLog.driver_name)}
-                        className="w-[36px] h-[36px] bg-[#f5f5f7] text-[#6e6e73] rounded-full flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors"
-                        title="โทรหาผู้ขับล่าสุด">
-                        📞
-                    </button>
-                  )}
+                {/* Bottom: Driver & Actions (ขนาด 36x36 เท่ากัน) */}
+                <div className="mt-3.5 bg-[#f8f8f9] rounded-[12px] p-1.5 pl-3 flex items-center justify-between gap-3 border border-[rgba(0,0,0,0.02)] min-h-[48px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center justify-center text-[13px] opacity-70">👤</div>
+                    <p className="text-[13px] text-[#1d1d1f] font-medium truncate">
+                      {driverName ? driverName : '-'} 
+                      {!isBusy && driverName && <span className="text-[#8e8e93] font-normal ml-1">(ล่าสุด)</span>}
+                    </p>
+                  </div>
 
-                  {/* ปุ่มปริ้น */}
-                  <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
-                    className="w-[36px] h-[36px] rounded-full bg-[#f5f5f7] flex items-center justify-center text-[15px] active:bg-[#e5e5ea] transition-colors">
-                    🖨️
-                  </button>
-                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none" className="opacity-[0.2] flex-shrink-0">
-                    <path d="M1 1l5 5-5 5" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <div className="flex items-center flex-shrink-0">
+                    {driverName && (
+                        <button onClick={(e) => handleCallClick(e, driverName)}
+                            className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center text-[15px] active:scale-95 transition-all shadow-sm border border-[rgba(0,0,0,0.04)] ${
+                                isBusy ? 'bg-white text-[#248a3d] hover:bg-[#f0fdf4]' : 'bg-white text-[#6e6e73] hover:bg-[#f5f5f7]'
+                            }`}
+                            title="โทรหาผู้ขับ">
+                            📞
+                        </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
