@@ -77,13 +77,37 @@ function CarSelector() {
           return { ...car, activeLog: log, lastLog, isActivated }
         })
 
-        mergedCars.sort((a, b) => {
+        // --- เริ่มต้นดึงข้อมูล position จากตาราง staff ---
+        const driverNames = mergedCars
+          .map(c => c.status === 'busy' ? c.activeLog?.driver_name : c.lastLog?.driver_name)
+          .filter(Boolean);
+        const uniqueDrivers = [...new Set(driverNames)];
+        
+        let staffMap = {};
+        if (uniqueDrivers.length > 0) {
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('full_name, position')
+            .in('full_name', uniqueDrivers);
+          
+          if (staffData) {
+            staffData.forEach(s => staffMap[s.full_name] = s.position);
+          }
+        }
+
+        const finalCars = mergedCars.map(car => {
+          const dName = car.status === 'busy' ? car.activeLog?.driver_name : car.lastLog?.driver_name;
+          return { ...car, driverPosition: dName ? staffMap[dName] : null };
+        });
+        // --- สิ้นสุดการดึงข้อมูล position ---
+
+        finalCars.sort((a, b) => {
             if (a.status === 'busy' && b.status !== 'busy') return -1 
             if (a.status !== 'busy' && b.status === 'busy') return 1  
             return a.plate_number.localeCompare(b.plate_number)
         })
 
-        setCars(mergedCars)
+        setCars(finalCars)
       }
     } catch (err) {
       console.error(err)
@@ -128,6 +152,8 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
     if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
     if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
+    if (type.startsWith('รถบรรทุก 6 ล้อ')) return '/hotline_6.png' // แก้ไขเพิ่ม / ตรงนี้
+    if (type.startsWith('รถบรรทุก 6 ตัน')) return '/6ton.png'
     if (type.startsWith('TEST_CAR')) return '/scooter.png'
     return null 
   }
@@ -154,12 +180,6 @@ function CarSelector() {
         
         {/* เพิ่มกลุ่มปุ่มกดไว้ด้านขวา */}
         <div className="flex items-center gap-4">
-          {/* 📍 ปุ่ม Tracking ที่เพิ่มเข้ามาใหม่ */}
-          <button onClick={() => router.push('/tracking')}
-            className="text-[15px] text-[#ff9f0a] font-medium active:opacity-50 transition-opacity flex items-center gap-1">
-            <span className="text-[12px]">📍</span> Tracking
-          </button>
-          
           <button onClick={() => router.push('/admin')}
             className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
             Admin
@@ -255,6 +275,7 @@ function CarSelector() {
                             style={{background: statusDot}}/>
                     </div>
                     
+                    {/* ปรับขนาดให้เท่ากับ 📞 (36x36) และเพิ่ม mr-1.5 ให้ขอบขวาตรงกันพอดี */}
                     <div className="mt-0.5 flex items-center justify-between gap-2">
                       <p className="text-[13px] truncate leading-snug">
                         <span className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#6e3fa3]'}>
@@ -288,7 +309,7 @@ function CarSelector() {
                   </div>
                 </div>
 
-                {/* Bottom: Driver & Actions */}
+                {/* Bottom: Driver & Actions (ขนาด 36x36 เท่ากัน) */}
                 <div className="mt-3.5 bg-[#f8f8f9] rounded-[12px] p-1.5 pl-3 flex items-center justify-between gap-3 border border-[rgba(0,0,0,0.02)] min-h-[48px]">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="flex items-center justify-center text-[13px] opacity-70">👤</div>
@@ -299,7 +320,8 @@ function CarSelector() {
                   </div>
 
                   <div className="flex items-center flex-shrink-0">
-                    {driverName && (
+                    {/* เปลี่ยนเงื่อนไขซ่อนปุ่ม 📞 หากคนขับเป็น 'ผจก.' */}
+                    {driverName && car.driverPosition !== 'ผจก.' && (
                         <button onClick={(e) => handleCallClick(e, driverName)}
                             className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center text-[15px] active:scale-95 transition-all shadow-sm border border-[rgba(0,0,0,0.04)] ${
                                 isBusy ? 'bg-white text-[#248a3d] hover:bg-[#f0fdf4]' : 'bg-white text-[#6e6e73] hover:bg-[#f5f5f7]'
@@ -933,7 +955,7 @@ function ReportPage() {
               <div className="bg-white rounded-[12px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
                 {[
                   { label: 'จาก', val: fromText, set: setFromText, ph: 'แผนก...' },
-                  { label: 'ถึง',  val: toText,  set: setToText,   ph: 'หัวหน้า...' },
+                  { label: 'ถึง',  val: toText,   set: setToText,   ph: 'หัวหน้า...' },
                   { label: 'เรียน', val: dearText, set: setDearText, ph: 'ผจก...' },
                 ].map(({ label, val, set, ph }, i, arr) => (
                   <div key={label} className={`flex items-center px-3 py-2 gap-3 ${i < arr.length-1 ? 'border-b border-[rgba(0,0,0,0.06)]' : ''}`}>
@@ -1300,6 +1322,8 @@ function CarActionForm({ carId }) {
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
     if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
     if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
+    if (type.startsWith('รถบรรทุก 6 ล้อ')) return 'hotline_6.png'
+    if (type.startsWith('รถบรรทุก 6 ตัน')) return '/6ton.png'
     if (type.startsWith('TEST_CAR')) return '/scooter.png'
     return null
   }
@@ -1319,12 +1343,10 @@ function CarActionForm({ carId }) {
   const [selectedTask, setSelectedTask] = useState('')
   const [customTask, setCustomTask] = useState('') 
   
+  // ให้พื้นที่สามารถเพิ่มได้หลายอัน
   const [selectedAreas, setSelectedAreas] = useState([{ type: '', custom: '' }])
 
   const [selectModal, setSelectModal] = useState({ isOpen: false, type: '', title: '', options: [], targetIndex: null })
-
-  // 📍 State เพิ่มเติมสำหรับ Tracking Popup
-  const [showTrackingModal, setShowTrackingModal] = useState(false)
 
   const openSelectModal = (type, targetIndex = null) => {
     if (type === 'task') {
@@ -1470,9 +1492,34 @@ function CarActionForm({ carId }) {
     setStaffError(false);
   }
 
-  // 📍 ฟังก์ชันใหม่: เพื่อบันทึกข้อมูลนำรถออกลง Database
-  const executeTakeOut = async () => {
+  const handleTakeOut = async () => {
     const isEV = car?.fuel_type?.toUpperCase() === 'EV';
+    
+    if (!staffName) return alert('กรุณาระบุรหัสพนักงานให้ถูกต้องก่อน');
+    if (!mileage) return alert('กรุณากรอกเลขไมล์เริ่มต้น');
+
+    if (isEV) {
+        if (!battBefore) return alert('กรุณากรอก % แบตเตอรี่ก่อนชาร์จ')
+        if (!subStationType) return alert('กรุณาระบุประเภทสถานีชาร์จ')
+        
+        const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
+        if (selectedOption?.inputType !== 'none' && !stationName) {
+            return alert('กรุณาระบุชื่อสถานี/สาขาให้ครบถ้วน')
+        }
+    } else {
+        if (!selectedDept || !selectedTask) {
+            return alert('กรุณาเลือก แผนก และ ประเภทงาน ให้ครบถ้วน')
+        }
+        if (selectedTask === 'อื่นๆ' && !customTask) return alert('กรุณาระบุประเภทงานอื่นๆ')
+        
+        // เช็คความครบถ้วนของพื้นที่ปฏิบัติงาน (หลายพื้นที่)
+        const hasEmptyAreaType = selectedAreas.some(a => !a.type);
+        if (hasEmptyAreaType) return alert('กรุณาเลือกพื้นที่ปฏิบัติงานให้ครบ หรือลบช่องที่ไม่ได้ใช้ออก');
+        
+        const hasMissingCustom = selectedAreas.some(a => a.type === 'อื่นๆ' && !a.custom);
+        if (hasMissingCustom) return alert('กรุณาระบุพื้นที่ปฏิบัติงานอื่นๆ ให้ครบถ้วน');
+    }
+    
     setLoading(true)
 
     try {
@@ -1481,6 +1528,19 @@ function CarActionForm({ carId }) {
          alert('⚠️ รถคันนี้เพิ่งถูกบุคคลอื่นทำรายการนำออกไปแล้วครับ')
          window.location.href = '/'
          return
+      }
+
+      const { data: activeTrips } = await supabase
+          .from('trip_logs')
+          .select(`car_id, cars ( plate_number )`)
+          .eq('driver_name', staffName)
+          .eq('is_completed', false);
+
+      if (activeTrips && activeTrips.length > 0) {
+          const busyPlate = activeTrips[0].cars?.plate_number || 'รถคันเดิม';
+          alert(`⚠️ ไม่อนุญาตให้ทำรายการ!\nคุณ ${staffName} ยังไม่ได้ทำรายการคืนรถทะเบียน [ ${busyPlate} ]\n\nกรุณาสแกนเพื่อคืนรถคันเดิมให้เรียบร้อยก่อนครับ`);
+          setLoading(false);
+          return;
       }
 
       let finalLocation = ''
@@ -1520,91 +1580,12 @@ function CarActionForm({ carId }) {
       } else {
         alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${staffName}`)
       }
-      
-      // ตรวจสอบว่าเป็นรถทดสอบ(หรือรถที่อยากให้จับ GPS) ให้วิ่งไปหน้า Driving 
-      if (car?.car_type === 'TEST_CAR') {
-        window.location.href = `/driving?car_id=${carId}`
-      } else {
-        window.location.href = '/'
-      }
+      window.location.href = '/'
 
     } catch (err) {
       alert('Error: ' + err.message)
       setLoading(false)
     }
-  }
-
-  // 📍 ฟังก์ชันใหม่: เพื่อตรวจสอบข้อมูลและแยกเงื่อนไขระหว่างรถปกติ กับ รถทดสอบ
-  const handleTakeOutClick = async () => {
-    const isEV = car?.fuel_type?.toUpperCase() === 'EV';
-    
-    if (!staffName) return alert('กรุณาระบุรหัสพนักงานให้ถูกต้องก่อน');
-    if (!mileage) return alert('กรุณากรอกเลขไมล์เริ่มต้น');
-
-    if (isEV) {
-        if (!battBefore) return alert('กรุณากรอก % แบตเตอรี่ก่อนชาร์จ')
-        if (!subStationType) return alert('กรุณาระบุประเภทสถานีชาร์จ')
-        
-        const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
-        if (selectedOption?.inputType !== 'none' && !stationName) {
-            return alert('กรุณาระบุชื่อสถานี/สาขาให้ครบถ้วน')
-        }
-    } else {
-        if (!selectedDept || !selectedTask) {
-            return alert('กรุณาเลือก แผนก และ ประเภทงาน ให้ครบถ้วน')
-        }
-        if (selectedTask === 'อื่นๆ' && !customTask) return alert('กรุณาระบุประเภทงานอื่นๆ')
-        
-        const hasEmptyAreaType = selectedAreas.some(a => !a.type);
-        if (hasEmptyAreaType) return alert('กรุณาเลือกพื้นที่ปฏิบัติงานให้ครบ หรือลบช่องที่ไม่ได้ใช้ออก');
-        
-        const hasMissingCustom = selectedAreas.some(a => a.type === 'อื่นๆ' && !a.custom);
-        if (hasMissingCustom) return alert('กรุณาระบุพื้นที่ปฏิบัติงานอื่นๆ ให้ครบถ้วน');
-    }
-    
-    // ตรวจสอบว่าพนักงานมีทริปค้างหรือไม่
-    const { data: activeTrips } = await supabase
-        .from('trip_logs')
-        .select(`car_id, cars ( plate_number )`)
-        .eq('driver_name', staffName)
-        .eq('is_completed', false);
-
-    if (activeTrips && activeTrips.length > 0) {
-        const busyPlate = activeTrips[0].cars?.plate_number || 'รถคันเดิม';
-        alert(`⚠️ ไม่อนุญาตให้ทำรายการ!\nคุณ ${staffName} ยังไม่ได้ทำรายการคืนรถทะเบียน [ ${busyPlate} ]\n\nกรุณาสแกนเพื่อคืนรถคันเดิมให้เรียบร้อยก่อนครับ`);
-        return;
-    }
-
-    // 📍 เช็ค TEST_CAR เพื่อขออนุญาต GPS
-    if (car?.car_type === 'TEST_CAR') {
-        setShowTrackingModal(true);
-    } else {
-        executeTakeOut();
-    }
-  }
-
-  // 📍 ฟังก์ชันใหม่: เพื่อรับสิทธิ์ GPS และดำเนินการต่อ
-  const handleAcceptTracking = () => {
-    if (!navigator.geolocation) {
-        alert("เบราว์เซอร์ของคุณไม่รองรับระบบ GPS ไม่สามารถนำรถออกได้");
-        setShowTrackingModal(false);
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            // อนุญาตสำเร็จ 
-            setShowTrackingModal(false);
-            localStorage.setItem('tracking_test_car_id', carId);
-            executeTakeOut(); 
-        },
-        (error) => {
-            // ปฏิเสธการอนุญาต 
-            alert("❌ คุณปฏิเสธการเข้าถึงตำแหน่ง GPS\nระบบไม่อนุญาตให้นำรถทดสอบออกไปใช้งานครับ");
-            setShowTrackingModal(false);
-        },
-        { enableHighAccuracy: true }
-    );
   }
 
   const handleReturn = async (skipConfirm = false) => {
@@ -1634,12 +1615,6 @@ function CarActionForm({ carId }) {
     setLoading(true)
 
     try {
-      // 📍 เมื่อคืนรถ TEST_CAR ให้สั่งล้างคำสั่งส่งพิกัด GPS ออก
-      if (car?.car_type === 'TEST_CAR') {
-          localStorage.removeItem('tracking_test_car_id');
-          await supabase.from('current_locations').delete().eq('car_id', Number(carId));
-      }
-
       const { data: result, error } = await supabase.rpc('return_car', {
         p_car_id:       Number(carId),
         p_end_mileage:  isEV ? null : parseInt(endMileage),
@@ -1677,31 +1652,6 @@ function CarActionForm({ carId }) {
         @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeDown { animation: fadeDown 0.3s ease-out forwards; }
       `}</style>
-
-      {/* ── Popup ยืนยันสิทธิ์การติดตาม GPS (TEST_CAR) ── */}
-      {showTrackingModal && (
-        <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center"
-             style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
-          <div className="bg-[#f5f5f7] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6 text-center animate-fadeDown"
-               style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)'}}>
-            <div className="text-[48px] text-center mb-3">📍</div>
-            <h3 className="text-[20px] font-semibold text-[#1d1d1f] mb-3 tracking-[-0.4px]">อนุญาตให้ติดตามพิกัด</h3>
-            <p className="text-[14px] text-[#6e6e73] mb-6 leading-relaxed">
-              รถคันนี้เป็นรถทดสอบระบบ (TEST_CAR) จึงจำเป็นต้องเปิดระบบติดตาม GPS ระหว่างการปฏิบัติงาน คุณยินยอมให้ระบบเข้าถึงตำแหน่งของคุณหรือไม่?
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowTrackingModal(false)}
-                className="flex-1 bg-[#e5e5ea] text-[#1d1d1f] py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#d1d1d6] transition-colors">
-                ปฏิเสธ
-              </button>
-              <button onClick={handleAcceptTracking}
-                className="flex-1 bg-[#0071e3] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#005bb5] transition-colors">
-                ยอมรับ
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Popup เซ็นเอกสาร ── */}
       {showSignReminder && (
@@ -2096,7 +2046,7 @@ function CarActionForm({ carId }) {
                   )}
 
                   {/* 🟢 ปุ่มยืนยัน */}
-                  <button onClick={handleTakeOutClick} disabled={loading}
+                  <button onClick={handleTakeOut} disabled={loading}
                     className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
                       loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed' : 'text-white'
                     }`}
