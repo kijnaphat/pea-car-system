@@ -16,32 +16,6 @@ function MainApp() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id') 
 
-  // ==========================================
-  // 📍 ระบบส่งพิกัด GPS เบื้องหลัง (ทำงานเมื่อมีรถ TEST_CAR กำลังวิ่ง)
-  // ==========================================
-  useEffect(() => {
-    const trackingCarId = localStorage.getItem('tracking_test_car_id');
-    let watchId;
-    
-    if (trackingCarId) {
-       watchId = navigator.geolocation.watchPosition(async (pos) => {
-           const { latitude, longitude } = pos.coords;
-           await supabase.from('current_locations').upsert({
-              car_id: Number(trackingCarId),
-              latitude,
-              longitude,
-              updated_at: new Date().toISOString()
-           }, { onConflict: 'car_id' });
-       }, 
-       (err) => console.error("GPS Tracking Error:", err), 
-       { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
-    }
-    
-    return () => {
-       if (watchId) navigator.geolocation.clearWatch(watchId);
-    }
-  }, []);
-
   // 1. ถ้ามี car_id -> ไปหน้าฟอร์ม
   if (carId) {
     return <CarActionForm carId={carId} />
@@ -1546,7 +1520,13 @@ function CarActionForm({ carId }) {
       } else {
         alert(`✅ บันทึกสำเร็จ!\nเดินทางปลอดภัยครับ คุณ ${staffName}`)
       }
-      window.location.href = '/'
+      
+      // ตรวจสอบว่าเป็นรถทดสอบ(หรือรถที่อยากให้จับ GPS) ให้วิ่งไปหน้า Driving 
+      if (car?.car_type === 'TEST_CAR') {
+        window.location.href = `/driving?car_id=${carId}`
+      } else {
+        window.location.href = '/'
+      }
 
     } catch (err) {
       alert('Error: ' + err.message)
