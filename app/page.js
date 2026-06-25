@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { Icon } from '@iconify/react' // 🌟 นำเข้า Iconify
 
 // --- Main Component ---
 export default function App() {
@@ -152,7 +153,7 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
     if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
     if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
-    if (type.startsWith('รถบรรทุก 6 ล้อ')) return '/hotline_6.png' // แก้ไขเพิ่ม / ตรงนี้
+    if (type.startsWith('รถบรรทุก 6 ล้อ')) return '/hotline_6.png'
     if (type.startsWith('รถบรรทุก 6 ตัน')) return '/6ton.png'
     if (type.startsWith('TEST_CAR')) return '/scooter.png'
     return null 
@@ -210,17 +211,20 @@ function CarSelector() {
             </div>
             <div className="flex flex-col items-end gap-3 pt-1 flex-shrink-0">
               <button onClick={() => setShowInstructions(true)}
-                className="text-[13px] font-medium text-[#2997ff] active:opacity-50 transition-opacity whitespace-nowrap">
-                คู่มือ →
+                className="text-[13px] font-medium text-[#2997ff] active:opacity-50 transition-opacity whitespace-nowrap flex items-center gap-1">
+                คู่มือ 
+                <Icon icon="ph:arrow-right-bold" width="12" height="12" />
               </button>
               <div className="w-[50px] h-[50px] bg-[#2c2c2e] rounded-[14px] flex items-center justify-center text-[24px]">
-                📱
+                <Icon icon="ph:qr-code-duotone" width="30" height="30" className="text-[#34c759]" />
               </div>
             </div>
           </div>
-          <div className="border-t border-white/[0.07] px-6 py-2.5 overflow-hidden">
-            <span className="ticker text-[12px] text-[#636366]">
-              กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้ง 🚗⚡
+          <div className="border-t border-white/[0.07] px-6 py-2.5 overflow-hidden flex items-center">
+            <span className="ticker text-[12px] text-[#636366] flex items-center gap-1">
+              กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้ง 
+              <Icon icon="ph:car-profile-duotone" width="16" height="16" className="inline-block mx-0.5 text-[#0071e3]" />
+              <Icon icon="ph:lightning-duotone" width="16" height="16" className="inline-block text-[#ff9f0a]" />
             </span>
           </div>
         </div>
@@ -263,7 +267,7 @@ function CarSelector() {
                     {carImageSrc
                       ? <img src={carImageSrc} alt={car.car_type}
                           className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
-                      : <span className="text-[32px]">🚗</span>}
+                      : <Icon icon="ph:car-profile-duotone" width="36" height="36" className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#ff9f0a]'} />}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -284,9 +288,9 @@ function CarSelector() {
                       </p>
                       
                       <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
-                        className="w-[36px] h-[36px] rounded-[10px] bg-white flex items-center justify-center text-[15px] active:scale-95 transition-all text-[#3c3c43] hover:bg-[#f5f5f7] shadow-sm border border-[rgba(0,0,0,0.04)] flex-shrink-0 mr-1.5"
+                        className="w-[36px] h-[36px] rounded-[10px] bg-white flex items-center justify-center active:scale-95 transition-all text-[#3c3c43] hover:bg-[#f5f5f7] shadow-sm border border-[rgba(0,0,0,0.04)] flex-shrink-0 mr-1.5"
                         title="พิมพ์รายงาน">
-                        🖨️
+                        <Icon icon="ph:printer-duotone" width="20" height="20" className="text-[#af52de]" />
                       </button>
                     </div>
                     
@@ -312,7 +316,9 @@ function CarSelector() {
                 {/* Bottom: Driver & Actions (ขนาด 36x36 เท่ากัน) */}
                 <div className="mt-3.5 bg-[#f8f8f9] rounded-[12px] p-1.5 pl-3 flex items-center justify-between gap-3 border border-[rgba(0,0,0,0.02)] min-h-[48px]">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex items-center justify-center text-[13px] opacity-70">👤</div>
+                    <div className="flex items-center justify-center">
+                      <Icon icon="ph:user-circle-duotone" width="20" height="20" className="text-[#0071e3]" />
+                    </div>
                     <p className="text-[13px] text-[#1d1d1f] font-medium truncate">
                       {driverName ? driverName : '-'} 
                       {!isBusy && driverName && <span className="text-[#8e8e93] font-normal ml-1">(ล่าสุด)</span>}
@@ -323,11 +329,11 @@ function CarSelector() {
                     {/* เปลี่ยนเงื่อนไขซ่อนปุ่ม 📞 หากคนขับเป็น 'ผจก.' */}
                     {driverName && car.driverPosition !== 'ผจก.' && (
                         <button onClick={(e) => handleCallClick(e, driverName)}
-                            className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center text-[15px] active:scale-95 transition-all shadow-sm border border-[rgba(0,0,0,0.04)] ${
-                                isBusy ? 'bg-white text-[#248a3d] hover:bg-[#f0fdf4]' : 'bg-white text-[#6e6e73] hover:bg-[#f5f5f7]'
+                            className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center active:scale-95 transition-all shadow-sm border border-[rgba(0,0,0,0.04)] ${
+                                isBusy ? 'bg-white hover:bg-[#f0fdf4]' : 'bg-white hover:bg-[#f5f5f7]'
                             }`}
                             title="โทรหาผู้ขับ">
-                            📞
+                            <Icon icon="ph:phone-call-duotone" width="20" height="20" className={isBusy ? 'text-[#34c759]' : 'text-[#ff9f0a]'} />
                         </button>
                     )}
                   </div>
@@ -392,7 +398,7 @@ function CarSelector() {
               <div className="bg-white rounded-[16px] overflow-hidden"
                    style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
                 <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
-                  <span>🚙</span>
+                  <Icon icon="ph:car-profile-duotone" width="22" height="22" className="text-[#ff3b30]" />
                   <span className="text-[15px] font-semibold text-[#1d1d1f]">รถยนต์ทั่วไป (น้ำมัน)</span>
                 </div>
                 <div className="px-4 py-4 space-y-3.5">
@@ -414,7 +420,7 @@ function CarSelector() {
               <div className="bg-white rounded-[16px] overflow-hidden"
                    style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
                 <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
-                  <span>⚡</span>
+                  <Icon icon="ph:lightning-duotone" width="22" height="22" className="text-[#0071e3]" />
                   <span className="text-[15px] font-semibold text-[#1d1d1f]">รถยนต์ไฟฟ้า (EV)</span>
                 </div>
                 <div className="px-4 py-4 space-y-3.5">
@@ -448,7 +454,9 @@ function CarSelector() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCallModal({...callModal, isOpen: false})}/>
             <div className="relative w-full max-w-[320px] bg-white rounded-[24px] p-6 z-10 shadow-2xl flex flex-col items-center text-center animate-fadeDown">
-                <div className="w-16 h-16 bg-[#edfbf0] rounded-full flex items-center justify-center text-[28px] mb-4">📞</div>
+                <div className="w-16 h-16 bg-[#edfbf0] rounded-full flex items-center justify-center mb-4">
+                  <Icon icon="ph:phone-call-duotone" width="36" height="36" className="text-[#34c759]" />
+                </div>
                 <h3 className="text-[18px] font-semibold text-[#1d1d1f] mb-1">โทรหาผู้ขับขี่</h3>
                 <p className="text-[14px] text-[#6e6e73] mb-4">{callModal.driverName}</p>
                 
@@ -580,18 +588,22 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
           <div className="w-9 h-[4px] rounded-full bg-[#c7c7cc]"/>
         </div>
         <div className="px-5 pt-4 pb-4 flex items-center justify-between border-b border-[rgba(0,0,0,0.06)]">
-          <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">✍️ {title}</span>
+          <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px] flex items-center gap-2">
+            <Icon icon="ph:pen-nib-duotone" width="22" height="22" className="text-[#0071e3]" /> {title}
+          </span>
           <button onClick={onClose} className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3a3a3c] font-semibold active:bg-[#d1d1d6] transition-colors">✕</button>
         </div>
         <div className="mx-5 mt-3 flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
-          <span className="text-[13px]">📅</span>
+          <Icon icon="ph:calendar-dots-duotone" width="20" height="20" className="text-[#ff9f0a]" />
           <span className="text-[12px] font-medium text-[#0071e3]">เซ็นได้เฉพาะวันที่ 28–5 ของรอบเดือน</span>
         </div>
         <div className="p-5">
           {!staffInfo ? (
             <div className="space-y-4">
               <div className="text-center space-y-1 mb-2">
-                <div className="w-14 h-14 rounded-full bg-[#e5e5ea] flex items-center justify-center text-3xl mx-auto mb-3">🔐</div>
+                <div className="w-16 h-16 rounded-full bg-[#e5e5ea] flex items-center justify-center mx-auto mb-3">
+                  <Icon icon="ph:shield-check-duotone" width="34" height="34" className="text-[#34c759]" />
+                </div>
                 <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">ยืนยันตัวตน</h3>
                 <p className="text-[13px] text-[#6e6e73]">กรอกรหัสพนักงานของคุณ</p>
               </div>
@@ -928,12 +940,12 @@ function ReportPage() {
           <div className="px-4 py-2 border-b border-[rgba(0,0,0,0.06)]">
             {!canSignAny ? (
               <div className="flex items-center gap-2 bg-[#fff3cd] rounded-[10px] px-3 py-2">
-                <span className="text-[14px]">🔒</span>
+                <Icon icon="ph:lock-key-duotone" width="16" height="16" className="text-[#856404]" />
                 <span className="text-[11px] font-medium text-[#856404]">นอกเวลาอนุญาต (28–5 ของเดือน)</span>
               </div>
             ) : selectedMonth !== signableMonth ? (
               <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
-                <span className="text-[14px]">ℹ️</span>
+                <Icon icon="ph:info-duotone" width="16" height="16" className="text-[#0071e3]" />
                 <span className="text-[11px] font-medium text-[#0071e3]">จะสลับไปเดือน {signableMonth}</span>
               </div>
             ) : (
@@ -1659,10 +1671,12 @@ function CarActionForm({ carId }) {
              style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
           <div className="bg-[#f5f5f7] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6 text-center"
                style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)'}}>
-            <div className="text-[48px] mb-3">📝</div>
+            <div className="flex justify-center mb-3">
+              <Icon icon="ph:signature-duotone" width="56" height="56" className="text-[#0071e3]" />
+            </div>
             <h3 className="text-[20px] font-semibold text-[#1d1d1f] mb-2 tracking-[-0.4px]">ถึงเวลาเซ็นเอกสาร</h3>
             <p className="text-[14px] text-[#6e6e73] mb-6 leading-relaxed">
-              อยู่ในช่วงเวลาเซ็นเอกสารประจำเดือน<br/>อย่าลืมเข้าไปเซ็นชื่อที่หน้ารายงาน (ไอคอน 🖨️)
+              อยู่ในช่วงเวลาเซ็นเอกสารประจำเดือน<br/>อย่าลืมเข้าไปเซ็นชื่อที่หน้ารายงาน (ไอคอน <Icon icon="ph:printer-duotone" width="16" height="16" className="inline text-[#af52de]" />)
             </p>
             <button onClick={() => setIsSignReminderDismissed(true)}
               className="w-full bg-[#1d1d1f] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#3a3a3c] transition-colors">
@@ -1678,7 +1692,9 @@ function CarActionForm({ carId }) {
              style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
           <div className="bg-[#f5f5f7] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6"
                style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)'}}>
-            <div className="text-[48px] text-center mb-3">📍</div>
+            <div className="flex justify-center mb-3">
+              <Icon icon="ph:map-pin-line-duotone" width="56" height="56" className="text-[#ff3b30]" />
+            </div>
             <h3 className="text-[20px] font-semibold text-[#1d1d1f] mb-4 tracking-[-0.4px] text-center">ตรวจสอบเลขไมล์</h3>
             <div className="bg-white rounded-[16px] p-4 mb-5 space-y-3"
                  style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
@@ -1723,7 +1739,7 @@ function CarActionForm({ carId }) {
           <button onClick={() => window.open(`/report?car_id=${car.id}`, '_blank')}
             className="w-9 h-9 rounded-full flex items-center justify-center text-[15px] transition-all active:scale-90"
             style={{background:'rgba(255,255,255,0.2)', backdropFilter:'blur(10px)'}}>
-            🖨️
+            <Icon icon="ph:printer-duotone" width="20" height="20" className="text-white" />
           </button>
         </div>
       </div>
@@ -1744,8 +1760,8 @@ function CarActionForm({ carId }) {
             : car.status === 'busy' ? 'bg-gradient-to-b from-[#ffb3ae] to-[#ffe5e3]'
             : 'bg-gradient-to-b from-[#a8f0c4] to-[#d4f5e0]'
           }`}>
-            <span className="text-[110px] select-none" style={{filter:'drop-shadow(0 8px 24px rgba(0,0,0,0.12))'}}>
-              {isEV ? '⚡' : '🚗'}
+            <span className="flex items-center justify-center" style={{filter:'drop-shadow(0 8px 24px rgba(0,0,0,0.12))'}}>
+              {isEV ? <Icon icon="ph:lightning-duotone" width="100" height="100" className="text-[#0071e3]" /> : <Icon icon="ph:car-profile-duotone" width="100" height="100" className="text-[#34c759]" />}
             </span>
           </div>
         )}
@@ -1784,12 +1800,12 @@ function CarActionForm({ carId }) {
 
         <div className="px-5 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center text-[22px] ${
+            <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center ${
               car.status === 'available'
                 ? isEV ? 'bg-[#0071e3]' : 'bg-[#34c759]'
                 : 'bg-[#ff3b30]'
             }`}>
-              {car.status === 'available' ? (isEV ? '⚡' : '🚗') : (isEV ? '🔌' : '↩️')}
+              {car.status === 'available' ? (isEV ? <Icon icon="ph:lightning-duotone" width="24" height="24" className="text-white" /> : <Icon icon="ph:car-profile-duotone" width="24" height="24" className="text-white" />) : (isEV ? <Icon icon="ph:plug-duotone" width="24" height="24" className="text-white" /> : <Icon icon="ph:arrow-bend-down-left-duotone" width="24" height="24" className="text-white" />)}
             </div>
             <div>
               <p className="text-[18px] font-bold text-[#1d1d1f] tracking-[-0.4px]">
@@ -1839,8 +1855,8 @@ function CarActionForm({ carId }) {
                   </>
                 ) : (
                   <div className="flex items-center gap-3 bg-[#edfbf0] px-4 py-3 rounded-[14px] animate-fadeDown">
-                    <div className="w-10 h-10 rounded-full bg-[#34c759]/20 flex items-center justify-center text-[20px]">
-                      👨‍🔧
+                    <div className="w-10 h-10 rounded-full bg-[#34c759]/20 flex items-center justify-center">
+                      <Icon icon="ph:user-circle-check-duotone" width="24" height="24" className="text-[#34c759]" />
                     </div>
                     <div>
                       <p className="text-[15px] font-bold text-[#1a7f37]">{staffName}</p>
@@ -1855,7 +1871,9 @@ function CarActionForm({ carId }) {
               {/* ================================== */}
               {!staffName ? (
                  <div className="flex flex-col items-center justify-center py-10 opacity-50">
-                    <span className="text-[40px] mb-2 drop-shadow-sm">🔒</span>
+                    <span className="mb-2 drop-shadow-sm">
+                      <Icon icon="ph:lock-key-duotone" width="48" height="48" className="text-[#c7c7cc]" />
+                    </span>
                     <p className="text-[14px] font-medium text-[#6e6e73]">กรุณาระบุรหัสพนักงานเพื่อทำรายการต่อ</p>
                  </div>
               ) : (
@@ -1869,7 +1887,7 @@ function CarActionForm({ carId }) {
                       </p>
                       {isMileageLocked && (
                         <span className="text-[11px] font-medium text-[#0071e3] flex items-center gap-1 bg-[#edf6ff] px-2 py-0.5 rounded-full">
-                          🔒 ต่อเนื่อง
+                          <Icon icon="ph:lock-key-duotone" width="14" height="14" className="text-[#0071e3]" /> ต่อเนื่อง
                         </span>
                       )}
                     </div>
@@ -1887,7 +1905,7 @@ function CarActionForm({ carId }) {
                     <>
                       {/* %แบต */}
                       <div className="bg-white rounded-[20px] px-5 py-4"
-                           style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
+                       style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                         <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">3. แบตเตอรี่ก่อนชาร์จ</p>
                         <div className="relative flex items-center justify-center">
                           <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)}
@@ -1905,10 +1923,10 @@ function CarActionForm({ carId }) {
                           <div className="grid grid-cols-2 gap-2">
                             {['PEA','OTHER'].map(t => (
                               <button key={t} onClick={() => { setStationType(t); setSubStationType(''); setStationName(''); }}
-                                className={`py-3.5 rounded-[14px] text-[13px] font-semibold transition-all active:scale-[0.97] ${
+                                className={`py-3.5 rounded-[14px] text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
                                   stationType === t ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
                                 }`}>
-                                {t === 'PEA' ? '⚡ PEA Volta' : '🔌 แบรนด์อื่น'}
+                                {t === 'PEA' ? <><Icon icon="ph:lightning-duotone" width="18" height="18" className={stationType === 'PEA' ? 'text-white' : 'text-[#0071e3]'}/> PEA Volta</> : <><Icon icon="ph:plug-duotone" width="18" height="18" className={stationType === 'OTHER' ? 'text-white' : 'text-[#ff9f0a]'}/> แบรนด์อื่น</>}
                               </button>
                             ))}
                           </div>
@@ -1984,10 +2002,13 @@ function CarActionForm({ carId }) {
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                           </button>
                           {selectedTask === 'อื่นๆ' && (
-                            <div className="mt-2 animate-fadeIn">
+                            <div className="mt-2 animate-fadeIn relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2">
+                                <Icon icon="ph:pencil-line-duotone" width="20" height="20" className="text-[#0071e3]" />
+                              </span>
                               <input type="text" value={customTask} onChange={e => setCustomTask(e.target.value)}
-                                placeholder="✍️ ระบุประเภทงาน..." autoFocus
-                                className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
+                                placeholder="ระบุประเภทงาน..." autoFocus
+                                className="w-full pl-11 pr-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
                             </div>
                           )}
                         </div>
@@ -2014,15 +2035,18 @@ function CarActionForm({ carId }) {
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                                   </button>
                                   {area.type === 'อื่นๆ' && (
-                                    <div className="animate-fadeIn">
+                                    <div className="animate-fadeIn relative">
+                                      <span className="absolute left-4 top-1/2 -translate-y-1/2">
+                                        <Icon icon="ph:map-pin-plus-duotone" width="20" height="20" className="text-[#ff3b30]" />
+                                      </span>
                                       <input type="text" value={area.custom} 
                                         onChange={e => {
                                           const newA = [...selectedAreas];
                                           newA[index].custom = e.target.value;
                                           setSelectedAreas(newA);
                                         }}
-                                        placeholder="📍 ระบุสถานที่..." autoFocus
-                                        className="w-full px-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
+                                        placeholder="ระบุสถานที่..." autoFocus
+                                        className="w-full pl-11 pr-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
                                     </div>
                                   )}
                                 </div>
@@ -2047,14 +2071,14 @@ function CarActionForm({ carId }) {
 
                   {/* 🟢 ปุ่มยืนยัน */}
                   <button onClick={handleTakeOut} disabled={loading}
-                    className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
+                    className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
                       loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed' : 'text-white'
                     }`}
                     style={!loading ? {
                       background:'linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%)',
                       boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
                     } : {}}>
-                    {loading ? 'กำลังบันทึก...' : (isEV ? '⚡ ยืนยันเริ่มชาร์จ' : 'ยืนยันนำรถออก')}
+                    {loading ? 'กำลังบันทึก...' : (isEV ? <><Icon icon="ph:lightning-duotone" width="22" height="22"/> ยืนยันเริ่มชาร์จ</> : 'ยืนยันนำรถออก')}
                   </button>
                 </div>
               )}
@@ -2070,7 +2094,10 @@ function CarActionForm({ carId }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-[16px] font-semibold text-[#1d1d1f] truncate">{activeLog?.driver_name}</p>
                   {isEV ? (
-                    <p className="text-[12px] text-[#6e6e73]">🔋 {activeLog?.battery_before}% · 📍 {activeLog?.station_name}</p>
+                    <p className="text-[12px] text-[#6e6e73] flex items-center gap-1">
+                      <Icon icon="ph:battery-charging-duotone" width="16" height="16" className="text-[#34c759]" /> {activeLog?.battery_before}% · 
+                      <Icon icon="ph:map-pin-duotone" width="16" height="16" className="text-[#ff3b30]" /> {activeLog?.station_name}
+                    </p>
                   ) : (
                     <p className="text-[12px] text-[#6e6e73]">ออกที่ไมล์ {activeLog?.start_mileage?.toLocaleString()}</p>
                   )}
@@ -2103,12 +2130,12 @@ function CarActionForm({ carId }) {
                     <div className="px-5 pt-4 pb-3">
                       <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">มีการเติมน้ำมันหรือไม่?</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {[{v:true,l:'⛽ เติมน้ำมัน'},{v:false,l:'ไม่ได้เติม'}].map(item => (
+                        {[{v:true,l:'เติมน้ำมัน',i:'gas-pump-duotone'},{v:false,l:'ไม่ได้เติม',i:''}].map(item => (
                           <button key={String(item.v)} onClick={() => { setHasRefueled(item.v); setFuelLiters(''); setFuelCost(''); }}
-                            className={`py-3.5 rounded-[14px] text-[14px] font-semibold transition-all active:scale-[0.97] ${
+                            className={`py-3.5 rounded-[14px] text-[14px] font-semibold flex justify-center items-center gap-1.5 transition-all active:scale-[0.97] ${
                               hasRefueled === item.v ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
                             }`}>
-                            {item.l}
+                            {item.i && <Icon icon={`ph:${item.i}`} width="20" height="20" className={hasRefueled === item.v ? 'text-white' : 'text-[#ff9f0a]'} />} {item.l}
                           </button>
                         ))}
                       </div>
@@ -2195,7 +2222,7 @@ function CarActionForm({ carId }) {
                         isSelected ? 'border-[1.5px] border-[#0071e3] shadow-[0_2px_8px_rgba(0,113,227,0.12)]' : 'border-[1.5px] border-transparent shadow-sm'
                       }`}>
                       <div className="flex items-center gap-3">
-                        {isOther && <span className="text-[18px]">✏️</span>}
+                        {isOther && <Icon icon="ph:pencil-line-duotone" width="22" height="22" className="text-[#ff9f0a]" />}
                         <span className={`text-[15px] ${isSelected ? 'text-[#0071e3] font-semibold' : isOther ? 'text-[#ff9f0a] font-medium' : 'text-[#1d1d1f]'}`}>
                           {opt}
                         </span>

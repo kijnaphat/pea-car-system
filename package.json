@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@iconify/react": "^6.0.2",
     "@supabase/supabase-js": "^2.95.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.563.0",
