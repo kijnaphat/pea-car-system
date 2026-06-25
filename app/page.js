@@ -234,7 +234,8 @@ function CarSelector() {
           const busyCars = cars.filter(c => c.status === 'busy')
           const availableCars = cars.filter(c => c.status !== 'busy')
 
-          const CarRow = ({ car, isLast }) => {
+          // แก้เป็นฟังก์ชัน renderCarRow แทนการสร้าง Component ซ้อนกัน
+          const renderCarRow = (car, isLast) => {
             const carImageSrc = getCarImage(car)
             const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
             const isBusy = car.status === 'busy'
@@ -257,7 +258,7 @@ function CarSelector() {
             }
 
             return (
-              <div className="bg-white relative p-4 transition-colors"
+              <div key={car.id} className="bg-white relative p-4 transition-colors"
                    style={{borderBottom: isLast ? 'none' : '0.5px solid rgba(60,60,67,0.1)'}}>
                 
                 {/* Top: Car Info */}
@@ -352,7 +353,7 @@ function CarSelector() {
                   </div>
                   <div className="rounded-[18px] overflow-hidden"
                        style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-                    {busyCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === busyCars.length - 1}/>)}
+                    {busyCars.map((car, i) => renderCarRow(car, i === busyCars.length - 1))}
                   </div>
                 </div>
               )}
@@ -365,7 +366,7 @@ function CarSelector() {
                   </div>
                   <div className="rounded-[18px] overflow-hidden"
                        style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-                    {availableCars.map((car, i) => <CarRow key={car.id} car={car} isLast={i === availableCars.length - 1}/>)}
+                    {availableCars.map((car, i) => renderCarRow(car, i === availableCars.length - 1))}
                   </div>
                 </div>
               )}
@@ -967,7 +968,7 @@ function ReportPage() {
               <div className="bg-white rounded-[12px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
                 {[
                   { label: 'จาก', val: fromText, set: setFromText, ph: 'แผนก...' },
-                  { label: 'ถึง',  val: toText,   set: setToText,   ph: 'หัวหน้า...' },
+                  { label: 'ถึง',  val: toText,  set: setToText,  ph: 'หัวหน้า...' },
                   { label: 'เรียน', val: dearText, set: setDearText, ph: 'ผจก...' },
                 ].map(({ label, val, set, ph }, i, arr) => (
                   <div key={label} className={`flex items-center px-3 py-2 gap-3 ${i < arr.length-1 ? 'border-b border-[rgba(0,0,0,0.06)]' : ''}`}>
