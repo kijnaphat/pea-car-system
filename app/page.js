@@ -155,6 +155,7 @@ function CarSelector() {
     if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
     if (type.startsWith('รถบรรทุก 6 ล้อ')) return '/hotline_6.png'
     if (type.startsWith('รถบรรทุก 6 ตัน')) return '/6ton.png'
+    if (type.startsWith('รถบรรทุก 3 ตันส่วนบุคคล')) return '/3ton_2.png'
     if (type.startsWith('TEST_CAR')) return '/scooter.png'
     return null 
   }
@@ -234,12 +235,11 @@ function CarSelector() {
           const busyCars = cars.filter(c => c.status === 'busy')
           const availableCars = cars.filter(c => c.status !== 'busy')
 
-          // แก้เป็นฟังก์ชัน renderCarRow แทนการสร้าง Component ซ้อนกัน
+          // UI สไตล์แอปสั่งอาหาร (รูปซ้าย, รายละเอียดและปุ่มเรียงด้านขวา)
           const renderCarRow = (car, isLast) => {
             const carImageSrc = getCarImage(car)
             const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
             const isBusy = car.status === 'busy'
-            const statusDot = !car.isActivated ? '#aeaeb2' : isBusy ? '#ff3b30' : isEV ? '#0071e3' : '#34c759'
             const imgBg = !car.isActivated ? '#f5f5f7' : isBusy ? '#fff2f0' : isEV ? '#edf6ff' : '#edfbf0'
 
             const logData = isBusy ? car.activeLog : car.lastLog
@@ -258,86 +258,85 @@ function CarSelector() {
             }
 
             return (
-              <div key={car.id} className="bg-white relative p-4 transition-colors"
-                   style={{borderBottom: isLast ? 'none' : '0.5px solid rgba(60,60,67,0.1)'}}>
+              <div key={car.id} className="bg-white p-4 flex gap-4 relative transition-colors active:bg-[#f9f9f9] cursor-pointer"
+                   style={{borderBottom: isLast ? 'none' : '1px solid #f2f2f7'}}>
                 
-                {/* Top: Car Info */}
-                <div className="flex gap-3.5">
-                  <div className="w-[64px] h-[64px] flex-shrink-0 rounded-[14px] overflow-hidden flex items-center justify-center"
-                       style={{background: imgBg}}>
-                    {carImageSrc
-                      ? <img src={carImageSrc} alt={car.car_type}
-                          className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
-                      : <Icon icon="ph:car-profile-duotone" width="36" height="36" className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#ff9f0a]'} />}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[18px] font-bold tracking-[-0.5px] leading-tight truncate ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
-                        {car.plate_number}
-                      </span>
-                      <span className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${isBusy ? 'animate-pulse' : ''}`}
-                            style={{background: statusDot}}/>
-                    </div>
-                    
-                    {/* ปรับขนาดให้เท่ากับ 📞 (36x36) และเพิ่ม mr-1.5 ให้ขอบขวาตรงกันพอดี */}
-                    <div className="mt-0.5 flex items-center justify-between gap-2">
-                      <p className="text-[13px] truncate leading-snug">
-                        <span className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#6e3fa3]'}>
-                          {car.car_type}
-                        </span>
-                      </p>
-                      
-                      <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
-                        className="w-[36px] h-[36px] rounded-[10px] bg-white flex items-center justify-center active:scale-95 transition-all text-[#3c3c43] hover:bg-[#f5f5f7] shadow-sm border border-[rgba(0,0,0,0.04)] flex-shrink-0 mr-1.5"
-                        title="พิมพ์รายงาน">
-                        <Icon icon="ph:printer-duotone" width="20" height="20" className="text-[#af52de]" />
-                      </button>
-                    </div>
-                    
-                    <div className="mt-1 flex items-center gap-2 flex-wrap">
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
-                        !car.isActivated ? 'bg-[#f5f5f7] text-[#aeaeb2]'
-                        : isBusy ? 'bg-[#fff2f0] text-[#ff3b30]'
-                        : isEV ? 'bg-[#edf6ff] text-[#0071e3]'
-                        : 'bg-[#edfbf0] text-[#248a3d]'
-                      }`}>
-                        {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
-                      </span>
-                      
-                      {timeString && (
-                        <span className="text-[12px] text-[#aeaeb2]">
-                          {timeString}
-                        </span>
-                      )}
-                    </div>
+                {/* ด้านซ้าย: รูปภาพรถ (ขยายขนาดเป็น 116x116 เพื่อให้เต็มพื้นที่ความสูง) */}
+                <div className="w-[116px] h-[116px] flex-shrink-0 rounded-[16px] overflow-hidden relative border border-[rgba(0,0,0,0.04)]"
+                     style={{background: imgBg}}>
+                  {carImageSrc
+                    ? <img src={carImageSrc} alt={car.car_type}
+                        className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
+                    : <div className="w-full h-full flex items-center justify-center">
+                        <Icon icon="ph:car-profile-duotone" width="48" height="48" className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#ff9f0a]'} />
+                      </div>
+                  }
+                  
+                  {/* ป้าย Tag สถานะทับบนรูป */}
+                  <div className={`absolute top-0 left-0 px-2.5 py-1 rounded-br-[12px] text-[11px] font-bold text-white shadow-sm ${
+                    !car.isActivated ? 'bg-[#aeaeb2]' 
+                    : isBusy ? 'bg-[#ff3b30]' 
+                    : isEV ? 'bg-[#0071e3]' 
+                    : 'bg-[#34c759]'
+                  }`}>
+                    {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'ใช้งานอยู่') : (isEV ? 'พร้อมชาร์จ' : 'ว่าง')}
                   </div>
                 </div>
 
-                {/* Bottom: Driver & Actions (ขนาด 36x36 เท่ากัน) */}
-                <div className="mt-3.5 bg-[#f8f8f9] rounded-[12px] p-1.5 pl-3 flex items-center justify-between gap-3 border border-[rgba(0,0,0,0.02)] min-h-[48px]">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex items-center justify-center">
-                      <Icon icon="ph:user-circle-duotone" width="20" height="20" className="text-[#0071e3]" />
-                    </div>
-                    <p className="text-[13px] text-[#1d1d1f] font-medium truncate">
-                      {driverName ? driverName : '-'} 
-                      {!isBusy && driverName && <span className="text-[#8e8e93] font-normal ml-1">(ล่าสุด)</span>}
-                    </p>
-                  </div>
+                {/* ด้านขวา: ข้อมูลทั้งหมด */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                  
+                  <div>
+                    {/* ทะเบียนรถ */}
+                    <h3 className={`text-[17px] font-bold tracking-tight leading-tight truncate ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
+                      {car.plate_number}
+                    </h3>
 
-                  <div className="flex items-center flex-shrink-0">
-                    {/* เปลี่ยนเงื่อนไขซ่อนปุ่ม 📞 หากคนขับเป็น 'ผจก.' */}
-                    {driverName && car.driverPosition !== 'ผจก.' && (
-                        <button onClick={(e) => handleCallClick(e, driverName)}
-                            className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center active:scale-95 transition-all shadow-sm border border-[rgba(0,0,0,0.04)] ${
-                                isBusy ? 'bg-white hover:bg-[#f0fdf4]' : 'bg-white hover:bg-[#f5f5f7]'
-                            }`}
-                            title="โทรหาผู้ขับ">
-                            <Icon icon="ph:phone-call-duotone" width="20" height="20" className={isBusy ? 'text-[#34c759]' : 'text-[#ff9f0a]'} />
-                        </button>
+                    {/* ประเภทรถ */}
+                    <div className="flex items-center gap-1.5 mt-1 text-[13px] text-[#6e6e73] truncate">
+                      <Icon icon="ph:car-duotone" width="14" height="14" className="text-[#ff9f0a] flex-shrink-0" />
+                      <span className="truncate">{car.car_type}</span>
+                    </div>
+
+                    {/* ชื่อคนขับ */}
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#6e6e73] truncate">
+                      <Icon icon="ph:user-circle-duotone" width="14" height="14" className="text-[#0071e3] flex-shrink-0" />
+                      <span className="truncate">
+                         {driverName ? driverName : 'ไม่มีข้อมูลผู้ขับ'} 
+                         {!isBusy && driverName && <span className="text-[11px] font-normal text-[#aeaeb2] ml-1">(ล่าสุด)</span>}
+                      </span>
+                    </div>
+
+                    {/* ข้อมูลเวลา */}
+                    {timeString && (
+                      <div className={`flex items-center gap-1.5 mt-0.5 text-[12px] font-medium ${isBusy ? 'text-[#34c759]' : 'text-[#aeaeb2]'}`}>
+                        <Icon icon={isBusy ? "ph:clock-duotone" : "ph:clock-counter-clockwise-duotone"} width="14" height="14" className="flex-shrink-0" />
+                        <span className="truncate">{timeString}</span>
+                      </div>
                     )}
                   </div>
+
+                  {/* ปุ่ม Action */}
+                  <div className="flex items-center gap-2 mt-2.5">
+                    {/* ปุ่มพิมพ์รายงาน */}
+                    <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.08)] bg-white shadow-sm text-[12px] font-medium text-[#3c3c43] active:bg-[#f5f5f7] transition-colors"
+                      title="พิมพ์รายงาน">
+                      <Icon icon="ph:printer-duotone" width="16" height="16" className="text-[#af52de]" />
+                      พิมพ์
+                    </button>
+
+                    {/* ปุ่มโทรหาคนขับ */}
+                    {driverName && car.driverPosition !== 'ผจก.' && (
+                      <button onClick={(e) => handleCallClick(e, driverName)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.08)] bg-white shadow-sm text-[12px] font-medium text-[#3c3c43] active:bg-[#f5f5f7] transition-colors"
+                        title="โทรหาผู้ขับ">
+                        <Icon icon="ph:phone-call-duotone" width="16" height="16" className={isBusy ? 'text-[#34c759]' : 'text-[#ff9f0a]'} />
+                        โทร
+                      </button>
+                    )}
+                  </div>
+
                 </div>
               </div>
             )
@@ -351,7 +350,7 @@ function CarSelector() {
                     <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">กำลังใช้งาน</h2>
                     <span className="text-[13px] text-[#aeaeb2]">{busyCars.length} คัน</span>
                   </div>
-                  <div className="rounded-[18px] overflow-hidden"
+                  <div className="rounded-[18px] overflow-hidden bg-white"
                        style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
                     {busyCars.map((car, i) => renderCarRow(car, i === busyCars.length - 1))}
                   </div>
@@ -364,7 +363,7 @@ function CarSelector() {
                     <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">พร้อมใช้งาน</h2>
                     <span className="text-[13px] text-[#aeaeb2]">{availableCars.length} คัน</span>
                   </div>
-                  <div className="rounded-[18px] overflow-hidden"
+                  <div className="rounded-[18px] overflow-hidden bg-white"
                        style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
                     {availableCars.map((car, i) => renderCarRow(car, i === availableCars.length - 1))}
                   </div>
@@ -1337,6 +1336,7 @@ function CarActionForm({ carId }) {
     if (type.startsWith('รถบรรทุกเครนแข็ง 7.5 ตัน')) return '/7ton.png'
     if (type.startsWith('รถบรรทุก 6 ล้อ')) return 'hotline_6.png'
     if (type.startsWith('รถบรรทุก 6 ตัน')) return '/6ton.png'
+    if (type.startsWith('รถบรรทุก 3 ตันส่วนบุคคล')) return '/3ton_2.png'
     if (type.startsWith('TEST_CAR')) return '/scooter.png'
     return null
   }
