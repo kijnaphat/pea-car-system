@@ -2220,7 +2220,7 @@ function CarActionForm({ carId }) {
 }
 
 // ==========================================
-// 📷 Component: Live OCR Scanner (สแกนเลขไมล์จากกล้องสด)
+// 📷 Component: Live OCR Scanner (อัปเดตเพื่อความแม่นยำ)
 // ==========================================
 function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
   const videoRef = useRef(null)
@@ -2232,7 +2232,6 @@ function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
     if (!isOpen) return;
     const startCamera = async () => {
       try {
-        // เช็คว่า browser รองรับการเปิดกล้องหรือไม่ (จำเป็นต้องใช้ HTTPS หรือ localhost)
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
            throw new Error('เบราว์เซอร์ไม่รองรับการเปิดกล้อง');
         }
@@ -2269,30 +2268,59 @@ function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // ตัดกรอบเฉพาะตรงกลาง (กว้าง 80%, สูง 20%) เพื่อให้อ่านแม่นยำและเร็วขึ้น
+      // พื้นที่ Crop ตรงกลาง (กว้าง 80%, สูง 20%)
       const cropW = canvas.width * 0.8;
       const cropH = canvas.height * 0.2;
       const cropX = (canvas.width - cropW) / 2;
       const cropY = (canvas.height - cropH) / 2;
       
+      // 🌟 [ปรับปรุง 1] ขยายขนาดภาพ (Scale up) ก่อนส่งให้ OCR
+      const scale = 2; 
+      const scaledW = cropW * scale;
+      const scaledH = cropH * scale;
+
       const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = cropW;
-      cropCanvas.height = cropH;
+      cropCanvas.width = scaledW;
+      cropCanvas.height = scaledH;
       const cropCtx = cropCanvas.getContext('2d');
       
-      cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+      // วาดและขยายขนาด
+      cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, scaledW, scaledH);
 
-      // รัน OCR ด้วย Tesseract
+      // 🌟 [ปรับปรุง 2] Image Preprocessing (Grayscale + Contrast)
+      const imgData = cropCtx.getImageData(0, 0, scaledW, scaledH);
+      const data = imgData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        // หาค่าความสว่าง (Grayscale)
+        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        
+        // เพิ่มความตัดกันของสี (Contrast)
+        const contrast = 1.5; 
+        let color = contrast * (avg - 128) + 128;
+        
+        // ล็อกค่า
+        color = Math.max(0, Math.min(255, color));
+
+        data[i] = color;     // Red
+        data[i + 1] = color; // Green
+        data[i + 2] = color; // Blue
+      }
+      cropCtx.putImageData(imgData, 0, 0);
+
+      // 🌟 [ปรับปรุง 3] เพิ่ม Parameter ให้ Tesseract
       const result = await Tesseract.recognize(cropCanvas, 'eng', {
-        tessedit_char_whitelist: '0123456789', // บังคับอ่านเฉพาะตัวเลข
+        tessedit_char_whitelist: '0123456789',
+        tessedit_pageseg_mode: '7', // '7' คือ Single Line
       });
       
-      const text = result.data.text.replace(/\D/g, ''); // กรองอีกชั้น
+      let text = result.data.text.replace(/\D/g, ''); 
+      text = text.replace(/^0+/, ''); // ลบเลขศูนย์นำหน้า
       
       if (text.length > 0) {
         onConfirm(text);
       } else {
-        alert('ไม่พบตัวเลข กรุณาขยับกล้องให้เลขไมล์อยู่ในกรอบชัดเจนแล้วลองอีกครั้ง');
+        alert('ไม่พบตัวเลข กรุณาขยับกล้องให้เลขไมล์ชัดเจน เลี่ยงแสงสะท้อน แล้วลองอีกครั้ง');
       }
     } catch (err) {
       console.error(err);
@@ -2318,7 +2346,7 @@ function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
           </div>
           <div className="absolute top-[32%] left-0 right-0 text-center flex flex-col items-center">
             <span className="bg-black/50 text-white px-4 py-1.5 rounded-full text-[14px] font-medium tracking-wide" style={{ backdropFilter: 'blur(4px)' }}>
-               วางเลขไมล์ให้อยู่กึ่งกลางกรอบ
+               วางเลขไมล์ให้อยู่กึ่งกลางกรอบ<br/><span className="text-[12px] opacity-80">(พยายามหลีกเลี่ยงแสงสะท้อน)</span>
             </span>
           </div>
         </div>
