@@ -1840,7 +1840,7 @@ function CarActionForm({ carId }) {
               ) : (
                 <div className="space-y-3 animate-fadeDown">
                   
-                  {/* 🌟 เลขไมล์เริ่มต้น (เอาเอฟเฟคกล้องออก คืนค่าเป็นเหมือนเดิม) */}
+                  {/* 🌟 เลขไมล์เริ่มต้น */}
                   <div className="bg-white rounded-[20px] px-5 py-4"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                     <div className="flex justify-between items-center mb-3">
@@ -2220,7 +2220,7 @@ function CarActionForm({ carId }) {
 }
 
 // ==========================================
-// 📷 Component: Live OCR Scanner (อัปเดตเพื่อความแม่นยำ)
+// 📷 Component: Live OCR Scanner (เวอร์ชัน Extreme Preprocessing)
 // ==========================================
 function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
   const videoRef = useRef(null)
@@ -2235,6 +2235,7 @@ function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
            throw new Error('เบราว์เซอร์ไม่รองรับการเปิดกล้อง');
         }
+        // บังคับโฟกัสและลดความสว่างลง (ถ้ากล้องรองรับ) เพื่อลดแสงแฟลชหน้าจอ
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
         });
@@ -2268,14 +2269,14 @@ function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // พื้นที่ Crop ตรงกลาง (กว้าง 80%, สูง 20%)
-      const cropW = canvas.width * 0.8;
-      const cropH = canvas.height * 0.2;
+      // พื้นที่ Crop ตรงกลาง (กว้าง 60%, สูง 15%) บีบกรอบให้แคบลงเพื่อตัดแสงรบกวนรอบๆ ทิ้ง
+      const cropW = canvas.width * 0.6;
+      const cropH = canvas.height * 0.15;
       const cropX = (canvas.width - cropW) / 2;
       const cropY = (canvas.height - cropH) / 2;
       
-      // 🌟 [ปรับปรุง 1] ขยายขนาดภาพ (Scale up) ก่อนส่งให้ OCR
-      const scale = 2; 
+      // ขยายภาพ (Scale up) ช่วยให้อ่านฟอนต์ดิจิทัลได้ดีขึ้น
+      const scale = 2.5; 
       const scaledW = cropW * scale;
       const scaledH = cropH * scale;
 
@@ -2284,43 +2285,56 @@ function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
       cropCanvas.height = scaledH;
       const cropCtx = cropCanvas.getContext('2d');
       
-      // วาดและขยายขนาด
+      // ปิด Smoothing เพื่อให้ขอบตัวเลขดิจิทัลคมที่สุด
+      cropCtx.imageSmoothingEnabled = false;
       cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, scaledW, scaledH);
 
-      // 🌟 [ปรับปรุง 2] Image Preprocessing (Grayscale + Contrast)
+      // 🌟 [ปรับปรุงใหม่] Extreme Binarization & Auto-Invert
       const imgData = cropCtx.getImageData(0, 0, scaledW, scaledH);
       const data = imgData.data;
 
+      // 1. หาค่าความสว่างเฉลี่ยของภาพ 
+      let totalLuminance = 0;
       for (let i = 0; i < data.length; i += 4) {
-        // หาค่าความสว่าง (Grayscale)
-        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        
-        // เพิ่มความตัดกันของสี (Contrast)
-        const contrast = 1.5; 
-        let color = contrast * (avg - 128) + 128;
-        
-        // ล็อกค่า
-        color = Math.max(0, Math.min(255, color));
+        // สูตรแปลงสีเป็น Grayscale ที่อิงตามสายตามนุษย์
+        totalLuminance += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      }
+      const avgLuminance = totalLuminance / (data.length / 4);
 
-        data[i] = color;     // Red
-        data[i + 1] = color; // Green
-        data[i + 2] = color; // Blue
+      // 2. ถ่ายรูปหน้าปัดรถมักจะมืด (ตัวเลขเรืองแสงสว่าง)
+      // Tesseract ต้องการตัวหนังสือดำบนพื้นขาว เราจึงต้องกลับสี (Invert) หากพื้นหลังมืด
+      const isDarkBackground = avgLuminance < 130;
+
+      for (let i = 0; i < data.length; i += 4) {
+        let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+
+        if (isDarkBackground) {
+          gray = 255 - gray; // กลับสี: ขาวเป็นดำ ดำเป็นขาว
+        }
+
+        // 3. Thresholding (Binarization) - บีบให้เหลือแค่ขาวกับดำ 100% ไม่มีสีเทา
+        // จุดไหนสว่างกว่า 140 ให้ขาวหมด ต่ำกว่าให้ดำหมด (ลบเงาสะท้อน)
+        const finalColor = gray > 140 ? 255 : 0;
+
+        data[i] = finalColor;     // R
+        data[i + 1] = finalColor; // G
+        data[i + 2] = finalColor; // B
       }
       cropCtx.putImageData(imgData, 0, 0);
 
-      // 🌟 [ปรับปรุง 3] เพิ่ม Parameter ให้ Tesseract
+      // 🌟 [ตั้งค่า Tesseract สำหรับตัวเลขดิจิทัล]
       const result = await Tesseract.recognize(cropCanvas, 'eng', {
-        tessedit_char_whitelist: '0123456789',
-        tessedit_pageseg_mode: '7', // '7' คือ Single Line
+        tessedit_char_whitelist: '0123456789', // รับแค่ตัวเลข
+        tessedit_pageseg_mode: '7', // มองภาพเป็น 1 บรรทัดเท่านั้น
       });
       
       let text = result.data.text.replace(/\D/g, ''); 
-      text = text.replace(/^0+/, ''); // ลบเลขศูนย์นำหน้า
+      text = text.replace(/^0+/, ''); // ลบเลข 0 นำหน้า
       
-      if (text.length > 0) {
+      if (text.length > 3) { // สมมติว่าเลขไมล์ควรมีอย่างน้อย 4 หลัก (เพื่อกันการอ่านผิดเป็นเลขสั้นๆ)
         onConfirm(text);
       } else {
-        alert('ไม่พบตัวเลข กรุณาขยับกล้องให้เลขไมล์ชัดเจน เลี่ยงแสงสะท้อน แล้วลองอีกครั้ง');
+        alert('อ่านเลขไมล์ไม่ชัดเจน กรุณาขยับกล้องให้อยู่ในกรอบ และหลีกเลี่ยงแสงแฟลช/แสงสะท้อนครับ');
       }
     } catch (err) {
       console.error(err);
@@ -2338,22 +2352,21 @@ function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
         {/* Video Feed */}
         <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
         
-        {/* UI Overlay กรอบสแกน */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.65)' }}>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[20%] border-[2.5px] border-[#34c759] rounded-xl flex items-center justify-center" 
-               style={{ boxShadow: '0 0 0 4000px rgba(0,0,0,0.65)', background: 'transparent' }}>
-               <div className="w-10 h-[2px] bg-[#34c759] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-50"/>
+        {/* UI Overlay กรอบสแกน (บีบกรอบให้แคบลง) */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[15%] border-[2px] border-[#34c759] rounded-lg flex items-center justify-center" 
+               style={{ boxShadow: '0 0 0 4000px rgba(0,0,0,0.7)', background: 'transparent' }}>
+               <div className="w-8 h-[2px] bg-[#34c759] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-60"/>
           </div>
-          <div className="absolute top-[32%] left-0 right-0 text-center flex flex-col items-center">
-            <span className="bg-black/50 text-white px-4 py-1.5 rounded-full text-[14px] font-medium tracking-wide" style={{ backdropFilter: 'blur(4px)' }}>
-               วางเลขไมล์ให้อยู่กึ่งกลางกรอบ<br/><span className="text-[12px] opacity-80">(พยายามหลีกเลี่ยงแสงสะท้อน)</span>
+          <div className="absolute top-[35%] left-0 right-0 text-center flex flex-col items-center">
+            <span className="bg-black/60 text-white px-4 py-2 rounded-full text-[14px] font-medium tracking-wide border border-white/10" style={{ backdropFilter: 'blur(8px)' }}>
+               เล็งเฉพาะตัวเลขให้อยู่ในกรอบ<br/><span className="text-[12px] text-[#ff9f0a] mt-1 block">ระวังแสงสะท้อนจากกระจกหน้าปัด</span>
             </span>
           </div>
         </div>
         <canvas ref={canvasRef} className="hidden" />
       </div>
 
-      {/* แถบปุ่มควบคุมด้านล่าง */}
       <div className="bg-[#1d1d1f] pb-10 pt-6 px-6 flex items-center justify-center gap-4 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-10 relative">
         <button onClick={onClose} disabled={isProcessing} className="w-[60px] h-[60px] rounded-full bg-[#3a3a3c] flex items-center justify-center text-white active:bg-[#4a4a4c] transition-colors">
           <Icon icon="ph:x-bold" width="24" height="24" />
