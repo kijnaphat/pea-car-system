@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Icon } from '@iconify/react' // 🌟 นำเข้า Iconify
+import { Icon } from '@iconify/react' 
+import { Scanner } from '@yudiel/react-qr-scanner' // 🌟 นำเข้า Scanner
 
 // --- Main Component ---
 export default function App() {
@@ -35,8 +36,28 @@ function CarSelector() {
   const [loading, setLoading] = useState(true)
   const [showInstructions, setShowInstructions] = useState(false)
   
+  const [isScanning, setIsScanning] = useState(false) // 🌟 State สำหรับเปิด/ปิดกล้อง
+  
   // State สำหรับ Modal โทรออก
   const [callModal, setCallModal] = useState({ isOpen: false, driverName: '', phone: '', loading: false, error: '' })
+
+  // 🌟 ฟังก์ชันจัดการเมื่อสแกน QR โค้ดสำเร็จ
+  const handleScanSuccess = (text) => {
+    if (text) {
+      setIsScanning(false);
+      try {
+        const url = new URL(text);
+        const scannedCarId = url.searchParams.get('car_id');
+        if (scannedCarId) {
+          router.push(`/?car_id=${scannedCarId}`);
+        } else {
+          window.location.href = text; 
+        }
+      } catch (err) {
+        router.push(`/?car_id=${text}`);
+      }
+    }
+  }
 
   const fetchCars = async () => {
     try {
@@ -173,6 +194,9 @@ function CarSelector() {
         .ticker { display:inline-block; white-space:nowrap; padding-left:100%; animation:ticker 28s linear infinite; }
         .row-tap { transition:background .1s; }
         .row-tap:active { background:#f5f5f7; }
+        
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeDown { animation: fadeDown 0.3s ease-out forwards; }
       `}</style>
 
       {/* ── Nav Bar ── */}
@@ -216,9 +240,12 @@ function CarSelector() {
                 คู่มือ 
                 <Icon icon="ph:arrow-right-bold" width="12" height="12" />
               </button>
-              <div className="w-[50px] h-[50px] bg-[#2c2c2e] rounded-[14px] flex items-center justify-center text-[24px]">
+              
+              {/* 🌟 เปลี่ยนปุ่มตรงนี้ให้สามารถกดได้ และมีลูกเล่นเวลาแตะ */}
+              <button onClick={() => setIsScanning(true)}
+                className="w-[50px] h-[50px] bg-[#2c2c2e] rounded-[14px] flex items-center justify-center text-[24px] cursor-pointer active:scale-90 transition-all shadow-[0_0_15px_rgba(52,199,89,0.15)] border border-white/5">
                 <Icon icon="ph:qr-code-duotone" width="30" height="30" className="text-[#34c759]" />
-              </div>
+              </button>
             </div>
           </div>
           <div className="border-t border-white/[0.07] px-6 py-2.5 overflow-hidden flex items-center">
@@ -481,6 +508,62 @@ function CarSelector() {
                 </button>
                 </div>
             </div>
+        </div>
+      )}
+
+      {/* ── Modal เปิดกล้องสแกน QR Code (Apple Style) ── */}
+      {isScanning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          {/* พื้นหลังดำโปร่งแสง เบลอหนักๆ แบบ iOS */}
+          <div className="absolute inset-0 bg-black/40"
+               style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+               onClick={() => setIsScanning(false)} />
+          
+          {/* Modal Container - Frosted Glass Dark Mode */}
+          <div className="relative w-full max-w-[340px] bg-[#1c1c1e]/80 rounded-[32px] flex flex-col z-10 m-5 shadow-2xl border border-white/10 overflow-hidden animate-fadeDown"
+               style={{ backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4">
+              <div className="flex flex-col">
+                <span className="text-[20px] font-semibold text-white tracking-[-0.5px]">
+                  สแกน QR Code
+                </span>
+                <span className="text-[13px] text-[#ebebf5]/60 mt-0.5 font-medium">
+                  จัดคิวอาร์โค้ดให้อยู่ในกรอบ
+                </span>
+              </div>
+              <button onClick={() => setIsScanning(false)}
+                className="w-[32px] h-[32px] rounded-full bg-[#3a3a3c] flex items-center justify-center text-[15px] text-white font-semibold active:bg-[#4a4a4c] transition-colors">
+                ✕
+              </button>
+            </div>
+
+            {/* Camera Viewport */}
+            <div className="px-5 pb-7">
+              <div className="w-full aspect-square rounded-[24px] overflow-hidden relative bg-black shadow-inner">
+                
+                {/* Scanner Component */}
+                <Scanner
+                  onResult={(text) => handleScanSuccess(text)}
+                  onError={(error) => console.log(error?.message)}
+                  options={{ delayBetweenScanAttempts: 1000 }}
+                  components={{ audio: false, finder: false }} /* 🌟 ปิด UI สีแดงๆ กวนใจของไลบรารี */
+                  styles={{ container: { width: '100%', height: '100%' } }}
+                />
+                
+                {/* Apple Style Viewfinder (มาร์กเกอร์ 4 มุมโค้งมน สีขาว) */}
+                <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center p-6">
+                  <div className="w-full h-full relative">
+                    <div className="absolute top-0 left-0 w-12 h-12 border-t-[4px] border-l-[4px] border-white rounded-tl-[20px] opacity-90 shadow-sm" />
+                    <div className="absolute top-0 right-0 w-12 h-12 border-t-[4px] border-r-[4px] border-white rounded-tr-[20px] opacity-90 shadow-sm" />
+                    <div className="absolute bottom-0 left-0 w-12 h-12 border-b-[4px] border-l-[4px] border-white rounded-bl-[20px] opacity-90 shadow-sm" />
+                    <div className="absolute bottom-0 right-0 w-12 h-12 border-b-[4px] border-r-[4px] border-white rounded-br-[20px] opacity-90 shadow-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -2237,6 +2320,61 @@ function CarActionForm({ carId }) {
         </div>
       )}
 
+      {/* ── Modal เปิดกล้องสแกน QR Code (Apple Style) ── */}
+      {isScanning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          {/* พื้นหลังดำโปร่งแสง เบลอหนักๆ แบบ iOS */}
+          <div className="absolute inset-0 bg-black/40"
+               style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+               onClick={() => setIsScanning(false)} />
+          
+          {/* Modal Container - Frosted Glass Dark Mode */}
+          <div className="relative w-full max-w-[340px] bg-[#1c1c1e]/80 rounded-[32px] flex flex-col z-10 m-5 shadow-2xl border border-white/10 overflow-hidden animate-fadeDown"
+               style={{ backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4">
+              <div className="flex flex-col">
+                <span className="text-[20px] font-semibold text-white tracking-[-0.5px]">
+                  สแกน QR Code
+                </span>
+                <span className="text-[13px] text-[#ebebf5]/60 mt-0.5 font-medium">
+                  จัดคิวอาร์โค้ดให้อยู่ในกรอบ
+                </span>
+              </div>
+              <button onClick={() => setIsScanning(false)}
+                className="w-[32px] h-[32px] rounded-full bg-[#3a3a3c] flex items-center justify-center text-[15px] text-white font-semibold active:bg-[#4a4a4c] transition-colors">
+                ✕
+              </button>
+            </div>
+
+            {/* Camera Viewport */}
+            <div className="px-5 pb-7">
+              <div className="w-full aspect-square rounded-[24px] overflow-hidden relative bg-black shadow-inner">
+                
+                {/* Scanner Component */}
+                <Scanner
+                  onResult={(text) => handleScanSuccess(text)}
+                  onError={(error) => console.log(error?.message)}
+                  options={{ delayBetweenScanAttempts: 1000 }}
+                  components={{ audio: false, finder: false }}
+                  styles={{ container: { width: '100%', height: '100%' } }}
+                />
+                
+                {/* Apple Style Viewfinder */}
+                <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center p-6">
+                  <div className="w-full h-full relative">
+                    <div className="absolute top-0 left-0 w-12 h-12 border-t-[4px] border-l-[4px] border-white rounded-tl-[20px] opacity-90 shadow-sm" />
+                    <div className="absolute top-0 right-0 w-12 h-12 border-t-[4px] border-r-[4px] border-white rounded-tr-[20px] opacity-90 shadow-sm" />
+                    <div className="absolute bottom-0 left-0 w-12 h-12 border-b-[4px] border-l-[4px] border-white rounded-bl-[20px] opacity-90 shadow-sm" />
+                    <div className="absolute bottom-0 right-0 w-12 h-12 border-b-[4px] border-r-[4px] border-white rounded-br-[20px] opacity-90 shadow-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
