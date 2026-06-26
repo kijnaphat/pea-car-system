@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Icon } from '@iconify/react' // 🌟 นำเข้า Iconify
+import { Icon } from '@iconify/react' 
+import Tesseract from 'tesseract.js' // 🌟 นำเข้า Tesseract สำหรับอ่านภาพจากกล้อง
 
 // --- Main Component ---
 export default function App() {
@@ -17,12 +18,10 @@ function MainApp() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id') 
 
-  // 1. ถ้ามี car_id -> ไปหน้าฟอร์ม
   if (carId) {
     return <CarActionForm carId={carId} />
   }
 
-  // 2. ถ้าไม่มี -> ไปหน้า Home
   return <CarSelector />
 }
 
@@ -34,8 +33,6 @@ function CarSelector() {
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
   const [showInstructions, setShowInstructions] = useState(false)
-  
-  // State สำหรับ Modal โทรออก
   const [callModal, setCallModal] = useState({ isOpen: false, driverName: '', phone: '', loading: false, error: '' })
 
   const fetchCars = async () => {
@@ -78,7 +75,6 @@ function CarSelector() {
           return { ...car, activeLog: log, lastLog, isActivated }
         })
 
-        // --- เริ่มต้นดึงข้อมูล position จากตาราง staff ---
         const driverNames = mergedCars
           .map(c => c.status === 'busy' ? c.activeLog?.driver_name : c.lastLog?.driver_name)
           .filter(Boolean);
@@ -100,7 +96,6 @@ function CarSelector() {
           const dName = car.status === 'busy' ? car.activeLog?.driver_name : car.lastLog?.driver_name;
           return { ...car, driverPosition: dName ? staffMap[dName] : null };
         });
-        // --- สิ้นสุดการดึงข้อมูล position ---
 
         finalCars.sort((a, b) => {
             if (a.status === 'busy' && b.status !== 'busy') return -1 
@@ -123,7 +118,6 @@ function CarSelector() {
     return () => clearInterval(interval)
   }, [])
 
-  // ฟังก์ชันคลิกปุ่มโทร
   const handleCallClick = async (e, driverName) => {
     e.stopPropagation();
     setCallModal({ isOpen: true, driverName, phone: '', loading: true, error: '' });
@@ -180,7 +174,6 @@ function CarSelector() {
            style={{background:'rgba(245,245,247,0.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)'}}>
         <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">PEA Fleet</span>
         
-        {/* เพิ่มกลุ่มปุ่มกดไว้ด้านขวา */}
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/admin')}
             className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
@@ -194,13 +187,11 @@ function CarSelector() {
       </nav>
 
       <div className="max-w-[600px] mx-auto px-4">
-        {/* ── Hero ── */}
         <div className="pt-9 pb-8">
           <h1 className="text-[38px] font-bold tracking-[-1.5px] leading-[1.05] text-[#1d1d1f]">ยานพาหนะ</h1>
           <p className="text-[19px] text-[#6e6e73] mt-1.5 tracking-[-0.3px]">PEA Smart Vehicle Management</p>
         </div>
 
-        {/* ── QR Scan Banner ── */}
         <div className="bg-[#1d1d1f] rounded-[22px] overflow-hidden mb-8"
              style={{boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
           <div className="px-6 py-5 flex items-start justify-between gap-4">
@@ -230,12 +221,10 @@ function CarSelector() {
           </div>
         </div>
 
-        {/* ── Car List ── */}
         {(() => {
           const busyCars = cars.filter(c => c.status === 'busy')
           const availableCars = cars.filter(c => c.status !== 'busy')
 
-          // UI สไตล์แอปสั่งอาหาร (รูปซ้าย, รายละเอียดและปุ่มเรียงด้านขวา)
           const renderCarRow = (car, isLast) => {
             const carImageSrc = getCarImage(car)
             const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
@@ -261,7 +250,6 @@ function CarSelector() {
               <div key={car.id} className="bg-white p-4 flex gap-4 relative transition-colors active:bg-[#f9f9f9] cursor-pointer"
                    style={{borderBottom: isLast ? 'none' : '1px solid #f2f2f7'}}>
                 
-                {/* ด้านซ้าย: รูปภาพรถ (ขยายขนาดเป็น 116x116 เพื่อให้เต็มพื้นที่ความสูง) */}
                 <div className="w-[116px] h-[116px] flex-shrink-0 rounded-[16px] overflow-hidden relative border border-[rgba(0,0,0,0.04)]"
                      style={{background: imgBg}}>
                   {carImageSrc
@@ -272,7 +260,6 @@ function CarSelector() {
                       </div>
                   }
                   
-                  {/* ป้าย Tag สถานะทับบนรูป */}
                   <div className={`absolute top-0 left-0 px-2.5 py-1 rounded-br-[12px] text-[11px] font-bold text-white shadow-sm ${
                     !car.isActivated ? 'bg-[#aeaeb2]' 
                     : isBusy ? 'bg-[#ff3b30]' 
@@ -283,22 +270,15 @@ function CarSelector() {
                   </div>
                 </div>
 
-                {/* ด้านขวา: ข้อมูลทั้งหมด */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                  
                   <div>
-                    {/* ทะเบียนรถ */}
                     <h3 className={`text-[17px] font-bold tracking-tight leading-tight truncate ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
                       {car.plate_number}
                     </h3>
-
-                    {/* ประเภทรถ */}
                     <div className="flex items-center gap-1.5 mt-1 text-[13px] text-[#6e6e73] truncate">
                       <Icon icon="ph:car-duotone" width="14" height="14" className="text-[#ff9f0a] flex-shrink-0" />
                       <span className="truncate">{car.car_type}</span>
                     </div>
-
-                    {/* ชื่อคนขับ */}
                     <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#6e6e73] truncate">
                       <Icon icon="ph:user-circle-duotone" width="14" height="14" className="text-[#0071e3] flex-shrink-0" />
                       <span className="truncate">
@@ -306,8 +286,6 @@ function CarSelector() {
                          {!isBusy && driverName && <span className="text-[11px] font-normal text-[#aeaeb2] ml-1">(ล่าสุด)</span>}
                       </span>
                     </div>
-
-                    {/* ข้อมูลเวลา */}
                     {timeString && (
                       <div className={`flex items-center gap-1.5 mt-0.5 text-[12px] font-medium ${isBusy ? 'text-[#34c759]' : 'text-[#aeaeb2]'}`}>
                         <Icon icon={isBusy ? "ph:clock-duotone" : "ph:clock-counter-clockwise-duotone"} width="14" height="14" className="flex-shrink-0" />
@@ -315,18 +293,13 @@ function CarSelector() {
                       </div>
                     )}
                   </div>
-
-                  {/* ปุ่ม Action */}
                   <div className="flex items-center gap-2 mt-2.5">
-                    {/* ปุ่มพิมพ์รายงาน */}
                     <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.08)] bg-white shadow-sm text-[12px] font-medium text-[#3c3c43] active:bg-[#f5f5f7] transition-colors"
                       title="พิมพ์รายงาน">
                       <Icon icon="ph:printer-duotone" width="16" height="16" className="text-[#af52de]" />
                       พิมพ์
                     </button>
-
-                    {/* ปุ่มโทรหาคนขับ */}
                     {driverName && car.driverPosition !== 'ผจก.' && (
                       <button onClick={(e) => handleCallClick(e, driverName)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.08)] bg-white shadow-sm text-[12px] font-medium text-[#3c3c43] active:bg-[#f5f5f7] transition-colors"
@@ -336,7 +309,6 @@ function CarSelector() {
                       </button>
                     )}
                   </div>
-
                 </div>
               </div>
             )
@@ -376,7 +348,6 @@ function CarSelector() {
         <p className="text-center text-[11px] text-[#d2d2d7] mt-10">PEA Fleet System v2.26</p>
       </div>
 
-      {/* ── Modal คู่มือ (Bottom Sheet) ── */}
       {showInstructions && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/40"
@@ -449,7 +420,6 @@ function CarSelector() {
         </div>
       )}
 
-      {/* ── Modal โทรออกหาคนขับ ── */}
       {callModal.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCallModal({...callModal, isOpen: false})}/>
@@ -487,9 +457,6 @@ function CarSelector() {
   )
 }
 
-// ==========================================
-// 🎨 Component: กระดานเซ็นชื่อ (Signature Pad)
-// ==========================================
 function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -665,9 +632,6 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
   );
 }
 
-// ==========================================
-// 📄 Component: หน้าตารายงาน
-// ==========================================
 function ReportPage() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id')
@@ -923,7 +887,6 @@ function ReportPage() {
         }}
       />
 
-      {/* ── Settings Panel ── */}
       <div className="w-full fixed top-0 left-0 xl:w-[300px] xl:top-4 xl:left-auto xl:right-4 print:hidden z-50"
            style={{WebkitFontSmoothing:'antialiased'}}>
         <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl border-b border-[rgba(0,0,0,0.1)] xl:border xl:border-[rgba(0,0,0,0.08)] xl:rounded-[20px] xl:shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden">
@@ -1033,9 +996,6 @@ function ReportPage() {
               <div key={pageIndex} className="page-wrapper relative shadow-2xl xl:shadow-xl rounded-md bg-white overflow-hidden" style={{ width: `${A4_WIDTH_PX * scale}px`, height: `${794 * scale}px` }}>
                 <div className="page-inner absolute top-0 left-0 bg-white box-border flex flex-col font-normal text-black" style={{ width: `${A4_WIDTH_PX}px`, height: `794px`, padding: '25px 38px 30px 38px', transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                     
-                    {/* ========================================= */}
-                    {/* ⚡ REPORT FORM: EV */}
-                    {/* ========================================= */}
                     {isEVCar ? (
                         <div className="flex-1 flex flex-col justify-between">
                             <div>
@@ -1175,9 +1135,6 @@ function ReportPage() {
                             </div>
                         </div>
                     ) : (
-                        /* ========================================= */
-                        /* 🚙 REPORT FORM: STANDARD (รถน้ำมัน) */
-                        /* ========================================= */
                         <div className="flex-1 flex flex-col justify-between">
                             <div>
                                 <div className="flex justify-between items-end mb-1 font-normal">
@@ -1319,6 +1276,9 @@ function CarActionForm({ carId }) {
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
 
+  // 🌟 เพิ่ม State สำหรับคุม Modal Live Scanner
+  const [showOcrModal, setShowOcrModal] = useState(false)
+
   const getCarImage = (c) => {
     if (!c) return null
     const type = c.car_type || ''
@@ -1346,6 +1306,8 @@ function CarActionForm({ carId }) {
   const [staffName, setStaffName] = useState('') 
   const [staffPosition, setStaffPosition] = useState('') 
   const [staffError, setStaffError] = useState(false)
+  
+  // 🟢 เลขไมล์เริ่มต้น (เอาเอฟเฟคกล้องออก คืนค่าเป็นเหมือนเดิม)
   const [mileage, setMileage] = useState('')
   const [isMileageLocked, setIsMileageLocked] = useState(false)
   
@@ -1356,7 +1318,6 @@ function CarActionForm({ carId }) {
   const [selectedTask, setSelectedTask] = useState('')
   const [customTask, setCustomTask] = useState('') 
   
-  // ให้พื้นที่สามารถเพิ่มได้หลายอัน
   const [selectedAreas, setSelectedAreas] = useState([{ type: '', custom: '' }])
 
   const [selectModal, setSelectModal] = useState({ isOpen: false, type: '', title: '', options: [], targetIndex: null })
@@ -1525,7 +1486,6 @@ function CarActionForm({ carId }) {
         }
         if (selectedTask === 'อื่นๆ' && !customTask) return alert('กรุณาระบุประเภทงานอื่นๆ')
         
-        // เช็คความครบถ้วนของพื้นที่ปฏิบัติงาน (หลายพื้นที่)
         const hasEmptyAreaType = selectedAreas.some(a => !a.type);
         if (hasEmptyAreaType) return alert('กรุณาเลือกพื้นที่ปฏิบัติงานให้ครบ หรือลบช่องที่ไม่ได้ใช้ออก');
         
@@ -1879,7 +1839,8 @@ function CarActionForm({ carId }) {
                  </div>
               ) : (
                 <div className="space-y-3 animate-fadeDown">
-                  {/* เลขไมล์ */}
+                  
+                  {/* 🌟 เลขไมล์เริ่มต้น (เอาเอฟเฟคกล้องออก คืนค่าเป็นเหมือนเดิม) */}
                   <div className="bg-white rounded-[20px] px-5 py-4"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                     <div className="flex justify-between items-center mb-3">
@@ -2086,7 +2047,7 @@ function CarActionForm({ carId }) {
             </>
           ) : (
             <>
-              {/* ข้อมูลผู้ใช้รถ (ใช้สำหรับตอนคืนรถ เหมือนเดิม) */}
+              {/* ข้อมูลผู้ใช้รถ (ใช้สำหรับตอนคืนรถ) */}
               <div className="bg-white rounded-[20px] px-5 py-4 flex items-center gap-4"
                    style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                 <div className="w-11 h-11 rounded-full bg-[#fff2f0] flex items-center justify-center flex-shrink-0">
@@ -2118,12 +2079,22 @@ function CarActionForm({ carId }) {
                 </div>
               ) : (
                 <>
+                  {/* 🌟 เลขไมล์ล่าสุด (จบงาน) พร้อมปุ่มเปิดกล้องแบบ Live */}
                   <div className="bg-white rounded-[20px] px-5 py-4"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                     <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">เลขไมล์ล่าสุด (จบงาน)</p>
-                    <input type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)}
-                      placeholder="000000"
-                      className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                    
+                    <div className="relative flex items-center justify-center">
+                      <input type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)}
+                        placeholder="000000"
+                        className="w-full pl-4 pr-14 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                        
+                      {/* ปุ่มเปิดกล้องสำหรับ Live Scan */}
+                      <button onClick={() => setShowOcrModal(true)}
+                        className="absolute right-3 w-10 h-10 flex items-center justify-center rounded-[10px] bg-white border border-[#d2d2d7] shadow-sm text-[#0071e3] active:bg-[#f5f5f7] transition-all">
+                        <Icon icon="ph:scan-duotone" width="24" height="24" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="bg-white rounded-[20px] overflow-hidden"
@@ -2190,7 +2161,6 @@ function CarActionForm({ carId }) {
           <div className="relative w-full max-w-[440px] bg-[#f2f2f7] rounded-t-[24px] sm:rounded-[24px] z-10 max-h-[75vh] flex flex-col overflow-hidden animate-slideUp"
                style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
             
-            {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3 bg-white border-b border-[rgba(0,0,0,0.05)] z-10">
               <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">{selectModal.title}</span>
               <button onClick={() => setSelectModal({ ...selectModal, isOpen: false })}
@@ -2199,7 +2169,6 @@ function CarActionForm({ carId }) {
               </button>
             </div>
 
-            {/* List ตัวเลือก */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {selectModal.options.map((opt) => {
                   const isSelected = (selectModal.type === 'task' ? selectedTask : selectedAreas[selectModal.targetIndex]?.type) === opt;
@@ -2237,6 +2206,134 @@ function CarActionForm({ carId }) {
         </div>
       )}
 
+      {/* 🌟 แสดง Component Live Scanner เมื่อ showOcrModal เป็น true */}
+      <LiveOcrScanner 
+        isOpen={showOcrModal} 
+        onClose={() => setShowOcrModal(false)} 
+        onConfirm={(text) => {
+          setEndMileage(text);
+          setShowOcrModal(false);
+        }}
+      />
+    </div>
+  )
+}
+
+// ==========================================
+// 📷 Component: Live OCR Scanner (สแกนเลขไมล์จากกล้องสด)
+// ==========================================
+function LiveOcrScanner({ isOpen, onClose, onConfirm }) {
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const streamRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const startCamera = async () => {
+      try {
+        // เช็คว่า browser รองรับการเปิดกล้องหรือไม่ (จำเป็นต้องใช้ HTTPS หรือ localhost)
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+           throw new Error('เบราว์เซอร์ไม่รองรับการเปิดกล้อง');
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+        }
+      } catch (err) {
+        alert('ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการใช้งานกล้องในเบราว์เซอร์');
+        onClose();
+      }
+    };
+    
+    startCamera();
+    
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isOpen, onClose]);
+
+  const handleScan = async () => {
+    if (!videoRef.current) return;
+    setIsProcessing(true);
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // ตัดกรอบเฉพาะตรงกลาง (กว้าง 80%, สูง 20%) เพื่อให้อ่านแม่นยำและเร็วขึ้น
+      const cropW = canvas.width * 0.8;
+      const cropH = canvas.height * 0.2;
+      const cropX = (canvas.width - cropW) / 2;
+      const cropY = (canvas.height - cropH) / 2;
+      
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = cropW;
+      cropCanvas.height = cropH;
+      const cropCtx = cropCanvas.getContext('2d');
+      
+      cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+      // รัน OCR ด้วย Tesseract
+      const result = await Tesseract.recognize(cropCanvas, 'eng', {
+        tessedit_char_whitelist: '0123456789', // บังคับอ่านเฉพาะตัวเลข
+      });
+      
+      const text = result.data.text.replace(/\D/g, ''); // กรองอีกชั้น
+      
+      if (text.length > 0) {
+        onConfirm(text);
+      } else {
+        alert('ไม่พบตัวเลข กรุณาขยับกล้องให้เลขไมล์อยู่ในกรอบชัดเจนแล้วลองอีกครั้ง');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('เกิดข้อผิดพลาดในการประมวลผลภาพ');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-fadeDown">
+      <div className="relative flex-1 overflow-hidden flex items-center justify-center bg-black">
+        {/* Video Feed */}
+        <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
+        
+        {/* UI Overlay กรอบสแกน */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.65)' }}>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[20%] border-[2.5px] border-[#34c759] rounded-xl flex items-center justify-center" 
+               style={{ boxShadow: '0 0 0 4000px rgba(0,0,0,0.65)', background: 'transparent' }}>
+               <div className="w-10 h-[2px] bg-[#34c759] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-50"/>
+          </div>
+          <div className="absolute top-[32%] left-0 right-0 text-center flex flex-col items-center">
+            <span className="bg-black/50 text-white px-4 py-1.5 rounded-full text-[14px] font-medium tracking-wide" style={{ backdropFilter: 'blur(4px)' }}>
+               วางเลขไมล์ให้อยู่กึ่งกลางกรอบ
+            </span>
+          </div>
+        </div>
+        <canvas ref={canvasRef} className="hidden" />
+      </div>
+
+      {/* แถบปุ่มควบคุมด้านล่าง */}
+      <div className="bg-[#1d1d1f] pb-10 pt-6 px-6 flex items-center justify-center gap-4 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-10 relative">
+        <button onClick={onClose} disabled={isProcessing} className="w-[60px] h-[60px] rounded-full bg-[#3a3a3c] flex items-center justify-center text-white active:bg-[#4a4a4c] transition-colors">
+          <Icon icon="ph:x-bold" width="24" height="24" />
+        </button>
+        <button onClick={handleScan} disabled={isProcessing} className="flex-1 h-[60px] rounded-[20px] bg-[#34c759] text-white font-bold text-[18px] active:bg-[#248a3d] transition-colors flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(52,199,89,0.3)]">
+          {isProcessing ? <div className="w-6 h-6 border-[3px] border-white/30 border-t-white rounded-full animate-spin"/> : <><Icon icon="ph:scan-duotone" width="26" height="26" /> สแกนเลขไมล์</>}
+        </button>
+      </div>
     </div>
   )
 }
