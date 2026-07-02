@@ -40,13 +40,16 @@ function CarSelector() {
 
   const fetchCars = async () => {
     try {
-      const { data: carsData } = await supabase.from('cars').select('*')
+      const { data: carsDataRaw } = await supabase.from('cars').select('*')
       const { data: activeLogs } = await supabase
         .from('trip_logs')
         .select('car_id, start_time, driver_name')
         .eq('is_completed', false)
 
-      if (carsData) {
+      if (carsDataRaw) {
+        // 🌟 กรองรถที่ถูกซ่อนออกไป (ไม่แสดงรถที่ is_visible === false)
+        const carsData = carsDataRaw.filter(car => car.is_visible !== false)
+
         const activatedResults = await Promise.all(
           carsData.map(async (car) => {
             const { count } = await supabase

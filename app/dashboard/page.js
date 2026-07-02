@@ -91,7 +91,12 @@ export default function UltimateDashboard() {
       try {
         const { data: cars } = await supabase.from('cars').select('*')
         const { data: repairs } = await supabase.from('repair_logs').select('*')
-        if (cars) setCarsList(cars)
+        
+        // 🌟 ปรับปรุง: กรองรถที่ถูกซ่อนออกจากการคำนวณของ Dashboard
+        if (cars) {
+          const visibleCars = cars.filter(car => car.is_visible !== false)
+          setCarsList(visibleCars)
+        }
         if (repairs) setRepairLogs(repairs)
 
         const now = new Date()
