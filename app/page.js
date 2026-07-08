@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Icon } from '@iconify/react' // 🌟 นำเข้า Iconify
+import { Icon } from '@iconify/react'
 
 // --- Main Component ---
 export default function App() {
@@ -37,17 +37,20 @@ function CarSelector() {
   
   // State สำหรับ Modal โทรออก
   const [callModal, setCallModal] = useState({ isOpen: false, driverName: '', phone: '', loading: false, error: '' })
+  
+  // 🌟 State สำหรับ Modal รายละเอียดรถ
+  const [carDetailModal, setCarDetailModal] = useState(null)
 
   const fetchCars = async () => {
     try {
       const { data: carsDataRaw } = await supabase.from('cars').select('*')
       const { data: activeLogs } = await supabase
         .from('trip_logs')
-        .select('car_id, start_time, driver_name, location') // 🌟 เพิ่ม location ที่นี่
+        .select('car_id, start_time, driver_name, location') // ดึง location ด้วย
         .eq('is_completed', false)
 
       if (carsDataRaw) {
-        // 🌟 กรองรถที่ถูกซ่อนออกไป (ไม่แสดงรถที่ is_visible === false)
+        // กรองรถที่ถูกซ่อนออกไป
         const carsData = carsDataRaw.filter(car => car.is_visible !== false)
 
         const activatedResults = await Promise.all(
@@ -61,7 +64,7 @@ function CarSelector() {
             if (car.status !== 'busy') {
               const { data } = await supabase
                 .from('trip_logs')
-                .select('*') // ข้อมูลรถว่างจะดึงมาทั้งหมดรวมถึง location
+                .select('*')
                 .eq('car_id', Number(car.id))
                 .eq('is_completed', true)
                 .order('created_at', { ascending: false })
@@ -81,7 +84,6 @@ function CarSelector() {
           return { ...car, activeLog: log, lastLog, isActivated }
         })
 
-        // --- เริ่มต้นดึงข้อมูล position จากตาราง staff ---
         const driverNames = mergedCars
           .map(c => c.status === 'busy' ? c.activeLog?.driver_name : c.lastLog?.driver_name)
           .filter(Boolean);
@@ -103,7 +105,6 @@ function CarSelector() {
           const dName = car.status === 'busy' ? car.activeLog?.driver_name : car.lastLog?.driver_name;
           return { ...car, driverPosition: dName ? staffMap[dName] : null };
         });
-        // --- สิ้นสุดการดึงข้อมูล position ---
 
         finalCars.sort((a, b) => {
             if (a.status === 'busy' && b.status !== 'busy') return -1 
@@ -128,7 +129,7 @@ function CarSelector() {
 
   // ฟังก์ชันคลิกปุ่มโทร
   const handleCallClick = async (e, driverName) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     setCallModal({ isOpen: true, driverName, phone: '', loading: true, error: '' });
     try {
         const { data, error } = await supabase.from('staff').select('phone').eq('full_name', driverName).single();
@@ -174,8 +175,10 @@ function CarSelector() {
       <style>{`
         @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }
         .ticker { display:inline-block; white-space:nowrap; padding-left:100%; animation:ticker 28s linear infinite; }
-        .row-tap { transition:background .1s; }
-        .row-tap:active { background:#f5f5f7; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slideUp { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
       `}</style>
 
       {/* ── Nav Bar ── */}
@@ -183,7 +186,6 @@ function CarSelector() {
            style={{background:'rgba(245,245,247,0.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)'}}>
         <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">PEA Fleet</span>
         
-        {/* เพิ่มกลุ่มปุ่มกดไว้ด้านขวา */}
         <div className="flex items-center gap-4">
           <button onClick={() => router.push('/admin')}
             className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
@@ -238,7 +240,6 @@ function CarSelector() {
           const busyCars = cars.filter(c => c.status === 'busy')
           const availableCars = cars.filter(c => c.status !== 'busy')
 
-          // UI สไตล์แอปสั่งอาหาร (รูปซ้าย, รายละเอียดและปุ่มเรียงด้านขวา)
           const renderCarRow = (car, isLast) => {
             const carImageSrc = getCarImage(car)
             const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
@@ -261,10 +262,12 @@ function CarSelector() {
             }
 
             return (
-              <div key={car.id} className="bg-white p-4 flex gap-4 relative transition-colors active:bg-[#f9f9f9] cursor-pointer"
+              <div key={car.id} 
+                   onClick={() => setCarDetailModal({ car, timeString, logData })}
+                   className="bg-white p-4 flex gap-4 relative transition-colors active:bg-[#f9f9f9] cursor-pointer"
                    style={{borderBottom: isLast ? 'none' : '1px solid #f2f2f7'}}>
                 
-                {/* ด้านซ้าย: รูปภาพรถ (ขยายขนาดเป็น 132x132 เพื่อให้พอดีกับบรรทัดที่เพิ่มขึ้น) */}
+                {/* รูปภาพรถ */}
                 <div className="w-[132px] h-[132px] flex-shrink-0 rounded-[16px] overflow-hidden relative border border-[rgba(0,0,0,0.04)]"
                      style={{background: imgBg}}>
                   {carImageSrc
@@ -387,13 +390,162 @@ function CarSelector() {
         <p className="text-center text-[11px] text-[#d2d2d7] mt-10">PEA Fleet System v2.26</p>
       </div>
 
+      {/* ── Modal รายละเอียดรถแบบขยาย (แบบ Full Screen เหมือนหน้าฟอร์ม ไม่ต้องเลื่อนจอ) ── */}
+      {carDetailModal && (() => {
+        const { car, timeString, logData } = carDetailModal
+        const carImageSrc = getCarImage(car)
+        const isBusy = car.status === 'busy'
+        const driverName = logData?.driver_name
+        const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
+
+        // ปรับเป็น Gradient และ overlay เพื่อให้อ่านข้อความง่ายขึ้น เหมือนในรูป
+        const imgBgGradient = 'linear-gradient(to bottom, #dbeeff 0%, #1d1d1f 100%)' // Blue to Dark
+
+        return (
+          <div className="fixed inset-0 z-[999] bg-[#f5f5f7] flex flex-col animate-slideUp">
+            
+            {/* ── ส่วนบน: รูปภาพและทะเบียน (Hero 45% ของจอ) ── */}
+            <div className="relative w-full h-[45%] flex flex-col justify-end px-5 pb-8 overflow-hidden" style={{ background: imgBgGradient }}>
+              
+              {/* Dark Gradient Overlay for text readability ( bottom gradient to black ) */}
+              <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-[#1d1d1f]/90 via-[#1d1d1f]/40 to-transparent z-10 pointer-events-none" />
+
+              {/* Nav Buttons (ปรับชิดขอบบน) */}
+              <div className="absolute top-0 left-0 w-full px-4 pt-4 sm:pt-6 flex justify-between items-center z-30">
+                <button onClick={() => setCarDetailModal(null)}
+                  className="flex items-center gap-1.5 text-[15px] font-medium text-white active:opacity-60 transition-opacity"
+                  style={{ textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                  <Icon icon="ph:caret-left-bold" width="18" height="18" />
+                  กลับ
+                </button>
+                <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')}
+                  className="w-[36px] h-[36px] rounded-full flex items-center justify-center text-white active:scale-90 transition-all border border-white/30"
+                  style={{ background:'rgba(255,255,255,0.2)', backdropFilter:'blur(10px)' }}>
+                  <Icon icon="ph:printer-duotone" width="20" height="20" />
+                </button>
+              </div>
+
+              {/* Car Image (ขยายรูปให้เต็มช่อง) */}
+              <div className="absolute inset-0 z-0 pointer-events-none">
+                 {carImageSrc 
+                   ? <img src={carImageSrc} alt={car.car_type} className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`} />
+                   : <div className="flex items-center justify-center w-full h-full"><Icon icon="ph:car-profile-duotone" width="120" height="120" className="text-white/50" /></div>
+                 }
+              </div>
+
+              {/* Info Text (จัดวาง Model เหนือทะเบียน) */}
+              <div className="relative z-20 w-full flex items-end justify-between">
+                <div>
+                  <p className="text-white/90 text-[13px] font-medium mb-1 drop-shadow-sm">
+                    {car.model || 'ยานพาหนะ'} · {car.car_type}
+                  </p>
+                  <h1 className="text-white text-[32px] font-bold tracking-tight leading-none drop-shadow-md">
+                    {car.plate_number}
+                  </h1>
+                </div>
+                
+                {/* Status Tag สีแดง/เขียว */}
+                <span className={`inline-flex items-center gap-1.5 text-[13px] font-semibold px-3 py-1.5 rounded-full text-white shadow-sm mb-1 ${
+                  !car.isActivated ? 'bg-[#aeaeb2]' 
+                  : isBusy ? 'bg-[#ff3b30]' 
+                  : 'bg-[#34c759]' 
+                }`}>
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isBusy ? 'bg-white/80 animate-pulse' : 'bg-white'}`}/>
+                  {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'ใช้งานอยู่') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+                </span>
+              </div>
+            </div>
+
+            {/* ── ส่วนล่าง: Bottom Sheet ข้อมูล (55% ของจอ) ── */}
+            <div className="relative -mt-5 rounded-t-[24px] bg-[#f8f9fa] flex-1 flex flex-col z-30 px-5 pt-3 pb-6 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]">
+              
+              {/* Drag Handle */}
+              <div className="flex justify-center mb-5">
+                <div className="w-10 h-1 rounded-full bg-[#d2d2d7]"/>
+              </div>
+
+              {/* Title Header */}
+              <div className="flex items-center gap-3 mb-4 px-1">
+                <div className={`w-[42px] h-[42px] rounded-[14px] flex items-center justify-center ${car.status === 'busy' ? 'bg-[#ff3b30]' : 'bg-[#34c759]'}`}>
+                  <Icon icon={isBusy ? "ph:steering-wheel-fill" : "ph:car-fill"} width="24" height="24" className="text-white" />
+                </div>
+                <p className="text-[20px] font-bold text-[#1d1d1f] tracking-[-0.4px]">
+                  {isBusy ? 'ข้อมูลการใช้งาน' : 'รายละเอียดรถยนต์'}
+                </p>
+              </div>
+
+              {/* Data Card (Single White Card) */}
+              <div className="bg-white rounded-[20px] px-5 py-2 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-[#f2f2f7] flex flex-col">
+                
+                {/* Driver Row: สีฟ้า */}
+                <div className="flex items-center gap-4 py-4">
+                  <div className="w-10 h-10 rounded-full bg-[#f0f8ff] border border-[#dbeeff] flex items-center justify-center flex-shrink-0">
+                    <Icon icon="ph:user-circle-bold" width="22" height="22" className="text-[#0071e3]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-[#8e8e93] font-medium mb-0.5">ผู้ขับขี่</p>
+                    <p className="text-[15px] text-[#1d1d1f] font-bold truncate">{driverName ? driverName : 'ไม่มีข้อมูลผู้ขับ'}</p>
+                  </div>
+                </div>
+
+                <div className="h-px w-full bg-[#f2f2f7]" />
+
+                {/* Location / Task Row: สีม่วง */}
+                <div className="flex items-center gap-4 py-4">
+                  <div className="w-10 h-10 rounded-full bg-[#faf5ff] border border-[#ebd7ff] flex items-center justify-center flex-shrink-0">
+                    <Icon icon="ph:briefcase-bold" width="22" height="22" className="text-[#af52de]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-[#8e8e93] font-medium mb-0.5">ประเภทงาน / สถานที่</p>
+                    <p className="text-[15px] text-[#1d1d1f] font-bold leading-snug line-clamp-2">{logData?.location ? logData.location : 'ไม่ระบุงาน'}</p>
+                  </div>
+                </div>
+
+                {/* Time Row: สีเขียว */}
+                {timeString && (
+                  <>
+                    <div className="h-px w-full bg-[#f2f2f7]" />
+                    <div className="flex items-center gap-4 py-4">
+                      <div className={`w-10 h-10 rounded-full border flex items-center justify-center flex-shrink-0 ${isBusy ? 'bg-[#f0fdf4] border-[#d4f5e0]' : 'bg-[#f5f5f7] border-[#e5e5ea]'}`}>
+                        <Icon icon={isBusy ? "ph:clock-bold" : "ph:clock-counter-clockwise-bold"} width="22" height="22" className={isBusy ? 'text-[#34c759]' : 'text-[#8e8e93]'} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-[#8e8e93] font-medium mb-0.5">{isBusy ? 'เวลาออกรถ' : 'เวลาคืนรถ'}</p>
+                        <p className="text-[15px] text-[#1d1d1f] font-bold">{timeString}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Action Buttons (ชิดด้านล่างสุด) */}
+              <div className="mt-auto pt-4 flex gap-3">
+                <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')}
+                  className="flex-[0.45] bg-white border-[1.5px] border-[#e5e5ea] py-[16px] rounded-[16px] flex items-center justify-center gap-2 text-[15px] font-bold text-[#1d1d1f] shadow-sm active:bg-[#f5f5f7] transition-all">
+                  <Icon icon="ph:printer-duotone" width="22" height="22" className="text-[#af52de]" />
+                  พิมพ์รายงาน
+                </button>
+                {driverName && car.driverPosition !== 'ผจก.' && (
+                  <button onClick={(e) => { setCarDetailModal(null); handleCallClick(e, driverName); }}
+                    className={`flex-[0.55] py-[16px] rounded-[16px] flex items-center justify-center gap-2 text-[15px] font-bold text-white shadow-md active:scale-[0.98] transition-all bg-[#34c759] active:bg-[#28a745]`}>
+                    <Icon icon="ph:phone-call-duotone" width="22" height="22" />
+                    โทรหาผู้ขับ
+                  </button>
+                )}
+              </div>
+
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Modal คู่มือ (Bottom Sheet) ── */}
       {showInstructions && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/40"
                style={{backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)'}}
                onClick={() => setShowInstructions(false)}/>
-          <div className="relative w-full max-w-[440px] bg-[#f5f5f7] rounded-t-[26px] sm:rounded-[26px] z-10 max-h-[92vh] flex flex-col overflow-hidden"
+          <div className="relative w-full max-w-[440px] bg-[#f5f5f7] rounded-t-[26px] sm:rounded-[26px] z-10 max-h-[92vh] flex flex-col overflow-hidden animate-slideUp"
                style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
             <div className="sm:hidden flex justify-center pt-3 pb-0">
               <div className="w-9 h-1 rounded-full bg-[#c7c7cc]"/>
@@ -462,9 +614,9 @@ function CarSelector() {
 
       {/* ── Modal โทรออกหาคนขับ ── */}
       {callModal.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCallModal({...callModal, isOpen: false})}/>
-            <div className="relative w-full max-w-[320px] bg-white rounded-[24px] p-6 z-10 shadow-2xl flex flex-col items-center text-center animate-fadeDown">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn" onClick={() => setCallModal({...callModal, isOpen: false})}/>
+            <div className="relative w-full max-w-[320px] bg-white rounded-[24px] p-6 z-10 shadow-2xl flex flex-col items-center text-center animate-slideUp">
                 <div className="w-16 h-16 bg-[#edfbf0] rounded-full flex items-center justify-center mb-4">
                   <Icon icon="ph:phone-call-duotone" width="36" height="36" className="text-[#34c759]" />
                 </div>
@@ -1300,7 +1452,7 @@ function ReportPage() {
                                             </div>
                                         </div>
                                         <div className="flex w-full items-end my-1">
-                                            ( <div className="border-b border-dotted border-black flex-grow mx-1 h-5 text-center font-normal">{controllerName}</div> )
+                                            ( <div className="border-b border-dotted border-black w-full mx-1 h-5 text-center font-normal">{controllerName}</div> )
                                         </div>
                                         <div className="flex w-full items-end">
                                             ตำแหน่ง <div className="border-b border-dotted border-black flex-grow ml-1 h-5 text-center font-normal">{controllerPos}</div>
