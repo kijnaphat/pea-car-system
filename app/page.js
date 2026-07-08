@@ -43,7 +43,7 @@ function CarSelector() {
       const { data: carsDataRaw } = await supabase.from('cars').select('*')
       const { data: activeLogs } = await supabase
         .from('trip_logs')
-        .select('car_id, start_time, driver_name')
+        .select('car_id, start_time, driver_name, location') // 🌟 เพิ่ม location ที่นี่
         .eq('is_completed', false)
 
       if (carsDataRaw) {
@@ -61,7 +61,7 @@ function CarSelector() {
             if (car.status !== 'busy') {
               const { data } = await supabase
                 .from('trip_logs')
-                .select('*')
+                .select('*') // ข้อมูลรถว่างจะดึงมาทั้งหมดรวมถึง location
                 .eq('car_id', Number(car.id))
                 .eq('is_completed', true)
                 .order('created_at', { ascending: false })
@@ -264,8 +264,8 @@ function CarSelector() {
               <div key={car.id} className="bg-white p-4 flex gap-4 relative transition-colors active:bg-[#f9f9f9] cursor-pointer"
                    style={{borderBottom: isLast ? 'none' : '1px solid #f2f2f7'}}>
                 
-                {/* ด้านซ้าย: รูปภาพรถ (ขยายขนาดเป็น 116x116 เพื่อให้เต็มพื้นที่ความสูง) */}
-                <div className="w-[116px] h-[116px] flex-shrink-0 rounded-[16px] overflow-hidden relative border border-[rgba(0,0,0,0.04)]"
+                {/* ด้านซ้าย: รูปภาพรถ (ขยายขนาดเป็น 132x132 เพื่อให้พอดีกับบรรทัดที่เพิ่มขึ้น) */}
+                <div className="w-[132px] h-[132px] flex-shrink-0 rounded-[16px] overflow-hidden relative border border-[rgba(0,0,0,0.04)]"
                      style={{background: imgBg}}>
                   {carImageSrc
                     ? <img src={carImageSrc} alt={car.car_type}
@@ -307,6 +307,14 @@ function CarSelector() {
                       <span className="truncate">
                          {driverName ? driverName : 'ไม่มีข้อมูลผู้ขับ'} 
                          {!isBusy && driverName && <span className="text-[11px] font-normal text-[#aeaeb2] ml-1">(ล่าสุด)</span>}
+                      </span>
+                    </div>
+
+                    {/* ประเภทงาน / สถานที่ */}
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#6e6e73] truncate">
+                      <Icon icon="ph:briefcase-duotone" width="14" height="14" className="text-[#af52de] flex-shrink-0" />
+                      <span className="truncate">
+                         {logData?.location ? logData.location : 'ไม่ระบุงาน'}
                       </span>
                     </div>
 
