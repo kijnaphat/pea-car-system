@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import { Icon } from '@iconify/react'
 
 // ── Apple-style helpers ──
 const ACard = ({ children, className = '' }) => (
@@ -11,23 +12,30 @@ const ACard = ({ children, className = '' }) => (
   </div>
 )
 
-const SectionLabel = ({ title, subtitle }) => (
-  <div className="mb-4">
-    <h3 className="text-[13px] font-semibold text-[#1d1d1f] tracking-[-0.2px]">{title}</h3>
-    {subtitle && <p className="text-[11px] text-[#6e6e73] mt-0.5">{subtitle}</p>}
+const SectionLabel = ({ title, subtitle, icon, iconColor, action }) => (
+  <div className="mb-4 flex items-start justify-between">
+    <div>
+      <div className="flex items-center gap-1.5 mb-0.5">
+        {icon && <Icon icon={icon} width="20" height="20" className={iconColor} />}
+        <h3 className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">{title}</h3>
+      </div>
+      {subtitle && <p className="text-[12px] text-[#6e6e73]">{subtitle}</p>}
+    </div>
+    {action && <div>{action}</div>}
   </div>
+)
+
+const Label = ({ children }) => (
+  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.06em] mb-1">{children}</p>
 )
 
 export default function UltimateDashboard() {
   const router = useRouter()
   
-  // ✅ State ควบคุมการแสดงผลหน้า UI เลือกหมวดหมู่ 
+  // State ควบคุมการแสดงผลหน้า UI เลือกหมวดหมู่ 
   const [showWelcome, setShowWelcome] = useState(true)
-
   const [loading, setLoading] = useState(true)
   const [timeFilter, setTimeFilter] = useState('month')
-  
-  // State สำหรับกรองหมวดหมู่รถ 
   const [carCategoryFilter, setCarCategoryFilter] = useState('all')
   
   const [customStartDate, setCustomStartDate] = useState(() => {
@@ -59,25 +67,93 @@ export default function UltimateDashboard() {
     dailyTrend: [], hourlyTrend: [], topLocations: [], driverStats: [], fleetTable: [], carDriverHistory: []
   })
 
+  // ✅ ระบบจัดการการพิมพ์ (Print State)
   const [printData, setPrintData] = useState([])
   const [printReasons, setPrintReasons] = useState({})
   const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printType, setPrintType] = useState('summary') // 'summary' หรือ 'query'
 
-  const handleClose = () => {
-    window.close()
-    setTimeout(() => { if (!window.closed) router.push('/') }, 100)
+  // ✅ State สำหรับระบบ Query 
+  const [showQueryModal, setShowQueryModal] = useState(false)
+  const [queryFilters, setQueryFilters] = useState({ plate: '', date: '', name: '', dept: '', job: '', location: '' })
+  const [queryResults, setQueryResults] = useState([])
+
+  // ✅ แปลงและกรองข้อมูลเตรียมไว้สำหรับทำ Dropdown และ Table
+  const processedLogs = useMemo(() => {
+    return rawLogs.filter(item => {
+        if (!item.cars || item.cars.is_visible === false) return false;
+        const isEV = String(item.cars.fuel_type || '').trim().toUpperCase() === 'EV';
+        const isRental = String(item.cars.ownership_type || '').trim() === 'รถเช่า' || String(item.cars.ownership_type || '').includes('เช่า');
+        if (carCategoryFilter === 'ev') return isEV;
+        if (carCategoryFilter === 'rental') return isRental;
+        if (carCategoryFilter === 'pea') return !isRental;
+        return true; 
+    }).map(item => {
+        const startM = Number(item.start_mileage) || 0;
+        const endM = Number(item.end_mileage) || 0;
+        const dist = endM > startM ? endM - startM : 0;
+
+        let job = 'งานทั่วไป';
+        let loc = 'ไม่ระบุพื้นที่';
+        
+        if (item.cars?.fuel_type?.toUpperCase() === 'EV') {
+            job = 'ชาร์จรถ EV';
+            loc = item.station_name || item.location || 'สถานีชาร์จ';
+        } else if (item.location && item.location !== '-') {
+            const matchP = item.location.match(/\[.*? - (.*?)\]/);
+            job = matchP ? matchP[1].trim() : 'ลงพื้นที่';
+            
+            const matchA = item.location.match(/\]\s*(.*)/);
+            loc = matchA && matchA[1] ? matchA[1].trim() : item.location;
+        }
+
+        return {
+            plate: item.cars?.plate_number || '-',
+            dateRaw: new Date(item.start_time).toISOString().split('T')[0],
+            date: new Date(item.start_time).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
+            name: `${item.driver_name || '-'} ${item.driver_position ? `(${item.driver_position})` : ''}`,
+            dept: item.cars?.department || '-',
+            job: job,
+            location: loc,
+            dist: dist,
+            fuel: Number(item.fuel_liters) || 0,
+            cost: Number(item.fuel_cost) || 0
+        };
+    });
+  }, [rawLogs, carCategoryFilter]);
+
+  // ตัวเลือกใน Dropdown
+  const uniquePlates = [...new Set(processedLogs.map(l => l.plate))].filter(Boolean).sort();
+  const uniqueDates = [...new Set(processedLogs.map(l => l.dateRaw))].filter(Boolean).sort((a,b) => b.localeCompare(a));
+  const uniqueNames = [...new Set(processedLogs.map(l => l.name))].filter(Boolean).sort();
+  const uniqueDepts = [...new Set(processedLogs.map(l => l.dept))].filter(Boolean).sort();
+  const uniqueJobs = [...new Set(processedLogs.map(l => l.job))].filter(Boolean).sort();
+  const uniqueLocs = [...new Set(processedLogs.map(l => l.location))].filter(Boolean).sort();
+
+  // ✅ ฟังก์ชันกดค้นหาข้อมูลแล้วให้โชว์ Popup
+  const handleExecuteQuery = () => {
+    const results = processedLogs.filter(l => {
+        if (queryFilters.plate && l.plate !== queryFilters.plate) return false;
+        if (queryFilters.date && l.dateRaw !== queryFilters.date) return false;
+        if (queryFilters.name && l.name !== queryFilters.name) return false;
+        if (queryFilters.dept && l.dept !== queryFilters.dept) return false;
+        if (queryFilters.job && l.job !== queryFilters.job) return false;
+        if (queryFilters.location && l.location !== queryFilters.location) return false;
+        return true;
+    });
+    setQueryResults(results);
+    setShowQueryModal(true); 
   }
 
   const handlePrint = () => {
     window.print()
   }
 
-  // ✅ รายละเอียดหมวดหมู่
   const categories = [
-    { id: 'all', icon: '🚘', title: 'รถทั้งหมด', desc: 'ข้อมูลรถทุกคันในระบบรวมเช่าและ EV', bg: 'bg-[#e5f0ff]', iconBg: '#0071e3', shadow: 'rgba(0,113,227,0.2)' },
-    { id: 'pea', icon: '🏢', title: 'รถ กฟภ.', desc: 'เฉพาะรถยนต์ประจำหน่วยงาน', bg: 'bg-[#f3e5f5]', iconBg: '#8e24aa', shadow: 'rgba(142,36,170,0.2)' },
-    { id: 'rental', icon: '🤝', title: 'รถเช่า', desc: 'เฉพาะรถเช่าเหมาสำหรับปฏิบัติงาน', bg: 'bg-[#fff4e0]', iconBg: '#e67e22', shadow: 'rgba(230,126,34,0.2)' },
-    { id: 'ev', icon: '🌱', title: 'รถ EV', desc: 'เฉพาะรถยนต์พลังงานไฟฟ้า 100%', bg: 'bg-[#edfbf0]', iconBg: '#1a7f37', shadow: 'rgba(26,127,55,0.2)' }
+    { id: 'all', iconName: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'ข้อมูลรถทุกคันในระบบรวมเช่าและ EV', bg: 'bg-[#e5f0ff]', iconBg: '#0071e3', shadow: 'rgba(0,113,227,0.2)' },
+    { id: 'pea', iconName: 'ph:buildings-duotone', title: 'รถ กฟภ.', desc: 'เฉพาะรถยนต์ประจำหน่วยงาน', bg: 'bg-[#f3e5f5]', iconBg: '#8e24aa', shadow: 'rgba(142,36,170,0.2)' },
+    { id: 'rental', iconName: 'ph:handshake-duotone', title: 'รถเช่า', desc: 'เฉพาะรถเช่าเหมาสำหรับปฏิบัติงาน', bg: 'bg-[#fff4e0]', iconBg: '#e67e22', shadow: 'rgba(230,126,34,0.2)' },
+    { id: 'ev', iconName: 'ph:leaf-duotone', title: 'รถ EV', desc: 'เฉพาะรถยนต์พลังงานไฟฟ้า 100%', bg: 'bg-[#edfbf0]', iconBg: '#1a7f37', shadow: 'rgba(26,127,55,0.2)' }
   ];
 
   const handleSelectCategory = (categoryId) => {
@@ -92,7 +168,6 @@ export default function UltimateDashboard() {
         const { data: cars } = await supabase.from('cars').select('*')
         const { data: repairs } = await supabase.from('repair_logs').select('*')
         
-        // 🌟 ปรับปรุง: กรองรถที่ถูกซ่อนออกจากการคำนวณของ Dashboard
         if (cars) {
           const visibleCars = cars.filter(car => car.is_visible !== false)
           setCarsList(visibleCars)
@@ -203,7 +278,6 @@ export default function UltimateDashboard() {
         return 0;
     }
 
-    // 1. สร้างและคำนวณข้อมูล fleetData ของแต่ละคัน (หาไมล์ปลายเดือน - ไมล์ต้นเดือน)
     const fleetData = filteredCarsList.map((c, index) => {
         const cLogs = filteredLogs.filter(l => String(l.car_id) === String(c.id));
         const isEV = evCarIds.has(String(c.id));
@@ -235,7 +309,6 @@ export default function UltimateDashboard() {
         const startMil = minStartMil > 0 ? minStartMil : '-';
         const endMil = maxEndMil > 0 ? maxEndMil : '-';
 
-        // ⚡️ คำนวณประเภทงานและพื้นที่ปฏิบัติงานสำหรับ รถยอดนิยม
         const purposes = {};
         const locations = {};
         cLogs.forEach(l => {
@@ -286,7 +359,6 @@ export default function UltimateDashboard() {
         }
     }).sort((a,b) => a.dist !== b.dist ? b.dist - a.dist : b.trips - a.trips); 
 
-    // 2. ซิงค์ข้อมูลกับระบบสั่งพิมพ์ให้เป็นลำดับเดียวกัน
     const pData = fleetData.map((c, index) => ({
         no: index + 1,
         plate: c.plate,
@@ -302,7 +374,6 @@ export default function UltimateDashboard() {
     }));
     setPrintData(pData);
 
-    // 3. ดึง Global Stats
     const evDist = fleetData.filter(c => c.type === 'EV').reduce((s, c) => s + c.dist, 0);
     const gDist = fleetData.filter(c => c.type !== 'EV').reduce((s, c) => s + c.dist, 0);
     const totalDist = gDist + evDist;
@@ -317,7 +388,6 @@ export default function UltimateDashboard() {
     const battGains = evCharges.map(l => (parseNum(l.battery_after) - parseNum(l.battery_before)));
     const avgCharge = battGains.length > 0 ? (battGains.reduce((a,b)=>a+b,0)/battGains.length) : 0;
 
-    // 4. ข้อมูลพนักงาน
     const driverMap = {}
     const locMap = {}
     const hourlyMap = Array(24).fill(0)
@@ -329,7 +399,6 @@ export default function UltimateDashboard() {
       
       if (l.cars?.plate_number) driverMap[l.driver_name].cars.add(l.cars.plate_number)
       
-      // ดึงประเภทงาน (purpose)
       let p = 'งานทั่วไป';
       if (l.cars?.fuel_type?.toUpperCase() === 'EV') {
           p = 'ชาร์จรถ EV';
@@ -340,7 +409,6 @@ export default function UltimateDashboard() {
       }
       driverMap[l.driver_name].purposes[p] = (driverMap[l.driver_name].purposes[p] || 0) + 1;
 
-      // ⚡️ ดึงพื้นที่ปฏิบัติงาน (location/area) ให้ผู้ขับ
       let a = 'ไม่ระบุพื้นที่';
       if (l.cars?.fuel_type?.toUpperCase() === 'EV') {
           a = l.station_name || l.location || 'สถานีชาร์จ';
@@ -384,7 +452,7 @@ export default function UltimateDashboard() {
         dist: driverTotalDist, 
         carsUsed: Array.from(data.cars).join(', '),
         workTypes: Object.entries(data.purposes).map(([p, count]) => `${p} (${count})`).join(', '),
-        areas: Object.entries(data.locations).map(([a, count]) => `${a} (${count})`).join(', ') // เพิ่ม Areas กลับไปโชว์
+        areas: Object.entries(data.locations).map(([a, count]) => `${a} (${count})`).join(', ')
       }
     }).sort((a,b) => a.dist !== b.dist ? b.dist - a.dist : b.trips - a.trips)
 
@@ -446,9 +514,63 @@ export default function UltimateDashboard() {
 
   }, [rawLogs, carsList, repairLogs, carCategoryFilter])
 
-  // =====================================================================
-  // หน้าจอ Welcome Screen (พอดีจอ ไม่ต้องเลื่อน)
-  // =====================================================================
+  // ✅ ฟังก์ชันช่วยสร้างช่องกรอกข้อมูลให้สวยงามแบบ Apple-style
+  const renderField = (key, label, options, iconName, type = 'select') => (
+    <div className="flex flex-col gap-1.5 relative">
+        <label className="text-[13px] font-semibold text-[#1d1d1f] ml-1">{label}</label>
+        <div className="relative group">
+            {/* ไอคอนด้านซ้าย */}
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#aeaeb2] group-focus-within:text-[#0071e3] transition-colors z-10">
+                <Icon icon={iconName} width="18" height="18" />
+            </div>
+            
+            {type === 'select' ? (
+                <select 
+                    value={queryFilters[key]} 
+                    onChange={(e) => setQueryFilters(prev => ({...prev, [key]: e.target.value}))}
+                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[10px] pl-10 pr-8 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all appearance-none cursor-pointer"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238e8e93'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, 
+                        backgroundPosition: 'right 0.75rem center', 
+                        backgroundRepeat: 'no-repeat', 
+                        backgroundSize: '1.2em 1.2em'
+                    }}
+                >
+                    <option value="" className="text-[#6e6e73]">ทั้งหมด (อิงตามช่วงเวลาที่กำหนด)</option>
+                    {options.map(opt => (
+                        <option key={opt} value={opt} className="text-[#1d1d1f]">{opt}</option>
+                    ))}
+                </select>
+            ) : (
+                <input 
+                    type="date"
+                    value={queryFilters[key]} 
+                    onChange={(e) => setQueryFilters(prev => ({...prev, [key]: e.target.value}))}
+                    onClick={(e) => {
+                        try {
+                            if (typeof e.target.showPicker === 'function') {
+                                e.target.showPicker();
+                            }
+                        } catch (err) {}
+                    }}
+                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[10px] pl-10 pr-3 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all cursor-pointer premium-date-input"
+                />
+            )}
+        </div>
+    </div>
+  );
+
+  // ตั้งค่าและลำดับของ Input: วันที่ ทะเบียนรถ ชื่อ/ตำแหน่ง แผนก ประเภทงาน สถานที่
+  const fieldConfig = {
+    date: { key: 'date', label: 'วันที่ (ระบุเฉพาะวัน)', options: [], icon: 'ph:calendar-blank-duotone', type: 'date' },
+    plate: { key: 'plate', label: 'ทะเบียนรถ', options: uniquePlates, icon: 'ph:car-profile-duotone', type: 'select' },
+    name: { key: 'name', label: 'ชื่อ/ตำแหน่ง', options: uniqueNames, icon: 'ph:user-duotone', type: 'select' },
+    dept: { key: 'dept', label: 'แผนก', options: uniqueDepts, icon: 'ph:buildings-duotone', type: 'select' },
+    job: { key: 'job', label: 'ประเภทงาน', options: uniqueJobs, icon: 'ph:briefcase-duotone', type: 'select' },
+    location: { key: 'location', label: 'สถานที่', options: uniqueLocs, icon: 'ph:map-pin-duotone', type: 'select' }
+  };
+  const fieldOrder = ['date', 'plate', 'name', 'dept', 'job', 'location'];
+
   if (showWelcome) {
     return (
       <div className="min-h-[100dvh] bg-[#f2f2f7] flex flex-col items-center justify-center p-4 md:p-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
@@ -458,7 +580,6 @@ export default function UltimateDashboard() {
         `}</style>
         
         <div className="max-w-3xl w-full z-10 animate-slide-up flex flex-col items-center">
-          {/* Header Section */}
           <div className="text-center mb-6 md:mb-8 flex-shrink-0">
             <img src="/pea_logo.png" className="h-10 md:h-12 mx-auto mb-3 object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/>
             <h1 className="text-[24px] md:text-[34px] font-bold text-[#1d1d1f] tracking-[-1px] leading-tight mb-1">
@@ -469,7 +590,6 @@ export default function UltimateDashboard() {
             </p>
           </div>
 
-          {/* Grid 2x2 ทำให้พอดีจอ ไม่ล้น */}
           <div className="grid grid-cols-2 gap-3 md:gap-5 w-full flex-shrink-0 px-2 md:px-0">
             {categories.map((cat, index) => (
               <button 
@@ -478,19 +598,16 @@ export default function UltimateDashboard() {
                 className="group text-left bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] border border-transparent hover:border-[#0071e3]/30 transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 relative overflow-hidden flex flex-col justify-center items-center md:items-start text-center md:text-left h-full min-h-[140px] md:min-h-[180px]"
                 style={{boxShadow:'0 4px 20px rgba(0,0,0,0.05)', animationDelay: `${index * 80}ms`}}
               >
-                {/* ไอคอน */}
-                <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[14px] md:rounded-[18px] ${cat.bg} flex items-center justify-center text-[22px] md:text-[28px] mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm`}
-                     style={{boxShadow: `0 6px 12px ${cat.shadow}`}}>
-                  {cat.icon}
+                <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[14px] md:rounded-[18px] ${cat.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm`}
+                     style={{boxShadow: `0 6px 12px ${cat.shadow}`, color: cat.iconBg}}>
+                  <Icon icon={cat.iconName} width="28" height="28" />
                 </div>
                 
-                {/* ข้อความ */}
                 <div className="w-full">
                   <h2 className="text-[15px] md:text-[19px] font-bold text-[#1d1d1f] mb-1 tracking-[-0.3px] group-hover:text-[#0071e3] transition-colors">{cat.title}</h2>
                   <p className="text-[11px] md:text-[13px] text-[#6e6e73] leading-snug line-clamp-2 md:line-clamp-none">{cat.desc}</p>
                 </div>
                 
-                {/* ลูกศร (แสดงเฉพาะจอใหญ่) */}
                 <div className="hidden md:block absolute top-6 right-6 text-[#d2d2d7] group-hover:text-[#0071e3] transition-colors">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -526,9 +643,6 @@ export default function UltimateDashboard() {
       {children}
     </div>
   )
-  const Label = ({ children }) => (
-    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.06em] mb-1">{children}</p>
-  )
 
   const getReportTitleDate = () => {
     if (timeFilter === 'month') return new Date().toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
@@ -546,8 +660,12 @@ export default function UltimateDashboard() {
         * { -webkit-font-smoothing: antialiased; }
         .st::-webkit-scrollbar{width:3px; height: 3px;}
         .st::-webkit-scrollbar-thumb{background:#d2d2d7;border-radius:6px}
-        input[type=date]::-webkit-calendar-picker-indicator,
-        input[type=month]::-webkit-calendar-picker-indicator {opacity:.4;cursor:pointer}
+        
+        .premium-date-input::-webkit-calendar-picker-indicator {
+            display: none;
+            -webkit-appearance: none;
+        }
+
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         .fu{animation:fadeUp .4s ease both}
 
@@ -568,11 +686,12 @@ export default function UltimateDashboard() {
           background: #f5f5f7;
         }
 
-        .print-area { display: none; }
+        /* ✅ CSS สำหรับการพิมพ์ที่สมบูรณ์ */
+        .print-only { display: none; width: 100%; }
 
         @media print {
           .no-print { display: none !important; }
-          .print-area { 
+          .print-only { 
             display: block !important; 
             font-family: 'Sarabun', sans-serif; 
             width: 100%;
@@ -581,37 +700,139 @@ export default function UltimateDashboard() {
           body { 
             background: white !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact;
           }
-          table { page-break-inside: auto; }
+          table { page-break-inside: auto; width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
           tr { page-break-inside: avoid; page-break-after: auto; }
-          thead { display: table-header-group; }
+          /* ✅ คำสั่งนี้ทำให้ หัวตาราง (thead) ปรากฏซ้ำทุกหน้าเมื่อขึ้นหน้าใหม่ */
+          thead { display: table-header-group; } 
           tfoot { display: table-footer-group; }
-          table.report-table {
-            width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px;
-          }
-          table.report-table th, table.report-table td {
+          th, td {
             border: 1px solid #000; padding: 4px 6px; text-align: center;
           }
-          table.report-table th.no-border-print {
-            border: none !important; background-color: transparent !important;
-          }
-          table.report-table th {
-            font-weight: bold; background-color: #f2f2f2 !important; 
-          }
+          th.no-border-print { border: none !important; background-color: transparent !important; }
+          th { font-weight: bold; background-color: #f2f2f2 !important; }
           .text-left { text-align: left !important; }
-          .reason-input {
-            border: none !important; background: transparent !important; padding: 0 !important; color: black !important;
-          }
+          .reason-input { border: none !important; background: transparent !important; padding: 0 !important; color: black !important; }
           .reason-input::placeholder { color: transparent; }
         }
       `}</style>
 
-      {/* ── Modal สั่งพิมพ์ ── */}
+      {/* ── โซนสำหรับพิมพ์ PDF เท่านั้น (ไม่แสดงบนหน้าจอ) ── */}
+      <div className="print-only">
+        {printType === 'summary' && (
+          <table>
+            <thead>
+              <tr>
+                <th colSpan="14" className="no-border-print" style={{ paddingBottom: '20px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, fontFamily: 'Sarabun, sans-serif' }}>
+                    บัญชี{activeCategory.title}การไฟฟ้าส่วนภูมิภาคเขต ก.3 สาขากำแพงแสน ประจำเดือน {getReportTitleDate()}
+                  </h2>
+                </th>
+              </tr>
+              <tr>
+                <th rowSpan="2" style={{width: '4%'}}>อันดับที่</th>
+                <th rowSpan="2" style={{width: '9%'}}>หมายเลขทะเบียน</th>
+                <th rowSpan="2" style={{width: '7%'}}>ยี่ห้อ</th>
+                <th rowSpan="2" style={{width: '12%'}}>ชนิดและลักษณะ</th>
+                <th rowSpan="2" style={{width: '5%'}}>งบ</th>
+                <th rowSpan="2" style={{width: '6%'}}>ระวางแผน</th>
+                <th colSpan="2">เลขไมล์</th>
+                <th rowSpan="2" style={{width: '6%'}}>รวมระยะทาง<br/>กม.</th>
+                <th rowSpan="2" style={{width: '16%'}}>ประเภทการใช้งานส่วนใหญ่</th>
+                <th colSpan="2">ความครบถ้วน</th>
+                <th rowSpan="2" style={{width: '12%'}}>สาเหตุ</th>
+                <th rowSpan="2" style={{width: '6%'}}>หมายเหตุ</th>
+              </tr>
+              <tr>
+                <th style={{width: '6%'}}>เริ่ม</th>
+                <th style={{width: '6%'}}>สิ้นสุด</th>
+                <th style={{width: '4%'}}>ครบถ้วน</th>
+                <th style={{width: '4%'}}>ไม่ครบ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printData.map((row, idx) => {
+                const customReason = printReasons[row.plate] || '';
+                const isComplete = !customReason;
+                return (
+                  <tr key={idx}>
+                    <td>{row.no}</td>
+                    <td>{row.plate}</td>
+                    <td>{row.brand}</td>
+                    <td>{row.type}</td>
+                    <td>{row.budget}</td>
+                    <td>{row.plan}</td>
+                    <td>{row.startMil}</td>
+                    <td>{row.endMil}</td>
+                    <td style={{textAlign: 'center'}}>{row.dist}</td>
+                    <td className="text-left">{row.mainUsage}</td>
+                    <td>{isComplete ? '/' : ''}</td>
+                    <td>{!isComplete ? '/' : ''}</td>
+                    <td>{customReason}</td>
+                    <td>{row.remark}</td>
+                  </tr>
+                )
+              })}
+              {printData.length === 0 && (
+                <tr><td colSpan="14" style={{ textAlign: 'center', padding: '20px' }}>ไม่มีข้อมูลในช่วงเวลาที่เลือก</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
+
+        {printType === 'query' && (
+          <table>
+            <thead>
+              <tr>
+                <th colSpan="9" className="no-border-print" style={{ paddingBottom: '20px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, fontFamily: 'Sarabun, sans-serif' }}>
+                    รายงานผลลัพธ์การค้นหาประวัติการใช้งานรถ ({queryResults.length} รายการ)
+                  </h2>
+                </th>
+              </tr>
+              <tr>
+                <th>วันที่</th>
+                <th>ทะเบียนรถ</th>
+                <th>ชื่อ/ตำแหน่ง</th>
+                <th>แผนก</th>
+                <th>ประเภทงาน</th>
+                <th>สถานที่</th>
+                <th>ระยะทาง (กม.)</th>
+                <th>น้ำมัน (ลิตร)</th>
+                <th>จำนวนเงิน (บ.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {queryResults.map((row, idx) => (
+                <tr key={idx}>
+                  <td>{row.date}</td>
+                  <td>{row.plate}</td>
+                  <td className="text-left">{row.name}</td>
+                  <td>{row.dept}</td>
+                  <td>{row.job}</td>
+                  <td className="text-left">{row.location}</td>
+                  <td>{row.dist}</td>
+                  <td>{row.fuel}</td>
+                  <td>{row.cost.toLocaleString()}</td>
+                </tr>
+              ))}
+              {queryResults.length === 0 && (
+                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>ไม่มีข้อมูล</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* ── Modal สั่งพิมพ์ (สำหรับสรุปรายคัน) ── */}
       {showPrintModal && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 no-print fu">
           <div className="bg-white rounded-[24px] w-full max-w-7xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="px-4 md:px-6 py-4 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-[#f9f9fb]">
+            <div className="px-4 md:px-6 py-4 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-[#f9f9fb] shrink-0">
               <div>
-                <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">📄 จัดการเอกสารเตรียมพิมพ์</h3>
+                <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px] flex items-center gap-2">
+                  <Icon icon="ph:file-text-duotone" width="22" height="22" className="text-[#0071e3]" />
+                  จัดการเอกสารเตรียมพิมพ์
+                </h3>
                 <p className="text-[12px] text-[#6e6e73] mt-0.5">คลิกที่ช่อง "สาเหตุ" เพื่อพิมพ์ข้อความได้โดยตรง จากนั้นกดยืนยันสั่งพิมพ์</p>
               </div>
               <div className="flex items-center gap-3 self-end sm:self-auto">
@@ -619,23 +840,16 @@ export default function UltimateDashboard() {
                   className="px-4 py-2 text-[13px] font-medium text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">
                   ยกเลิก
                 </button>
-                <button onClick={handlePrint}
+                <button onClick={() => { setPrintType('summary'); setTimeout(handlePrint, 100); }}
                   className="flex items-center gap-1.5 text-[13px] font-medium bg-[#0071e3] text-white px-5 py-2 rounded-[10px] shadow-sm hover:bg-[#0077ed] active:scale-[0.98] transition-all whitespace-nowrap">
-                  🖨️ ยืนยันสั่งพิมพ์
+                  <Icon icon="ph:printer-duotone" width="18" height="18" /> ยืนยันสั่งพิมพ์
                 </button>
               </div>
             </div>
 
-            <div className="overflow-x-auto overflow-y-auto p-4 md:p-6 bg-white st">
+            <div className="flex-1 overflow-auto p-4 md:p-6 bg-white st">
               <table className="w-full border-collapse font-sarabun text-[11px]" style={{ minWidth: '1000px' }}>
-                <thead>
-                  <tr>
-                    <th colSpan="14" className="border-0 bg-transparent py-4 text-center">
-                      <h2 style={{ fontSize: '18px', fontWeight: 'bold', fontFamily: 'Sarabun, sans-serif' }}>
-                        บัญชี{activeCategory.title}การไฟฟ้าส่วนภูมิภาคเขต ก.3 สาขากำแพงแสน ประจำเดือน {getReportTitleDate()}
-                      </h2>
-                    </th>
-                  </tr>
+                <thead className="sticky top-0 bg-white z-10 shadow-[0_2px_0_rgba(0,0,0,0.1)]">
                   <tr>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%]">อันดับที่</th>
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[9%]">หมายเลขทะเบียน</th>
@@ -651,10 +865,10 @@ export default function UltimateDashboard() {
                     <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">หมายเหตุ</th>
                   </tr>
                   <tr>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">เริ่ม</th>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">สิ้นสุด</th>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%]">ครบถ้วน</th>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%]">ไม่ครบ</th>
+                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%] top-[34px]">เริ่ม</th>
+                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%] top-[34px]">สิ้นสุด</th>
+                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%] top-[34px]">ครบถ้วน</th>
+                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%] top-[34px]">ไม่ครบ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -698,6 +912,68 @@ export default function UltimateDashboard() {
         </div>
       )}
 
+      {/* ✅ Modal แสดงผลตาราง Query (กว้างเต็ม 95vw และรองรับ Sticky Header) */}
+      {showQueryModal && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 fu no-print">
+          <div className="bg-white rounded-[24px] w-[95vw] h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-[#e5e5ea] bg-white shrink-0 z-20">
+              <h3 className="text-[17px] font-semibold text-[#1d1d1f] flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#edf6ff] flex items-center justify-center text-[#0071e3]">
+                    <Icon icon="ph:table-duotone" width="18" height="18" />
+                </div>
+                ผลลัพธ์การค้นหา ({queryResults.length} รายการ)
+              </h3>
+              <div className="flex gap-2.5">
+                  <button onClick={() => { setPrintType('query'); setTimeout(handlePrint, 100); }} className="flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-medium bg-[#1d1d1f] text-white rounded-[10px] hover:bg-[#3a3a3c] transition-colors shadow-sm">
+                      <Icon icon="ph:printer-duotone" /> พิมพ์เป็น PDF
+                  </button>
+                  <button onClick={() => setShowQueryModal(false)} className="w-8 h-8 flex items-center justify-center bg-[#f2f2f7] hover:bg-[#e5e5ea] text-[#6e6e73] rounded-full transition-colors active:scale-95">
+                      <Icon icon="ph:x-bold" />
+                  </button>
+              </div>
+            </div>
+
+            {/* โซนที่ Scroll ได้ เฉพาะเนื้อหาด้านใน ไม่ล้น Modal */}
+            <div className="flex-1 bg-[#f5f5f7] p-4 md:p-6 overflow-hidden flex flex-col">
+              <div className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.03)] overflow-hidden flex-1 flex flex-col">
+                  {/* กำหนดให้ตาราง Scroll ภายในตัวมันเอง เพื่อให้ Sticky Header ทำงานได้สมบูรณ์ */}
+                  <div className="overflow-auto flex-1 relative st">
+                      <table className="w-full border-collapse text-[13px] font-sarabun min-w-[1000px]">
+                        <thead className="sticky top-0 z-10 bg-[#f9f9fb] shadow-[0_1px_0_rgba(0,0,0,0.1)]">
+                          <tr>
+                            {['วันที่', 'ทะเบียนรถ', 'ชื่อ/ตำแหน่ง', 'แผนก', 'ประเภทงาน', 'สถานที่', 'ระยะทาง (กม.)', 'น้ำมัน (ลิตร)', 'จำนวนเงิน (บ.)'].map(h => (
+                              <th key={h} className="px-4 py-3.5 text-left font-semibold text-[#6e6e73] whitespace-nowrap bg-[#f9f9fb]">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {queryResults.length > 0 ? (
+                            queryResults.map((row, idx) => (
+                              <tr key={idx} className="border-b border-[rgba(0,0,0,0.04)] last:border-0 hover:bg-[#f2f2f7]/50 transition-colors">
+                                <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.date}</td>
+                                <td className="px-4 py-3 font-semibold text-[#1d1d1f] whitespace-nowrap">{row.plate}</td>
+                                <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.name}</td>
+                                <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.dept}</td>
+                                <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.job}</td>
+                                <td className="px-4 py-3 text-[#3c3c43] min-w-[200px]">{row.location}</td>
+                                <td className="px-4 py-3 text-right font-medium text-[#1d1d1f]">{row.dist}</td>
+                                <td className="px-4 py-3 text-right font-medium text-[#1d1d1f]">{row.fuel}</td>
+                                <td className="px-4 py-3 text-right font-semibold text-[#0071e3]">{row.cost.toLocaleString()}</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr><td colSpan="9" className="text-center py-12 text-[#aeaeb2]">ไม่พบข้อมูลจากเงื่อนไขที่คุณเลือก</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Dashboard ปกติ ── */}
       <div className="no-print min-h-screen bg-[#f2f2f7] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
         <nav className="sticky top-0 z-50 border-b border-black/[0.06] py-3 md:py-0 md:h-[60px]"
@@ -709,23 +985,19 @@ export default function UltimateDashboard() {
                 <img src="/pea_logo.png" className="h-7 w-auto object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/>
                 <span className="text-[16px] font-semibold text-[#1d1d1f] tracking-[-0.3px] hidden sm:block">Fleet Dashboard</span>
                 
-                {/* 🚗 แสดงหมวดหมู่ที่เลือก และปุ่มเปลี่ยนหมวดหมู่ */}
-                <div className="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-full shadow-sm border border-[#e5e5ea] ml-0 sm:ml-2">
-                  <span className="text-[14px] leading-none ml-1">{activeCategory.icon}</span>
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#e5e5ea] ml-0 sm:ml-2">
+                  <Icon icon={activeCategory.iconName} width="16" height="16" className="text-[#0071e3]" />
                   <span className="text-[12px] font-semibold text-[#1d1d1f] whitespace-nowrap">{activeCategory.title}</span>
-                  <button onClick={() => setShowWelcome(true)} 
-                          className="text-[10px] font-medium text-white bg-[#1d1d1f] px-2 py-1 rounded-full hover:bg-[#3c3c43] active:scale-95 transition-all ml-1 whitespace-nowrap">
-                    เปลี่ยน
-                  </button>
                 </div>
               </div>
               
               <div className="flex md:hidden gap-3 items-center">
-                <button onClick={handleClose} className="text-[13px] text-[#ff3b30] active:opacity-50">ปิด</button>
+                <button onClick={() => setShowWelcome(true)} className="text-[13px] font-medium text-[#0071e3] active:opacity-50">
+                  เปลี่ยนหมวดหมู่
+                </button>
               </div>
             </div>
 
-            {/* ส่วนตัวกรองเวลา และปุ่ม Action */}
             <div className="flex items-center gap-2.5 overflow-x-auto st pb-1 md:pb-0 w-full md:w-auto whitespace-nowrap">
               <div className="flex bg-[#dddde0] rounded-[10px] p-[3px] gap-[2px] shrink-0">
                 {[['week','สัปดาห์'],['month','เดือนนี้'],['select_month','เลือกเดือน'],['custom','กำหนดเอง'],['all','ทั้งหมด']].map(([tf,label]) => (
@@ -754,22 +1026,28 @@ export default function UltimateDashboard() {
 
               <div className="hidden md:block w-px h-5 bg-[#d2d2d7] mx-1 shrink-0"/>
               
-              <button onClick={() => setShowPrintModal(true)}
+              <button onClick={() => { setPrintType('summary'); setShowPrintModal(true); }}
                 className="flex items-center gap-1.5 text-[12px] font-medium bg-[#1d1d1f] text-white px-4 py-1.5 rounded-[8px] shadow-sm hover:bg-[#3a3a3c] transition-colors border border-transparent shrink-0">
-                🖨️ สั่งพิมพ์
+                <Icon icon="ph:printer-duotone" width="16" height="16" /> สั่งพิมพ์
               </button>
 
-              <button onClick={handleClose} className="hidden md:block text-[13px] text-[#ff3b30] hover:bg-[#ff3b30]/10 px-3 py-1.5 rounded-[8px] transition-colors shrink-0">ปิดหน้าต่าง</button>
+              <button onClick={() => setShowWelcome(true)} 
+                className="hidden md:flex items-center gap-1.5 text-[12px] font-medium text-[#1d1d1f] bg-white border border-[#e5e5ea] hover:bg-[#f5f5f7] px-3 py-1.5 rounded-[8px] shadow-sm transition-colors shrink-0">
+                <Icon icon="ph:squares-four-duotone" width="16" height="16" className="text-[#0071e3]" /> เปลี่ยนหมวดหมู่
+              </button>
             </div>
           </div>
         </nav>
 
         <div className="max-w-[1440px] mx-auto px-4 md:px-5 pt-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 fu" style={{animationDelay:'0ms'}}>
+            
             <div className="col-span-1 sm:col-span-2 xl:col-span-1 rounded-[22px] p-5 flex flex-col justify-between min-h-[140px] relative overflow-hidden"
                  style={{background:'#1d1d1f', boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
-              <div className="w-10 h-10 rounded-[12px] bg-white/10 flex items-center justify-center text-[20px] z-10">🛣️</div>
+              <div className="w-10 h-10 rounded-[12px] bg-white/10 flex items-center justify-center z-10">
+                <Icon icon="ph:road-horizon-duotone" width="24" height="24" className="text-white" />
+              </div>
               <div className="mt-4 md:mt-0 z-10">
                 <p className="text-[11px] font-semibold text-white/50 uppercase tracking-[0.06em] mb-0.5">ระยะทางสะสม ({activeCategory.title})</p>
                 <p className="text-[32px] font-bold text-white leading-none tracking-[-1px]">
@@ -780,10 +1058,11 @@ export default function UltimateDashboard() {
               </div>
             </div>
 
-            {/* ✅ อัปเดต Card 2 ให้เปลี่ยนเป็นข้อมูลการชาร์จถ้าระบุรถ EV */}
             {carCategoryFilter === 'ev' ? (
               <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%)'}}>
-                <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center text-[20px]">⚡</div>
+                <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center">
+                  <Icon icon="ph:lightning-duotone" width="24" height="24" className="text-[#0071e3]" />
+                </div>
                 <div className="mt-4 md:mt-0">
                   <Label>สถิติการชาร์จไฟ</Label>
                   <p className="text-[28px] font-bold text-[#0071e3] leading-none tracking-[-0.8px]">
@@ -795,7 +1074,9 @@ export default function UltimateDashboard() {
               </Card>
             ) : (
               <Card className="p-5 flex flex-col justify-between min-h-[140px]">
-                <div className="w-10 h-10 rounded-[12px] bg-[#fff4e0] flex items-center justify-center text-[20px]">⛽</div>
+                <div className="w-10 h-10 rounded-[12px] bg-[#fff4e0] flex items-center justify-center">
+                  <Icon icon="ph:gas-pump-duotone" width="24" height="24" className="text-[#e67e22]" />
+                </div>
                 <div className="mt-4 md:mt-0">
                   <Label>น้ำมันรวม</Label>
                   <p className="text-[28px] font-bold text-[#1d1d1f] leading-none tracking-[-0.8px]">
@@ -807,9 +1088,10 @@ export default function UltimateDashboard() {
               </Card>
             )}
 
-            {/* ✅ อัปเดต Card 3 เปลี่ยน Subtitle เป็นประหยัดน้ำมันสำหรับรถ EV */}
             <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#edfbf0 0%,#d4f5e0 100%)'}}>
-              <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center text-[20px]">🌱</div>
+              <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center">
+                <Icon icon="ph:leaf-duotone" width="24" height="24" className="text-[#1a7f37]" />
+              </div>
               <div className="mt-4 md:mt-0">
                 <Label>ลด CO₂</Label>
                 <p className="text-[28px] font-bold text-[#1a7f37] leading-none tracking-[-0.8px]">
@@ -823,7 +1105,9 @@ export default function UltimateDashboard() {
             </Card>
 
             <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#f0eeff 0%,#e5dbff 100%)'}}>
-              <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center text-[20px]">💰</div>
+              <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center">
+                <Icon icon="ph:coins-duotone" width="24" height="24" className="text-[#5e35b1]" />
+              </div>
               <div className="mt-4 md:mt-0">
                 <Label>ประหยัดได้</Label>
                 <p className="text-[28px] font-bold text-[#5e35b1] leading-none tracking-[-0.8px]">
@@ -836,8 +1120,7 @@ export default function UltimateDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 fu" style={{animationDelay:'60ms'}}>
             <Card className="p-5">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">ฝูงรถ</p>
-              <p className="text-[12px] text-[#6e6e73] mb-4">ในหมวด {activeCategory.title} ทั้งหมด {globalStats.totalCars} คัน</p>
+              <SectionLabel title="ฝูงรถ" subtitle={`ในหมวด ${activeCategory.title} ทั้งหมด ${globalStats.totalCars} คัน`} />
               <div className="space-y-2.5">
                 {[
                   {label:'ว่างพร้อมใช้', val:globalStats.availableCars, c:'#34c759', bg:'rgba(52,199,89,0.08)', pulse:false},
@@ -863,9 +1146,11 @@ export default function UltimateDashboard() {
             </Card>
 
             <Card className="p-5 lg:col-span-2">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">
-                {carCategoryFilter === 'ev' ? '📍 สถานีชาร์จยอดนิยม' : '📍 ปลายทางยอดนิยม'}
-              </p>
+              <SectionLabel 
+                icon="ph:map-pin-duotone" 
+                iconColor="text-[#ff3b30]"
+                title={carCategoryFilter === 'ev' ? 'สถานีชาร์จยอดนิยม' : 'ปลายทางยอดนิยม'} 
+              />
               <div className="space-y-3.5">
                 {analytics.topLocations.length===0
                   ? <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>
@@ -894,10 +1179,12 @@ export default function UltimateDashboard() {
 
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-3 fu" style={{animationDelay:'120ms'}}>
             <Card className="p-5 xl:col-span-3">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">
-                📅 {carCategoryFilter === 'ev' ? 'ความถี่การนำรถไปชาร์จ' : 'ความถี่การใช้งาน'}
-              </p>
-              <p className="text-[12px] text-[#6e6e73] mb-5">จำนวนภารกิจรายวัน</p>
+              <SectionLabel 
+                icon="ph:calendar-blank-duotone" 
+                iconColor="text-[#0071e3]"
+                title={carCategoryFilter === 'ev' ? 'ความถี่การนำรถไปชาร์จ' : 'ความถี่การใช้งาน'} 
+                subtitle="จำนวนภารกิจรายวัน"
+              />
               <div className="h-44 flex items-end gap-2 pb-1 overflow-x-auto st">
                 {analytics.dailyTrend.length===0
                   ? <p className="text-[12px] text-[#aeaeb2] m-auto">ไม่มีข้อมูล</p>
@@ -918,8 +1205,12 @@ export default function UltimateDashboard() {
             </Card>
 
             <Card className="p-5 xl:col-span-2">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-0.5">⏰ ช่วงเวลาหนาแน่น</p>
-              <p className="text-[12px] text-[#6e6e73] mb-5">รายชั่วโมง</p>
+              <SectionLabel 
+                icon="ph:clock-duotone" 
+                iconColor="text-[#ff9f0a]"
+                title="ช่วงเวลาหนาแน่น" 
+                subtitle="รายชั่วโมง"
+              />
               <div className="h-44 flex items-end gap-[3px] overflow-x-auto st">
                 {analytics.hourlyTrend.length===0
                   ? <p className="text-[12px] text-[#aeaeb2] m-auto">ไม่มีข้อมูล</p>
@@ -938,12 +1229,45 @@ export default function UltimateDashboard() {
             </Card>
           </div>
 
+          {/* ── ระบบค้นหาข้อมูล (Inline Form) ── */}
+          <Card className="fu overflow-visible" style={{animationDelay:'150ms'}}>
+            <div className="px-4 md:px-6 py-5 bg-white">
+                <SectionLabel 
+                    icon="ph:magnifying-glass-duotone" 
+                    iconColor="text-[#0071e3]"
+                    title="ค้นหาประวัติการใช้งานแบบละเอียด" 
+                    subtitle="สืบค้นข้อมูลทริปการเดินทางตามเงื่อนไขที่ต้องการ"
+                />
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-4">
+                    {['date', 'plate', 'name', 'dept', 'job', 'location'].map(f => (
+                        <div key={f}>
+                           {renderField(
+                               f, 
+                               { date: 'วันที่ (ระบุเฉพาะวัน)', plate: 'ทะเบียนรถ', name: 'ชื่อ/ตำแหน่ง', dept: 'แผนก', job: 'ประเภทงาน', location: 'สถานที่' }[f], 
+                               { date: [], plate: uniquePlates, name: uniqueNames, dept: uniqueDepts, job: uniqueJobs, location: uniqueLocs }[f], 
+                               { date: 'ph:calendar-blank-duotone', plate: 'ph:car-profile-duotone', name: 'ph:user-duotone', dept: 'ph:buildings-duotone', job: 'ph:briefcase-duotone', location: 'ph:map-pin-duotone' }[f], 
+                               f === 'date' ? 'date' : 'select'
+                           )}
+                        </div>
+                    ))}
+                </div>
+                
+                <div className="mt-6 pt-5 border-t border-[rgba(0,0,0,0.05)] flex justify-between items-center">
+                     <button onClick={() => setQueryFilters({ plate: '', date: '', name: '', dept: '', job: '', location: '' })} 
+                             className="px-4 py-2 text-[13px] font-medium text-[#ff3b30] hover:bg-[#fff0f0] rounded-[10px] transition-colors">
+                         ล้างค่าทั้งหมด
+                     </button>
+                     <button onClick={handleExecuteQuery} className="flex items-center gap-1.5 px-6 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white text-[14px] font-medium rounded-[10px] shadow-sm transition-all active:scale-95">
+                         <Icon icon="ph:magnifying-glass-duotone" width="18" height="18" /> ค้นหาข้อมูล
+                     </button>
+                </div>
+            </div>
+          </Card>
+
           <Card className="fu" style={{animationDelay:'180ms'}}>
             <div className="px-4 md:px-6 py-5 border-b border-[rgba(0,0,0,0.05)] flex flex-col md:flex-row md:items-baseline justify-between gap-2">
-              <div>
-                <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">รายงานสรุปรายคัน</p>
-                <p className="text-[12px] text-[#6e6e73] mt-0.5">ระยะทาง เชื้อเพลิง และประสิทธิภาพ</p>
-              </div>
+              <SectionLabel title="รายงานสรุปรายคัน" subtitle="ระยะทาง เชื้อเพลิง และประสิทธิภาพ" />
             </div>
             <div className="overflow-x-auto st">
               <table className="w-full min-w-[800px]">
@@ -959,8 +1283,10 @@ export default function UltimateDashboard() {
                     <tr key={i} className="border-b border-[rgba(0,0,0,0.04)] last:border-0 transition-colors hover:bg-[#f9f9fb]">
                       <td className="px-4 md:px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-[11px] flex items-center justify-center text-[17px] flex-shrink-0"
-                               style={{background:c.type==='EV'?'#edfbf0':'#fff4e0'}}>{c.type==='EV'?'⚡':'⛽'}</div>
+                          <div className="w-9 h-9 rounded-[11px] flex items-center justify-center flex-shrink-0"
+                               style={{background:c.type==='EV'?'#edfbf0':'#fff4e0'}}>
+                            <Icon icon={c.type==='EV' ? "ph:lightning-duotone" : "ph:gas-pump-duotone"} width="20" height="20" className={c.type==='EV' ? 'text-[#1a7f37]' : 'text-[#e67e22]'} />
+                          </div>
                           <div>
                             <p className="text-[14px] font-semibold text-[#1d1d1f] leading-tight whitespace-nowrap">{c.plate}</p>
                             <p className="text-[11px] text-[#aeaeb2] whitespace-nowrap">{c.model}</p>
@@ -979,7 +1305,7 @@ export default function UltimateDashboard() {
                       <td className="px-4 md:px-6 py-4 text-[14px] font-semibold text-[#1d1d1f] whitespace-nowrap">{c.dist.toLocaleString()}<span className="text-[11px] font-normal text-[#6e6e73] ml-1">กม.</span></td>
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         {c.type==='EV'
-                          ? <span className="text-[12px] font-medium text-[#0071e3]">⚡ {c.refillCount} ครั้ง</span>
+                          ? <span className="text-[12px] font-medium text-[#0071e3] flex items-center gap-1"><Icon icon="ph:lightning-duotone" /> {c.refillCount} ครั้ง</span>
                           : <div>
                               <span className="text-[13px] font-medium text-[#1d1d1f]">{c.fuelLiters.toFixed(1)} L</span>
                               {c.fuelCost>0 && <span className="text-[11px] text-[#6e6e73] ml-2">฿{c.fuelCost.toLocaleString(undefined,{minimumFractionDigits:0})}</span>}
@@ -996,7 +1322,7 @@ export default function UltimateDashboard() {
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         {c.repairCount > 0 ? (
                           <span className="text-[13px] font-medium text-[#d70015] flex items-center gap-1">
-                            🔧 {c.repairCount} ครั้ง
+                            <Icon icon="ph:wrench-duotone" width="16" height="16" /> {c.repairCount} ครั้ง
                           </span>
                         ) : (
                           <span className="text-[12px] text-[#aeaeb2]">-</span>
@@ -1022,8 +1348,13 @@ export default function UltimateDashboard() {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 fu" style={{animationDelay:'240ms'}}>
+            
             <Card className="p-5">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">🏆 รถยอดนิยม</p>
+              <SectionLabel 
+                icon="ph:trophy-duotone" 
+                iconColor="text-[#ffcc00]" 
+                title="รถยอดนิยม" 
+              />
               <div className="max-h-[240px] overflow-y-auto st pr-2">
                 {analytics.fleetTable.filter(c=>c.dist>0 || c.trips>0).map((c,i)=>(
                   <div key={i} className="flex flex-col py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
@@ -1044,13 +1375,12 @@ export default function UltimateDashboard() {
                         <p className="text-[11px] text-[#aeaeb2]">{c.trips} รอบ</p>
                       </div>
                     </div>
-                    {/* ✅ เพิ่มป้ายกำกับ ประเภทงาน และ พื้นที่ สำหรับรถยอดนิยม */}
                     <div className="flex flex-wrap gap-1.5 pl-[46px] mt-1.5">
                       {c.workTypes && c.workTypes !== '' ? c.workTypes.split(', ').map((wt,idx)=>(
-                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">💼 {wt}</span>
+                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:briefcase-duotone"/> {wt}</span>
                       )) : null}
                       {c.areas && c.areas !== '' ? c.areas.split(', ').map((ar,idx)=>(
-                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full">📍 {ar}</span>
+                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:map-pin-duotone"/> {ar}</span>
                       )) : null}
                     </div>
                   </div>
@@ -1062,7 +1392,11 @@ export default function UltimateDashboard() {
             </Card>
 
             <Card className="p-5">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">👨‍✈️ ผู้ขับดีเด่น</p>
+              <SectionLabel 
+                icon="ph:steering-wheel-duotone" 
+                iconColor="text-[#af52de]" 
+                title="ผู้ขับดีเด่น" 
+              />
               <div className="max-h-[240px] overflow-y-auto st space-y-0">
                 {analytics.driverStats.map((d,i)=>(
                   <div key={i} className="py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
@@ -1084,13 +1418,12 @@ export default function UltimateDashboard() {
                         <span className="text-[13px] font-semibold text-[#1d1d1f]">{d.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></span>
                       </div>
                     </div>
-                    {/* ✅ เพิ่มป้ายกำกับ พื้นที่ปฏิบัติงาน ตามคำขอ (มีของเดิมคือประเภทงานอยู่แล้ว) */}
                     <div className="flex flex-wrap gap-1.5 pl-[34px]">
                       {d.workTypes && d.workTypes !== '' ? d.workTypes.split(', ').map((wt,idx)=>(
-                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">💼 {wt}</span>
+                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:briefcase-duotone"/> {wt}</span>
                       )) : <span className="text-[10px] text-[#aeaeb2]">ไม่มีข้อมูลงาน</span>}
                       {d.areas && d.areas !== '' ? d.areas.split(', ').map((ar,idx)=>(
-                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full">📍 {ar}</span>
+                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:map-pin-duotone"/> {ar}</span>
                       )) : null}
                     </div>
                   </div>
@@ -1100,9 +1433,11 @@ export default function UltimateDashboard() {
             </Card>
 
             <Card className="p-5">
-              <p className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px] mb-4">
-                {carCategoryFilter === 'ev' ? '🔌 ใครนำรถไปชาร์จ' : '🔍 ใครขับคันไหน'}
-              </p>
+              <SectionLabel 
+                icon={carCategoryFilter === 'ev' ? "ph:plug-duotone" : "ph:magnifying-glass-duotone"} 
+                iconColor="text-[#34c759]" 
+                title={carCategoryFilter === 'ev' ? 'ใครนำรถไปชาร์จ' : 'ใครขับคันไหน'} 
+              />
               <div className="max-h-[240px] overflow-y-auto st space-y-0">
                 {analytics.carDriverHistory.map((c,i)=>(
                   <div key={i} className="py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
@@ -1122,77 +1457,6 @@ export default function UltimateDashboard() {
             </Card>
           </div>
         </div>
-      </div>
-
-      {/* ── พิมพ์ ── */}
-      <div className="print-area">
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th colSpan="14" className="no-border-print" style={{ paddingBottom: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, fontFamily: 'Sarabun, sans-serif' }}>
-                  บัญชี{activeCategory.title}การไฟฟ้าส่วนภูมิภาคเขต ก.3 สาขากำแพงแสน ประจำเดือน {getReportTitleDate()}
-                </h2>
-              </th>
-            </tr>
-            <tr>
-              <th rowSpan="2" style={{width: '4%'}}>อันดับที่</th>
-              <th rowSpan="2" style={{width: '9%'}}>หมายเลขทะเบียน</th>
-              <th rowSpan="2" style={{width: '7%'}}>ยี่ห้อ</th>
-              <th rowSpan="2" style={{width: '12%'}}>ชนิดและลักษณะ</th>
-              <th rowSpan="2" style={{width: '5%'}}>งบ</th>
-              <th rowSpan="2" style={{width: '6%'}}>ระวางแผน</th>
-              <th colSpan="2">เลขไมล์</th>
-              <th rowSpan="2" style={{width: '6%'}}>รวมระยะทาง<br/>กม.</th>
-              <th rowSpan="2" style={{width: '16%'}}>ประเภทการใช้งานส่วนใหญ่</th>
-              <th colSpan="2">ความครบถ้วน</th>
-              <th rowSpan="2" style={{width: '12%'}}>สาเหตุ</th>
-              <th rowSpan="2" style={{width: '6%'}}>หมายเหตุ</th>
-            </tr>
-            <tr>
-              <th style={{width: '6%'}}>เริ่ม</th>
-              <th style={{width: '6%'}}>สิ้นสุด</th>
-              <th style={{width: '4%'}}>ครบถ้วน</th>
-              <th style={{width: '4%'}}>ไม่ครบ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {printData.map((row, idx) => {
-              const customReason = printReasons[row.plate] || '';
-              const isComplete = !customReason;
-
-              return (
-                <tr key={idx}>
-                  <td>{row.no}</td>
-                  <td>{row.plate}</td>
-                  <td>{row.brand}</td>
-                  <td>{row.type}</td>
-                  <td>{row.budget}</td>
-                  <td>{row.plan}</td>
-                  <td>{row.startMil}</td>
-                  <td>{row.endMil}</td>
-                  <td style={{textAlign: 'center'}}>{row.dist}</td>
-                  <td className="text-left">{row.mainUsage}</td>
-                  
-                  <td>{isComplete ? '/' : ''}</td>
-                  <td>{!isComplete ? '/' : ''}</td>
-                  
-                  <td>
-                    <span className="no-print">{customReason}</span>
-                    <span className="print-area">{customReason}</span>
-                  </td>
-                  
-                  <td>{row.remark}</td>
-                </tr>
-              )
-            })}
-            {printData.length === 0 && (
-              <tr>
-                <td colSpan="14" style={{ textAlign: 'center', padding: '20px' }}>ไม่มีข้อมูลในช่วงเวลาที่เลือก</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
       </div>
     </>
   )
