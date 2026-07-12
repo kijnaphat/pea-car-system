@@ -450,7 +450,7 @@ export default function AdminDashboard() {
                       <th className="py-4 px-4 text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest">Model & Type</th>
                       <th className="py-4 px-4 text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest">Energy</th>
                       <th className="py-4 px-4 text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest">Department</th>
-                      <th className="py-4 px-6 text-center text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest w-24">Edit</th>
+                      <th className="py-4 px-6 text-center text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest w-24">Action</th>
                     </tr></thead>
                     <tbody className="divide-y divide-[#38383a]">
                       {carsList.map(item => (
@@ -483,7 +483,7 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td className="p-4 px-4 text-[#86868b] text-[13px]">{item.department || '-'}</td>
-                          <td className="p-4 px-6 flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <td className="p-4 px-6 flex justify-center gap-2">
                             <button onClick={() => handleEdit('cars', item)} className="p-1.5 text-[#86868b] hover:text-[#f5f5f7] transition-colors"><Icon icon="ph:pencil-simple" width="18" height="18" /></button>
                             <button onClick={() => confirmDelete('cars', item)} className="p-1.5 text-[#86868b] hover:text-[#ff453a] transition-colors"><Icon icon="ph:trash" width="18" height="18" /></button>
                           </td>
@@ -501,7 +501,7 @@ export default function AdminDashboard() {
                       <th className="py-4 px-6 text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest">Name</th>
                       <th className="py-4 px-6 text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest">Position</th>
                       <th className="py-4 px-6 text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest">Department</th>
-                      <th className="py-4 px-6 text-center text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest w-24">Edit</th>
+                      <th className="py-4 px-6 text-center text-[#5c5c5f] font-semibold text-[10px] uppercase tracking-widest w-24">Action</th>
                     </tr></thead>
                     <tbody className="divide-y divide-[#38383a]">
                       {staffList.map(item => (
@@ -515,7 +515,7 @@ export default function AdminDashboard() {
                           </td>
                           <td className="p-4 px-6 text-[#86868b] text-[13px]">{item.position || '-'}</td>
                           <td className="p-4 px-6"><span className="text-[11px] text-[#86868b] bg-[#2c2c2e] border border-[#424245] px-2.5 py-1 rounded-md">{item.departments?.name || 'Unassigned'}</span></td>
-                          <td className="p-4 px-6 flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <td className="p-4 px-6 flex justify-center gap-2">
                              <button onClick={() => handleEdit('staff', item)} className="p-1.5 text-[#86868b] hover:text-[#f5f5f7] transition-colors"><Icon icon="ph:pencil-simple" width="18" height="18" /></button>
                              <button onClick={() => confirmDelete('staff', item)} className="p-1.5 text-[#86868b] hover:text-[#ff453a] transition-colors"><Icon icon="ph:trash" width="18" height="18" /></button>
                           </td>
@@ -530,14 +530,14 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 p-6 bg-[#000000]">
                     {(activeMenu === 'tasks' ? tasksList : activeMenu === 'departments' ? departmentsList : operationAreasList).map(item => (
                       <div key={item.id} className="p-5 border border-[#38383a] rounded-[12px] hover:border-[#5c5c5f] transition-all bg-[#1c1c1e] relative group">
-                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                        <div className="absolute top-4 right-4 flex gap-2">
                           <button onClick={(e) => { e.stopPropagation(); handleEdit(activeMenu, item) }} className="text-[#86868b] hover:text-[#f5f5f7] transition-colors"><Icon icon="ph:pencil-simple" width="18" height="18" /></button>
                           <button onClick={(e) => { e.stopPropagation(); confirmDelete(activeMenu, item) }} className="text-[#86868b] hover:text-[#ff453a] transition-colors"><Icon icon="ph:trash" width="18" height="18" /></button>
                         </div>
                         <div className="w-8 h-8 rounded-md bg-[#2c2c2e] border border-[#424245] flex items-center justify-center mb-4 text-[#f5f5f7]">
                            <Icon icon={activeMenu === 'tasks' ? "ph:clipboard-text" : activeMenu === 'departments' ? "ph:buildings" : "ph:map-pin"} width="16" height="16" />
                         </div>
-                        <h4 className="font-medium text-[#f5f5f7] text-[14px] mb-1">{item.name}</h4>
+                        <h4 className="font-medium text-[#f5f5f7] text-[14px] mb-1 pr-16">{item.name}</h4>
                         {activeMenu === 'tasks' && (
                           <p className="text-[12px] text-[#86868b]">
                             Dept: {item.departments?.name || 'Unassigned'}
