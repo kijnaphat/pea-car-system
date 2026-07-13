@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react'
 
 // ── Apple-style helpers ──
 const ACard = ({ children, className = '' }) => (
-  <div className={`bg-white rounded-[20px] overflow-hidden ${className}`}
+  <div className={`bg-white rounded-[24px] overflow-hidden ${className}`}
        style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
     {children}
   </div>
@@ -50,6 +50,9 @@ export default function UltimateDashboard() {
     return `${yyyy}-${mm}`;
   })
 
+  // ✅ เก็บ Range วันที่ปัจจุบันที่ใช้ Filter เพื่อให้วาดกราฟได้ตรงวัน
+  const [currentDateRange, setCurrentDateRange] = useState({ start: null, end: null, isAllTime: true })
+
   // State เก็บข้อมูลดิบ
   const [rawLogs, setRawLogs] = useState([])
   const [carsList, setCarsList] = useState([])
@@ -64,21 +67,20 @@ export default function UltimateDashboard() {
   const [evStats, setEvStats] = useState({ distance: 0, charges: 0, avgGain: 0, carbonSaved: 0 })
 
   const [analytics, setAnalytics] = useState({
-    dailyTrend: [], hourlyTrend: [], topLocations: [], driverStats: [], fleetTable: [], carDriverHistory: []
+    dailyTrend: [], hourlyTrend: [], topLocations: [], driverStats: [], fleetTable: [], carDriverHistory: [], latestMovements: []
   })
 
   // ✅ ระบบจัดการการพิมพ์ (Print State)
   const [printData, setPrintData] = useState([])
   const [printReasons, setPrintReasons] = useState({})
   const [showPrintModal, setShowPrintModal] = useState(false)
-  const [printType, setPrintType] = useState('summary') // 'summary' หรือ 'query'
+  const [printType, setPrintType] = useState('summary') 
 
   // ✅ State สำหรับระบบ Query 
   const [showQueryModal, setShowQueryModal] = useState(false)
   const [queryFilters, setQueryFilters] = useState({ plate: '', date: '', name: '', dept: '', job: '', location: '' })
   const [queryResults, setQueryResults] = useState([])
 
-  // ✅ แปลงและกรองข้อมูลเตรียมไว้สำหรับทำ Dropdown และ Table
   const processedLogs = useMemo(() => {
     return rawLogs.filter(item => {
         if (!item.cars || item.cars.is_visible === false) return false;
@@ -122,7 +124,6 @@ export default function UltimateDashboard() {
     });
   }, [rawLogs, carCategoryFilter]);
 
-  // ตัวเลือกใน Dropdown
   const uniquePlates = [...new Set(processedLogs.map(l => l.plate))].filter(Boolean).sort();
   const uniqueDates = [...new Set(processedLogs.map(l => l.dateRaw))].filter(Boolean).sort((a,b) => b.localeCompare(a));
   const uniqueNames = [...new Set(processedLogs.map(l => l.name))].filter(Boolean).sort();
@@ -130,7 +131,6 @@ export default function UltimateDashboard() {
   const uniqueJobs = [...new Set(processedLogs.map(l => l.job))].filter(Boolean).sort();
   const uniqueLocs = [...new Set(processedLogs.map(l => l.location))].filter(Boolean).sort();
 
-  // ✅ ฟังก์ชันกดค้นหาข้อมูลแล้วให้โชว์ Popup
   const handleExecuteQuery = () => {
     const results = processedLogs.filter(l => {
         if (queryFilters.plate && l.plate !== queryFilters.plate) return false;
@@ -205,6 +205,9 @@ export default function UltimateDashboard() {
           endDate.setHours(23,59,59,999)
         }
 
+        // เซ็ต state วันที่ เพื่อใช้วาดกราฟให้ถูกต้อง
+        setCurrentDateRange({ start: new Date(startDate), end: new Date(endDate), isAllTime });
+
         let allLogs = []
         let hasMore = true
         let from = 0
@@ -214,7 +217,6 @@ export default function UltimateDashboard() {
           let query = supabase
             .from('trip_logs')
             .select('*, cars(*)')
-            .eq('is_completed', true)
             .order('start_time', { ascending: false })
             .range(from, from + step - 1)
 
@@ -268,7 +270,53 @@ export default function UltimateDashboard() {
     const allowedCarIds = new Set(filteredCarsList.map(c => String(c.id)));
     const evCarIds = new Set(carsList.filter(c => isEVCar(c)).map(c => String(c.id)));
     
+    // filteredLogs ใช้เฉพาะรถในหมวดหมู่ที่เลือก
     const filteredLogs = rawLogs.filter(l => allowedCarIds.has(String(l.car_id)));
+
+    // ✅ คำนวณความเคลื่อนไหวล่าสุด
+    const latestMovementsList = filteredCarsList.map(c => {
+        const cLogs = rawLogs.filter(l => String(l.car_id) === String(c.id));
+        if (cLogs.length === 0) {
+            return {
+                plate: c.plate_number || '-',
+                driver: '-',
+                startStr: '-',
+                endStr: '-',
+                duration: '-',
+                isCompleted: true,
+                dateStr: 'ไม่มีประวัติ',
+                timestamp: 0,
+                hasData: false
+            };
+        }
+        const latestLog = cLogs[0];
+        const start = latestLog.start_time ? new Date(latestLog.start_time) : null;
+        const end = latestLog.end_time ? new Date(latestLog.end_time) : null;
+        const isCompleted = latestLog.is_completed !== false && end != null;
+
+        let duration = '';
+        if (isCompleted && start && end) {
+            const diffMins = Math.floor((end - start) / 60000);
+            const h = Math.floor(diffMins / 60);
+            const m = diffMins % 60;
+            duration = h > 0 ? `${h} ชม. ${m} นาที` : `${m} นาที`;
+        }
+
+        return {
+            plate: c.plate_number || '-',
+            driver: latestLog.driver_name || '-',
+            startStr: start ? start.toLocaleTimeString('th-TH', { hour: '2-digit', minute:'2-digit' }) : '-',
+            endStr: isCompleted ? end.toLocaleTimeString('th-TH', { hour: '2-digit', minute:'2-digit' }) : 'ยังไม่คืน',
+            duration: duration,
+            isCompleted: isCompleted,
+            dateStr: start ? start.toLocaleDateString('th-TH', { day:'2-digit', month:'short' }) : '',
+            timestamp: start ? start.getTime() : 0,
+            hasData: true
+        };
+    }).sort((a,b) => {
+        if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+        return b.timestamp - a.timestamp;
+    });
 
     const getLogDistance = (l) => {
         const start = parseNum(l.start_mileage);
@@ -279,7 +327,7 @@ export default function UltimateDashboard() {
     }
 
     const fleetData = filteredCarsList.map((c, index) => {
-        const cLogs = filteredLogs.filter(l => String(l.car_id) === String(c.id));
+        const cLogs = filteredLogs.filter(l => String(l.car_id) === String(c.id) && l.is_completed !== false);
         const isEV = evCarIds.has(String(c.id));
         
         const validStartLogs = cLogs.filter(l => parseNum(l.start_mileage) > 0);
@@ -347,6 +395,7 @@ export default function UltimateDashboard() {
           fuelLiters: totalL,
           fuelCost: totalC, 
           efficiency: isEV ? 0 : (totalD > 0 ? (totalC / totalD).toFixed(2) : 0),
+          efficiencyLKM: isEV ? 0 : (totalD > 0 ? (totalL / totalD).toFixed(3) : 0),
           refillCount: chargeCount,
           status: c.status,
           model: c.model,
@@ -374,16 +423,18 @@ export default function UltimateDashboard() {
     }));
     setPrintData(pData);
 
+    const completedLogs = filteredLogs.filter(l => l.is_completed !== false);
+
     const evDist = fleetData.filter(c => c.type === 'EV').reduce((s, c) => s + c.dist, 0);
     const gDist = fleetData.filter(c => c.type !== 'EV').reduce((s, c) => s + c.dist, 0);
     const totalDist = gDist + evDist;
-    const totalTrips = filteredLogs.length;
+    const totalTrips = completedLogs.length;
 
-    const gasLogs = filteredLogs.filter(l => !evCarIds.has(String(l.car_id)));
+    const gasLogs = completedLogs.filter(l => !evCarIds.has(String(l.car_id)));
     const gCost = gasLogs.reduce((s, l) => s + parseNum(l.fuel_cost), 0);
     const gLiters = gasLogs.reduce((s, l) => s + parseNum(l.fuel_liters), 0);
 
-    const evLogs = filteredLogs.filter(l => evCarIds.has(String(l.car_id)));
+    const evLogs = completedLogs.filter(l => evCarIds.has(String(l.car_id)));
     const evCharges = evLogs.filter(l => parseNum(l.battery_after) > 0);
     const battGains = evCharges.map(l => (parseNum(l.battery_after) - parseNum(l.battery_before)));
     const avgCharge = battGains.length > 0 ? (battGains.reduce((a,b)=>a+b,0)/battGains.length) : 0;
@@ -392,17 +443,34 @@ export default function UltimateDashboard() {
     const locMap = {}
     const hourlyMap = Array(24).fill(0)
 
-    filteredLogs.forEach(l => {
+    // ✅ สร้างแกนเวลาอ้างอิงรายวัน ให้แสดงวันในกราฟได้ครบถ้วน
+    const trendMap = new Map();
+    if (!currentDateRange.isAllTime && currentDateRange.start && currentDateRange.end) {
+        let curr = new Date(currentDateRange.start);
+        const end = new Date(currentDateRange.end);
+        let safety = 0;
+        // ป้องกันลูปไม่สิ้นสุด
+        while (curr <= end && safety < 366) {
+            const yyyy = curr.getFullYear();
+            const mm = String(curr.getMonth() + 1).padStart(2, '0');
+            const dd = String(curr.getDate()).padStart(2, '0');
+            const localDateStr = `${yyyy}-${mm}-${dd}`;
+            const label = curr.toLocaleDateString('th-TH', {day: '2-digit', month: 'short'});
+            
+            trendMap.set(localDateStr, { label, val: 0 });
+            curr.setDate(curr.getDate() + 1);
+            safety++;
+        }
+    }
+
+    completedLogs.forEach(l => {
       if (!driverMap[l.driver_name]) driverMap[l.driver_name] = { logs: [], cars: new Set(), purposes: {}, locations: {} }
-      
       driverMap[l.driver_name].logs.push(l);
-      
       if (l.cars?.plate_number) driverMap[l.driver_name].cars.add(l.cars.plate_number)
       
       let p = 'งานทั่วไป';
-      if (l.cars?.fuel_type?.toUpperCase() === 'EV') {
-          p = 'ชาร์จรถ EV';
-      } else if (l.location && l.location !== '-') {
+      if (l.cars?.fuel_type?.toUpperCase() === 'EV') { p = 'ชาร์จรถ EV'; } 
+      else if (l.location && l.location !== '-') {
           const match = l.location.match(/\[.*? - (.*?)\]/);
           p = match ? match[1].trim() : l.location;
           if(p.length > 25) p = p.substring(0, 25) + '...';
@@ -410,22 +478,45 @@ export default function UltimateDashboard() {
       driverMap[l.driver_name].purposes[p] = (driverMap[l.driver_name].purposes[p] || 0) + 1;
 
       let a = 'ไม่ระบุพื้นที่';
-      if (l.cars?.fuel_type?.toUpperCase() === 'EV') {
-          a = l.station_name || l.location || 'สถานีชาร์จ';
-      } else if (l.location && l.location !== '-') {
+      if (l.cars?.fuel_type?.toUpperCase() === 'EV') { a = l.station_name || l.location || 'สถานีชาร์จ'; } 
+      else if (l.location && l.location !== '-') {
           const matchA = l.location.match(/\]\s*(.*)/);
           a = matchA && matchA[1] ? matchA[1].trim() : l.location;
           if(a.length > 25) a = a.substring(0, 25) + '...';
       }
       driverMap[l.driver_name].locations[a] = (driverMap[l.driver_name].locations[a] || 0) + 1;
 
-      if (l.location && l.location !== '-') {
-          locMap[l.location] = (locMap[l.location] || 0) + 1
-      }
+      if (l.location && l.location !== '-') { locMap[l.location] = (locMap[l.location] || 0) + 1 }
+      
+      // ✅ กราฟรายชั่วโมง
       const hour = new Date(l.start_time).getHours()
       hourlyMap[hour]++
+
+      // ✅ กราฟรายวัน (Map Date)
+      const lDate = new Date(l.start_time);
+      const yyyy = lDate.getFullYear();
+      const mm = String(lDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(lDate.getDate()).padStart(2, '0');
+      const localDateStr = `${yyyy}-${mm}-${dd}`;
+      
+      if (currentDateRange.isAllTime) {
+          if (!trendMap.has(localDateStr)) {
+              trendMap.set(localDateStr, { label: lDate.toLocaleDateString('th-TH', {day: '2-digit', month: 'short', year: '2-digit'}), val: 0 });
+          }
+          trendMap.get(localDateStr).val += 1;
+      } else {
+          if (trendMap.has(localDateStr)) {
+              trendMap.get(localDateStr).val += 1;
+          }
+      }
     })
     
+    const sortedTrend = Array.from(trendMap.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(entry => entry[1]);
+        
+    const sortedHourly = hourlyMap.map((val, label) => ({ label: `${label}:00`, val }))
+
     const driverList = Object.entries(driverMap).map(([name, data]) => {
       let driverTotalDist = 0;
       const logsByCar = {};
@@ -440,9 +531,7 @@ export default function UltimateDashboard() {
           if (allMils.length > 0) {
               const minM = Math.min(...allMils);
               const maxM = Math.max(...allMils);
-              if (maxM > minM) {
-                  driverTotalDist += (maxM - minM);
-              }
+              if (maxM > minM) { driverTotalDist += (maxM - minM); }
           }
       });
 
@@ -462,7 +551,7 @@ export default function UltimateDashboard() {
 
     const carDriverMap = {}
     filteredCarsList.forEach(c => {
-      const cLogs = filteredLogs.filter(l => String(l.car_id) === String(c.id))
+      const cLogs = completedLogs.filter(l => String(l.car_id) === String(c.id))
       if (cLogs.length > 0) {
         const drivers = {}
         cLogs.forEach(l => {
@@ -476,14 +565,6 @@ export default function UltimateDashboard() {
       }
     })
     const carDriverList = Object.entries(carDriverMap).map(([plate, data]) => ({ plate, ...data })).sort((a,b) => b.totalTrips - a.totalTrips)
-
-    const trendMap = {}
-    filteredLogs.forEach(l => {
-      const d = new Date(l.start_time).toLocaleDateString('th-TH', {day: '2-digit', month: 'short'})
-      trendMap[d] = (trendMap[d] || 0) + 1
-    })
-    const sortedTrend = Object.entries(trendMap).map(([label, val]) => ({ label, val })).slice(0, 7).reverse()
-    const sortedHourly = hourlyMap.map((val, label) => ({ label: `${label}:00`, val }))
 
     const busy = filteredCarsList.filter(c => c.status === 'busy').length;
     const avail = filteredCarsList.filter(c => c.status === 'available').length;
@@ -509,26 +590,25 @@ export default function UltimateDashboard() {
       topLocations: topLocationsList,
       driverStats: driverList,
       fleetTable: fleetData,
-      carDriverHistory: carDriverList
+      carDriverHistory: carDriverList,
+      latestMovements: latestMovementsList
     })
 
-  }, [rawLogs, carsList, repairLogs, carCategoryFilter])
+  }, [rawLogs, carsList, repairLogs, carCategoryFilter, currentDateRange])
 
-  // ✅ ฟังก์ชันช่วยสร้างช่องกรอกข้อมูลให้สวยงามแบบ Apple-style
+  // ✅ เปลี่ยนช่องกรอกข้อมูลให้เป็น "กล่องสี่เหลี่ยมมน" (rounded-[16px])
   const renderField = (key, label, options, iconName, type = 'select') => (
     <div className="flex flex-col gap-1.5 relative">
         <label className="text-[13px] font-semibold text-[#1d1d1f] ml-1">{label}</label>
         <div className="relative group">
-            {/* ไอคอนด้านซ้าย */}
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#aeaeb2] group-focus-within:text-[#0071e3] transition-colors z-10">
                 <Icon icon={iconName} width="18" height="18" />
             </div>
-            
             {type === 'select' ? (
                 <select 
                     value={queryFilters[key]} 
                     onChange={(e) => setQueryFilters(prev => ({...prev, [key]: e.target.value}))}
-                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[10px] pl-10 pr-8 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all appearance-none cursor-pointer"
+                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-8 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all appearance-none cursor-pointer"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238e8e93'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, 
                         backgroundPosition: 'right 0.75rem center', 
@@ -553,23 +633,12 @@ export default function UltimateDashboard() {
                             }
                         } catch (err) {}
                     }}
-                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[10px] pl-10 pr-3 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all cursor-pointer premium-date-input"
+                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-3 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all cursor-pointer premium-date-input"
                 />
             )}
         </div>
     </div>
   );
-
-  // ตั้งค่าและลำดับของ Input: วันที่ ทะเบียนรถ ชื่อ/ตำแหน่ง แผนก ประเภทงาน สถานที่
-  const fieldConfig = {
-    date: { key: 'date', label: 'วันที่ (ระบุเฉพาะวัน)', options: [], icon: 'ph:calendar-blank-duotone', type: 'date' },
-    plate: { key: 'plate', label: 'ทะเบียนรถ', options: uniquePlates, icon: 'ph:car-profile-duotone', type: 'select' },
-    name: { key: 'name', label: 'ชื่อ/ตำแหน่ง', options: uniqueNames, icon: 'ph:user-duotone', type: 'select' },
-    dept: { key: 'dept', label: 'แผนก', options: uniqueDepts, icon: 'ph:buildings-duotone', type: 'select' },
-    job: { key: 'job', label: 'ประเภทงาน', options: uniqueJobs, icon: 'ph:briefcase-duotone', type: 'select' },
-    location: { key: 'location', label: 'สถานที่', options: uniqueLocs, icon: 'ph:map-pin-duotone', type: 'select' }
-  };
-  const fieldOrder = ['date', 'plate', 'name', 'dept', 'job', 'location'];
 
   if (showWelcome) {
     return (
@@ -638,7 +707,7 @@ export default function UltimateDashboard() {
   const maxLoc    = Math.max(...analytics.topLocations.map(l => l.count), 1);
 
   const Card = ({ children, className = '', style = {} }) => (
-    <div className={`bg-white rounded-[22px] overflow-hidden ${className}`}
+    <div className={`bg-white rounded-[24px] overflow-hidden ${className}`}
          style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 20px rgba(0,0,0,0.07)', ...style}}>
       {children}
     </div>
@@ -686,7 +755,6 @@ export default function UltimateDashboard() {
           background: #f5f5f7;
         }
 
-        /* ✅ CSS สำหรับการพิมพ์ที่สมบูรณ์ */
         .print-only { display: none; width: 100%; }
 
         @media print {
@@ -702,7 +770,6 @@ export default function UltimateDashboard() {
           }
           table { page-break-inside: auto; width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
           tr { page-break-inside: avoid; page-break-after: auto; }
-          /* ✅ คำสั่งนี้ทำให้ หัวตาราง (thead) ปรากฏซ้ำทุกหน้าเมื่อขึ้นหน้าใหม่ */
           thead { display: table-header-group; } 
           tfoot { display: table-footer-group; }
           th, td {
@@ -783,13 +850,14 @@ export default function UltimateDashboard() {
           <table>
             <thead>
               <tr>
-                <th colSpan="9" className="no-border-print" style={{ paddingBottom: '20px' }}>
+                <th colSpan="10" className="no-border-print" style={{ paddingBottom: '20px' }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, fontFamily: 'Sarabun, sans-serif' }}>
                     รายงานผลลัพธ์การค้นหาประวัติการใช้งานรถ ({queryResults.length} รายการ)
                   </h2>
                 </th>
               </tr>
               <tr>
+                <th style={{width: '5%'}}>ลำดับ</th>
                 <th>วันที่</th>
                 <th>ทะเบียนรถ</th>
                 <th>ชื่อ/ตำแหน่ง</th>
@@ -804,6 +872,7 @@ export default function UltimateDashboard() {
             <tbody>
               {queryResults.map((row, idx) => (
                 <tr key={idx}>
+                  <td>{idx + 1}</td>
                   <td>{row.date}</td>
                   <td>{row.plate}</td>
                   <td className="text-left">{row.name}</td>
@@ -816,7 +885,7 @@ export default function UltimateDashboard() {
                 </tr>
               ))}
               {queryResults.length === 0 && (
-                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>ไม่มีข้อมูล</td></tr>
+                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>ไม่มีข้อมูล</td></tr>
               )}
             </tbody>
           </table>
@@ -912,7 +981,7 @@ export default function UltimateDashboard() {
         </div>
       )}
 
-      {/* ✅ Modal แสดงผลตาราง Query (กว้างเต็ม 95vw และรองรับ Sticky Header) */}
+      {/* ✅ Modal แสดงผลตาราง Query */}
       {showQueryModal && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 fu no-print">
           <div className="bg-white rounded-[24px] w-[95vw] h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -934,16 +1003,14 @@ export default function UltimateDashboard() {
               </div>
             </div>
 
-            {/* โซนที่ Scroll ได้ เฉพาะเนื้อหาด้านใน ไม่ล้น Modal */}
             <div className="flex-1 bg-[#f5f5f7] p-4 md:p-6 overflow-hidden flex flex-col">
               <div className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.03)] overflow-hidden flex-1 flex flex-col">
-                  {/* กำหนดให้ตาราง Scroll ภายในตัวมันเอง เพื่อให้ Sticky Header ทำงานได้สมบูรณ์ */}
                   <div className="overflow-auto flex-1 relative st">
                       <table className="w-full border-collapse text-[13px] font-sarabun min-w-[1000px]">
                         <thead className="sticky top-0 z-10 bg-[#f9f9fb] shadow-[0_1px_0_rgba(0,0,0,0.1)]">
                           <tr>
-                            {['วันที่', 'ทะเบียนรถ', 'ชื่อ/ตำแหน่ง', 'แผนก', 'ประเภทงาน', 'สถานที่', 'ระยะทาง (กม.)', 'น้ำมัน (ลิตร)', 'จำนวนเงิน (บ.)'].map(h => (
-                              <th key={h} className="px-4 py-3.5 text-left font-semibold text-[#6e6e73] whitespace-nowrap bg-[#f9f9fb]">{h}</th>
+                            {['ลำดับ', 'วันที่', 'ทะเบียนรถ', 'ชื่อ/ตำแหน่ง', 'แผนก', 'ประเภทงาน', 'สถานที่', 'ระยะทาง (กม.)', 'น้ำมัน (ลิตร)', 'จำนวนเงิน (บ.)'].map(h => (
+                              <th key={h} className={`px-4 py-3.5 ${h==='ลำดับ' ? 'text-center' : 'text-left'} font-semibold text-[#6e6e73] whitespace-nowrap bg-[#f9f9fb]`}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -951,6 +1018,7 @@ export default function UltimateDashboard() {
                           {queryResults.length > 0 ? (
                             queryResults.map((row, idx) => (
                               <tr key={idx} className="border-b border-[rgba(0,0,0,0.04)] last:border-0 hover:bg-[#f2f2f7]/50 transition-colors">
+                                <td className="px-4 py-3 text-center text-[#6e6e73] font-medium">{idx + 1}</td>
                                 <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.date}</td>
                                 <td className="px-4 py-3 font-semibold text-[#1d1d1f] whitespace-nowrap">{row.plate}</td>
                                 <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.name}</td>
@@ -963,7 +1031,7 @@ export default function UltimateDashboard() {
                               </tr>
                             ))
                           ) : (
-                            <tr><td colSpan="9" className="text-center py-12 text-[#aeaeb2]">ไม่พบข้อมูลจากเงื่อนไขที่คุณเลือก</td></tr>
+                            <tr><td colSpan="10" className="text-center py-12 text-[#aeaeb2]">ไม่พบข้อมูลจากเงื่อนไขที่คุณเลือก</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -1042,7 +1110,7 @@ export default function UltimateDashboard() {
         <div className="max-w-[1440px] mx-auto px-4 md:px-5 pt-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 fu" style={{animationDelay:'0ms'}}>
             
-            <div className="col-span-1 sm:col-span-2 xl:col-span-1 rounded-[22px] p-5 flex flex-col justify-between min-h-[140px] relative overflow-hidden"
+            <div className="col-span-1 sm:col-span-2 xl:col-span-1 rounded-[24px] p-5 flex flex-col justify-between min-h-[140px] relative overflow-hidden"
                  style={{background:'#1d1d1f', boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
               <div className="w-10 h-10 rounded-[12px] bg-white/10 flex items-center justify-center z-10">
@@ -1118,7 +1186,8 @@ export default function UltimateDashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 fu" style={{animationDelay:'60ms'}}>
+          {/* ── แถวที่ 2: ฝูงรถ + สถานะการใช้งานล่าสุด ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 fu" style={{animationDelay:'60ms'}}>
             <Card className="p-5">
               <SectionLabel title="ฝูงรถ" subtitle={`ในหมวด ${activeCategory.title} ทั้งหมด ${globalStats.totalCars} คัน`} />
               <div className="space-y-2.5">
@@ -1145,93 +1214,187 @@ export default function UltimateDashboard() {
               </div>
             </Card>
 
-            <Card className="p-5 lg:col-span-2">
+            <Card className="p-5">
               <SectionLabel 
-                icon="ph:map-pin-duotone" 
-                iconColor="text-[#ff3b30]"
-                title={carCategoryFilter === 'ev' ? 'สถานีชาร์จยอดนิยม' : 'ปลายทางยอดนิยม'} 
+                icon="ph:clock-counter-clockwise-duotone" 
+                iconColor="text-[#0071e3]"
+                title="สถานะการใช้รถล่าสุด" 
+                subtitle="ประวัติการนำรถออกและเวลาคืนรถของรถทุกคัน"
               />
-              <div className="space-y-3.5">
-                {analytics.topLocations.length===0
-                  ? <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>
-                  : analytics.topLocations.map((loc,i)=>(
-                    <div key={i} className="flex items-center gap-3.5">
-                      <span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
-                            style={{background:['#ff9500','#aeaeb2','#d2d2d7'][i]||'#e5e5ea', color:i>=2?'#6e6e73':'white'}}>
-                        {i+1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline mb-1.5">
-                          <span className="text-[13px] font-medium text-[#1d1d1f] truncate">{loc.name}</span>
-                          <span className="text-[12px] text-[#6e6e73] ml-3 flex-shrink-0">{loc.count} ครั้ง</span>
-                        </div>
-                        <div className="h-[5px] bg-[#f2f2f7] rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-700"
-                               style={{width:`${(loc.count/maxLoc)*100}%`, background:i===0?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#0071e3,#34aadc)'}}/>
-                        </div>
+              <div className="space-y-2.5 max-h-[170px] overflow-y-auto st pr-1">
+                {analytics.latestMovements && analytics.latestMovements.length > 0 ? analytics.latestMovements.map((m, i) => (
+                  <div key={i} className={`flex items-center justify-between p-3 rounded-[12px] border transition-colors ${!m.hasData ? 'bg-white border-[#f2f2f7] opacity-60' : 'bg-[#f9f9fb] border-[rgba(0,0,0,0.03)] hover:bg-[#f2f2f7]'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${!m.hasData ? 'bg-[#d2d2d7]' : (m.isCompleted ? 'bg-[#34c759]' : 'bg-[#ff3b30] animate-pulse')}`} 
+                           style={{boxShadow: !m.hasData ? 'none' : (m.isCompleted ? '0 0 0 3px rgba(52,199,89,0.15)' : '0 0 0 3px rgba(255,59,48,0.15)')}} />
+                      <div>
+                        <p className="text-[14px] font-semibold text-[#1d1d1f] leading-tight">{m.plate}</p>
+                        <p className="text-[11px] text-[#6e6e73] mt-0.5">{m.driver}</p>
                       </div>
                     </div>
-                  ))
-                }
+                    <div className="text-right">
+                      {m.hasData ? (
+                        <>
+                            <div className="flex items-center justify-end gap-1.5 text-[12px] font-medium mb-1">
+                                <span className="text-[#1d1d1f] bg-white px-2 py-0.5 rounded-[6px] shadow-sm border border-[#e5e5ea]">{m.startStr}</span>
+                                <Icon icon="ph:arrow-right-bold" className="text-[#c7c7cc]" width="12" />
+                                <span className={`px-2 py-0.5 rounded-[6px] shadow-sm border ${m.isCompleted ? 'bg-white border-[#e5e5ea] text-[#1d1d1f]' : 'bg-[#fff0f0] border-[#ff3b30]/20 text-[#d70015]'}`}>
+                                {m.endStr}
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-[#8e8e93]">
+                                {m.dateStr} {m.isCompleted && m.duration ? `· ใช้เวลา ${m.duration}` : ''}
+                            </p>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-[#aeaeb2] mt-1">{m.dateStr}</p>
+                      )}
+                    </div>
+                  </div>
+                )) : (
+                  <div className="flex flex-col items-center justify-center py-6 text-[#aeaeb2]">
+                    <Icon icon="ph:car-duotone" width="24" height="24" className="mb-2 opacity-50" />
+                    <p className="text-[12px]">ยังไม่มีข้อมูลการใช้งาน</p>
+                  </div>
+                )}
               </div>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-5 gap-3 fu" style={{animationDelay:'120ms'}}>
-            <Card className="p-5 xl:col-span-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 fu" style={{animationDelay:'120ms'}}>
+            {/* กราฟ 1: ความถี่รายวัน */}
+            <Card className="p-5 flex flex-col">
               <SectionLabel 
                 icon="ph:calendar-blank-duotone" 
                 iconColor="text-[#0071e3]"
                 title={carCategoryFilter === 'ev' ? 'ความถี่การนำรถไปชาร์จ' : 'ความถี่การใช้งาน'} 
                 subtitle="จำนวนภารกิจรายวัน"
               />
-              <div className="h-44 flex items-end gap-2 pb-1 overflow-x-auto st">
-                {analytics.dailyTrend.length===0
-                  ? <p className="text-[12px] text-[#aeaeb2] m-auto">ไม่มีข้อมูล</p>
-                  : analytics.dailyTrend.map((d,i)=>{
-                    const pct = (d.val/maxTrend)*100;
-                    return (
-                      <div key={i} className="flex-1 min-w-[30px] flex flex-col items-center h-full justify-end group">
-                        {d.val>0 && (
-                          <span className="text-[10px] font-semibold text-[#1d1d1f] mb-1 opacity-0 md:group-hover:opacity-100 transition-opacity">{d.val}</span>
-                        )}
-                        <div className="w-full rounded-t-[7px] transition-all duration-500 md:group-hover:opacity-90"
-                             style={{height:`${Math.max(pct,2)}%`, background:`linear-gradient(180deg, #0071e3 0%, #34aadc ${100-pct}%)`}}/>
-                        <span className="text-[9px] text-[#aeaeb2] mt-1.5 whitespace-nowrap">{d.label}</span>
-                      </div>
-                    )
-                  })}
+              <div className="relative flex-1 min-h-[220px] mt-2 flex items-end">
+                {/* เส้น Grid (Y-Axis) */}
+                <div className="absolute inset-0 flex flex-col justify-between pb-[26px] pointer-events-none z-0">
+                  {[3, 2, 1, 0].map((i) => (
+                    <div key={i} className="flex items-center w-full h-[1px]">
+                      <span className="text-[10px] text-[#aeaeb2] w-[20px] font-medium">{i === 0 ? 0 : Math.ceil((maxTrend / 3) * i)}</span>
+                      <div className={`flex-1 border-t ${i === 0 ? 'border-solid border-[#c7c7cc]' : 'border-dashed border-[rgba(0,0,0,0.06)]'} ml-2`}></div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* ข้อมูลกราฟ พร้อม Interactive Tooltip */}
+                <div className="relative z-10 flex w-full h-full justify-between items-end pl-[28px] pb-1 overflow-x-auto st gap-1">
+                  {analytics.dailyTrend.length === 0 ? (
+                    <p className="text-[13px] text-[#aeaeb2] m-auto pb-8">ไม่มีข้อมูล</p>
+                  ) : (
+                    analytics.dailyTrend.map((d, i) => {
+                      const pct = maxTrend > 0 ? (d.val / maxTrend) * 100 : 0;
+                      return (
+                        <div key={i} className="group relative flex-1 flex flex-col items-center justify-end h-full min-w-[36px] hover:bg-black/[0.02] rounded-[8px] transition-colors cursor-pointer py-1">
+                          
+                          {/* 📌 Hover Tooltip */}
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-50 bg-[#1d1d1f] text-white text-[11px] px-2.5 py-1.5 rounded-[8px] whitespace-nowrap shadow-lg transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 flex flex-col items-center">
+                             <span className="font-semibold text-[12px]">{d.val} ครั้ง</span>
+                             <span className="text-white/70 text-[10px]">{d.label}</span>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1d1d1f]"></div>
+                          </div>
+
+                          {/* ตัวเลขบนแท่ง */}
+                          <span className={`text-[12px] font-bold mb-1.5 transition-all ${d.val > 0 ? 'text-[#1d1d1f] group-hover:text-[#0071e3]' : 'text-transparent'}`}>
+                            {d.val}
+                          </span>
+                          
+                          {/* Container แท่งกราฟ */}
+                          <div className="flex flex-col justify-end items-center w-full h-[calc(100%-36px)]">
+                             <div className="w-full max-w-[28px] rounded-t-[4px] transition-all duration-500 shadow-sm group-hover:brightness-110 group-hover:scale-y-[1.03] origin-bottom"
+                                  style={{
+                                    height: `${pct}%`, 
+                                    background: 'linear-gradient(180deg, #34aadc 0%, #0071e3 100%)',
+                                    minHeight: d.val > 0 ? '4px' : '0'
+                                  }}
+                             />
+                          </div>
+                          
+                          {/* ป้ายแกน X */}
+                          <span className="text-[11px] font-medium text-[#8e8e93] mt-2 whitespace-nowrap group-hover:text-[#1d1d1f] transition-colors">
+                             {d.label.split(' ')[0]}
+                          </span>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
               </div>
             </Card>
 
-            <Card className="p-5 xl:col-span-2">
+            {/* กราฟ 2: รายชั่วโมง */}
+            <Card className="p-5 flex flex-col">
               <SectionLabel 
                 icon="ph:clock-duotone" 
                 iconColor="text-[#ff9f0a]"
                 title="ช่วงเวลาหนาแน่น" 
                 subtitle="รายชั่วโมง"
               />
-              <div className="h-44 flex items-end gap-[3px] overflow-x-auto st">
-                {analytics.hourlyTrend.length===0
-                  ? <p className="text-[12px] text-[#aeaeb2] m-auto">ไม่มีข้อมูล</p>
-                  : analytics.hourlyTrend.map((d,i)=>{
-                    const pct=(d.val/maxHourly)*100;
-                    const isPeak=pct>65;
-                    return (
-                      <div key={i} className="flex-1 min-w-[12px] flex flex-col items-center h-full justify-end group">
-                        <div className="w-full rounded-t-[3px] transition-all duration-500"
-                             style={{height:`${Math.max(pct,1.5)}%`, background:isPeak?'linear-gradient(180deg,#ff9500,#ffcc00)':'linear-gradient(180deg,#34c759 0%,#30d158 100%)', opacity:0.5+(pct/200)}}/>
-                        <span className="text-[8px] text-[#c7c7cc] mt-1">{i%6===0?d.label:''}</span>
-                      </div>
-                    )
-                  })}
+              <div className="relative flex-1 min-h-[220px] mt-2 flex items-end">
+                {/* เส้น Grid (Y-Axis) */}
+                <div className="absolute inset-0 flex flex-col justify-between pb-[26px] pointer-events-none z-0">
+                  {[3, 2, 1, 0].map((i) => (
+                    <div key={i} className="flex items-center w-full h-[1px]">
+                      <span className="text-[10px] text-[#aeaeb2] w-[20px] font-medium">{i === 0 ? 0 : Math.ceil((maxHourly / 3) * i)}</span>
+                      <div className={`flex-1 border-t ${i === 0 ? 'border-solid border-[#c7c7cc]' : 'border-dashed border-[rgba(0,0,0,0.06)]'} ml-2`}></div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ข้อมูลกราฟ พร้อม Interactive Tooltip */}
+                <div className="relative z-10 flex w-full h-full justify-between items-end pl-[28px] pb-1 overflow-x-auto st gap-[2px]">
+                  {analytics.hourlyTrend.length === 0 ? (
+                    <p className="text-[13px] text-[#aeaeb2] m-auto pb-8">ไม่มีข้อมูล</p>
+                  ) : (
+                    analytics.hourlyTrend.map((d, i) => {
+                      const pct = maxHourly > 0 ? (d.val / maxHourly) * 100 : 0;
+                      const isPeak = pct > 65;
+                      return (
+                        <div key={i} className="group relative flex-1 flex flex-col items-center justify-end h-full min-w-[20px] hover:bg-black/[0.02] rounded-[6px] transition-colors cursor-pointer py-1">
+                          
+                          {/* 📌 Hover Tooltip */}
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-50 bg-[#1d1d1f] text-white text-[11px] px-2.5 py-1.5 rounded-[8px] whitespace-nowrap shadow-lg transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 flex flex-col items-center">
+                             <span className="font-semibold text-[12px]">{d.val} ครั้ง</span>
+                             <span className="text-white/70 text-[10px]">เวลา {d.label}</span>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1d1d1f]"></div>
+                          </div>
+
+                          {/* ตัวเลขบนแท่ง */}
+                          <span className={`text-[10px] sm:text-[11px] font-bold mb-1.5 transition-all ${d.val > 0 ? (isPeak ? 'text-[#ff3b30] group-hover:brightness-125' : 'text-[#34c759] group-hover:brightness-110') : 'text-transparent'}`}>
+                            {d.val}
+                          </span>
+                          
+                          {/* Container แท่งกราฟ */}
+                          <div className="flex flex-col justify-end items-center w-full h-[calc(100%-36px)]">
+                             <div className="w-full max-w-[14px] rounded-t-[3px] transition-all duration-500 shadow-sm group-hover:brightness-110 group-hover:scale-y-[1.05] origin-bottom"
+                                  style={{
+                                    height: `${pct}%`, 
+                                    background: isPeak ? 'linear-gradient(180deg, #ff6961 0%, #ff3b30 100%)' : 'linear-gradient(180deg, #30d158 0%, #34c759 100%)',
+                                    minHeight: d.val > 0 ? '2px' : '0'
+                                  }}
+                             />
+                          </div>
+                          
+                          {/* ป้ายแกน X */}
+                          <span className="text-[9px] font-medium text-[#8e8e93] mt-2 whitespace-nowrap group-hover:text-[#1d1d1f] transition-colors">
+                            {i % 4 === 0 || i === 23 ? d.label.split(':')[0] : ''}
+                          </span>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
               </div>
             </Card>
           </div>
 
-          {/* ── ระบบค้นหาข้อมูล (Inline Form) ── */}
-          <Card className="fu overflow-visible" style={{animationDelay:'150ms'}}>
-            <div className="px-4 md:px-6 py-5 bg-white">
+          {/* ── ✅ กล่องค้นหาประวัติ โค้งมนสมบูรณ์ (Rounded Box) ── */}
+          <Card className="fu overflow-hidden rounded-[24px]" style={{animationDelay:'150ms', boxShadow:'0 4px 24px rgba(0,0,0,0.06)'}}>
+            <div className="px-5 md:px-7 py-6 bg-white">
                 <SectionLabel 
                     icon="ph:magnifying-glass-duotone" 
                     iconColor="text-[#0071e3]"
@@ -1255,10 +1418,10 @@ export default function UltimateDashboard() {
                 
                 <div className="mt-6 pt-5 border-t border-[rgba(0,0,0,0.05)] flex justify-between items-center">
                      <button onClick={() => setQueryFilters({ plate: '', date: '', name: '', dept: '', job: '', location: '' })} 
-                             className="px-4 py-2 text-[13px] font-medium text-[#ff3b30] hover:bg-[#fff0f0] rounded-[10px] transition-colors">
+                             className="px-4 py-2 text-[13px] font-medium text-[#ff3b30] hover:bg-[#fff0f0] rounded-[14px] transition-colors">
                          ล้างค่าทั้งหมด
                      </button>
-                     <button onClick={handleExecuteQuery} className="flex items-center gap-1.5 px-6 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white text-[14px] font-medium rounded-[10px] shadow-sm transition-all active:scale-95">
+                     <button onClick={handleExecuteQuery} className="flex items-center gap-1.5 px-6 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white text-[14px] font-medium rounded-[14px] shadow-sm transition-all active:scale-95">
                          <Icon icon="ph:magnifying-glass-duotone" width="18" height="18" /> ค้นหาข้อมูล
                      </button>
                 </div>
@@ -1315,7 +1478,10 @@ export default function UltimateDashboard() {
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         {c.type==='EV'
                           ? <span className="text-[13px] font-semibold text-[#1a7f37]">{c.trips > 0 ? (c.dist / c.trips).toFixed(1) : 0}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">กม./ครั้ง</span></span>
-                          : <span className="text-[13px] font-semibold text-[#1d1d1f]">{c.efficiency}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">บ./กม.</span></span>
+                          : <div className="flex flex-col">
+                              <span className="text-[13px] font-semibold text-[#1d1d1f]">{c.efficiency}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">บ./กม.</span></span>
+                              <span className="text-[11px] text-[#6e6e73] mt-0.5">{c.efficiencyLKM} ลิตร/กม.</span>
+                            </div>
                         }
                       </td>
                       
@@ -1347,8 +1513,38 @@ export default function UltimateDashboard() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 fu" style={{animationDelay:'240ms'}}>
-            
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 fu" style={{animationDelay:'240ms'}}>
+            <Card className="p-5">
+              <SectionLabel 
+                icon="ph:map-pin-duotone" 
+                iconColor="text-[#ff3b30]"
+                title={carCategoryFilter === 'ev' ? 'สถานีชาร์จยอดนิยม' : 'ปลายทางยอดนิยม'} 
+              />
+              <div className="space-y-3.5 max-h-[240px] overflow-y-auto st pr-2">
+                {analytics.topLocations.length===0
+                  ? <p className="text-[12px] text-[#aeaeb2] text-center py-6">ไม่มีข้อมูล</p>
+                  : analytics.topLocations.map((loc,i)=>(
+                    <div key={i} className="flex items-center gap-3.5">
+                      <span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
+                            style={{background:['#ff9500','#aeaeb2','#d2d2d7'][i]||'#e5e5ea', color:i>=2?'#6e6e73':'white'}}>
+                        {i+1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-1.5">
+                          <span className="text-[13px] font-medium text-[#1d1d1f] truncate">{loc.name}</span>
+                          <span className="text-[12px] text-[#6e6e73] ml-3 flex-shrink-0">{loc.count} ครั้ง</span>
+                        </div>
+                        <div className="h-[5px] bg-[#f2f2f7] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-700"
+                               style={{width:`${(loc.count/maxLoc)*100}%`, background:i===0?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#0071e3,#34aadc)'}}/>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </Card>
+
             <Card className="p-5">
               <SectionLabel 
                 icon="ph:trophy-duotone" 
@@ -1390,7 +1586,9 @@ export default function UltimateDashboard() {
                 )}
               </div>
             </Card>
+          </div>
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 fu" style={{animationDelay:'260ms'}}>
             <Card className="p-5">
               <SectionLabel 
                 icon="ph:steering-wheel-duotone" 
