@@ -596,11 +596,11 @@ export default function UltimateDashboard() {
 
   }, [rawLogs, carsList, repairLogs, carCategoryFilter, currentDateRange])
 
-  // ✅ เปลี่ยนช่องกรอกข้อมูลให้เป็น "กล่องสี่เหลี่ยมมน" (rounded-[16px])
+  // ✅ เปลี่ยนช่องกรอกข้อมูล แก้ไข input type="date" ทะลุเกินขอบจอในมือถือด้วย block, min-w-0, max-w-full, appearance-none, box-border
   const renderField = (key, label, options, iconName, type = 'select') => (
-    <div className="flex flex-col gap-1.5 relative">
+    <div className="flex flex-col gap-1.5 relative min-w-0 w-full">
         <label className="text-[13px] font-semibold text-[#1d1d1f] ml-1">{label}</label>
-        <div className="relative group">
+        <div className="relative group w-full min-w-0">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#aeaeb2] group-focus-within:text-[#0071e3] transition-colors z-10">
                 <Icon icon={iconName} width="18" height="18" />
             </div>
@@ -608,7 +608,7 @@ export default function UltimateDashboard() {
                 <select 
                     value={queryFilters[key]} 
                     onChange={(e) => setQueryFilters(prev => ({...prev, [key]: e.target.value}))}
-                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-8 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all appearance-none cursor-pointer"
+                    className="w-full min-w-0 bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-8 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all appearance-none cursor-pointer box-border block"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238e8e93'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, 
                         backgroundPosition: 'right 0.75rem center', 
@@ -633,7 +633,7 @@ export default function UltimateDashboard() {
                             }
                         } catch (err) {}
                     }}
-                    className="w-full bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-3 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all cursor-pointer premium-date-input"
+                    className="block w-full min-w-0 max-w-full appearance-none box-border bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-3 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all cursor-pointer premium-date-input"
                 />
             )}
         </div>
@@ -1404,7 +1404,7 @@ export default function UltimateDashboard() {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-4">
                     {['date', 'plate', 'name', 'dept', 'job', 'location'].map(f => (
-                        <div key={f}>
+                        <div key={f} className="min-w-0 w-full">
                            {renderField(
                                f, 
                                { date: 'วันที่ (ระบุเฉพาะวัน)', plate: 'ทะเบียนรถ', name: 'ชื่อ/ตำแหน่ง', dept: 'แผนก', job: 'ประเภทงาน', location: 'สถานที่' }[f], 
