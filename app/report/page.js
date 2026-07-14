@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
@@ -97,16 +97,16 @@ function CarSelector() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-4 border-[#742F99] border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen bg-[#f8f3fa] flex flex-col items-center justify-center">
+      <div className="w-12 h-12 border-4 border-[#702082] border-t-transparent rounded-full animate-spin"></div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#EBF0F6] font-sarabun pb-6 relative">
+    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-6 relative">
       
       {/* 🟣 Header */}
-      <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
+      <div className="bg-gradient-to-r from-[#702082] to-[#4b1560] px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
         <div className="flex justify-between items-start">
           <div>
              <h1 className="text-2xl font-black tracking-tight">PEA SMART VEHICLE MANAGEMENT</h1>
@@ -137,20 +137,20 @@ function CarSelector() {
           }
         `}</style>
 
-        <div className="bg-gradient-to-r from-[#FF8008] to-[#FFC837] p-1 rounded-[2rem] shadow-2xl shadow-orange-500/40">
+        <div className="bg-gradient-to-r from-[#702082] to-[#ffdd00] p-1 rounded-[2rem] shadow-2xl shadow-[#702082]/30">
           <div className="bg-white/10 backdrop-blur-xl rounded-[1.8rem] p-4 flex flex-col gap-3 border border-white/30">
               
               <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                      <div className="bg-white text-orange-500 w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
-                          <span className="absolute w-full h-full rounded-full border-4 border-orange-300 animate-ping opacity-30"></span>
+                      <div className="bg-white text-[#702082] w-12 h-12 rounded-full shadow-lg flex items-center justify-center relative">
+                          <span className="absolute w-full h-full rounded-full border-4 border-[#ffdd00] animate-ping opacity-30"></span>
                           <span className="z-10">
                               <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                           </span>
                       </div>
                       <div>
                           <h3 className="text-white text-xl font-black tracking-widest drop-shadow-md">SCAN QR CODE</h3>
-                          <p className="text-orange-50 text-[10px] uppercase font-bold tracking-widest bg-black/20 px-2 py-0.5 rounded-md inline-block mt-0.5">
+                          <p className="text-[#fff9d6] text-[10px] uppercase font-bold tracking-widest bg-black/20 px-2 py-0.5 rounded-md inline-block mt-0.5">
                               ระบบสแกนรับ-คืนรถ
                           </p>
                       </div>
@@ -220,7 +220,7 @@ function CarSelector() {
                         <h3 className="text-xl font-black text-gray-800 tracking-tight">{car.plate_number}</h3>
                         
                         <p className="text-xs text-gray-400 uppercase tracking-wide font-bold">
-                            {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#742F99]">{car.car_type}</span>
+                            {car.model} <span className="mx-1 text-gray-300">|</span> <span className="text-[#702082]">{car.car_type}</span>
                         </p>
 
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -263,7 +263,7 @@ function CarSelector() {
                 onClick={() => setShowInstructions(false)}
             ></div>
             <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
-                <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] p-5 text-white flex justify-between items-center shadow-md z-10">
+                <div className="bg-gradient-to-r from-[#702082] to-[#4b1560] p-5 text-white flex justify-between items-center shadow-md z-10">
                     <h2 className="text-lg font-black flex items-center gap-2">
                         คู่มือการใช้งานระบบ
                     </h2>
@@ -329,7 +329,7 @@ function CarSelector() {
                 <div className="p-4 border-t bg-white text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                     <button 
                         onClick={() => setShowInstructions(false)}
-                        className="w-full bg-[#742F99] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#591d79] transition-colors active:scale-95"
+                        className="w-full bg-[#702082] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#4b1560] transition-colors active:scale-95"
                     >รับทราบและเข้าใจแล้ว</button>
                 </div>
             </div>
@@ -438,7 +438,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
   return (
     <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
-        <div className="bg-gradient-to-r from-[#742F99] to-[#591d79] text-white p-5 text-center font-black text-lg">
+        <div className="bg-gradient-to-r from-[#702082] to-[#4b1560] text-white p-5 text-center font-black text-lg">
           {title}
         </div>
         
@@ -455,12 +455,12 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
                   <p className="text-xs text-gray-500">กรุณากรอกรหัสพนักงานของคุณ</p>
                </div>
                <div>
-                   <input type="text" value={empId} onChange={e => setEmpId(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifyEmp()} className="w-full border-2 border-gray-200 bg-gray-50 p-4 rounded-2xl text-center text-xl font-bold tracking-widest outline-none focus:border-[#742F99] focus:bg-white transition-all" placeholder="XXXXXX" />
+                   <input type="text" value={empId} onChange={e => setEmpId(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifyEmp()} className="w-full border-2 border-gray-200 bg-gray-50 p-4 rounded-2xl text-center text-xl font-bold tracking-widest outline-none focus:border-[#702082] focus:bg-white transition-all" placeholder="XXXXXX" />
                    <div className="h-6 mt-1 text-center">{error && <p className="text-red-500 text-sm font-bold animate-pulse">{error}</p>}</div>
                </div>
                <div className="flex gap-3 pt-2">
                    <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-600 p-4 rounded-2xl font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
-                   <button onClick={verifyEmp} disabled={isLoading} className={`flex-1 text-white p-4 rounded-2xl font-bold shadow-lg transition-all ${isLoading ? 'bg-gray-400' : 'bg-[#742F99] hover:bg-[#591d79]'}`}>{isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}</button>
+                   <button onClick={verifyEmp} disabled={isLoading} className={`flex-1 text-white p-4 rounded-2xl font-bold shadow-lg transition-all ${isLoading ? 'bg-gray-400' : 'bg-[#702082] hover:bg-[#4b1560]'}`}>{isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}</button>
                </div>
             </div>
           ) : (
@@ -478,7 +478,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
                </div>
                <div className="flex gap-3 pt-2">
                  <button onClick={clearCanvas} className="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200">ลบเขียนใหม่</button>
-                 <button onClick={handleSave} className="flex-1 py-3.5 bg-gradient-to-r from-[#742F99] to-[#591d79] text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95">บันทึกลายเซ็น</button>
+                 <button onClick={handleSave} className="flex-1 py-3.5 bg-gradient-to-r from-[#702082] to-[#4b1560] text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95">บันทึกลายเซ็น</button>
                </div>
             </div>
           )}
@@ -519,7 +519,7 @@ function MobileControlSheet({
       {/* Tab bar */}
       <div className="flex w-full px-3 pt-2.5 pb-2.5 gap-2">
         <button onClick={()=> expanded ? setExpanded(false) : window.location.href = '/'}
-          className={`px-4 py-2.5 rounded-[12px] font-bold flex-shrink-0 flex items-center justify-center transition-all ${expanded ? 'bg-[#ff3b30] text-white text-[15px]' : 'bg-[#1d1d1f] text-white'}`}>
+          className={`px-4 py-2.5 rounded-[12px] font-bold flex-shrink-0 flex items-center justify-center transition-all ${expanded ? 'bg-[#ff3b30] text-white text-[15px]' : 'bg-[#4b1560] text-white'}`}>
           {expanded ? '✕' : (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -527,15 +527,15 @@ function MobileControlSheet({
           )}
         </button>
         <button onClick={()=>{setActiveTab('doc'); setExpanded(t => activeTab==='doc' ? !t : true)}}
-          className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='doc'&&expanded?'bg-[#1d1d1f] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
+          className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='doc'&&expanded?'bg-[#4b1560] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
           เอกสาร
         </button>
         <button onClick={()=>{setActiveTab('drill'); setExpanded(t => activeTab==='drill' ? !t : true)}}
-          className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='drill'&&expanded?'bg-[#1d1d1f] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
+          className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='drill'&&expanded?'bg-[#4b1560] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
           รายการซ่อม
         </button>
         <button onClick={()=>window.print()}
-          className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold bg-[#1d1d1f] text-white flex-shrink-0">
+          className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold bg-[#4b1560] text-white flex-shrink-0">
           <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
         </button>
       </div>
@@ -558,7 +558,7 @@ function MobileControlSheet({
                 </div>
               ) : signableMonth && selectedMonth !== signableMonth ? (
                 <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[12px] px-3 py-2.5">
-                  <span className="text-[12px] font-medium text-[#0071e3]">จะสลับเป็นเดือน {signableMonth}</span>
+                  <span className="text-[12px] font-medium text-[#702082]">จะสลับเป็นเดือน {signableMonth}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 bg-[#edfbf0] rounded-[12px] px-3 py-2.5">
@@ -569,9 +569,9 @@ function MobileControlSheet({
               {/* เดือน */}
               <div className="bg-white rounded-[14px] px-4 py-3 flex items-center justify-between"
                    style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-                <span className="text-[14px] font-medium text-[#1d1d1f]">เดือน</span>
+                <span className="text-[14px] font-medium text-[#4b1560]">เดือน</span>
                 <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)}
-                  className="text-[14px] text-[#0071e3] bg-transparent border-none outline-none font-medium"/>
+                  className="text-[14px] text-[#702082] bg-transparent border-none outline-none font-medium"/>
               </div>
 
               {/* จาก/ถึง/เรียน */}
@@ -582,7 +582,7 @@ function MobileControlSheet({
                     <div key={l} className={`flex items-center px-4 py-3 gap-3 ${i<arr.length-1?'border-b border-[rgba(0,0,0,0.06)]':''}`}>
                       <span className="text-[12px] text-[#6e6e73] w-8 flex-shrink-0 font-medium">{l}</span>
                       <input type="text" value={v} onChange={e=>s(e.target.value)} placeholder={p}
-                        className="flex-1 text-[14px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
+                        className="flex-1 text-[14px] text-[#4b1560] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
                     </div>
                   ))}
                 </div>
@@ -608,7 +608,7 @@ function MobileControlSheet({
                       </>
                     ) : (
                       <button onClick={()=>openSigModal(key,title)}
-                        className={`text-[13px] font-medium px-4 py-1.5 rounded-full border transition-colors ${canSignAny?'border-[#0071e3] text-[#0071e3]':'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                        className={`text-[13px] font-medium px-4 py-1.5 rounded-full border transition-colors ${canSignAny?'border-[#702082] text-[#702082]':'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
                         + เซ็น
                       </button>
                     )}
@@ -620,7 +620,7 @@ function MobileControlSheet({
               {!isEVCar && (
                 <button onClick={handleSaveDoc} disabled={docSaving}
                   className={`w-full py-3 rounded-[14px] text-[14px] font-semibold transition-all active:scale-[0.98] ${
-                    docSaved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#1d1d1f] text-white hover:bg-[#3a3a3c]'
+                    docSaved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#4b1560] text-white hover:bg-[#3a3a3c]'
                   }`}>
                   {docSaving ? 'กำลังบันทึก...' : docSaved ? '✓ บันทึกข้อความแล้ว' : 'บันทึกเอกสาร'}
                 </button>
@@ -636,7 +636,7 @@ function MobileControlSheet({
                   <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">วันที่</p>
                 </div>
                 <select value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
-                  className="w-full px-4 py-3 text-[15px] text-[#1d1d1f] bg-transparent border-none outline-none">
+                  className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none">
                   <option value="">-- เลือกวันที่ --</option>
                   {[...new Map(logs.map(l=>{
                     const d=new Date(l.start_time)
@@ -657,7 +657,7 @@ function MobileControlSheet({
                 </div>
                 <input type="text" value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}}
                   placeholder="เช่น ซ่อมดับเพลิง, ซ่อมอพยพ..."
-                  className="w-full px-4 py-3 text-[15px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
+                  className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
               </div>
 
               {/* เงิน + ชั่วโมง */}
@@ -666,19 +666,19 @@ function MobileControlSheet({
                      style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
                   <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">เงิน (บาท)</p></div>
                   <input type="number" value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
-                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#1d1d1f] text-center bg-transparent border-none outline-none"/>
+                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#4b1560] text-center bg-transparent border-none outline-none"/>
                 </div>
                 <div className="bg-white rounded-[14px] overflow-hidden"
                      style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
                   <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">ชม.เครื่องจักร</p></div>
                   <input type="number" value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
-                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#1d1d1f] text-center bg-transparent border-none outline-none"/>
+                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#4b1560] text-center bg-transparent border-none outline-none"/>
                 </div>
               </div>
 
               <button onClick={()=>{if(!drillDate||!drillDesc)return alert('กรุณาเลือกวันที่และกรอกรายการซ่อม');setDrillSaving(true);setTimeout(()=>{setDrillSaving(false);setDrillSaved(true)},600)}}
                 disabled={drillSaving}
-                className={`w-full py-4 rounded-[16px] text-[16px] font-semibold transition-all active:scale-[0.98] ${drillSaved?'bg-[#edfbf0] text-[#1a7f37]':'bg-[#1d1d1f] text-white'}`}>
+                className={`w-full py-4 rounded-[16px] text-[16px] font-semibold transition-all active:scale-[0.98] ${drillSaved?'bg-[#edfbf0] text-[#1a7f37]':'bg-[#4b1560] text-white'}`}>
                 {drillSaving ? 'กำลังบันทึก...' : drillSaved ? '✓ บันทึกแล้ว' : 'บันทึกการซ่อม'}
               </button>
             </>
@@ -927,7 +927,7 @@ function ReportPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f2f2f7] flex flex-col items-center print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden pt-0 pb-8 xl:pt-8 xl:pb-12"
+    <div className="min-h-screen bg-[#f8f3fa] flex flex-col items-center print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden pt-0 pb-8 xl:pt-8 xl:pb-12"
          style={{WebkitFontSmoothing:'antialiased'}}>
       
       <style>{`
@@ -996,12 +996,12 @@ function ReportPage() {
             style={{WebkitFontSmoothing:'antialiased'}}>
 
         {/* Card: ตั้งค่าเอกสาร */}
-        <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl rounded-[20px] overflow-hidden"
+        <div className="bg-[rgba(248,243,250,0.94)] backdrop-blur-2xl rounded-[20px] overflow-hidden"
              style={{boxShadow:'0 2px 1px rgba(0,0,0,0.03),0 8px 28px rgba(0,0,0,0.12)', border:'0.5px solid rgba(0,0,0,0.08)'}}>
           <div className="px-4 py-3 border-b border-black/[0.06] flex items-center justify-between">
-            <span className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">เอกสาร</span>
+            <span className="text-[15px] font-semibold text-[#4b1560] tracking-[-0.3px]">เอกสาร</span>
             <button onClick={() => window.print()}
-              className="flex items-center gap-1.5 bg-[#1d1d1f] text-white text-[12px] font-medium px-3.5 py-1.5 rounded-full active:bg-[#3a3a3c] transition-colors">
+              className="flex items-center gap-1.5 bg-[#4b1560] text-white text-[12px] font-medium px-3.5 py-1.5 rounded-full active:bg-[#3a3a3c] transition-colors">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               พิมพ์
             </button>
@@ -1015,7 +1015,7 @@ function ReportPage() {
               </div>
             ) : selectedMonth !== signableMonth ? (
               <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
-                <span className="text-[11px] font-medium text-[#0071e3]">จะสลับเป็นเดือน {signableMonth}</span>
+                <span className="text-[11px] font-medium text-[#702082]">จะสลับเป็นเดือน {signableMonth}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 bg-[#edfbf0] rounded-[10px] px-3 py-2">
@@ -1026,9 +1026,9 @@ function ReportPage() {
 
             {/* เดือน */}
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#1d1d1f] font-medium">เดือน</span>
+              <span className="text-[13px] text-[#4b1560] font-medium">เดือน</span>
               <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
-                className="text-[13px] text-[#0071e3] bg-transparent border-none outline-none cursor-pointer font-medium"/>
+                className="text-[13px] text-[#702082] bg-transparent border-none outline-none cursor-pointer font-medium"/>
             </div>
 
             {/* จาก/ถึง/เรียน */}
@@ -1038,7 +1038,7 @@ function ReportPage() {
                   <div key={l} className={`flex items-center px-3 py-2.5 gap-3 ${i<arr.length-1?'border-b border-[rgba(0,0,0,0.06)]':''}`}>
                     <span className="text-[11px] text-[#6e6e73] w-7 flex-shrink-0 font-medium">{l}</span>
                     <input type="text" value={v} onChange={e=>s(e.target.value)} placeholder={p}
-                      className="flex-1 text-[12px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
+                      className="flex-1 text-[12px] text-[#4b1560] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
                   </div>
                 ))}
               </div>
@@ -1065,7 +1065,7 @@ function ReportPage() {
                       </>
                     ) : (
                       <button onClick={()=>openSigModal(key,title)}
-                        className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny?'border-[#0071e3] text-[#0071e3]':'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                        className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny?'border-[#702082] text-[#702082]':'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
                         + เซ็น
                       </button>
                     )}
@@ -1078,7 +1078,7 @@ function ReportPage() {
             {!isEVCar && (
               <button onClick={handleSaveDoc} disabled={docSaving}
                 className={`w-full py-2 rounded-[10px] text-[12px] font-semibold transition-all active:scale-[0.98] ${
-                  docSaved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#1d1d1f] text-white hover:bg-[#3a3a3c]'
+                  docSaved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#4b1560] text-white hover:bg-[#3a3a3c]'
                 }`}>
                 {docSaving ? 'กำลังบันทึก...' : docSaved ? '✓ บันทึกข้อมูลแล้ว' : 'บันทึกเอกสาร'}
               </button>
@@ -1088,10 +1088,10 @@ function ReportPage() {
         </div>
 
         {/* Card: บันทึกการซ่อม */}
-        <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl rounded-[20px] overflow-hidden"
+        <div className="bg-[rgba(248,243,250,0.94)] backdrop-blur-2xl rounded-[20px] overflow-hidden"
              style={{boxShadow:'0 2px 1px rgba(0,0,0,0.03),0 8px 28px rgba(0,0,0,0.12)', border:'0.5px solid rgba(0,0,0,0.08)'}}>
           <div className="px-4 py-3 border-b border-black/[0.06] flex items-center justify-between">
-            <span className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">บันทึกการซ่อม</span>
+            <span className="text-[15px] font-semibold text-[#4b1560] tracking-[-0.3px]">บันทึกการซ่อม</span>
             {drillSaved && <span className="text-[11px] font-medium text-[#1a7f37] bg-[#edfbf0] px-2.5 py-0.5 rounded-full">✓ บันทึกแล้ว</span>}
           </div>
           <div className="px-4 py-3 space-y-3">
@@ -1099,7 +1099,7 @@ function ReportPage() {
               <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">วันที่</p>
               <div className="bg-white rounded-[14px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
                 <select value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
-                  className="w-full px-3 py-2.5 text-[13px] text-[#1d1d1f] bg-transparent border-none outline-none">
+                  className="w-full px-3 py-2.5 text-[13px] text-[#4b1560] bg-transparent border-none outline-none">
                   <option value="">-- เลือกวันที่ --</option>
                   {[...new Map(logs.map(l=>{
                     const d=new Date(l.start_time)
@@ -1134,7 +1134,7 @@ function ReportPage() {
             </div>
             <button onClick={()=>{if(!drillDate||!drillDesc)return alert('กรุณาเลือกวันที่และกรอกรายการซ่อม');setDrillSaving(true);setTimeout(()=>{setDrillSaving(false);setDrillSaved(true)},600)}}
               disabled={drillSaving}
-              className="w-full bg-[#1d1d1f] text-white text-[14px] font-semibold py-3 rounded-[14px] active:bg-[#3a3a3c] transition-colors">
+              className="w-full bg-[#4b1560] text-white text-[14px] font-semibold py-3 rounded-[14px] active:bg-[#3a3a3c] transition-colors">
               {drillSaving?'กำลังบันทึก...':'บันทึกการซ่อม'}
             </button>
           </div>

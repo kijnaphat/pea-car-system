@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -9,7 +8,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Sarabun', sans-serif;
+  font-family: "Leelawadee UI", Tahoma, "Segoe UI", Arial, sans-serif;
+}
+
+.font-sarabun {
+  font-family: "Leelawadee UI", Tahoma, "Segoe UI", Arial, sans-serif;
 }
 
 /* ตั้งค่าหน้ากระดาษ A4 แนวนอนสำหรับการพิมพ์ */

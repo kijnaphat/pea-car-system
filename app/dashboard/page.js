@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
@@ -17,16 +17,16 @@ const SectionLabel = ({ title, subtitle, icon, iconColor, action }) => (
     <div>
       <div className="flex items-center gap-1.5 mb-0.5">
         {icon && <Icon icon={icon} width="20" height="20" className={iconColor} />}
-        <h3 className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">{title}</h3>
+        <h3 className="text-[15px] font-semibold text-[#4b1560] tracking-[-0.3px]">{title}</h3>
       </div>
-      {subtitle && <p className="text-[12px] text-[#6e6e73]">{subtitle}</p>}
+      {subtitle && <p className="text-[12px] text-[#765c7c]">{subtitle}</p>}
     </div>
     {action && <div>{action}</div>}
   </div>
 )
 
 const Label = ({ children }) => (
-  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.06em] mb-1">{children}</p>
+  <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.06em] mb-1">{children}</p>
 )
 
 export default function UltimateDashboard() {
@@ -150,7 +150,7 @@ export default function UltimateDashboard() {
   }
 
   const categories = [
-    { id: 'all', iconName: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'ข้อมูลรถทุกคันในระบบรวมเช่าและ EV', bg: 'bg-[#e5f0ff]', iconBg: '#0071e3', shadow: 'rgba(0,113,227,0.2)' },
+    { id: 'all', iconName: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'ข้อมูลรถทุกคันในระบบรวมเช่าและ EV', bg: 'bg-[#e5f0ff]', iconBg: '#702082', shadow: 'rgba(0,113,227,0.2)' },
     { id: 'pea', iconName: 'ph:buildings-duotone', title: 'รถ กฟภ.', desc: 'เฉพาะรถยนต์ประจำหน่วยงาน', bg: 'bg-[#f3e5f5]', iconBg: '#8e24aa', shadow: 'rgba(142,36,170,0.2)' },
     { id: 'rental', iconName: 'ph:handshake-duotone', title: 'รถเช่า', desc: 'เฉพาะรถเช่าเหมาสำหรับปฏิบัติงาน', bg: 'bg-[#fff4e0]', iconBg: '#e67e22', shadow: 'rgba(230,126,34,0.2)' },
     { id: 'ev', iconName: 'ph:leaf-duotone', title: 'รถ EV', desc: 'เฉพาะรถยนต์พลังงานไฟฟ้า 100%', bg: 'bg-[#edfbf0]', iconBg: '#1a7f37', shadow: 'rgba(26,127,55,0.2)' }
@@ -599,16 +599,16 @@ export default function UltimateDashboard() {
   // ✅ เปลี่ยนช่องกรอกข้อมูล แก้ไข input type="date" ทะลุเกินขอบจอในมือถือด้วย block, min-w-0, max-w-full, appearance-none, box-border
   const renderField = (key, label, options, iconName, type = 'select') => (
     <div className="flex flex-col gap-1.5 relative min-w-0 w-full">
-        <label className="text-[13px] font-semibold text-[#1d1d1f] ml-1">{label}</label>
+        <label className="text-[13px] font-semibold text-[#4b1560] ml-1">{label}</label>
         <div className="relative group w-full min-w-0">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#aeaeb2] group-focus-within:text-[#0071e3] transition-colors z-10">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#aeaeb2] group-focus-within:text-[#702082] transition-colors z-10">
                 <Icon icon={iconName} width="18" height="18" />
             </div>
             {type === 'select' ? (
                 <select 
                     value={queryFilters[key]} 
                     onChange={(e) => setQueryFilters(prev => ({...prev, [key]: e.target.value}))}
-                    className="w-full min-w-0 bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-8 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all appearance-none cursor-pointer box-border block"
+                    className="w-full min-w-0 bg-[#f9f9fb] border border-[#eadfed] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-8 py-2.5 text-[14px] text-[#4b1560] outline-none focus:bg-white focus:border-[#702082] focus:ring-4 focus:ring-[#702082]/10 transition-all appearance-none cursor-pointer box-border block"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238e8e93'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, 
                         backgroundPosition: 'right 0.75rem center', 
@@ -616,9 +616,9 @@ export default function UltimateDashboard() {
                         backgroundSize: '1.2em 1.2em'
                     }}
                 >
-                    <option value="" className="text-[#6e6e73]">ทั้งหมด (อิงตามช่วงเวลาที่กำหนด)</option>
+                    <option value="" className="text-[#765c7c]">ทั้งหมด (อิงตามช่วงเวลาที่กำหนด)</option>
                     {options.map(opt => (
-                        <option key={opt} value={opt} className="text-[#1d1d1f]">{opt}</option>
+                        <option key={opt} value={opt} className="text-[#4b1560]">{opt}</option>
                     ))}
                 </select>
             ) : (
@@ -633,7 +633,7 @@ export default function UltimateDashboard() {
                             }
                         } catch (err) {}
                     }}
-                    className="block w-full min-w-0 max-w-full appearance-none box-border bg-[#f9f9fb] border border-[#e5e5ea] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-3 py-2.5 text-[14px] text-[#1d1d1f] outline-none focus:bg-white focus:border-[#0071e3] focus:ring-4 focus:ring-[#0071e3]/10 transition-all cursor-pointer premium-date-input"
+                    className="block w-full min-w-0 max-w-full appearance-none box-border bg-[#f9f9fb] border border-[#eadfed] hover:border-[#c7c7cc] rounded-[16px] pl-10 pr-3 py-2.5 text-[14px] text-[#4b1560] outline-none focus:bg-white focus:border-[#702082] focus:ring-4 focus:ring-[#702082]/10 transition-all cursor-pointer premium-date-input"
                 />
             )}
         </div>
@@ -642,7 +642,7 @@ export default function UltimateDashboard() {
 
   if (showWelcome) {
     return (
-      <div className="min-h-[100dvh] bg-[#f2f2f7] flex flex-col items-center justify-center p-4 md:p-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="min-h-[100dvh] bg-[#f8f3fa] flex flex-col items-center justify-center p-4 md:p-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
         <style>{`
           @keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
           .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
@@ -651,10 +651,10 @@ export default function UltimateDashboard() {
         <div className="max-w-3xl w-full z-10 animate-slide-up flex flex-col items-center">
           <div className="text-center mb-6 md:mb-8 flex-shrink-0">
             <img src="/pea_logo.png" className="h-10 md:h-12 mx-auto mb-3 object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/>
-            <h1 className="text-[24px] md:text-[34px] font-bold text-[#1d1d1f] tracking-[-1px] leading-tight mb-1">
+            <h1 className="text-[24px] md:text-[34px] font-bold text-[#4b1560] tracking-[-1px] leading-tight mb-1">
               เลือกระบบจัดการฝูงรถ
             </h1>
-            <p className="text-[13px] md:text-[15px] text-[#6e6e73]">
+            <p className="text-[13px] md:text-[15px] text-[#765c7c]">
               กรุณาเลือกหมวดหมู่รถที่ต้องการดูข้อมูลสถิติ
             </p>
           </div>
@@ -664,7 +664,7 @@ export default function UltimateDashboard() {
               <button 
                 key={cat.id} 
                 onClick={() => handleSelectCategory(cat.id)}
-                className="group text-left bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] border border-transparent hover:border-[#0071e3]/30 transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 relative overflow-hidden flex flex-col justify-center items-center md:items-start text-center md:text-left h-full min-h-[140px] md:min-h-[180px]"
+                className="group text-left bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] border border-transparent hover:border-[#702082]/30 transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 relative overflow-hidden flex flex-col justify-center items-center md:items-start text-center md:text-left h-full min-h-[140px] md:min-h-[180px]"
                 style={{boxShadow:'0 4px 20px rgba(0,0,0,0.05)', animationDelay: `${index * 80}ms`}}
               >
                 <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[14px] md:rounded-[18px] ${cat.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm`}
@@ -673,11 +673,11 @@ export default function UltimateDashboard() {
                 </div>
                 
                 <div className="w-full">
-                  <h2 className="text-[15px] md:text-[19px] font-bold text-[#1d1d1f] mb-1 tracking-[-0.3px] group-hover:text-[#0071e3] transition-colors">{cat.title}</h2>
-                  <p className="text-[11px] md:text-[13px] text-[#6e6e73] leading-snug line-clamp-2 md:line-clamp-none">{cat.desc}</p>
+                  <h2 className="text-[15px] md:text-[19px] font-bold text-[#4b1560] mb-1 tracking-[-0.3px] group-hover:text-[#702082] transition-colors">{cat.title}</h2>
+                  <p className="text-[11px] md:text-[13px] text-[#765c7c] leading-snug line-clamp-2 md:line-clamp-none">{cat.desc}</p>
                 </div>
                 
-                <div className="hidden md:block absolute top-6 right-6 text-[#d2d2d7] group-hover:text-[#0071e3] transition-colors">
+                <div className="hidden md:block absolute top-6 right-6 text-[#d9cadd] group-hover:text-[#702082] transition-colors">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -687,7 +687,7 @@ export default function UltimateDashboard() {
           </div>
 
           <div className="text-center mt-8 md:mt-10 flex-shrink-0">
-            <button onClick={() => router.push('/')} className="text-[13px] md:text-[14px] font-medium text-[#0071e3] hover:underline active:opacity-50">
+            <button onClick={() => router.push('/')} className="text-[13px] md:text-[14px] font-medium text-[#702082] hover:underline active:opacity-50">
               กลับสู่หน้าหลัก
             </button>
           </div>
@@ -697,8 +697,8 @@ export default function UltimateDashboard() {
   }
 
   if (loading && !showWelcome) return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
-      <div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/>
+    <div className="min-h-screen bg-[#f3eaf5] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="w-8 h-8 border-[2.5px] border-[#d9cadd] border-t-[#4b1560] rounded-full animate-spin"/>
     </div>
   )
 
@@ -728,7 +728,7 @@ export default function UltimateDashboard() {
       <style>{`
         * { -webkit-font-smoothing: antialiased; }
         .st::-webkit-scrollbar{width:3px; height: 3px;}
-        .st::-webkit-scrollbar-thumb{background:#d2d2d7;border-radius:6px}
+        .st::-webkit-scrollbar-thumb{background:#d9cadd;border-radius:6px}
         
         .premium-date-input::-webkit-calendar-picker-indicator {
             display: none;
@@ -751,8 +751,8 @@ export default function UltimateDashboard() {
           transition: border-color 0.2s, background-color 0.2s;
         }
         .reason-input:focus {
-          border-color: #0071e3;
-          background: #f5f5f7;
+          border-color: #702082;
+          background: #f3eaf5;
         }
 
         .print-only { display: none; width: 100%; }
@@ -896,21 +896,21 @@ export default function UltimateDashboard() {
       {showPrintModal && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 no-print fu">
           <div className="bg-white rounded-[24px] w-full max-w-7xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="px-4 md:px-6 py-4 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-[#f9f9fb] shrink-0">
+            <div className="px-4 md:px-6 py-4 border-b border-[#eadfed] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-[#f9f9fb] shrink-0">
               <div>
-                <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px] flex items-center gap-2">
-                  <Icon icon="ph:file-text-duotone" width="22" height="22" className="text-[#0071e3]" />
+                <h3 className="text-[17px] font-semibold text-[#4b1560] tracking-[-0.3px] flex items-center gap-2">
+                  <Icon icon="ph:file-text-duotone" width="22" height="22" className="text-[#702082]" />
                   จัดการเอกสารเตรียมพิมพ์
                 </h3>
-                <p className="text-[12px] text-[#6e6e73] mt-0.5">คลิกที่ช่อง "สาเหตุ" เพื่อพิมพ์ข้อความได้โดยตรง จากนั้นกดยืนยันสั่งพิมพ์</p>
+                <p className="text-[12px] text-[#765c7c] mt-0.5">คลิกที่ช่อง "สาเหตุ" เพื่อพิมพ์ข้อความได้โดยตรง จากนั้นกดยืนยันสั่งพิมพ์</p>
               </div>
               <div className="flex items-center gap-3 self-end sm:self-auto">
                 <button onClick={() => setShowPrintModal(false)}
-                  className="px-4 py-2 text-[13px] font-medium text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">
+                  className="px-4 py-2 text-[13px] font-medium text-[#765c7c] hover:text-[#4b1560] transition-colors">
                   ยกเลิก
                 </button>
                 <button onClick={() => { setPrintType('summary'); setTimeout(handlePrint, 100); }}
-                  className="flex items-center gap-1.5 text-[13px] font-medium bg-[#0071e3] text-white px-5 py-2 rounded-[10px] shadow-sm hover:bg-[#0077ed] active:scale-[0.98] transition-all whitespace-nowrap">
+                  className="flex items-center gap-1.5 text-[13px] font-medium bg-[#702082] text-white px-5 py-2 rounded-[10px] shadow-sm hover:bg-[#0077ed] active:scale-[0.98] transition-all whitespace-nowrap">
                   <Icon icon="ph:printer-duotone" width="18" height="18" /> ยืนยันสั่งพิมพ์
                 </button>
               </div>
@@ -920,24 +920,24 @@ export default function UltimateDashboard() {
               <table className="w-full border-collapse font-sarabun text-[11px]" style={{ minWidth: '1000px' }}>
                 <thead className="sticky top-0 bg-white z-10 shadow-[0_2px_0_rgba(0,0,0,0.1)]">
                   <tr>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%]">อันดับที่</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[9%]">หมายเลขทะเบียน</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[7%]">ยี่ห้อ</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[12%]">ชนิดและลักษณะ</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[5%]">งบ</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">ประจำแผนก</th>
-                    <th colSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5">เลขไมล์</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">รวมระยะทาง<br/>กม.</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[16%]">ประเภทการใช้งานส่วนใหญ่</th>
-                    <th colSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5">ความครบถ้วน</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[12%]">สาเหตุ</th>
-                    <th rowSpan="2" className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%]">หมายเหตุ</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[4%]">อันดับที่</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[9%]">หมายเลขทะเบียน</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[7%]">ยี่ห้อ</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[12%]">ชนิดและลักษณะ</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[5%]">งบ</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[6%]">ประจำแผนก</th>
+                    <th colSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5">เลขไมล์</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[6%]">รวมระยะทาง<br/>กม.</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[16%]">ประเภทการใช้งานส่วนใหญ่</th>
+                    <th colSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5">ความครบถ้วน</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[12%]">สาเหตุ</th>
+                    <th rowSpan="2" className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[6%]">หมายเหตุ</th>
                   </tr>
                   <tr>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%] top-[34px]">เริ่ม</th>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[6%] top-[34px]">สิ้นสุด</th>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%] top-[34px]">ครบถ้วน</th>
-                    <th className="border border-[#d2d2d7] bg-[#f2f2f7] p-1.5 w-[4%] top-[34px]">ไม่ครบ</th>
+                    <th className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[6%] top-[34px]">เริ่ม</th>
+                    <th className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[6%] top-[34px]">สิ้นสุด</th>
+                    <th className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[4%] top-[34px]">ครบถ้วน</th>
+                    <th className="border border-[#d9cadd] bg-[#f8f3fa] p-1.5 w-[4%] top-[34px]">ไม่ครบ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -946,19 +946,19 @@ export default function UltimateDashboard() {
                     const isComplete = !customReason; 
                     return (
                       <tr key={idx}>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.no}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center font-medium">{row.plate}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.brand}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.type}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.budget}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.plan}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.startMil}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.endMil}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.dist}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-left">{row.mainUsage}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center font-bold">{isComplete ? '/' : ''}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center font-bold">{!isComplete ? '/' : ''}</td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.no}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center font-medium">{row.plate}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.brand}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.type}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.budget}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.plan}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.startMil}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.endMil}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.dist}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-left">{row.mainUsage}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center font-bold">{isComplete ? '/' : ''}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center font-bold">{!isComplete ? '/' : ''}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">
                           <input 
                             type="text"
                             className="reason-input"
@@ -967,12 +967,12 @@ export default function UltimateDashboard() {
                             onChange={(e) => setPrintReasons(prev => ({ ...prev, [row.plate]: e.target.value }))}
                           />
                         </td>
-                        <td className="border border-[#d2d2d7] p-1.5 text-center">{row.remark}</td>
+                        <td className="border border-[#d9cadd] p-1.5 text-center">{row.remark}</td>
                       </tr>
                     )
                   })}
                   {printData.length === 0 && (
-                    <tr><td colSpan="14" className="border border-[#d2d2d7] text-center p-8">ไม่มีข้อมูลในช่วงเวลาที่เลือก</td></tr>
+                    <tr><td colSpan="14" className="border border-[#d9cadd] text-center p-8">ไม่มีข้อมูลในช่วงเวลาที่เลือก</td></tr>
                   )}
                 </tbody>
               </table>
@@ -986,48 +986,48 @@ export default function UltimateDashboard() {
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 fu no-print">
           <div className="bg-white rounded-[24px] w-[95vw] h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             
-            <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-[#e5e5ea] bg-white shrink-0 z-20">
-              <h3 className="text-[17px] font-semibold text-[#1d1d1f] flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#edf6ff] flex items-center justify-center text-[#0071e3]">
+            <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-[#eadfed] bg-white shrink-0 z-20">
+              <h3 className="text-[17px] font-semibold text-[#4b1560] flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#edf6ff] flex items-center justify-center text-[#702082]">
                     <Icon icon="ph:table-duotone" width="18" height="18" />
                 </div>
                 ผลลัพธ์การค้นหา ({queryResults.length} รายการ)
               </h3>
               <div className="flex gap-2.5">
-                  <button onClick={() => { setPrintType('query'); setTimeout(handlePrint, 100); }} className="flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-medium bg-[#1d1d1f] text-white rounded-[10px] hover:bg-[#3a3a3c] transition-colors shadow-sm">
+                  <button onClick={() => { setPrintType('query'); setTimeout(handlePrint, 100); }} className="flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-medium bg-[#4b1560] text-white rounded-[10px] hover:bg-[#3a3a3c] transition-colors shadow-sm">
                       <Icon icon="ph:printer-duotone" /> พิมพ์เป็น PDF
                   </button>
-                  <button onClick={() => setShowQueryModal(false)} className="w-8 h-8 flex items-center justify-center bg-[#f2f2f7] hover:bg-[#e5e5ea] text-[#6e6e73] rounded-full transition-colors active:scale-95">
+                  <button onClick={() => setShowQueryModal(false)} className="w-8 h-8 flex items-center justify-center bg-[#f8f3fa] hover:bg-[#eadfed] text-[#765c7c] rounded-full transition-colors active:scale-95">
                       <Icon icon="ph:x-bold" />
                   </button>
               </div>
             </div>
 
-            <div className="flex-1 bg-[#f5f5f7] p-4 md:p-6 overflow-hidden flex flex-col">
+            <div className="flex-1 bg-[#f3eaf5] p-4 md:p-6 overflow-hidden flex flex-col">
               <div className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.03)] overflow-hidden flex-1 flex flex-col">
                   <div className="overflow-auto flex-1 relative st">
                       <table className="w-full border-collapse text-[13px] font-sarabun min-w-[1000px]">
                         <thead className="sticky top-0 z-10 bg-[#f9f9fb] shadow-[0_1px_0_rgba(0,0,0,0.1)]">
                           <tr>
                             {['ลำดับ', 'วันที่', 'ทะเบียนรถ', 'ชื่อ/ตำแหน่ง', 'แผนก', 'ประเภทงาน', 'สถานที่', 'ระยะทาง (กม.)', 'น้ำมัน (ลิตร)', 'จำนวนเงิน (บ.)'].map(h => (
-                              <th key={h} className={`px-4 py-3.5 ${h==='ลำดับ' ? 'text-center' : 'text-left'} font-semibold text-[#6e6e73] whitespace-nowrap bg-[#f9f9fb]`}>{h}</th>
+                              <th key={h} className={`px-4 py-3.5 ${h==='ลำดับ' ? 'text-center' : 'text-left'} font-semibold text-[#765c7c] whitespace-nowrap bg-[#f9f9fb]`}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {queryResults.length > 0 ? (
                             queryResults.map((row, idx) => (
-                              <tr key={idx} className="border-b border-[rgba(0,0,0,0.04)] last:border-0 hover:bg-[#f2f2f7]/50 transition-colors">
-                                <td className="px-4 py-3 text-center text-[#6e6e73] font-medium">{idx + 1}</td>
+                              <tr key={idx} className="border-b border-[rgba(0,0,0,0.04)] last:border-0 hover:bg-[#f8f3fa]/50 transition-colors">
+                                <td className="px-4 py-3 text-center text-[#765c7c] font-medium">{idx + 1}</td>
                                 <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.date}</td>
-                                <td className="px-4 py-3 font-semibold text-[#1d1d1f] whitespace-nowrap">{row.plate}</td>
+                                <td className="px-4 py-3 font-semibold text-[#4b1560] whitespace-nowrap">{row.plate}</td>
                                 <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.name}</td>
                                 <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.dept}</td>
                                 <td className="px-4 py-3 text-[#3c3c43] whitespace-nowrap">{row.job}</td>
                                 <td className="px-4 py-3 text-[#3c3c43] min-w-[200px]">{row.location}</td>
-                                <td className="px-4 py-3 text-right font-medium text-[#1d1d1f]">{row.dist}</td>
-                                <td className="px-4 py-3 text-right font-medium text-[#1d1d1f]">{row.fuel}</td>
-                                <td className="px-4 py-3 text-right font-semibold text-[#0071e3]">{row.cost.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-right font-medium text-[#4b1560]">{row.dist}</td>
+                                <td className="px-4 py-3 text-right font-medium text-[#4b1560]">{row.fuel}</td>
+                                <td className="px-4 py-3 text-right font-semibold text-[#702082]">{row.cost.toLocaleString()}</td>
                               </tr>
                             ))
                           ) : (
@@ -1043,65 +1043,65 @@ export default function UltimateDashboard() {
       )}
 
       {/* ── Dashboard ปกติ ── */}
-      <div className="no-print min-h-screen bg-[#f2f2f7] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="no-print min-h-screen bg-[#f8f3fa] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
         <nav className="sticky top-0 z-50 border-b border-black/[0.06] py-3 md:py-0 md:h-[60px]"
-             style={{background:'rgba(242,242,247,0.88)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)'}}>
+             style={{background:'rgba(248,243,250,0.92)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)'}}>
           <div className="max-w-[1440px] mx-auto px-4 md:px-5 h-full flex flex-col md:flex-row md:items-center justify-between gap-3">
             
             <div className="flex items-center justify-between w-full md:w-auto">
               <div className="flex items-center gap-3">
                 <img src="/pea_logo.png" className="h-7 w-auto object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/>
-                <span className="text-[16px] font-semibold text-[#1d1d1f] tracking-[-0.3px] hidden sm:block">Fleet Dashboard</span>
+                <span className="text-[16px] font-semibold text-[#4b1560] tracking-[-0.3px] hidden sm:block">Fleet Dashboard</span>
                 
-                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#e5e5ea] ml-0 sm:ml-2">
-                  <Icon icon={activeCategory.iconName} width="16" height="16" className="text-[#0071e3]" />
-                  <span className="text-[12px] font-semibold text-[#1d1d1f] whitespace-nowrap">{activeCategory.title}</span>
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#eadfed] ml-0 sm:ml-2">
+                  <Icon icon={activeCategory.iconName} width="16" height="16" className="text-[#702082]" />
+                  <span className="text-[12px] font-semibold text-[#4b1560] whitespace-nowrap">{activeCategory.title}</span>
                 </div>
               </div>
               
               <div className="flex md:hidden gap-3 items-center">
-                <button onClick={() => setShowWelcome(true)} className="text-[13px] font-medium text-[#0071e3] active:opacity-50">
+                <button onClick={() => setShowWelcome(true)} className="text-[13px] font-medium text-[#702082] active:opacity-50">
                   เปลี่ยนหมวดหมู่
                 </button>
               </div>
             </div>
 
             <div className="flex items-center gap-2.5 overflow-x-auto st pb-1 md:pb-0 w-full md:w-auto whitespace-nowrap">
-              <div className="flex bg-[#dddde0] rounded-[10px] p-[3px] gap-[2px] shrink-0">
+              <div className="flex bg-[#eadfed] rounded-[10px] p-[3px] gap-[2px] shrink-0">
                 {[['week','สัปดาห์'],['month','เดือนนี้'],['select_month','เลือกเดือน'],['custom','กำหนดเอง'],['all','ทั้งหมด']].map(([tf,label]) => (
                   <button key={tf} onClick={() => setTimeFilter(tf)}
                     className={`px-3.5 py-[5px] text-[12px] font-medium rounded-[8px] transition-all ${
-                      timeFilter===tf ? 'bg-white text-[#1d1d1f] shadow-sm' : 'text-[#6e6e73] hover:text-[#3c3c43]'
+                      timeFilter===tf ? 'bg-white text-[#4b1560] shadow-sm' : 'text-[#765c7c] hover:text-[#3c3c43]'
                     }`}>{label}</button>
                 ))}
               </div>
               
               {timeFilter==='select_month' && (
-                <div className="flex items-center gap-2 bg-white px-3 py-[5px] rounded-[10px] border border-[#e5e5ea] text-[11px] font-mono shrink-0"
+                <div className="flex items-center gap-2 bg-white px-3 py-[5px] rounded-[10px] border border-[#eadfed] text-[11px] font-mono shrink-0"
                      style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-                  <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)} className="outline-none bg-transparent text-[#1d1d1f]"/>
+                  <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)} className="outline-none bg-transparent text-[#4b1560]"/>
                 </div>
               )}
 
               {timeFilter==='custom' && (
-                <div className="flex items-center gap-2 bg-white px-3 py-[5px] rounded-[10px] border border-[#e5e5ea] text-[11px] font-mono shrink-0"
+                <div className="flex items-center gap-2 bg-white px-3 py-[5px] rounded-[10px] border border-[#eadfed] text-[11px] font-mono shrink-0"
                      style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-                  <input type="date" value={customStartDate} onChange={e=>setCustomStartDate(e.target.value)} className="outline-none bg-transparent text-[#1d1d1f]"/>
+                  <input type="date" value={customStartDate} onChange={e=>setCustomStartDate(e.target.value)} className="outline-none bg-transparent text-[#4b1560]"/>
                   <span className="text-[#c7c7cc]">→</span>
-                  <input type="date" value={customEndDate} onChange={e=>setCustomEndDate(e.target.value)} className="outline-none bg-transparent text-[#1d1d1f]"/>
+                  <input type="date" value={customEndDate} onChange={e=>setCustomEndDate(e.target.value)} className="outline-none bg-transparent text-[#4b1560]"/>
                 </div>
               )}
 
-              <div className="hidden md:block w-px h-5 bg-[#d2d2d7] mx-1 shrink-0"/>
+              <div className="hidden md:block w-px h-5 bg-[#d9cadd] mx-1 shrink-0"/>
               
               <button onClick={() => { setPrintType('summary'); setShowPrintModal(true); }}
-                className="flex items-center gap-1.5 text-[12px] font-medium bg-[#1d1d1f] text-white px-4 py-1.5 rounded-[8px] shadow-sm hover:bg-[#3a3a3c] transition-colors border border-transparent shrink-0">
+                className="flex items-center gap-1.5 text-[12px] font-medium bg-[#4b1560] text-white px-4 py-1.5 rounded-[8px] shadow-sm hover:bg-[#3a3a3c] transition-colors border border-transparent shrink-0">
                 <Icon icon="ph:printer-duotone" width="16" height="16" /> สั่งพิมพ์
               </button>
 
               <button onClick={() => setShowWelcome(true)} 
-                className="hidden md:flex items-center gap-1.5 text-[12px] font-medium text-[#1d1d1f] bg-white border border-[#e5e5ea] hover:bg-[#f5f5f7] px-3 py-1.5 rounded-[8px] shadow-sm transition-colors shrink-0">
-                <Icon icon="ph:squares-four-duotone" width="16" height="16" className="text-[#0071e3]" /> เปลี่ยนหมวดหมู่
+                className="hidden md:flex items-center gap-1.5 text-[12px] font-medium text-[#4b1560] bg-white border border-[#eadfed] hover:bg-[#f3eaf5] px-3 py-1.5 rounded-[8px] shadow-sm transition-colors shrink-0">
+                <Icon icon="ph:squares-four-duotone" width="16" height="16" className="text-[#702082]" /> เปลี่ยนหมวดหมู่
               </button>
             </div>
           </div>
@@ -1111,7 +1111,7 @@ export default function UltimateDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 fu" style={{animationDelay:'0ms'}}>
             
             <div className="col-span-1 sm:col-span-2 xl:col-span-1 rounded-[24px] p-5 flex flex-col justify-between min-h-[140px] relative overflow-hidden"
-                 style={{background:'#1d1d1f', boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
+                 style={{background:'#4b1560', boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
               <div className="w-10 h-10 rounded-[12px] bg-white/10 flex items-center justify-center z-10">
                 <Icon icon="ph:road-horizon-duotone" width="24" height="24" className="text-white" />
@@ -1129,15 +1129,15 @@ export default function UltimateDashboard() {
             {carCategoryFilter === 'ev' ? (
               <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%)'}}>
                 <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center">
-                  <Icon icon="ph:lightning-duotone" width="24" height="24" className="text-[#0071e3]" />
+                  <Icon icon="ph:lightning-duotone" width="24" height="24" className="text-[#702082]" />
                 </div>
                 <div className="mt-4 md:mt-0">
                   <Label>สถิติการชาร์จไฟ</Label>
-                  <p className="text-[28px] font-bold text-[#0071e3] leading-none tracking-[-0.8px]">
+                  <p className="text-[28px] font-bold text-[#702082] leading-none tracking-[-0.8px]">
                     {evStats.charges}
-                    <span className="text-[14px] font-normal text-[#0071e3]/60 ml-1">ครั้ง</span>
+                    <span className="text-[14px] font-normal text-[#702082]/60 ml-1">ครั้ง</span>
                   </p>
-                  <p className="text-[11px] text-[#0071e3]/60 mt-1">ชาร์จเพิ่มเฉลี่ย {evStats.avgGain}% / ครั้ง</p>
+                  <p className="text-[11px] text-[#702082]/60 mt-1">ชาร์จเพิ่มเฉลี่ย {evStats.avgGain}% / ครั้ง</p>
                 </div>
               </Card>
             ) : (
@@ -1147,9 +1147,9 @@ export default function UltimateDashboard() {
                 </div>
                 <div className="mt-4 md:mt-0">
                   <Label>น้ำมันรวม</Label>
-                  <p className="text-[28px] font-bold text-[#1d1d1f] leading-none tracking-[-0.8px]">
+                  <p className="text-[28px] font-bold text-[#4b1560] leading-none tracking-[-0.8px]">
                     {gasolineStats.fuelLiters.toLocaleString(undefined,{maximumFractionDigits:1})}
-                    <span className="text-[14px] font-normal text-[#6e6e73] ml-1">ลิตร</span>
+                    <span className="text-[14px] font-normal text-[#765c7c] ml-1">ลิตร</span>
                   </p>
                   <p className="text-[11px] text-[#aeaeb2] mt-1">฿{gasolineStats.cost.toLocaleString()} · {gasolineStats.efficiency} บ./กม.</p>
                 </div>
@@ -1198,18 +1198,18 @@ export default function UltimateDashboard() {
                   <div key={i} className="flex items-center justify-between px-4 py-3 rounded-[14px]" style={{background:s.bg}}>
                     <div className="flex items-center gap-2.5">
                       <span className={`w-[9px] h-[9px] rounded-full flex-shrink-0 ${s.pulse?'animate-pulse':''}`} style={{background:s.c, boxShadow:`0 0 0 3px ${s.c}22`}}/>
-                      <span className="text-[14px] font-medium text-[#1d1d1f]">{s.label}</span>
+                      <span className="text-[14px] font-medium text-[#4b1560]">{s.label}</span>
                     </div>
-                    <span className="text-[22px] font-bold text-[#1d1d1f] leading-none">{s.val}</span>
+                    <span className="text-[22px] font-bold text-[#4b1560] leading-none">{s.val}</span>
                   </div>
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t border-[rgba(0,0,0,0.05)]">
-                <div className="flex justify-between text-[11px] text-[#6e6e73] mb-2">
-                  <span>Utilisation rate</span><span className="font-semibold text-[#1d1d1f]">{globalStats.activeRate}%</span>
+                <div className="flex justify-between text-[11px] text-[#765c7c] mb-2">
+                  <span>Utilisation rate</span><span className="font-semibold text-[#4b1560]">{globalStats.activeRate}%</span>
                 </div>
-                <div className="h-2 bg-[#e5e5ea] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${globalStats.activeRate}%`, background:'linear-gradient(90deg,#0071e3,#34aadc)'}}/>
+                <div className="h-2 bg-[#eadfed] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${globalStats.activeRate}%`, background:'linear-gradient(90deg,#702082,#34aadc)'}}/>
                 </div>
               </div>
             </Card>
@@ -1217,28 +1217,28 @@ export default function UltimateDashboard() {
             <Card className="p-5">
               <SectionLabel 
                 icon="ph:clock-counter-clockwise-duotone" 
-                iconColor="text-[#0071e3]"
+                iconColor="text-[#702082]"
                 title="สถานะการใช้รถล่าสุด" 
                 subtitle="ประวัติการนำรถออกและเวลาคืนรถของรถทุกคัน"
               />
               <div className="space-y-2.5 max-h-[170px] overflow-y-auto st pr-1">
                 {analytics.latestMovements && analytics.latestMovements.length > 0 ? analytics.latestMovements.map((m, i) => (
-                  <div key={i} className={`flex items-center justify-between p-3 rounded-[12px] border transition-colors ${!m.hasData ? 'bg-white border-[#f2f2f7] opacity-60' : 'bg-[#f9f9fb] border-[rgba(0,0,0,0.03)] hover:bg-[#f2f2f7]'}`}>
+                  <div key={i} className={`flex items-center justify-between p-3 rounded-[12px] border transition-colors ${!m.hasData ? 'bg-white border-[#f8f3fa] opacity-60' : 'bg-[#f9f9fb] border-[rgba(0,0,0,0.03)] hover:bg-[#f8f3fa]'}`}>
                     <div className="flex items-center gap-3">
-                      <div className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${!m.hasData ? 'bg-[#d2d2d7]' : (m.isCompleted ? 'bg-[#34c759]' : 'bg-[#ff3b30] animate-pulse')}`} 
+                      <div className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${!m.hasData ? 'bg-[#d9cadd]' : (m.isCompleted ? 'bg-[#34c759]' : 'bg-[#ff3b30] animate-pulse')}`}
                            style={{boxShadow: !m.hasData ? 'none' : (m.isCompleted ? '0 0 0 3px rgba(52,199,89,0.15)' : '0 0 0 3px rgba(255,59,48,0.15)')}} />
                       <div>
-                        <p className="text-[14px] font-semibold text-[#1d1d1f] leading-tight">{m.plate}</p>
-                        <p className="text-[11px] text-[#6e6e73] mt-0.5">{m.driver}</p>
+                        <p className="text-[14px] font-semibold text-[#4b1560] leading-tight">{m.plate}</p>
+                        <p className="text-[11px] text-[#765c7c] mt-0.5">{m.driver}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       {m.hasData ? (
                         <>
                             <div className="flex items-center justify-end gap-1.5 text-[12px] font-medium mb-1">
-                                <span className="text-[#1d1d1f] bg-white px-2 py-0.5 rounded-[6px] shadow-sm border border-[#e5e5ea]">{m.startStr}</span>
+                                <span className="text-[#4b1560] bg-white px-2 py-0.5 rounded-[6px] shadow-sm border border-[#eadfed]">{m.startStr}</span>
                                 <Icon icon="ph:arrow-right-bold" className="text-[#c7c7cc]" width="12" />
-                                <span className={`px-2 py-0.5 rounded-[6px] shadow-sm border ${m.isCompleted ? 'bg-white border-[#e5e5ea] text-[#1d1d1f]' : 'bg-[#fff0f0] border-[#ff3b30]/20 text-[#d70015]'}`}>
+                                <span className={`px-2 py-0.5 rounded-[6px] shadow-sm border ${m.isCompleted ? 'bg-white border-[#eadfed] text-[#4b1560]' : 'bg-[#fff0f0] border-[#ff3b30]/20 text-[#d70015]'}`}>
                                 {m.endStr}
                                 </span>
                             </div>
@@ -1266,7 +1266,7 @@ export default function UltimateDashboard() {
             <Card className="p-5 flex flex-col">
               <SectionLabel 
                 icon="ph:calendar-blank-duotone" 
-                iconColor="text-[#0071e3]"
+                iconColor="text-[#702082]"
                 title={carCategoryFilter === 'ev' ? 'ความถี่การนำรถไปชาร์จ' : 'ความถี่การใช้งาน'} 
                 subtitle="จำนวนภารกิจรายวัน"
               />
@@ -1292,14 +1292,14 @@ export default function UltimateDashboard() {
                         <div key={i} className="group relative flex-1 flex flex-col items-center justify-end h-full min-w-[36px] hover:bg-black/[0.02] rounded-[8px] transition-colors cursor-pointer py-1">
                           
                           {/* 📌 Hover Tooltip */}
-                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-50 bg-[#1d1d1f] text-white text-[11px] px-2.5 py-1.5 rounded-[8px] whitespace-nowrap shadow-lg transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 flex flex-col items-center">
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-50 bg-[#4b1560] text-white text-[11px] px-2.5 py-1.5 rounded-[8px] whitespace-nowrap shadow-lg transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 flex flex-col items-center">
                              <span className="font-semibold text-[12px]">{d.val} ครั้ง</span>
                              <span className="text-white/70 text-[10px]">{d.label}</span>
-                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1d1d1f]"></div>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#4b1560]"></div>
                           </div>
 
                           {/* ตัวเลขบนแท่ง */}
-                          <span className={`text-[12px] font-bold mb-1.5 transition-all ${d.val > 0 ? 'text-[#1d1d1f] group-hover:text-[#0071e3]' : 'text-transparent'}`}>
+                          <span className={`text-[12px] font-bold mb-1.5 transition-all ${d.val > 0 ? 'text-[#4b1560] group-hover:text-[#702082]' : 'text-transparent'}`}>
                             {d.val}
                           </span>
                           
@@ -1308,14 +1308,14 @@ export default function UltimateDashboard() {
                              <div className="w-full max-w-[28px] rounded-t-[4px] transition-all duration-500 shadow-sm group-hover:brightness-110 group-hover:scale-y-[1.03] origin-bottom"
                                   style={{
                                     height: `${pct}%`, 
-                                    background: 'linear-gradient(180deg, #34aadc 0%, #0071e3 100%)',
+                                    background: 'linear-gradient(180deg, #34aadc 0%, #702082 100%)',
                                     minHeight: d.val > 0 ? '4px' : '0'
                                   }}
                              />
                           </div>
                           
                           {/* ป้ายแกน X */}
-                          <span className="text-[11px] font-medium text-[#8e8e93] mt-2 whitespace-nowrap group-hover:text-[#1d1d1f] transition-colors">
+                          <span className="text-[11px] font-medium text-[#8e8e93] mt-2 whitespace-nowrap group-hover:text-[#4b1560] transition-colors">
                              {d.label.split(' ')[0]}
                           </span>
                         </div>
@@ -1357,10 +1357,10 @@ export default function UltimateDashboard() {
                         <div key={i} className="group relative flex-1 flex flex-col items-center justify-end h-full min-w-[20px] hover:bg-black/[0.02] rounded-[6px] transition-colors cursor-pointer py-1">
                           
                           {/* 📌 Hover Tooltip */}
-                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-50 bg-[#1d1d1f] text-white text-[11px] px-2.5 py-1.5 rounded-[8px] whitespace-nowrap shadow-lg transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 flex flex-col items-center">
+                          <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-50 bg-[#4b1560] text-white text-[11px] px-2.5 py-1.5 rounded-[8px] whitespace-nowrap shadow-lg transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 flex flex-col items-center">
                              <span className="font-semibold text-[12px]">{d.val} ครั้ง</span>
                              <span className="text-white/70 text-[10px]">เวลา {d.label}</span>
-                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1d1d1f]"></div>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#4b1560]"></div>
                           </div>
 
                           {/* ตัวเลขบนแท่ง */}
@@ -1380,7 +1380,7 @@ export default function UltimateDashboard() {
                           </div>
                           
                           {/* ป้ายแกน X */}
-                          <span className="text-[9px] font-medium text-[#8e8e93] mt-2 whitespace-nowrap group-hover:text-[#1d1d1f] transition-colors">
+                          <span className="text-[9px] font-medium text-[#8e8e93] mt-2 whitespace-nowrap group-hover:text-[#4b1560] transition-colors">
                             {i % 4 === 0 || i === 23 ? d.label.split(':')[0] : ''}
                           </span>
                         </div>
@@ -1397,7 +1397,7 @@ export default function UltimateDashboard() {
             <div className="px-5 md:px-7 py-6 bg-white">
                 <SectionLabel 
                     icon="ph:magnifying-glass-duotone" 
-                    iconColor="text-[#0071e3]"
+                    iconColor="text-[#702082]"
                     title="ค้นหาประวัติการใช้งานแบบละเอียด" 
                     subtitle="สืบค้นข้อมูลทริปการเดินทางตามเงื่อนไขที่ต้องการ"
                 />
@@ -1421,7 +1421,7 @@ export default function UltimateDashboard() {
                              className="px-4 py-2 text-[13px] font-medium text-[#ff3b30] hover:bg-[#fff0f0] rounded-[14px] transition-colors">
                          ล้างค่าทั้งหมด
                      </button>
-                     <button onClick={handleExecuteQuery} className="flex items-center gap-1.5 px-6 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white text-[14px] font-medium rounded-[14px] shadow-sm transition-all active:scale-95">
+                     <button onClick={handleExecuteQuery} className="flex items-center gap-1.5 px-6 py-2.5 bg-[#702082] hover:bg-[#0077ed] text-white text-[14px] font-medium rounded-[14px] shadow-sm transition-all active:scale-95">
                          <Icon icon="ph:magnifying-glass-duotone" width="18" height="18" /> ค้นหาข้อมูล
                      </button>
                 </div>
@@ -1437,7 +1437,7 @@ export default function UltimateDashboard() {
                 <thead>
                   <tr className="border-b border-[rgba(0,0,0,0.05)]">
                     {['ทะเบียน / รุ่น','สถานะ','ภารกิจ','ระยะทาง','เชื้อเพลิง', carCategoryFilter === 'ev' ? 'ระยะทาง/ชาร์จ' : 'ประสิทธิภาพ', 'รายการซ่อม', 'ค่าซ่อม'].map(h=>(
-                      <th key={h} className="px-4 md:px-6 py-3 text-left text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-4 md:px-6 py-3 text-left text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.05em] whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1451,7 +1451,7 @@ export default function UltimateDashboard() {
                             <Icon icon={c.type==='EV' ? "ph:lightning-duotone" : "ph:gas-pump-duotone"} width="20" height="20" className={c.type==='EV' ? 'text-[#1a7f37]' : 'text-[#e67e22]'} />
                           </div>
                           <div>
-                            <p className="text-[14px] font-semibold text-[#1d1d1f] leading-tight whitespace-nowrap">{c.plate}</p>
+                            <p className="text-[14px] font-semibold text-[#4b1560] leading-tight whitespace-nowrap">{c.plate}</p>
                             <p className="text-[11px] text-[#aeaeb2] whitespace-nowrap">{c.model}</p>
                           </div>
                         </div>
@@ -1464,23 +1464,23 @@ export default function UltimateDashboard() {
                           {c.status==='available'?'ว่าง':'ใช้งาน'}
                         </span>
                       </td>
-                      <td className="px-4 md:px-6 py-4 text-[14px] font-semibold text-[#1d1d1f] whitespace-nowrap">{c.trips}<span className="text-[11px] font-normal text-[#6e6e73] ml-1">รอบ</span></td>
-                      <td className="px-4 md:px-6 py-4 text-[14px] font-semibold text-[#1d1d1f] whitespace-nowrap">{c.dist.toLocaleString()}<span className="text-[11px] font-normal text-[#6e6e73] ml-1">กม.</span></td>
+                      <td className="px-4 md:px-6 py-4 text-[14px] font-semibold text-[#4b1560] whitespace-nowrap">{c.trips}<span className="text-[11px] font-normal text-[#765c7c] ml-1">รอบ</span></td>
+                      <td className="px-4 md:px-6 py-4 text-[14px] font-semibold text-[#4b1560] whitespace-nowrap">{c.dist.toLocaleString()}<span className="text-[11px] font-normal text-[#765c7c] ml-1">กม.</span></td>
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         {c.type==='EV'
-                          ? <span className="text-[12px] font-medium text-[#0071e3] flex items-center gap-1"><Icon icon="ph:lightning-duotone" /> {c.refillCount} ครั้ง</span>
+                          ? <span className="text-[12px] font-medium text-[#702082] flex items-center gap-1"><Icon icon="ph:lightning-duotone" /> {c.refillCount} ครั้ง</span>
                           : <div>
-                              <span className="text-[13px] font-medium text-[#1d1d1f]">{c.fuelLiters.toFixed(1)} L</span>
-                              {c.fuelCost>0 && <span className="text-[11px] text-[#6e6e73] ml-2">฿{c.fuelCost.toLocaleString(undefined,{minimumFractionDigits:0})}</span>}
+                              <span className="text-[13px] font-medium text-[#4b1560]">{c.fuelLiters.toFixed(1)} L</span>
+                              {c.fuelCost>0 && <span className="text-[11px] text-[#765c7c] ml-2">฿{c.fuelCost.toLocaleString(undefined,{minimumFractionDigits:0})}</span>}
                             </div>
                         }
                       </td>
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                         {c.type==='EV'
-                          ? <span className="text-[13px] font-semibold text-[#1a7f37]">{c.trips > 0 ? (c.dist / c.trips).toFixed(1) : 0}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">กม./ครั้ง</span></span>
+                          ? <span className="text-[13px] font-semibold text-[#1a7f37]">{c.trips > 0 ? (c.dist / c.trips).toFixed(1) : 0}<span className="text-[10px] font-normal text-[#765c7c] ml-1">กม./ครั้ง</span></span>
                           : <div className="flex flex-col">
-                              <span className="text-[13px] font-semibold text-[#1d1d1f]">{c.efficiency}<span className="text-[10px] font-normal text-[#6e6e73] ml-1">บ./กม.</span></span>
-                              <span className="text-[11px] text-[#6e6e73] mt-0.5">{c.efficiencyLKM} ลิตร/กม.</span>
+                              <span className="text-[13px] font-semibold text-[#4b1560]">{c.efficiency}<span className="text-[10px] font-normal text-[#765c7c] ml-1">บ./กม.</span></span>
+                              <span className="text-[11px] text-[#765c7c] mt-0.5">{c.efficiencyLKM} ลิตร/กม.</span>
                             </div>
                         }
                       </td>
@@ -1526,17 +1526,17 @@ export default function UltimateDashboard() {
                   : analytics.topLocations.map((loc,i)=>(
                     <div key={i} className="flex items-center gap-3.5">
                       <span className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
-                            style={{background:['#ff9500','#aeaeb2','#d2d2d7'][i]||'#e5e5ea', color:i>=2?'#6e6e73':'white'}}>
+                            style={{background:['#ff9500','#aeaeb2','#d9cadd'][i]||'#eadfed', color:i>=2?'#765c7c':'white'}}>
                         {i+1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1.5">
-                          <span className="text-[13px] font-medium text-[#1d1d1f] truncate">{loc.name}</span>
-                          <span className="text-[12px] text-[#6e6e73] ml-3 flex-shrink-0">{loc.count} ครั้ง</span>
+                          <span className="text-[13px] font-medium text-[#4b1560] truncate">{loc.name}</span>
+                          <span className="text-[12px] text-[#765c7c] ml-3 flex-shrink-0">{loc.count} ครั้ง</span>
                         </div>
-                        <div className="h-[5px] bg-[#f2f2f7] rounded-full overflow-hidden">
+                        <div className="h-[5px] bg-[#f8f3fa] rounded-full overflow-hidden">
                           <div className="h-full rounded-full transition-all duration-700"
-                               style={{width:`${(loc.count/maxLoc)*100}%`, background:i===0?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#0071e3,#34aadc)'}}/>
+                               style={{width:`${(loc.count/maxLoc)*100}%`, background:i===0?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#702082,#34aadc)'}}/>
                         </div>
                       </div>
                     </div>
@@ -1557,26 +1557,26 @@ export default function UltimateDashboard() {
                     <div className="flex items-center gap-3.5">
                       <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold"
                            style={{
-                             background: i===0 ? 'linear-gradient(135deg,#ffcc00,#ff9500)' : i===1 ? 'linear-gradient(135deg,#d2d2d7,#aeaeb2)' : i===2 ? 'linear-gradient(135deg,#f4a460,#cd853f)' : '#f2f2f7',
-                             color: i<=2 ? 'white' : '#6e6e73'
+                             background: i===0 ? 'linear-gradient(135deg,#ffcc00,#ff9500)' : i===1 ? 'linear-gradient(135deg,#d9cadd,#aeaeb2)' : i===2 ? 'linear-gradient(135deg,#f4a460,#cd853f)' : '#f8f3fa',
+                             color: i<=2 ? 'white' : '#765c7c'
                            }}>
                         {i+1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-semibold text-[#1d1d1f] truncate">{c.plate}</p>
+                        <p className="text-[14px] font-semibold text-[#4b1560] truncate">{c.plate}</p>
                         <p className="text-[11px] text-[#aeaeb2] truncate">{c.model}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-[14px] font-semibold text-[#1d1d1f]">{c.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></p>
+                        <p className="text-[14px] font-semibold text-[#4b1560]">{c.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#765c7c]">กม.</span></p>
                         <p className="text-[11px] text-[#aeaeb2]">{c.trips} รอบ</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5 pl-[46px] mt-1.5">
                       {c.workTypes && c.workTypes !== '' ? c.workTypes.split(', ').map((wt,idx)=>(
-                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:briefcase-duotone"/> {wt}</span>
+                        <span key={`wt-${idx}`} className="text-[10px] text-[#765c7c] bg-[#f8f3fa] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:briefcase-duotone"/> {wt}</span>
                       )) : null}
                       {c.areas && c.areas !== '' ? c.areas.split(', ').map((ar,idx)=>(
-                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:map-pin-duotone"/> {ar}</span>
+                        <span key={`ar-${idx}`} className="text-[10px] text-[#702082] bg-[#edf6ff] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:map-pin-duotone"/> {ar}</span>
                       )) : null}
                     </div>
                   </div>
@@ -1592,7 +1592,7 @@ export default function UltimateDashboard() {
             <Card className="p-5">
               <SectionLabel 
                 icon="ph:steering-wheel-duotone" 
-                iconColor="text-[#af52de]" 
+                iconColor="text-[#8b3c98]"
                 title="ผู้ขับดีเด่น" 
               />
               <div className="max-h-[240px] overflow-y-auto st space-y-0">
@@ -1602,26 +1602,26 @@ export default function UltimateDashboard() {
                       <div className="flex items-center gap-2.5">
                         <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold"
                              style={{
-                               background:i===0?'linear-gradient(135deg,#ffcc00,#ff9500)':i===1?'linear-gradient(135deg,#d2d2d7,#aeaeb2)':i===2?'linear-gradient(135deg,#f4a460,#cd853f)':'#f2f2f7',
-                               color:i<=2?'white':'#6e6e73'
+                               background:i===0?'linear-gradient(135deg,#ffcc00,#ff9500)':i===1?'linear-gradient(135deg,#d9cadd,#aeaeb2)':i===2?'linear-gradient(135deg,#f4a460,#cd853f)':'#f8f3fa',
+                               color:i<=2?'white':'#765c7c'
                              }}>
                           {i+1}
                         </div>
                         <div>
-                          <span className="text-[14px] font-semibold text-[#1d1d1f] block leading-tight">{d.name}</span>
+                          <span className="text-[14px] font-semibold text-[#4b1560] block leading-tight">{d.name}</span>
                           {d.carsUsed && <span className="text-[10px] text-[#aeaeb2]">{d.carsUsed}</span>}
                         </div>
                       </div>
                       <div className="text-right flex flex-col items-end">
-                        <span className="text-[13px] font-semibold text-[#1d1d1f]">{d.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#6e6e73]">กม.</span></span>
+                        <span className="text-[13px] font-semibold text-[#4b1560]">{d.dist.toLocaleString()} <span className="text-[10px] font-normal text-[#765c7c]">กม.</span></span>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5 pl-[34px]">
                       {d.workTypes && d.workTypes !== '' ? d.workTypes.split(', ').map((wt,idx)=>(
-                        <span key={`wt-${idx}`} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:briefcase-duotone"/> {wt}</span>
+                        <span key={`wt-${idx}`} className="text-[10px] text-[#765c7c] bg-[#f8f3fa] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:briefcase-duotone"/> {wt}</span>
                       )) : <span className="text-[10px] text-[#aeaeb2]">ไม่มีข้อมูลงาน</span>}
                       {d.areas && d.areas !== '' ? d.areas.split(', ').map((ar,idx)=>(
-                        <span key={`ar-${idx}`} className="text-[10px] text-[#0071e3] bg-[#edf6ff] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:map-pin-duotone"/> {ar}</span>
+                        <span key={`ar-${idx}`} className="text-[10px] text-[#702082] bg-[#edf6ff] px-2.5 py-[3px] rounded-full flex items-center gap-1"><Icon icon="ph:map-pin-duotone"/> {ar}</span>
                       )) : null}
                     </div>
                   </div>
@@ -1640,12 +1640,12 @@ export default function UltimateDashboard() {
                 {analytics.carDriverHistory.map((c,i)=>(
                   <div key={i} className="py-3 border-b border-[rgba(0,0,0,0.04)] last:border-0">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[14px] font-semibold text-[#1d1d1f]">{c.plate}</span>
-                      <span className="text-[11px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">{c.totalTrips} งาน</span>
+                      <span className="text-[14px] font-semibold text-[#4b1560]">{c.plate}</span>
+                      <span className="text-[11px] text-[#765c7c] bg-[#f8f3fa] px-2.5 py-[3px] rounded-full">{c.totalTrips} งาน</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {c.drivers.split(', ').map((dl,idx)=>(
-                        <span key={idx} className="text-[10px] text-[#6e6e73] bg-[#f2f2f7] px-2.5 py-[3px] rounded-full">{dl}</span>
+                        <span key={idx} className="text-[10px] text-[#765c7c] bg-[#f8f3fa] px-2.5 py-[3px] rounded-full">{dl}</span>
                       ))}
                     </div>
                   </div>

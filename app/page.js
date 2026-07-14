@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -7,12 +7,11 @@ import { Icon } from '@iconify/react'
 // --- Main Component ---
 export default function App() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center"><div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#f8f3fa] flex items-center justify-center"><div className="w-8 h-8 border-[2.5px] border-[#d9cadd] border-t-[#4b1560] rounded-full animate-spin"/></div>}>
       <MainApp />
     </Suspense>
   )
 }
-
 function MainApp() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id') 
@@ -34,6 +33,12 @@ function CarSelector() {
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
   const [showInstructions, setShowInstructions] = useState(false)
+  const [activeBanner, setActiveBanner] = useState(0)
+  const [activeNews, setActiveNews] = useState(0)
+  const [selectedNews, setSelectedNews] = useState(null)
+  const [newsExpanded, setNewsExpanded] = useState(true)
+  const bannerRef = useRef(null)
+  const newsRef = useRef(null)
   
   // State สำหรับ Modal โทรออก
   const [callModal, setCallModal] = useState({ isOpen: false, driverName: '', phone: '', loading: false, error: '' })
@@ -165,230 +170,246 @@ function CarSelector() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
-      <div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/>
+    <div className="min-h-screen bg-[#f8f3fa] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="w-9 h-9 border-[3px] border-[#eadff0] border-t-[#702082] rounded-full animate-spin"/>
     </div>
   )
 
+  const busyCars = cars.filter(c => c.status === 'busy')
+  const availableCars = cars.filter(c => c.status !== 'busy')
+  const activeCars = cars.filter(c => c.isActivated)
+  const evCars = cars.filter(c => c.fuel_type?.toUpperCase() === 'EV' || c.car_type?.toUpperCase().includes('EV'))
+  const today = new Date()
+  const signatureStart = today.getDate() <= 5
+    ? new Date(today.getFullYear(), today.getMonth() - 1, 28)
+    : new Date(today.getFullYear(), today.getMonth(), 28)
+  const signatureEnd = today.getDate() <= 5
+    ? new Date(today.getFullYear(), today.getMonth(), 5)
+    : new Date(today.getFullYear(), today.getMonth() + 1, 5)
+  const formatThaiDate = (date) => date.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' })
+  const signaturePeriod = `${formatThaiDate(signatureStart)} – ${formatThaiDate(signatureEnd)}`
+  const bannerSlides = [
+    { eyebrow:'PEA FLEET', title:'ระบบรถ PEA ใหม่!', accent:'จัดการง่ายกว่าเดิม', button:'ดูคู่มือเลย !!', icon:'ph:car-profile-duotone', background:'linear-gradient(115deg,#4b156d 0%,#762789 58%,#9139a6 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:1 },
+    { eyebrow:'SCAN & GO', title:'สแกนก่อนใช้รถ', accent:'บันทึกได้ในไม่กี่ขั้นตอน', button:'ดูวิธีสแกน', icon:'ph:qr-code-duotone', background:'linear-gradient(115deg,#5a1f75 0%,#7f2b8f 55%,#a34db0 100%)', iconBg:'#ffdd00', iconColor:'#571b70', detailIndex:1 },
+    { eyebrow:'MONTHLY SIGN', title:'ลงชื่อประจำเดือน', accent:signaturePeriod, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(115deg,#40155f 0%,#69277e 55%,#8d3fa1 100%)', iconBg:'#ffea5c', iconColor:'#4b156d', detailIndex:0 },
+    { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(115deg,#55206f 0%,#7c2f8d 56%,#963ca7 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:2 }
+  ]
+  const newsItems = [
+    {
+      title:'ลงชื่อประจำเดือน', badge:'สำคัญ', icon:'ph:pencil-line-duotone', iconBg:'#f1e6f4', iconColor:'#702082',
+      copy:`เปิดลงชื่อรับรองการใช้รถประจำเดือน ตั้งแต่วันที่ ${signaturePeriod} กรุณาดำเนินการให้ครบภายในวันที่ 5`, meta:'ระบบลงชื่อผู้ใช้งานรถ', period:signaturePeriod,
+      detail:'การลงชื่อประจำเดือนเปิดตั้งแต่วันที่ 28 ถึงวันที่ 5 ของเดือนถัดไป เพื่อยืนยันความถูกต้องของประวัติการใช้รถ ผู้ขับและผู้ควบคุมควรตรวจสอบรายการเดินทาง เลขไมล์ และข้อมูลการรับ–คืนรถก่อนลงชื่อทุกครั้ง',
+      steps:['เปิดรายงานของรถคันที่รับผิดชอบ','ตรวจสอบรายการเดินทางและเลขไมล์ประจำเดือน','ลงชื่อผู้ขับรถและผู้ควบคุมให้ครบภายในวันที่ 5','ตรวจสอบสถานะว่าบันทึกลายเซ็นสำเร็จแล้ว'],
+      note:'หากข้อมูลการเดินทางไม่ถูกต้อง ให้แจ้งผู้ดูแลระบบก่อนลงชื่อ'
+    },
+    {
+      title:'สแกน QR ประจำรถ', badge:'Hot !', icon:'ph:qr-code-duotone', iconBg:'#fff7bf', iconColor:'#702082',
+      copy:'สแกน QR Code ก่อนนำรถออก คืนรถ หรือชาร์จรถทุกครั้ง เพื่ออัปเดตสถานะให้ถูกต้อง', meta:'คู่มือการใช้งาน', period:'ใช้งานทุกครั้งก่อนและหลังใช้รถ',
+      detail:'QR Code ของรถแต่ละคันเชื่อมกับข้อมูลรถโดยตรง ช่วยลดการเลือกทะเบียนผิดและทำให้สถานะรถบนหน้า Home เป็นปัจจุบัน',
+      steps:['เปิดกล้องหรือหน้าเครื่องสแกน QR','สแกน QR Code ที่ติดอยู่กับรถ','ตรวจสอบทะเบียนรถและชื่อผู้ใช้งาน','กรอกข้อมูลนำรถออก คืนรถ หรือเริ่ม–หยุดชาร์จให้ครบ'],
+      note:'ห้ามใช้ QR Code ของรถคันอื่นแทน แม้เป็นรถประเภทเดียวกัน'
+    },
+    {
+      title:'ตรวจรถก่อนออกงาน', badge:'Safety', icon:'ph:shield-check-duotone', iconBg:'#f1e6f4', iconColor:'#702082',
+      copy:'ตรวจยาง ไฟส่องสว่าง น้ำมัน และอุปกรณ์ประจำรถก่อนออกปฏิบัติงานทุกครั้ง', meta:'มาตรฐานความปลอดภัย PEA', period:'ตรวจทุกครั้งก่อนนำรถออก',
+      detail:'ผู้ขับควรตรวจสภาพพื้นฐานก่อนออกปฏิบัติงาน เพื่อป้องกันอุบัติเหตุและลดความเสียหายระหว่างเดินทาง',
+      steps:['ตรวจยาง ลมยาง และร่องรอยการรั่วซึม','ตรวจไฟหน้า ไฟเลี้ยว ไฟเบรก และสัญญาณเตือน','ตรวจระดับเชื้อเพลิงหรือแบตเตอรี่ EV','ตรวจอุปกรณ์นิรภัยและอุปกรณ์ประจำรถ'],
+      note:'หากพบความผิดปกติให้งดใช้รถ และแจ้งผู้ดูแลรถทันที'
+    },
+    {
+      title:'คืนรถให้เรียบร้อย', badge:'แจ้งเตือน', icon:'ph:car-profile-duotone', iconBg:'#fff7bf', iconColor:'#702082',
+      copy:'จอดรถในพื้นที่ที่กำหนด เก็บกุญแจ และบันทึกเลขไมล์ล่าสุดก่อนจบรายการ', meta:'การคืนรถและปิดงาน', period:'ดำเนินการทันทีหลังจบภารกิจ',
+      detail:'การคืนรถอย่างครบถ้วนทำให้รถพร้อมสำหรับผู้ใช้งานคนถัดไป และช่วยให้รายงานระยะทาง เชื้อเพลิง และสถานะรถถูกต้อง',
+      steps:['จอดรถในช่องที่กำหนดและดับเครื่อง','เก็บสัมภาระและตรวจความเรียบร้อยภายในรถ','บันทึกเลขไมล์ เชื้อเพลิง หรือแบตเตอรี่ล่าสุด','สแกน QR เพื่อยืนยันคืนรถและนำกุญแจเก็บที่จุดรับคืน'],
+      note:'ตรวจสอบว่าหน้า Home แสดงสถานะ “ว่างพร้อมใช้” ก่อนออกจากพื้นที่'
+    }
+  ]
+
+  const renderCarRow = (car) => {
+    const carImageSrc = getCarImage(car)
+    const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
+    const isBusy = car.status === 'busy'
+    const logData = isBusy ? car.activeLog : car.lastLog
+    const driverName = logData?.driver_name
+    const returnTime = car.lastLog?.end_time || car.lastLog?.updated_at || car.lastLog?.created_at || car.lastLog?.start_time
+    const timeSource = isBusy ? car.activeLog?.start_time : returnTime
+    const timeString = timeSource
+      ? `${isBusy ? 'ออก' : 'คืน'} ${new Date(timeSource).toLocaleDateString('th-TH', {day:'numeric', month:'short'})} ${new Date(timeSource).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})} น.`
+      : null
+
+    return (
+      <article key={car.id} onClick={() => setCarDetailModal({ car, timeString, logData })}
+        className="flex items-center gap-3 py-4 border-b border-[#edf0ee] last:border-b-0 cursor-pointer active:bg-[#f8faf8] transition-colors">
+        <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border border-black/[0.05] ${isBusy ? 'bg-[#fff0ed]' : isEV ? 'bg-[#edf3ff]' : 'bg-[#eefaf2]'}`}>
+          {carImageSrc
+            ? <img src={carImageSrc} alt={car.car_type} className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-40' : ''}`}/>
+            : <Icon icon="ph:car-profile-duotone" width="30" height="30" className={isBusy ? 'text-[#ff6680]' : 'text-[#14c767]'} />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isBusy ? 'กำลังใช้งาน' : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
+          <h3 className="text-[18px] font-bold tracking-[-.35px] truncate">{car.plate_number}</h3>
+          <p className="text-[11px] text-[#6e7771] truncate">{car.car_type}</p>
+          <p className="mt-0.5 text-[10px] text-[#9aa19c] truncate flex items-center gap-1"><Icon icon={driverName ? 'ph:user-circle' : 'ph:map-pin'} width="12" height="12" />{driverName || logData?.location || 'ยังไม่มีข้อมูลการใช้งาน'}</p>
+        </div>
+        <div className="text-right flex-shrink-0 min-w-[92px]">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${isBusy ? 'bg-[#ffe7ee] text-[#ed4d75]' : 'bg-[#dffbec] text-[#10a951]'}`}><span className={`w-1.5 h-1.5 rounded-full ${isBusy ? 'bg-[#ed4d75]' : 'bg-[#17c965]'}`}/>{isBusy ? 'ไม่ว่าง' : 'ว่างพร้อมใช้'}</span>
+          <p className="mt-2 text-[9px] text-[#a2a9a4] max-w-[92px] truncate">{timeString || 'อัปเดตล่าสุด'}</p>
+          <Icon icon="ph:caret-right-bold" width="16" height="16" className="ml-auto mt-1 text-[#a4aaa6]" />
+        </div>
+      </article>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-[#f5f5f7] font-sarabun pb-20" style={{WebkitFontSmoothing:'antialiased'}}>
+    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-28 text-[#241c27]" style={{WebkitFontSmoothing:'antialiased'}}>
       <style>{`
-        @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }
-        .ticker { display:inline-block; white-space:nowrap; padding-left:100%; animation:ticker 28s linear infinite; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
         .animate-slideUp { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes floatCar { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-5px) rotate(-1deg); } }
+        .float-car { animation: floatCar 4s ease-in-out infinite; }
+        .hide-scrollbar { scrollbar-width:none; }
+        .hide-scrollbar::-webkit-scrollbar { display:none; }
       `}</style>
 
-      {/* ── Nav Bar ── */}
-      <nav className="sticky top-0 z-50 h-[52px] flex items-center justify-between px-5 border-b border-black/[0.07]"
-           style={{background:'rgba(245,245,247,0.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)'}}>
-        <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">PEA Fleet</span>
-        
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/admin')}
-            className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
-            Admin
-          </button>
-          <button onClick={() => router.push('/dashboard')}
-            className="text-[15px] text-[#0071e3] font-normal active:opacity-50 transition-opacity">
-            Dashboard
+      <header className="bg-white">
+        <div className="max-w-[620px] mx-auto px-5 pt-8 pb-5 flex items-center justify-between">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-14 h-14 rounded-[16px] bg-white border border-[#eadfed] p-1.5 flex items-center justify-center shadow-sm overflow-hidden"><img src="/pea_logo.png" alt="ตราสัญลักษณ์การไฟฟ้าส่วนภูมิภาค PEA" className="w-full h-full object-contain" /></div>
+            <div className="min-w-0"><p className="text-[10px] font-bold text-[#702082] tracking-[.12em]">การไฟฟ้าส่วนภูมิภาค</p><h1 className="text-[21px] sm:text-[24px] font-bold tracking-[-.7px] truncate">สวัสดี ผู้ใช้งาน PEA!</h1></div>
+          </div>
+          <button onClick={() => router.push('/dashboard')} className="relative w-11 h-11 rounded-full flex items-center justify-center text-black active:scale-90 transition-transform" aria-label="แจ้งเตือน">
+            <Icon icon="ph:chat-circle-dots-bold" width="29" height="29" />
+            <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#ffdd00] border-2 border-white"/>
           </button>
         </div>
-      </nav>
+      </header>
 
-      <div className="max-w-[600px] mx-auto px-4">
-        {/* ── Hero ── */}
-        <div className="pt-9 pb-8">
-          <h1 className="text-[38px] font-bold tracking-[-1.5px] leading-[1.05] text-[#1d1d1f]">ยานพาหนะ</h1>
-          <p className="text-[19px] text-[#6e6e73] mt-1.5 tracking-[-0.3px]">PEA Smart Vehicle Management</p>
-        </div>
+      <main className="max-w-[620px] mx-auto bg-white overflow-hidden">
+        <section>
+          <div ref={bannerRef} onScroll={(e) => {
+            const track = e.currentTarget
+            const center = track.scrollLeft + track.clientWidth / 2
+            const items = Array.from(track.children)
+            const nearest = items.reduce((best, item, index) => Math.abs((item.offsetLeft + item.offsetWidth / 2) - center) < best.distance ? {index, distance:Math.abs((item.offsetLeft + item.offsetWidth / 2) - center)} : best, {index:0, distance:Infinity})
+            setActiveBanner(nearest.index)
+          }} className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-5 hide-scrollbar px-5">
+            {bannerSlides.map((slide) => (
+              <article key={slide.title} className="relative overflow-hidden h-[184px] min-w-[88%] snap-center rounded-[25px] px-6 py-5 text-white" style={{background:slide.background, boxShadow:'0 10px 28px rgba(73,20,88,.16)'}}>
+                <div className="absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
+                <div className="absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
+                <div className="relative z-10 max-w-[70%]">
+                  <p className="text-[9px] font-bold tracking-[.16em] text-[#ffea6a] mb-1.5">{slide.eyebrow}</p>
+                  <h2 className="text-[23px] sm:text-[27px] font-bold leading-[1.14] tracking-[-.7px]">{slide.title}<br/><span className="text-[#ffea4d] text-[18px] sm:text-[21px]">{slide.accent}</span></h2>
+                  <button onClick={() => setSelectedNews({...newsItems[slide.detailIndex], index:slide.detailIndex})} className="mt-3 bg-[#ffdd00] text-[#4b156d] rounded-full px-5 py-2 text-[11px] font-bold active:scale-95 transition-transform inline-flex items-center gap-1.5"><Icon icon="ph:arrow-right-bold" width="13" height="13" />{slide.button}</button>
+                </div>
+                <div className="absolute right-3 bottom-0 w-[38%] h-full flex items-center justify-center float-car">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full shadow-[0_15px_35px_rgba(37,5,49,.3)] flex items-center justify-center rotate-[-5deg]" style={{background:slide.iconBg,color:slide.iconColor}}><Icon icon={slide.icon} width="68" height="68" /></div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="flex justify-center gap-2 py-4">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => { const track=bannerRef.current; const item=track?.children[index]; if(track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-2 rounded-full transition-all ${activeBanner === index ? 'w-6 bg-[#702082]' : 'w-2 bg-[#d9cddd]'}`}/>)}</div>
+        </section>
 
-        {/* ── QR Scan Banner ── */}
-        <div className="bg-[#1d1d1f] rounded-[22px] overflow-hidden mb-8"
-             style={{boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
-          <div className="px-6 py-5 flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.15em] mb-2">Scan to Start</p>
-              <p className="text-[22px] font-semibold text-white leading-tight tracking-[-0.5px]">
-                สแกน QR Code<br/>ประจำรถ
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-3 pt-1 flex-shrink-0">
-              <button onClick={() => setShowInstructions(true)}
-                className="text-[13px] font-medium text-[#2997ff] active:opacity-50 transition-opacity whitespace-nowrap flex items-center gap-1">
-                คู่มือ 
-                <Icon icon="ph:arrow-right-bold" width="12" height="12" />
-              </button>
-              <div className="w-[50px] h-[50px] bg-[#2c2c2e] rounded-[14px] flex items-center justify-center text-[24px]">
-                <Icon icon="ph:qr-code-duotone" width="30" height="30" className="text-[#34c759]" />
+        <section className="pb-6">
+          <div className="flex gap-3 overflow-x-auto hide-scrollbar px-5 pb-2">
+            {[
+              {label:'รถทั้งหมด', value:cars.length, sub:'ในระบบ', icon:'ph:car-profile-duotone', accent:'#702082'},
+              {label:'พร้อมใช้งาน', value:availableCars.length, sub:'คัน', icon:'ph:check-circle-duotone', accent:'#8b3c98'},
+              {label:'กำลังใช้งาน', value:busyCars.length, sub:'คัน', icon:'ph:steering-wheel-duotone', accent:'#d29f00'},
+              {label:'รถ EV', value:evCars.length, sub:'คัน', icon:'ph:lightning-duotone', accent:'#702082'}
+            ].map(stat => <div key={stat.label} className="min-w-[145px] h-[126px] bg-white rounded-[21px] p-4 border border-[#eee3f1]" style={{boxShadow:'0 8px 28px rgba(91,35,104,.08)'}}><div className="flex items-center gap-2 text-[12px] font-bold whitespace-nowrap"><span className="w-7 h-7 rounded-[9px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="18" height="18" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-2.5 text-[23px] font-bold" style={{color:stat.accent}}>{stat.value} <span className="text-[13px]">{stat.sub}</span></p><p className="mt-1 text-[11px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="11" height="11" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
+          </div>
+        </section>
+
+        <section className="relative pt-6 pb-7 overflow-hidden" style={{background:'linear-gradient(155deg,#fbf6fc 0%,#ead8ef 55%,#ffe97a 140%)'}}>
+          <div className="absolute -right-24 bottom-0 w-80 h-80 rounded-full border border-white/35"/>
+          <div className="relative px-5 flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3"><span className="w-11 h-11 rounded-full bg-[#702082] text-[#ffdd00] flex items-center justify-center"><Icon icon="ph:newspaper-clipping-duotone" width="26" height="26" /></span><div><h2 className="text-[24px] font-bold leading-tight text-[#4b1560]">ข่าวสาร PEA</h2><p className="text-[10px] text-[#765c7c]">เลื่อนเพื่อดูข่าวทั้งหมด 4 เรื่อง</p></div></div>
+            <button onClick={() => setNewsExpanded(value => !value)} className="flex items-center gap-1.5 text-[11px] font-bold active:scale-95 transition-transform" aria-expanded={newsExpanded} aria-controls="pea-news-content">
+              <span className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">4</span>
+              <Icon icon={newsExpanded ? 'ph:caret-up-bold' : 'ph:caret-down-bold'} width="20" height="20" />
+            </button>
+          </div>
+          {newsExpanded && <div id="pea-news-content" className="animate-fadeIn">
+          <div ref={newsRef} onScroll={(e) => {
+            const track = e.currentTarget
+            const center = track.scrollLeft + track.clientWidth / 2
+            const items = Array.from(track.children)
+            const nearest = items.reduce((best, item, index) => Math.abs((item.offsetLeft + item.offsetWidth / 2) - center) < best.distance ? {index, distance:Math.abs((item.offsetLeft + item.offsetWidth / 2) - center)} : best, {index:0, distance:Infinity})
+            setActiveNews(nearest.index)
+          }} className="relative flex gap-3 overflow-x-auto snap-x snap-mandatory hide-scrollbar px-5 pb-2">
+            {newsItems.map((news, index) => (
+              <article key={news.title} className="snap-center min-w-[88%] bg-white rounded-[25px] px-5 py-5 border border-[#eee3f1]" style={{boxShadow:'0 9px 28px rgba(91,35,104,.09)'}}>
+                <div className="flex items-center justify-between gap-3 mb-3"><div className="flex items-center gap-2.5 min-w-0"><span className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0" style={{background:news.iconBg,color:news.iconColor}}><Icon icon={news.icon} width="23" height="23" /></span><div className="min-w-0"><span className="block text-[17px] font-bold truncate">{news.title}</span><span className="text-[9px] text-[#919793]">ข่าวที่ {index + 1} จาก 4</span></div></div><span className="bg-[#ffad2f] rounded-full px-3 py-1 text-[10px] font-bold whitespace-nowrap">{news.badge}</span></div>
+                <p className="text-[14px] leading-[1.65] min-h-[70px]">{news.copy}</p>
+                <button onClick={() => setSelectedNews({...news, index})} className="mt-2 text-[12px] font-semibold text-[#702082] underline underline-offset-2 inline-flex items-center gap-1">{news.meta} · อ่านเพิ่มเติม <Icon icon="ph:arrow-right" width="13" height="13" /></button>
+              </article>
+            ))}
+          </div>
+          <div className="relative flex justify-center gap-1.5 mt-3">{[0,1,2,3].map((index) => <button key={index} onClick={() => { const track = newsRef.current; const item = track?.children[index]; if (track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปข่าวหน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeNews === index ? 'w-5 bg-[#702082]' : 'w-1.5 bg-white/90'}`}/>)}</div>
+          </div>}
+        </section>
+
+        <section className="relative -mt-1 bg-white rounded-t-[32px] px-5 pt-6 pb-4">
+          <div className="flex items-center justify-between"><div className="flex items-center gap-2"><h2 className="text-[25px] font-bold tracking-[-.7px] text-[#4b1560]">รายการรถ</h2><Icon icon="ph:info-duotone" width="21" height="21" className="text-[#702082]" /></div><button onClick={() => router.push('/dashboard')} className="w-10 h-10 rounded-full bg-[#f3eaf5] text-[#702082] flex items-center justify-center" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="22" height="22" /></button></div>
+          <div className="flex items-center justify-between mt-6 mb-1 text-[13px] text-[#646a66]"><span>{cars.length} รายการ</span><span>สถานะล่าสุด</span></div>
+          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div>{busyCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
+          <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
+        </section>
+      </main>
+
+      {/* ── Modal รายละเอียดข่าวสาร ── */}
+      {selectedNews && (
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="news-detail-title">
+          <button className="absolute inset-0 bg-[#24102b]/55 backdrop-blur-sm" onClick={() => setSelectedNews(null)} aria-label="ปิดรายละเอียดข่าว"/>
+          <div className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-[#fbf8fc] rounded-t-[30px] sm:rounded-[30px] shadow-[0_-12px_60px_rgba(55,15,66,.28)] animate-slideUp">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#4b1560] via-[#702082] to-[#913aa1] px-6 pt-5 pb-7 text-white">
+              <div className="absolute -right-16 -bottom-24 w-60 h-60 rounded-full bg-white/10"/>
+              <div className="sm:hidden w-10 h-1 rounded-full bg-white/35 mx-auto mb-5"/>
+              <div className="relative flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <span className="w-[52px] h-[52px] min-w-[52px] rounded-[16px] bg-[#ffdd00] text-[#4b1560] flex items-center justify-center shadow-lg"><Icon icon={selectedNews.icon} width="29" height="29" /></span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold tracking-[.14em] text-[#ffea71]">ข่าวสาร PEA · เรื่องที่ {selectedNews.index + 1} จาก 4</p>
+                    <h2 id="news-detail-title" className="text-[23px] font-bold tracking-[-.5px] leading-tight mt-1">{selectedNews.title}</h2>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedNews(null)} className="w-9 h-9 rounded-full bg-white/15 border border-white/15 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform" aria-label="ปิด"><Icon icon="ph:x-bold" width="16" height="16" /></button>
               </div>
+              <div className="relative mt-5 inline-flex items-center gap-2 bg-white/12 border border-white/15 rounded-full px-3.5 py-2 text-[11px] font-semibold"><Icon icon="ph:calendar-check-duotone" width="17" height="17" className="text-[#ffdd00]" />{selectedNews.period}</div>
+            </div>
+
+            <div className="px-5 sm:px-6 py-6 space-y-5">
+              <section className="bg-white rounded-[22px] p-5 border border-[#eee3f1] shadow-[0_6px_24px_rgba(91,35,104,.06)]">
+                <div className="flex items-center gap-2 mb-2 text-[#702082]"><Icon icon="ph:info-duotone" width="20" height="20" /><h3 className="text-[15px] font-bold">รายละเอียด</h3></div>
+                <p className="text-[14px] leading-[1.75] text-[#5f5462]">{selectedNews.detail}</p>
+              </section>
+
+              <section>
+                <div className="flex items-center gap-2 mb-3 text-[#4b1560]"><Icon icon="ph:list-checks-duotone" width="21" height="21" /><h3 className="text-[16px] font-bold">ขั้นตอนที่ควรดำเนินการ</h3></div>
+                <div className="space-y-2.5">
+                  {selectedNews.steps.map((step, index) => (
+                    <div key={step} className="flex items-start gap-3 bg-white rounded-[17px] px-4 py-3.5 border border-[#eee3f1]">
+                      <span className="w-7 h-7 rounded-full bg-[#702082] text-[#ffdd00] flex items-center justify-center text-[11px] font-bold flex-shrink-0">{index + 1}</span>
+                      <p className="text-[13px] leading-relaxed text-[#3f3542] pt-1">{step}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <div className="flex items-start gap-3 bg-[#fff8cf] border border-[#f1d95b] rounded-[18px] px-4 py-4 text-[#5a4710]">
+                <Icon icon="ph:warning-circle-duotone" width="22" height="22" className="text-[#b78d00] flex-shrink-0" />
+                <div><p className="text-[12px] font-bold mb-0.5">ข้อควรทราบ</p><p className="text-[12px] leading-relaxed">{selectedNews.note}</p></div>
+              </div>
+
+              <button onClick={() => setSelectedNews(null)} className="w-full bg-[#702082] text-white rounded-[17px] py-4 text-[15px] font-bold flex items-center justify-center gap-2 active:scale-[.98] transition-transform shadow-[0_8px_22px_rgba(112,32,130,.22)]"><Icon icon="ph:check-circle-duotone" width="20" height="20" className="text-[#ffdd00]" />รับทราบ</button>
             </div>
           </div>
-          <div className="border-t border-white/[0.07] px-6 py-2.5 overflow-hidden flex items-center">
-            <span className="ticker text-[12px] text-[#636366] flex items-center gap-1">
-              กรุณาสแกน QR Code ประจำรถ เพื่อทำรายการ นำรถออก หรือ คืนรถ / ชาร์จรถ ทุกครั้ง 
-              <Icon icon="ph:car-profile-duotone" width="16" height="16" className="inline-block mx-0.5 text-[#0071e3]" />
-              <Icon icon="ph:lightning-duotone" width="16" height="16" className="inline-block text-[#ff9f0a]" />
-            </span>
-          </div>
         </div>
-
-        {/* ── Car List ── */}
-        {(() => {
-          const busyCars = cars.filter(c => c.status === 'busy')
-          const availableCars = cars.filter(c => c.status !== 'busy')
-
-          const renderCarRow = (car, isLast) => {
-            const carImageSrc = getCarImage(car)
-            const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
-            const isBusy = car.status === 'busy'
-            const imgBg = !car.isActivated ? '#f5f5f7' : isBusy ? '#fff2f0' : isEV ? '#edf6ff' : '#edfbf0'
-
-            const logData = isBusy ? car.activeLog : car.lastLog
-            const driverName = logData?.driver_name
-
-            let timeString = null
-            if (isBusy && car.activeLog) {
-              const d = new Date(car.activeLog.start_time)
-              timeString = `ออก ${d.toLocaleDateString('th-TH', {day:'numeric', month:'short'})} ${d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.`
-            } else if (!isBusy && car.lastLog) {
-              const returnTime = car.lastLog.end_time || car.lastLog.updated_at || car.lastLog.created_at || car.lastLog.start_time
-              if (returnTime) {
-                const d = new Date(returnTime)
-                timeString = `คืน ${d.toLocaleDateString('th-TH', {day:'numeric', month:'short'})} ${d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.`
-              }
-            }
-
-            return (
-              <div key={car.id} 
-                   onClick={() => setCarDetailModal({ car, timeString, logData })}
-                   className="bg-white p-4 flex gap-4 relative transition-colors active:bg-[#f9f9f9] cursor-pointer"
-                   style={{borderBottom: isLast ? 'none' : '1px solid #f2f2f7'}}>
-                
-                {/* รูปภาพรถ */}
-                <div className="w-[132px] h-[132px] flex-shrink-0 rounded-[16px] overflow-hidden relative border border-[rgba(0,0,0,0.04)]"
-                     style={{background: imgBg}}>
-                  {carImageSrc
-                    ? <img src={carImageSrc} alt={car.car_type}
-                        className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-35' : ''}`}/>
-                    : <div className="w-full h-full flex items-center justify-center">
-                        <Icon icon="ph:car-profile-duotone" width="48" height="48" className={!car.isActivated ? 'text-[#c7c7cc]' : isEV ? 'text-[#0071e3]' : 'text-[#ff9f0a]'} />
-                      </div>
-                  }
-                  
-                  {/* ป้าย Tag สถานะทับบนรูป */}
-                  <div className={`absolute top-0 left-0 px-2.5 py-1 rounded-br-[12px] text-[11px] font-bold text-white shadow-sm ${
-                    !car.isActivated ? 'bg-[#aeaeb2]' 
-                    : isBusy ? 'bg-[#ff3b30]' 
-                    : isEV ? 'bg-[#0071e3]' 
-                    : 'bg-[#34c759]'
-                  }`}>
-                    {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'ใช้งานอยู่') : (isEV ? 'พร้อมชาร์จ' : 'ว่าง')}
-                  </div>
-                </div>
-
-                {/* ด้านขวา: ข้อมูลทั้งหมด */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                  
-                  <div>
-                    {/* ทะเบียนรถ */}
-                    <h3 className={`text-[17px] font-bold tracking-tight leading-tight truncate ${!car.isActivated ? 'text-[#aeaeb2]' : 'text-[#1d1d1f]'}`}>
-                      {car.plate_number}
-                    </h3>
-
-                    {/* ประเภทรถ */}
-                    <div className="flex items-center gap-1.5 mt-1 text-[13px] text-[#6e6e73] truncate">
-                      <Icon icon="ph:car-duotone" width="14" height="14" className="text-[#ff9f0a] flex-shrink-0" />
-                      <span className="truncate">{car.car_type}</span>
-                    </div>
-
-                    {/* ชื่อคนขับ */}
-                    <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#6e6e73] truncate">
-                      <Icon icon="ph:user-circle-duotone" width="14" height="14" className="text-[#0071e3] flex-shrink-0" />
-                      <span className="truncate">
-                         {driverName ? driverName : 'ไม่มีข้อมูลผู้ขับ'} 
-                         {!isBusy && driverName && <span className="text-[11px] font-normal text-[#aeaeb2] ml-1">(ล่าสุด)</span>}
-                      </span>
-                    </div>
-
-                    {/* ประเภทงาน / สถานที่ */}
-                    <div className="flex items-center gap-1.5 mt-0.5 text-[13px] text-[#6e6e73] truncate">
-                      <Icon icon="ph:briefcase-duotone" width="14" height="14" className="text-[#af52de] flex-shrink-0" />
-                      <span className="truncate">
-                         {logData?.location ? logData.location : 'ไม่ระบุงาน'}
-                      </span>
-                    </div>
-
-                    {/* ข้อมูลเวลา */}
-                    {timeString && (
-                      <div className={`flex items-center gap-1.5 mt-0.5 text-[12px] font-medium ${isBusy ? 'text-[#34c759]' : 'text-[#aeaeb2]'}`}>
-                        <Icon icon={isBusy ? "ph:clock-duotone" : "ph:clock-counter-clockwise-duotone"} width="14" height="14" className="flex-shrink-0" />
-                        <span className="truncate">{timeString}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ปุ่ม Action */}
-                  <div className="flex items-center gap-2 mt-2.5">
-                    {/* ปุ่มพิมพ์รายงาน */}
-                    <button onClick={e => { e.stopPropagation(); window.open(`/report?car_id=${car.id}`,'_blank') }}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.08)] bg-white shadow-sm text-[12px] font-medium text-[#3c3c43] active:bg-[#f5f5f7] transition-colors"
-                      title="พิมพ์รายงาน">
-                      <Icon icon="ph:printer-duotone" width="16" height="16" className="text-[#af52de]" />
-                      พิมพ์
-                    </button>
-
-                    {/* ปุ่มโทรหาคนขับ */}
-                    {driverName && car.driverPosition !== 'ผจก.' && (
-                      <button onClick={(e) => handleCallClick(e, driverName)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.08)] bg-white shadow-sm text-[12px] font-medium text-[#3c3c43] active:bg-[#f5f5f7] transition-colors"
-                        title="โทรหาผู้ขับ">
-                        <Icon icon="ph:phone-call-duotone" width="16" height="16" className={isBusy ? 'text-[#34c759]' : 'text-[#ff9f0a]'} />
-                        โทร
-                      </button>
-                    )}
-                  </div>
-
-                </div>
-              </div>
-            )
-          }
-
-          return (
-            <div className="space-y-5">
-              {busyCars.length > 0 && (
-                <div>
-                  <div className="flex items-baseline justify-between mb-2 px-1">
-                    <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">กำลังใช้งาน</h2>
-                    <span className="text-[13px] text-[#aeaeb2]">{busyCars.length} คัน</span>
-                  </div>
-                  <div className="rounded-[18px] overflow-hidden bg-white"
-                       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-                    {busyCars.map((car, i) => renderCarRow(car, i === busyCars.length - 1))}
-                  </div>
-                </div>
-              )}
-
-              {availableCars.length > 0 && (
-                <div>
-                  <div className="flex items-baseline justify-between mb-2 px-1">
-                    <h2 className="text-[13px] font-semibold text-[#6e6e73] uppercase tracking-[0.04em]">พร้อมใช้งาน</h2>
-                    <span className="text-[13px] text-[#aeaeb2]">{availableCars.length} คัน</span>
-                  </div>
-                  <div className="rounded-[18px] overflow-hidden bg-white"
-                       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
-                    {availableCars.map((car, i) => renderCarRow(car, i === availableCars.length - 1))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })()}
-
-        <p className="text-center text-[11px] text-[#d2d2d7] mt-10">PEA Fleet System v2.26</p>
-      </div>
+      )}
 
       {/* ── Modal รายละเอียดรถแบบขยาย (แบบ Full Screen เหมือนหน้าฟอร์ม ไม่ต้องเลื่อนจอ) ── */}
       {carDetailModal && (() => {
@@ -399,16 +420,16 @@ function CarSelector() {
         const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
 
         // ปรับเป็น Gradient และ overlay เพื่อให้อ่านข้อความง่ายขึ้น เหมือนในรูป
-        const imgBgGradient = 'linear-gradient(to bottom, #dbeeff 0%, #1d1d1f 100%)' // Blue to Dark
+        const imgBgGradient = 'linear-gradient(to bottom, #eadfed 0%, #4b1560 100%)' // Blue to Dark
 
         return (
-          <div className="fixed inset-0 z-[999] bg-[#f5f5f7] flex flex-col animate-slideUp">
+          <div className="fixed inset-0 z-[999] bg-[#f8f3fa] flex flex-col animate-slideUp">
             
             {/* ── ส่วนบน: รูปภาพและทะเบียน (Hero 45% ของจอ) ── */}
             <div className="relative w-full h-[45%] flex flex-col justify-end px-5 pb-8 overflow-hidden" style={{ background: imgBgGradient }}>
               
               {/* Dark Gradient Overlay for text readability ( bottom gradient to black ) */}
-              <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-[#1d1d1f]/90 via-[#1d1d1f]/40 to-transparent z-10 pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-[#4b1560]/90 via-[#4b1560]/40 to-transparent z-10 pointer-events-none" />
 
               {/* Nav Buttons (ปรับชิดขอบบน) */}
               <div className="absolute top-0 left-0 w-full px-4 pt-4 sm:pt-6 flex justify-between items-center z-30">
@@ -461,7 +482,7 @@ function CarSelector() {
               
               {/* Drag Handle */}
               <div className="flex justify-center mb-5">
-                <div className="w-10 h-1 rounded-full bg-[#d2d2d7]"/>
+                <div className="w-10 h-1 rounded-full bg-[#d9cadd]"/>
               </div>
 
               {/* Title Header */}
@@ -469,49 +490,49 @@ function CarSelector() {
                 <div className={`w-[42px] h-[42px] rounded-[14px] flex items-center justify-center ${car.status === 'busy' ? 'bg-[#ff3b30]' : 'bg-[#34c759]'}`}>
                   <Icon icon={isBusy ? "ph:steering-wheel-fill" : "ph:car-fill"} width="24" height="24" className="text-white" />
                 </div>
-                <p className="text-[20px] font-bold text-[#1d1d1f] tracking-[-0.4px]">
+                <p className="text-[20px] font-bold text-[#4b1560] tracking-[-0.4px]">
                   {isBusy ? 'ข้อมูลการใช้งาน' : 'รายละเอียดรถยนต์'}
                 </p>
               </div>
 
               {/* Data Card (Single White Card) */}
-              <div className="bg-white rounded-[20px] px-5 py-2 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-[#f2f2f7] flex flex-col">
+              <div className="bg-white rounded-[20px] px-5 py-2 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-[#f8f3fa] flex flex-col">
                 
                 {/* Driver Row: สีฟ้า */}
                 <div className="flex items-center gap-4 py-4">
-                  <div className="w-10 h-10 rounded-full bg-[#f0f8ff] border border-[#dbeeff] flex items-center justify-center flex-shrink-0">
-                    <Icon icon="ph:user-circle-bold" width="22" height="22" className="text-[#0071e3]" />
+                  <div className="w-10 h-10 rounded-full bg-[#f0f8ff] border border-[#eadfed] flex items-center justify-center flex-shrink-0">
+                    <Icon icon="ph:user-circle-bold" width="22" height="22" className="text-[#702082]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] text-[#8e8e93] font-medium mb-0.5">ผู้ขับขี่</p>
-                    <p className="text-[15px] text-[#1d1d1f] font-bold truncate">{driverName ? driverName : 'ไม่มีข้อมูลผู้ขับ'}</p>
+                    <p className="text-[15px] text-[#4b1560] font-bold truncate">{driverName ? driverName : 'ไม่มีข้อมูลผู้ขับ'}</p>
                   </div>
                 </div>
 
-                <div className="h-px w-full bg-[#f2f2f7]" />
+                <div className="h-px w-full bg-[#f8f3fa]" />
 
                 {/* Location / Task Row: สีม่วง */}
                 <div className="flex items-center gap-4 py-4">
                   <div className="w-10 h-10 rounded-full bg-[#faf5ff] border border-[#ebd7ff] flex items-center justify-center flex-shrink-0">
-                    <Icon icon="ph:briefcase-bold" width="22" height="22" className="text-[#af52de]" />
+                    <Icon icon="ph:briefcase-bold" width="22" height="22" className="text-[#8b3c98]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] text-[#8e8e93] font-medium mb-0.5">ประเภทงาน / สถานที่</p>
-                    <p className="text-[15px] text-[#1d1d1f] font-bold leading-snug line-clamp-2">{logData?.location ? logData.location : 'ไม่ระบุงาน'}</p>
+                    <p className="text-[15px] text-[#4b1560] font-bold leading-snug line-clamp-2">{logData?.location ? logData.location : 'ไม่ระบุงาน'}</p>
                   </div>
                 </div>
 
                 {/* Time Row: สีเขียว */}
                 {timeString && (
                   <>
-                    <div className="h-px w-full bg-[#f2f2f7]" />
+                    <div className="h-px w-full bg-[#f8f3fa]" />
                     <div className="flex items-center gap-4 py-4">
-                      <div className={`w-10 h-10 rounded-full border flex items-center justify-center flex-shrink-0 ${isBusy ? 'bg-[#f0fdf4] border-[#d4f5e0]' : 'bg-[#f5f5f7] border-[#e5e5ea]'}`}>
+                      <div className={`w-10 h-10 rounded-full border flex items-center justify-center flex-shrink-0 ${isBusy ? 'bg-[#f0fdf4] border-[#d4f5e0]' : 'bg-[#f8f3fa] border-[#eadfed]'}`}>
                         <Icon icon={isBusy ? "ph:clock-bold" : "ph:clock-counter-clockwise-bold"} width="22" height="22" className={isBusy ? 'text-[#34c759]' : 'text-[#8e8e93]'} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] text-[#8e8e93] font-medium mb-0.5">{isBusy ? 'เวลาออกรถ' : 'เวลาคืนรถ'}</p>
-                        <p className="text-[15px] text-[#1d1d1f] font-bold">{timeString}</p>
+                        <p className="text-[15px] text-[#4b1560] font-bold">{timeString}</p>
                       </div>
                     </div>
                   </>
@@ -521,8 +542,8 @@ function CarSelector() {
               {/* Action Buttons (ชิดด้านล่างสุด) */}
               <div className="mt-auto pt-4 flex gap-3">
                 <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')}
-                  className="flex-[0.45] bg-white border-[1.5px] border-[#e5e5ea] py-[16px] rounded-[16px] flex items-center justify-center gap-2 text-[15px] font-bold text-[#1d1d1f] shadow-sm active:bg-[#f5f5f7] transition-all">
-                  <Icon icon="ph:printer-duotone" width="22" height="22" className="text-[#af52de]" />
+                  className="flex-[0.45] bg-white border-[1.5px] border-[#eadfed] py-[16px] rounded-[16px] flex items-center justify-center gap-2 text-[15px] font-bold text-[#4b1560] shadow-sm active:bg-[#f8f3fa] transition-all">
+                  <Icon icon="ph:printer-duotone" width="22" height="22" className="text-[#8b3c98]" />
                   พิมพ์รายงาน
                 </button>
                 {driverName && car.driverPosition !== 'ผจก.' && (
@@ -545,36 +566,36 @@ function CarSelector() {
           <div className="absolute inset-0 bg-black/40"
                style={{backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)'}}
                onClick={() => setShowInstructions(false)}/>
-          <div className="relative w-full max-w-[440px] bg-[#f5f5f7] rounded-t-[26px] sm:rounded-[26px] z-10 max-h-[92vh] flex flex-col overflow-hidden animate-slideUp"
+          <div className="relative w-full max-w-[440px] bg-[#f8f3fa] rounded-t-[26px] sm:rounded-[26px] z-10 max-h-[92vh] flex flex-col overflow-hidden animate-slideUp"
                style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
             <div className="sm:hidden flex justify-center pt-3 pb-0">
               <div className="w-9 h-1 rounded-full bg-[#c7c7cc]"/>
             </div>
             <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-black/[0.06]">
-              <span className="text-[18px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">คู่มือการใช้งาน</span>
+              <span className="text-[18px] font-semibold text-[#4b1560] tracking-[-0.4px]">คู่มือการใช้งาน</span>
               <button onClick={() => setShowInstructions(false)}
-                className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3c3c43] font-semibold active:bg-[#d1d1d6] transition-colors">
+                className="w-[28px] h-[28px] rounded-full bg-[#eadfed] flex items-center justify-center text-[13px] text-[#5f4664] font-semibold active:bg-[#d1d1d6] transition-colors">
                 ✕
               </button>
             </div>
             <div className="overflow-y-auto px-5 py-4 space-y-3">
               <div className="bg-white rounded-[16px] overflow-hidden"
                    style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
-                <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
+                <div className="px-4 py-3 border-b border-[#f8f3fa] flex items-center gap-2">
                   <Icon icon="ph:car-profile-duotone" width="22" height="22" className="text-[#ff3b30]" />
-                  <span className="text-[15px] font-semibold text-[#1d1d1f]">รถยนต์ทั่วไป (น้ำมัน)</span>
+                  <span className="text-[15px] font-semibold text-[#4b1560]">รถยนต์ทั่วไป (น้ำมัน)</span>
                 </div>
                 <div className="px-4 py-4 space-y-3.5">
                   <div>
-                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การนำรถออก</p>
-                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → กรอกรหัสพนักงาน → เลขไมล์เริ่มต้น → เลือกแผนก/ประเภทงาน/พื้นที่ → <span className="font-semibold text-[#1d1d1f]">ยืนยันนำรถออก</span>
+                    <p className="text-[13px] font-semibold text-[#4b1560] mb-1">การนำรถออก</p>
+                    <p className="text-[13px] text-[#765c7c] leading-relaxed">
+                      สแกน QR Code → กรอกรหัสพนักงาน → เลขไมล์เริ่มต้น → เลือกแผนก/ประเภทงาน/พื้นที่ → <span className="font-semibold text-[#4b1560]">ยืนยันนำรถออก</span>
                     </p>
                   </div>
-                  <div className="border-t border-[#f2f2f7] pt-3.5">
-                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การคืนรถ</p>
-                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → เลขไมล์ล่าสุด (จบงาน) → เลือกว่ามีการเติมน้ำมันหรือไม่ (ระบุลิตร/บาท) → <span className="font-semibold text-[#1d1d1f]">ยืนยันคืนรถ</span>
+                  <div className="border-t border-[#f8f3fa] pt-3.5">
+                    <p className="text-[13px] font-semibold text-[#4b1560] mb-1">การคืนรถ</p>
+                    <p className="text-[13px] text-[#765c7c] leading-relaxed">
+                      สแกน QR Code → เลขไมล์ล่าสุด (จบงาน) → เลือกว่ามีการเติมน้ำมันหรือไม่ (ระบุลิตร/บาท) → <span className="font-semibold text-[#4b1560]">ยืนยันคืนรถ</span>
                     </p>
                   </div>
                 </div>
@@ -582,21 +603,21 @@ function CarSelector() {
 
               <div className="bg-white rounded-[16px] overflow-hidden"
                    style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
-                <div className="px-4 py-3 border-b border-[#f2f2f7] flex items-center gap-2">
-                  <Icon icon="ph:lightning-duotone" width="22" height="22" className="text-[#0071e3]" />
-                  <span className="text-[15px] font-semibold text-[#1d1d1f]">รถยนต์ไฟฟ้า (EV)</span>
+                <div className="px-4 py-3 border-b border-[#f8f3fa] flex items-center gap-2">
+                  <Icon icon="ph:lightning-duotone" width="22" height="22" className="text-[#702082]" />
+                  <span className="text-[15px] font-semibold text-[#4b1560]">รถยนต์ไฟฟ้า (EV)</span>
                 </div>
                 <div className="px-4 py-4 space-y-3.5">
                   <div>
-                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การเริ่มชาร์จ</p>
-                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → กรอกรหัสพนักงาน → เลขไมล์ → ระบุ %แบตก่อนชาร์จ → เลือกสถานีชาร์จ → <span className="font-semibold text-[#1d1d1f]">ยืนยันเริ่มชาร์จ</span>
+                    <p className="text-[13px] font-semibold text-[#4b1560] mb-1">การเริ่มชาร์จ</p>
+                    <p className="text-[13px] text-[#765c7c] leading-relaxed">
+                      สแกน QR Code → กรอกรหัสพนักงาน → เลขไมล์ → ระบุ %แบตก่อนชาร์จ → เลือกสถานีชาร์จ → <span className="font-semibold text-[#4b1560]">ยืนยันเริ่มชาร์จ</span>
                     </p>
                   </div>
-                  <div className="border-t border-[#f2f2f7] pt-3.5">
-                    <p className="text-[13px] font-semibold text-[#1d1d1f] mb-1">การเลิกชาร์จ (นำที่ชาร์จออก)</p>
-                    <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                      สแกน QR Code → ระบุ %แบตเตอรี่ล่าสุด (หลังชาร์จ) → <span className="font-semibold text-[#1d1d1f]">ยืนยันเลิกชาร์จ</span>
+                  <div className="border-t border-[#f8f3fa] pt-3.5">
+                    <p className="text-[13px] font-semibold text-[#4b1560] mb-1">การเลิกชาร์จ (นำที่ชาร์จออก)</p>
+                    <p className="text-[13px] text-[#765c7c] leading-relaxed">
+                      สแกน QR Code → ระบุ %แบตเตอรี่ล่าสุด (หลังชาร์จ) → <span className="font-semibold text-[#4b1560]">ยืนยันเลิกชาร์จ</span>
                     </p>
                   </div>
                 </div>
@@ -604,7 +625,7 @@ function CarSelector() {
             </div>
             <div className="px-5 pt-3 pb-8 border-t border-black/[0.05]">
               <button onClick={() => setShowInstructions(false)}
-                className="w-full bg-[#1d1d1f] text-white text-[16px] font-semibold py-4 rounded-[16px] active:bg-[#3a3a3c] transition-colors tracking-[-0.2px]">
+                className="w-full bg-[#4b1560] text-white text-[16px] font-semibold py-4 rounded-[16px] active:bg-[#702082] transition-colors tracking-[-0.2px]">
                 รับทราบ
               </button>
             </div>
@@ -620,26 +641,26 @@ function CarSelector() {
                 <div className="w-16 h-16 bg-[#edfbf0] rounded-full flex items-center justify-center mb-4">
                   <Icon icon="ph:phone-call-duotone" width="36" height="36" className="text-[#34c759]" />
                 </div>
-                <h3 className="text-[18px] font-semibold text-[#1d1d1f] mb-1">โทรหาผู้ขับขี่</h3>
-                <p className="text-[14px] text-[#6e6e73] mb-4">{callModal.driverName}</p>
+                <h3 className="text-[18px] font-semibold text-[#4b1560] mb-1">โทรหาผู้ขับขี่</h3>
+                <p className="text-[14px] text-[#765c7c] mb-4">{callModal.driverName}</p>
                 
                 {callModal.loading ? (
-                <div className="w-6 h-6 border-2 border-[#d2d2d7] border-t-[#0071e3] rounded-full animate-spin my-4"/>
+                <div className="w-6 h-6 border-2 border-[#d9cadd] border-t-[#702082] rounded-full animate-spin my-4"/>
                 ) : callModal.error ? (
                 <p className="text-[14px] text-[#ff3b30] font-medium bg-[#fff2f0] px-4 py-2 rounded-lg mb-4 w-full">{callModal.error}</p>
                 ) : (
-                <p className="text-[20px] font-bold text-[#1d1d1f] tracking-wider mb-6 bg-[#f5f5f7] px-6 py-3 rounded-xl w-full">{callModal.phone}</p>
+                <p className="text-[20px] font-bold text-[#4b1560] tracking-wider mb-6 bg-[#f8f3fa] px-6 py-3 rounded-xl w-full">{callModal.phone}</p>
                 )}
 
                 <div className="flex gap-3 w-full">
                 <button onClick={() => setCallModal({...callModal, isOpen: false})}
-                    className="flex-1 py-3 bg-[#f5f5f7] text-[#1d1d1f] rounded-[14px] font-medium active:bg-[#e5e5ea] transition-colors">
+                    className="flex-1 py-3 bg-[#f8f3fa] text-[#4b1560] rounded-[14px] font-medium active:bg-[#eadfed] transition-colors">
                     ยกเลิก
                 </button>
                 <button 
                     onClick={() => { window.location.href = `tel:${callModal.phone}`; setCallModal({...callModal, isOpen: false}); }}
                     disabled={!callModal.phone}
-                    className={`flex-1 py-3 rounded-[14px] font-medium transition-colors ${callModal.phone ? 'bg-[#34c759] text-white active:bg-[#248a3d]' : 'bg-[#e5e5ea] text-[#aeaeb2] cursor-not-allowed'}`}>
+                    className={`flex-1 py-3 rounded-[14px] font-medium transition-colors ${callModal.phone ? 'bg-[#34c759] text-white active:bg-[#248a3d]' : 'bg-[#eadfed] text-[#aeaeb2] cursor-not-allowed'}`}>
                     โทรออก
                 </button>
                 </div>
@@ -745,44 +766,44 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
          style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
-      <div className="bg-[#f5f5f7] w-full max-w-md rounded-t-[24px] sm:rounded-[24px] overflow-hidden flex flex-col"
+      <div className="bg-[#f8f3fa] w-full max-w-md rounded-t-[24px] sm:rounded-[24px] overflow-hidden flex flex-col"
            style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)', WebkitFontSmoothing:'antialiased'}}>
         <div className="sm:hidden flex justify-center pt-3 pb-1">
           <div className="w-9 h-[4px] rounded-full bg-[#c7c7cc]"/>
         </div>
         <div className="px-5 pt-4 pb-4 flex items-center justify-between border-b border-[rgba(0,0,0,0.06)]">
-          <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px] flex items-center gap-2">
-            <Icon icon="ph:pen-nib-duotone" width="22" height="22" className="text-[#0071e3]" /> {title}
+          <span className="text-[17px] font-semibold text-[#4b1560] tracking-[-0.3px] flex items-center gap-2">
+            <Icon icon="ph:pen-nib-duotone" width="22" height="22" className="text-[#702082]" /> {title}
           </span>
-          <button onClick={onClose} className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3a3a3c] font-semibold active:bg-[#d1d1d6] transition-colors">✕</button>
+          <button onClick={onClose} className="w-[28px] h-[28px] rounded-full bg-[#eadfed] flex items-center justify-center text-[13px] text-[#702082] font-semibold active:bg-[#d1d1d6] transition-colors">✕</button>
         </div>
-        <div className="mx-5 mt-3 flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
+        <div className="mx-5 mt-3 flex items-center gap-2 bg-[#f3eaf5] rounded-[10px] px-3 py-2">
           <Icon icon="ph:calendar-dots-duotone" width="20" height="20" className="text-[#ff9f0a]" />
-          <span className="text-[12px] font-medium text-[#0071e3]">เซ็นได้เฉพาะวันที่ 28–5 ของรอบเดือน</span>
+          <span className="text-[12px] font-medium text-[#702082]">เซ็นได้เฉพาะวันที่ 28–5 ของรอบเดือน</span>
         </div>
         <div className="p-5">
           {!staffInfo ? (
             <div className="space-y-4">
               <div className="text-center space-y-1 mb-2">
-                <div className="w-16 h-16 rounded-full bg-[#e5e5ea] flex items-center justify-center mx-auto mb-3">
+                <div className="w-16 h-16 rounded-full bg-[#eadfed] flex items-center justify-center mx-auto mb-3">
                   <Icon icon="ph:shield-check-duotone" width="34" height="34" className="text-[#34c759]" />
                 </div>
-                <h3 className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">ยืนยันตัวตน</h3>
-                <p className="text-[13px] text-[#6e6e73]">กรอกรหัสพนักงานของคุณ</p>
+                <h3 className="text-[17px] font-semibold text-[#4b1560] tracking-[-0.3px]">ยืนยันตัวตน</h3>
+                <p className="text-[13px] text-[#765c7c]">กรอกรหัสพนักงานของคุณ</p>
               </div>
               <input type="text" value={empId} onChange={e => setEmpId(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && verifyEmp()}
-                className="w-full bg-white text-[#1d1d1f] text-[20px] font-semibold tracking-[0.2em] text-center px-4 py-3.5 rounded-[14px] outline-none"
+                className="w-full bg-white text-[#4b1560] text-[20px] font-semibold tracking-[0.2em] text-center px-4 py-3.5 rounded-[14px] outline-none"
                 style={{boxShadow:'0 0 0 0.5px rgba(0,0,0,0.12)', fontFamily:'monospace'}}
                 placeholder="XXXXXX" />
               {error && <p className="text-[13px] text-[#ff3b30] text-center font-medium">{error}</p>}
               <div className="flex gap-3 pt-1">
                 <button onClick={onClose}
-                  className="flex-1 py-3.5 rounded-[14px] bg-[#e5e5ea] text-[#1d1d1f] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
+                  className="flex-1 py-3.5 rounded-[14px] bg-[#eadfed] text-[#4b1560] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
                   ยกเลิก
                 </button>
                 <button onClick={verifyEmp} disabled={isLoading}
-                  className={`flex-1 py-3.5 rounded-[14px] text-white text-[15px] font-medium transition-colors ${isLoading ? 'bg-[#aeaeb2]' : 'bg-[#1d1d1f] active:bg-[#3a3a3c]'}`}>
+                  className={`flex-1 py-3.5 rounded-[14px] text-white text-[15px] font-medium transition-colors ${isLoading ? 'bg-[#aeaeb2]' : 'bg-[#4b1560] active:bg-[#702082]'}`}>
                   {isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}
                 </button>
               </div>
@@ -794,29 +815,29 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="w-[7px] h-[7px] rounded-full bg-[#34c759]"/>
-                    <span className="text-[14px] font-semibold text-[#1d1d1f]">{staffInfo.full_name}</span>
+                    <span className="text-[14px] font-semibold text-[#4b1560]">{staffInfo.full_name}</span>
                   </div>
-                  <p className="text-[12px] text-[#6e6e73] mt-0.5 ml-[15px]">{staffInfo.position}</p>
+                  <p className="text-[12px] text-[#765c7c] mt-0.5 ml-[15px]">{staffInfo.position}</p>
                 </div>
                 <button onClick={() => setStaffInfo(null)}
-                  className="text-[12px] text-[#0071e3] font-medium active:opacity-60">เปลี่ยน</button>
+                  className="text-[12px] text-[#702082] font-medium active:opacity-60">เปลี่ยน</button>
               </div>
-              <p className="text-[12px] text-[#6e6e73] text-center">ใช้นิ้วเซ็นชื่อในกรอบด้านล่าง</p>
+              <p className="text-[12px] text-[#765c7c] text-center">ใช้นิ้วเซ็นชื่อในกรอบด้านล่าง</p>
               <div className="bg-white rounded-[14px] p-3 flex justify-center"
                    style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
                 <canvas ref={canvasRef} width={300} height={140}
                   className="rounded-[10px] cursor-crosshair touch-none"
-                  style={{border:'1.5px dashed #d2d2d7', touchAction:'none', background:'#fafafa'}}
+                  style={{border:'1.5px dashed #d9cadd', touchAction:'none', background:'#fafafa'}}
                   onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
                   onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} />
               </div>
               <div className="flex gap-3">
                 <button onClick={clearCanvas}
-                  className="flex-1 py-3.5 rounded-[14px] bg-[#e5e5ea] text-[#1d1d1f] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
+                  className="flex-1 py-3.5 rounded-[14px] bg-[#eadfed] text-[#4b1560] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
                   ลบ / เขียนใหม่
                 </button>
                 <button onClick={handleSave}
-                  className="flex-1 py-3.5 rounded-[14px] bg-[#1d1d1f] text-white text-[15px] font-medium active:bg-[#3a3a3c] transition-colors">
+                  className="flex-1 py-3.5 rounded-[14px] bg-[#4b1560] text-white text-[15px] font-medium active:bg-[#702082] transition-colors">
                   บันทึก
                 </button>
               </div>
@@ -1091,9 +1112,9 @@ function ReportPage() {
            style={{WebkitFontSmoothing:'antialiased'}}>
         <div className="bg-[rgba(245,245,247,0.92)] backdrop-blur-2xl border-b border-[rgba(0,0,0,0.1)] xl:border xl:border-[rgba(0,0,0,0.08)] xl:rounded-[20px] xl:shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(0,0,0,0.06)]">
-            <span className="text-[15px] font-semibold text-[#1d1d1f] tracking-[-0.3px]">เอกสาร</span>
+            <span className="text-[15px] font-semibold text-[#4b1560] tracking-[-0.3px]">เอกสาร</span>
             <button onClick={() => window.print()}
-              className="bg-[#1d1d1f] text-white text-[13px] font-medium px-4 py-1.5 rounded-full flex items-center gap-1.5 active:bg-[#3a3a3c] transition-colors"
+              className="bg-[#4b1560] text-white text-[13px] font-medium px-4 py-1.5 rounded-full flex items-center gap-1.5 active:bg-[#702082] transition-colors"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               พิมพ์
@@ -1107,9 +1128,9 @@ function ReportPage() {
                 <span className="text-[11px] font-medium text-[#856404]">นอกเวลาอนุญาต (28–5 ของเดือน)</span>
               </div>
             ) : selectedMonth !== signableMonth ? (
-              <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
-                <Icon icon="ph:info-duotone" width="16" height="16" className="text-[#0071e3]" />
-                <span className="text-[11px] font-medium text-[#0071e3]">จะสลับไปเดือน {signableMonth}</span>
+              <div className="flex items-center gap-2 bg-[#f3eaf5] rounded-[10px] px-3 py-2">
+                <Icon icon="ph:info-duotone" width="16" height="16" className="text-[#702082]" />
+                <span className="text-[11px] font-medium text-[#702082]">จะสลับไปเดือน {signableMonth}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 bg-[#edfbf0] rounded-[10px] px-3 py-2">
@@ -1121,9 +1142,9 @@ function ReportPage() {
 
           <div className="px-4 py-3 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#1d1d1f] font-medium">เดือน</span>
+              <span className="text-[13px] text-[#4b1560] font-medium">เดือน</span>
               <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}
-                className="text-[13px] text-[#0071e3] font-medium bg-transparent border-none outline-none cursor-pointer" />
+                className="text-[13px] text-[#702082] font-medium bg-transparent border-none outline-none cursor-pointer" />
             </div>
 
             {!isEVCar && (
@@ -1134,19 +1155,19 @@ function ReportPage() {
                   { label: 'เรียน', val: dearText, set: setDearText, ph: 'ผจก...' },
                 ].map(({ label, val, set, ph }, i, arr) => (
                   <div key={label} className={`flex items-center px-3 py-2 gap-3 ${i < arr.length-1 ? 'border-b border-[rgba(0,0,0,0.06)]' : ''}`}>
-                    <span className="text-[12px] text-[#6e6e73] w-8 flex-shrink-0">{label}</span>
+                    <span className="text-[12px] text-[#765c7c] w-8 flex-shrink-0">{label}</span>
                     <input type="text" value={val} onChange={e => set(e.target.value)} placeholder={ph}
-                      className="flex-1 text-[12px] text-[#1d1d1f] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]" />
+                      className="flex-1 text-[12px] text-[#4b1560] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]" />
                   </div>
                 ))}
               </div>
             )}
 
             <div>
-              <p className="text-[11px] text-[#6e6e73] font-medium mb-2 tracking-[-0.1px]">ลายเซ็น</p>
+              <p className="text-[11px] text-[#765c7c] font-medium mb-2 tracking-[-0.1px]">ลายเซ็น</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-white rounded-[12px] overflow-hidden flex flex-col items-center py-2 px-1 relative" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)', minHeight:'70px'}}>
-                  <span className="text-[10px] text-[#6e6e73] mb-1.5">{isEVCar ? 'ผู้รายงาน' : 'ผู้ขับรถ'}</span>
+                  <span className="text-[10px] text-[#765c7c] mb-1.5">{isEVCar ? 'ผู้รายงาน' : 'ผู้ขับรถ'}</span>
                   {driverSigText ? (
                     <>
                       <img src={driverSigText} alt="sig" className="h-7 object-contain" />
@@ -1157,14 +1178,14 @@ function ReportPage() {
                     </>
                   ) : (
                     <button onClick={() => openSigModal('driver', isEVCar ? 'เซ็นชื่อผู้รายงาน' : 'เซ็นชื่อผู้ขับ')}
-                      className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny ? 'border-[#0071e3] text-[#0071e3] active:bg-[#edf6ff]' : 'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                      className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny ? 'border-[#702082] text-[#702082] active:bg-[#f3eaf5]' : 'border-[#d9cadd] text-[#aeaeb2] cursor-not-allowed'}`}>
                       + เซ็น
                     </button>
                   )}
                 </div>
 
                 <div className="bg-white rounded-[12px] overflow-hidden flex flex-col items-center py-2 px-1 relative" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)', minHeight:'70px'}}>
-                  <span className="text-[10px] text-[#6e6e73] mb-1.5">ผู้ควบคุม</span>
+                  <span className="text-[10px] text-[#765c7c] mb-1.5">ผู้ควบคุม</span>
                   {controllerSigText ? (
                     <>
                       <img src={controllerSigText} alt="sig" className="h-7 object-contain" />
@@ -1175,7 +1196,7 @@ function ReportPage() {
                     </>
                   ) : (
                     <button onClick={() => openSigModal('controller', 'เซ็นชื่อผู้ควบคุม')}
-                      className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny ? 'border-[#0071e3] text-[#0071e3] active:bg-[#edf6ff]' : 'border-[#d2d2d7] text-[#aeaeb2] cursor-not-allowed'}`}>
+                      className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${canSignAny ? 'border-[#702082] text-[#702082] active:bg-[#f3eaf5]' : 'border-[#d9cadd] text-[#aeaeb2] cursor-not-allowed'}`}>
                       + เซ็น
                     </button>
                   )}
@@ -1811,8 +1832,8 @@ function CarActionForm({ carId }) {
   }
 
   if (!car) return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
-      <div className="w-8 h-8 border-[2.5px] border-[#d2d2d7] border-t-[#1d1d1f] rounded-full animate-spin"/>
+    <div className="min-h-screen bg-[#f8f3fa] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="w-8 h-8 border-[2.5px] border-[#d9cadd] border-t-[#4b1560] rounded-full animate-spin"/>
     </div>
   )
 
@@ -1822,7 +1843,7 @@ function CarActionForm({ carId }) {
   const showSignReminder = isSigningPeriod && !isSignReminderDismissed && car.status === 'available';
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] font-sarabun pb-16" style={{WebkitFontSmoothing:'antialiased'}}>
+    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-16" style={{WebkitFontSmoothing:'antialiased'}}>
       <style>{`
         * { -webkit-font-smoothing: antialiased; }
         @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -1833,17 +1854,17 @@ function CarActionForm({ carId }) {
       {showSignReminder && (
         <div className="fixed inset-0 z-[998] flex items-end sm:items-center justify-center"
              style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
-          <div className="bg-[#f5f5f7] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6 text-center"
+          <div className="bg-[#f8f3fa] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6 text-center"
                style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)'}}>
             <div className="flex justify-center mb-3">
-              <Icon icon="ph:signature-duotone" width="56" height="56" className="text-[#0071e3]" />
+              <Icon icon="ph:signature-duotone" width="56" height="56" className="text-[#702082]" />
             </div>
-            <h3 className="text-[20px] font-semibold text-[#1d1d1f] mb-2 tracking-[-0.4px]">ถึงเวลาเซ็นเอกสาร</h3>
-            <p className="text-[14px] text-[#6e6e73] mb-6 leading-relaxed">
-              อยู่ในช่วงเวลาเซ็นเอกสารประจำเดือน<br/>อย่าลืมเข้าไปเซ็นชื่อที่หน้ารายงาน (ไอคอน <Icon icon="ph:printer-duotone" width="16" height="16" className="inline text-[#af52de]" />)
+            <h3 className="text-[20px] font-semibold text-[#4b1560] mb-2 tracking-[-0.4px]">ถึงเวลาเซ็นเอกสาร</h3>
+            <p className="text-[14px] text-[#765c7c] mb-6 leading-relaxed">
+              อยู่ในช่วงเวลาเซ็นเอกสารประจำเดือน<br/>อย่าลืมเข้าไปเซ็นชื่อที่หน้ารายงาน (ไอคอน <Icon icon="ph:printer-duotone" width="16" height="16" className="inline text-[#8b3c98]" />)
             </p>
             <button onClick={() => setIsSignReminderDismissed(true)}
-              className="w-full bg-[#1d1d1f] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#3a3a3c] transition-colors">
+              className="w-full bg-[#4b1560] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#702082] transition-colors">
               รับทราบ
             </button>
           </div>
@@ -1854,34 +1875,34 @@ function CarActionForm({ carId }) {
       {showReturnConfirm && (
         <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center"
              style={{background:'rgba(0,0,0,0.45)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
-          <div className="bg-[#f5f5f7] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6"
+          <div className="bg-[#f8f3fa] w-full max-w-[380px] rounded-t-[24px] sm:rounded-[24px] p-6"
                style={{boxShadow:'0 24px 80px rgba(0,0,0,0.3)'}}>
             <div className="flex justify-center mb-3">
               <Icon icon="ph:map-pin-line-duotone" width="56" height="56" className="text-[#ff3b30]" />
             </div>
-            <h3 className="text-[20px] font-semibold text-[#1d1d1f] mb-4 tracking-[-0.4px] text-center">ตรวจสอบเลขไมล์</h3>
+            <h3 className="text-[20px] font-semibold text-[#4b1560] mb-4 tracking-[-0.4px] text-center">ตรวจสอบเลขไมล์</h3>
             <div className="bg-white rounded-[16px] p-4 mb-5 space-y-3"
                  style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.08)'}}>
               <div className="flex justify-between items-center">
-                <span className="text-[14px] text-[#6e6e73]">ไมล์ก่อนเดินทาง</span>
-                <span className="text-[14px] font-semibold text-[#1d1d1f]">{parseFloat(activeLog?.start_mileage).toLocaleString()}</span>
+                <span className="text-[14px] text-[#765c7c]">ไมล์ก่อนเดินทาง</span>
+                <span className="text-[14px] font-semibold text-[#4b1560]">{parseFloat(activeLog?.start_mileage).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[14px] text-[#6e6e73]">ไมล์ล่าสุด (จบงาน)</span>
-                <span className="text-[14px] font-semibold text-[#1d1d1f]">{parseFloat(endMileage).toLocaleString()}</span>
+                <span className="text-[14px] text-[#765c7c]">ไมล์ล่าสุด (จบงาน)</span>
+                <span className="text-[14px] font-semibold text-[#4b1560]">{parseFloat(endMileage).toLocaleString()}</span>
               </div>
-              <div className="border-t border-[#f2f2f7] pt-3 flex justify-between items-center">
-                <span className="text-[14px] text-[#1d1d1f] font-semibold">ระยะทาง</span>
-                <span className="text-[20px] font-bold text-[#34c759]">{(parseFloat(endMileage) - parseFloat(activeLog?.start_mileage)).toLocaleString()} <span className="text-[13px] font-normal text-[#6e6e73]">กม.</span></span>
+              <div className="border-t border-[#f8f3fa] pt-3 flex justify-between items-center">
+                <span className="text-[14px] text-[#4b1560] font-semibold">ระยะทาง</span>
+                <span className="text-[20px] font-bold text-[#34c759]">{(parseFloat(endMileage) - parseFloat(activeLog?.start_mileage)).toLocaleString()} <span className="text-[13px] font-normal text-[#765c7c]">กม.</span></span>
               </div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => { setShowReturnConfirm(false); handleReturn(true); }}
-                className="flex-1 bg-[#1d1d1f] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#3a3a3c] transition-colors">
+                className="flex-1 bg-[#4b1560] text-white py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#702082] transition-colors">
                 ยืนยัน
               </button>
               <button onClick={() => setShowReturnConfirm(false)}
-                className="flex-1 bg-[#e5e5ea] text-[#1d1d1f] py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#d1d1d6] transition-colors">
+                className="flex-1 bg-[#eadfed] text-[#4b1560] py-4 rounded-[16px] text-[16px] font-semibold active:bg-[#d1d1d6] transition-colors">
                 แก้ไข
               </button>
             </div>
@@ -1893,7 +1914,7 @@ function CarActionForm({ carId }) {
       <div className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center px-5">
         <button onClick={() => window.location.href = '/'}
           className="flex items-center gap-1.5 text-[15px] font-medium active:opacity-60 transition-opacity"
-          style={{color: getCarImage(car) ? 'white' : '#0071e3', textShadow: getCarImage(car) ? '0 1px 4px rgba(0,0,0,0.3)' : 'none'}}>
+          style={{color: getCarImage(car) ? 'white' : '#702082', textShadow: getCarImage(car) ? '0 1px 4px rgba(0,0,0,0.3)' : 'none'}}>
           <svg width="9" height="15" viewBox="0 0 9 15" fill="none">
             <path d="M8 1L1 7.5L8 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -1920,12 +1941,12 @@ function CarActionForm({ carId }) {
           </>
         ) : (
           <div className={`absolute inset-0 flex items-center justify-center ${
-            isEV ? 'bg-gradient-to-b from-[#a8d4ff] to-[#dbeeff]'
+            isEV ? 'bg-gradient-to-b from-[#a8d4ff] to-[#eadfed]'
             : car.status === 'busy' ? 'bg-gradient-to-b from-[#ffb3ae] to-[#ffe5e3]'
             : 'bg-gradient-to-b from-[#a8f0c4] to-[#d4f5e0]'
           }`}>
             <span className="flex items-center justify-center" style={{filter:'drop-shadow(0 8px 24px rgba(0,0,0,0.12))'}}>
-              {isEV ? <Icon icon="ph:lightning-duotone" width="100" height="100" className="text-[#0071e3]" /> : <Icon icon="ph:car-profile-duotone" width="100" height="100" className="text-[#34c759]" />}
+              {isEV ? <Icon icon="ph:lightning-duotone" width="100" height="100" className="text-[#702082]" /> : <Icon icon="ph:car-profile-duotone" width="100" height="100" className="text-[#34c759]" />}
             </span>
           </div>
         )}
@@ -1955,7 +1976,7 @@ function CarActionForm({ carId }) {
       </div>
 
       {/* ── Form Sheet ── */}
-      <div className="relative -mt-5 rounded-t-[28px] bg-[#f2f2f7] pb-16 min-h-[50vh]"
+      <div className="relative -mt-5 rounded-t-[28px] bg-[#f8f3fa] pb-16 min-h-[50vh]"
            style={{boxShadow:'0 -4px 20px rgba(0,0,0,0.08)'}}>
 
         <div className="flex justify-center pt-3 pb-4">
@@ -1966,17 +1987,17 @@ function CarActionForm({ carId }) {
           <div className="flex items-center gap-3">
             <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center ${
               car.status === 'available'
-                ? isEV ? 'bg-[#0071e3]' : 'bg-[#34c759]'
+                ? isEV ? 'bg-[#702082]' : 'bg-[#34c759]'
                 : 'bg-[#ff3b30]'
             }`}>
               {car.status === 'available' ? (isEV ? <Icon icon="ph:lightning-duotone" width="24" height="24" className="text-white" /> : <Icon icon="ph:car-profile-duotone" width="24" height="24" className="text-white" />) : (isEV ? <Icon icon="ph:plug-duotone" width="24" height="24" className="text-white" /> : <Icon icon="ph:arrow-bend-down-left-duotone" width="24" height="24" className="text-white" />)}
             </div>
             <div>
-              <p className="text-[18px] font-bold text-[#1d1d1f] tracking-[-0.4px]">
+              <p className="text-[18px] font-bold text-[#4b1560] tracking-[-0.4px]">
                 {car.status === 'available' ? (isEV ? 'เริ่มชาร์จรถ' : 'นำรถออก') : (isEV ? 'นำที่ชาร์จออก' : 'คืนรถ')}
               </p>
               {car.status === 'busy' && (
-                <p className="text-[12px] text-[#6e6e73]">เวลา {currentTime.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.</p>
+                <p className="text-[12px] text-[#765c7c]">เวลา {currentTime.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.</p>
               )}
             </div>
           </div>
@@ -1991,9 +2012,9 @@ function CarActionForm({ carId }) {
               <div className="bg-white rounded-[20px] px-5 py-4"
                    style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                 <div className="flex justify-between items-center mb-3">
-                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">1. ระบุตัวตนผู้ขับขี่</p>
+                  <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em]">1. ระบุตัวตนผู้ขับขี่</p>
                   {staffName && (
-                    <button onClick={resetStaff} className="text-[12px] font-medium text-[#0071e3] active:opacity-60">
+                    <button onClick={resetStaff} className="text-[12px] font-medium text-[#702082] active:opacity-60">
                       เปลี่ยนรหัส
                     </button>
                   )}
@@ -2008,7 +2029,7 @@ function CarActionForm({ carId }) {
                       placeholder="กรอกรหัสพนักงาน แล้วกด Enter"
                       className={`w-full px-4 py-3.5 rounded-[14px] text-[17px] font-medium outline-none transition-all ${
                         staffError ? 'bg-[#fff2f0] border-[1.5px] border-[#ff3b30] text-[#d70015]'
-                        : 'bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
+                        : 'bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082]'
                       }`}/>
                     {staffError && (
                       <div className="flex items-center gap-2 mt-3 bg-[#fff2f0] px-3 py-2.5 rounded-[12px]">
@@ -2038,7 +2059,7 @@ function CarActionForm({ carId }) {
                     <span className="mb-2 drop-shadow-sm">
                       <Icon icon="ph:lock-key-duotone" width="48" height="48" className="text-[#c7c7cc]" />
                     </span>
-                    <p className="text-[14px] font-medium text-[#6e6e73]">กรุณาระบุรหัสพนักงานเพื่อทำรายการต่อ</p>
+                    <p className="text-[14px] font-medium text-[#765c7c]">กรุณาระบุรหัสพนักงานเพื่อทำรายการต่อ</p>
                  </div>
               ) : (
                 <div className="space-y-3 animate-fadeDown">
@@ -2046,12 +2067,12 @@ function CarActionForm({ carId }) {
                   <div className="bg-white rounded-[20px] px-5 py-4"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                     <div className="flex justify-between items-center mb-3">
-                      <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">
+                      <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em]">
                         {isEV ? '2. เลขไมล์ล่าสุด' : '2. เลขไมล์เริ่มต้น'}
                       </p>
                       {isMileageLocked && (
-                        <span className="text-[11px] font-medium text-[#0071e3] flex items-center gap-1 bg-[#edf6ff] px-2 py-0.5 rounded-full">
-                          <Icon icon="ph:lock-key-duotone" width="14" height="14" className="text-[#0071e3]" /> ต่อเนื่อง
+                        <span className="text-[11px] font-medium text-[#702082] flex items-center gap-1 bg-[#f3eaf5] px-2 py-0.5 rounded-full">
+                          <Icon icon="ph:lock-key-duotone" width="14" height="14" className="text-[#702082]" /> ต่อเนื่อง
                         </span>
                       )}
                     </div>
@@ -2060,8 +2081,8 @@ function CarActionForm({ carId }) {
                       placeholder="000000"
                       className={`w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider outline-none transition-all text-center ${
                         isMileageLocked
-                          ? 'bg-[#f5f5f7] text-[#aeaeb2] cursor-not-allowed border-[1.5px] border-transparent'
-                          : 'bg-[#f5f5f7] text-[#1d1d1f] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3]'
+                          ? 'bg-[#f8f3fa] text-[#aeaeb2] cursor-not-allowed border-[1.5px] border-transparent'
+                          : 'bg-[#f8f3fa] text-[#4b1560] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082]'
                       }`}/>
                   </div>
 
@@ -2070,11 +2091,11 @@ function CarActionForm({ carId }) {
                       {/* %แบต */}
                       <div className="bg-white rounded-[20px] px-5 py-4"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                        <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">3. แบตเตอรี่ก่อนชาร์จ</p>
+                        <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-3">3. แบตเตอรี่ก่อนชาร์จ</p>
                         <div className="relative flex items-center justify-center">
                           <input type="number" value={battBefore} onChange={e => setBattBefore(e.target.value)}
                             placeholder="0" min="0" max="100"
-                            className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                            className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold text-center outline-none bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082] transition-all text-[#4b1560]"/>
                           <span className="absolute right-5 text-[20px] font-bold text-[#aeaeb2]">%</span>
                         </div>
                       </div>
@@ -2083,14 +2104,14 @@ function CarActionForm({ carId }) {
                       <div className="bg-white rounded-[20px] overflow-hidden"
                            style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                         <div className="px-5 pt-4 pb-3">
-                          <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">4. ประเภทสถานีชาร์จ</p>
+                          <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-3">4. ประเภทสถานีชาร์จ</p>
                           <div className="grid grid-cols-2 gap-2">
                             {['PEA','OTHER'].map(t => (
                               <button key={t} onClick={() => { setStationType(t); setSubStationType(''); setStationName(''); }}
                                 className={`py-3.5 rounded-[14px] text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
-                                  stationType === t ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
+                                  stationType === t ? 'bg-[#4b1560] text-white' : 'bg-[#f8f3fa] text-[#5f4664]'
                                 }`}>
-                                {t === 'PEA' ? <><Icon icon="ph:lightning-duotone" width="18" height="18" className={stationType === 'PEA' ? 'text-white' : 'text-[#0071e3]'}/> PEA Volta</> : <><Icon icon="ph:plug-duotone" width="18" height="18" className={stationType === 'OTHER' ? 'text-white' : 'text-[#ff9f0a]'}/> แบรนด์อื่น</>}
+                                {t === 'PEA' ? <><Icon icon="ph:lightning-duotone" width="18" height="18" className={stationType === 'PEA' ? 'text-white' : 'text-[#702082]'}/> PEA Volta</> : <><Icon icon="ph:plug-duotone" width="18" height="18" className={stationType === 'OTHER' ? 'text-white' : 'text-[#ff9f0a]'}/> แบรนด์อื่น</>}
                               </button>
                             ))}
                           </div>
@@ -2098,12 +2119,12 @@ function CarActionForm({ carId }) {
                         {(stationType === 'PEA' ? peaOptions : otherOptions).map((opt) => (
                           <button key={opt.id} onClick={() => { setSubStationType(opt.id); setStationName(''); }}
                             className={`w-full flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors ${
-                              subStationType === opt.id ? 'bg-[#f0f9ff] text-[#0071e3]' : 'text-[#1d1d1f]'
+                              subStationType === opt.id ? 'bg-[#f0f9ff] text-[#702082]' : 'text-[#4b1560]'
                             }`}
                             style={{borderTop:'0.5px solid rgba(60,60,67,0.08)'}}>
                             {opt.label}
                             {subStationType === opt.id && (
-                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#0071e3"/><path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#702082"/><path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             )}
                           </button>
                         ))}
@@ -2115,13 +2136,13 @@ function CarActionForm({ carId }) {
                         return (
                           <div className="bg-white rounded-[20px] px-5 py-4"
                                style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                            <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">รายละเอียด</p>
+                            <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-3">รายละเอียด</p>
                             {sel.inputType === 'text' ? (
                               <input type="text" value={stationName} onChange={e => setStationName(e.target.value)} placeholder="ระบุชื่อสถานี..."
-                                className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                                className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082] transition-all"/>
                             ) : (
                               <select value={stationName} onChange={e => setStationName(e.target.value)}
-                                className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f5f5f7] border-[1.5px] border-transparent">
+                                className="w-full px-4 py-3.5 rounded-[14px] text-[16px] outline-none bg-[#f8f3fa] border-[1.5px] border-transparent">
                                 <option value="" disabled>-- กรุณาเลือก --</option>
                                 {(sel.inputType === 'dropdown_kfk' ? kfkList : otherBrandList).map(k => <option key={k} value={k}>{k}</option>)}
                               </select>
@@ -2135,16 +2156,16 @@ function CarActionForm({ carId }) {
                     <div className="bg-white rounded-[20px] overflow-hidden"
                          style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                       <div className="px-5 pt-4 pb-3 border-b border-[rgba(0,0,0,0.05)]">
-                        <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em]">3. รายละเอียดการปฏิบัติงาน</p>
+                        <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em]">3. รายละเอียดการปฏิบัติงาน</p>
                       </div>
                       
                       <div className="px-5 py-4 space-y-5">
                         
                         {/* แผนก */}
                         <div>
-                          <p className="text-[13px] font-medium text-[#1d1d1f] mb-2.5">แผนก</p>
+                          <p className="text-[13px] font-medium text-[#4b1560] mb-2.5">แผนก</p>
                           <div className={`w-full px-4 py-3.5 rounded-[14px] border-[1.5px] flex items-center justify-between transition-colors ${
-                            selectedDept ? 'bg-[#edfbf0] border-[#34c759]' : 'bg-[#f5f5f7] border-transparent'
+                            selectedDept ? 'bg-[#edfbf0] border-[#34c759]' : 'bg-[#f8f3fa] border-transparent'
                           }`}>
                             <span className={`text-[15px] ${selectedDept ? 'text-[#1a7f37] font-semibold' : 'text-[#aeaeb2] font-medium'}`}>
                               {selectedDept || 'กรุณากรอกรหัสพนักงาน...'}
@@ -2157,10 +2178,10 @@ function CarActionForm({ carId }) {
 
                         {/* เลือกงาน */}
                         <div className={`transition-opacity ${!selectedDept ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-                          <p className="text-[13px] font-medium text-[#1d1d1f] mb-2.5">ประเภทงาน</p>
+                          <p className="text-[13px] font-medium text-[#4b1560] mb-2.5">ประเภทงาน</p>
                           <button onClick={() => openSelectModal('task')}
                             className={`w-full flex items-center justify-between px-4 py-3.5 rounded-[14px] text-[15px] outline-none border-[1.5px] transition-all ${
-                              selectedTask ? 'bg-[#f0f9ff] border-[#0071e3] text-[#0071e3]' : 'bg-[#f5f5f7] border-transparent text-[#6e6e73]'
+                              selectedTask ? 'bg-[#f0f9ff] border-[#702082] text-[#702082]' : 'bg-[#f8f3fa] border-transparent text-[#765c7c]'
                             }`}>
                             <span className="truncate">{selectedTask || '-- แตะเพื่อเลือกงาน --'}</span>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -2168,11 +2189,11 @@ function CarActionForm({ carId }) {
                           {selectedTask === 'อื่นๆ' && (
                             <div className="mt-2 animate-fadeIn relative">
                               <span className="absolute left-4 top-1/2 -translate-y-1/2">
-                                <Icon icon="ph:pencil-line-duotone" width="20" height="20" className="text-[#0071e3]" />
+                                <Icon icon="ph:pencil-line-duotone" width="20" height="20" className="text-[#702082]" />
                               </span>
                               <input type="text" value={customTask} onChange={e => setCustomTask(e.target.value)}
                                 placeholder="ระบุประเภทงาน..." autoFocus
-                                className="w-full pl-11 pr-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
+                                className="w-full pl-11 pr-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#702082] transition-all text-[#4b1560] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
                             </div>
                           )}
                         </div>
@@ -2180,9 +2201,9 @@ function CarActionForm({ carId }) {
                         {/* เลือกพื้นที่หลายจุด */}
                         <div className="pt-3 border-t border-[rgba(0,0,0,0.05)]">
                           <div className="flex items-center justify-between mb-2.5">
-                            <p className="text-[13px] font-medium text-[#1d1d1f]">พื้นที่ปฏิบัติงาน</p>
+                            <p className="text-[13px] font-medium text-[#4b1560]">พื้นที่ปฏิบัติงาน</p>
                             <button onClick={() => setSelectedAreas([...selectedAreas, { type: '', custom: '' }])}
-                              className="text-[12px] font-semibold text-[#0071e3] bg-[#edf6ff] px-2.5 py-1 rounded-full active:scale-95 transition-all">
+                              className="text-[12px] font-semibold text-[#702082] bg-[#f3eaf5] px-2.5 py-1 rounded-full active:scale-95 transition-all">
                               + เพิ่มพื้นที่
                             </button>
                           </div>
@@ -2193,7 +2214,7 @@ function CarActionForm({ carId }) {
                                 <div className="flex-1 space-y-2">
                                   <button onClick={() => openSelectModal('area', index)}
                                     className={`w-full flex items-center justify-between px-4 py-3.5 rounded-[14px] text-[15px] outline-none border-[1.5px] transition-all ${
-                                      area.type ? 'bg-[#f0f9ff] border-[#0071e3] text-[#0071e3]' : 'bg-[#f5f5f7] border-transparent text-[#6e6e73]'
+                                      area.type ? 'bg-[#f0f9ff] border-[#702082] text-[#702082]' : 'bg-[#f8f3fa] border-transparent text-[#765c7c]'
                                     }`}>
                                     <span className="truncate">{area.type || '-- แตะเพื่อเลือกพื้นที่ --'}</span>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -2210,7 +2231,7 @@ function CarActionForm({ carId }) {
                                           setSelectedAreas(newA);
                                         }}
                                         placeholder="ระบุสถานที่..." autoFocus
-                                        className="w-full pl-11 pr-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#0071e3] transition-all text-[#1d1d1f] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
+                                        className="w-full pl-11 pr-4 py-3.5 rounded-[14px] text-[15px] outline-none bg-white border-[1.5px] border-[#702082] transition-all text-[#4b1560] shadow-[0_2px_8px_rgba(0,113,227,0.1)]"/>
                                     </div>
                                   )}
                                 </div>
@@ -2239,7 +2260,7 @@ function CarActionForm({ carId }) {
                       loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed' : 'text-white'
                     }`}
                     style={!loading ? {
-                      background:'linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%)',
+                      background:'linear-gradient(135deg, #4b1560 0%, #702082 100%)',
                       boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
                     } : {}}>
                     {loading ? 'กำลังบันทึก...' : (isEV ? <><Icon icon="ph:lightning-duotone" width="22" height="22"/> ยืนยันเริ่มชาร์จ</> : 'ยืนยันนำรถออก')}
@@ -2256,14 +2277,14 @@ function CarActionForm({ carId }) {
                   <span className="w-3 h-3 rounded-full bg-[#ff3b30] animate-pulse"/>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[16px] font-semibold text-[#1d1d1f] truncate">{activeLog?.driver_name}</p>
+                  <p className="text-[16px] font-semibold text-[#4b1560] truncate">{activeLog?.driver_name}</p>
                   {isEV ? (
-                    <p className="text-[12px] text-[#6e6e73] flex items-center gap-1">
+                    <p className="text-[12px] text-[#765c7c] flex items-center gap-1">
                       <Icon icon="ph:battery-charging-duotone" width="16" height="16" className="text-[#34c759]" /> {activeLog?.battery_before}% · 
                       <Icon icon="ph:map-pin-duotone" width="16" height="16" className="text-[#ff3b30]" /> {activeLog?.station_name}
                     </p>
                   ) : (
-                    <p className="text-[12px] text-[#6e6e73]">ออกที่ไมล์ {activeLog?.start_mileage?.toLocaleString()}</p>
+                    <p className="text-[12px] text-[#765c7c]">ออกที่ไมล์ {activeLog?.start_mileage?.toLocaleString()}</p>
                   )}
                 </div>
               </div>
@@ -2271,11 +2292,11 @@ function CarActionForm({ carId }) {
               {isEV ? (
                 <div className="bg-white rounded-[20px] px-5 py-4"
                      style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">แบตเตอรี่หลังชาร์จ</p>
+                  <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-3">แบตเตอรี่หลังชาร์จ</p>
                   <div className="relative">
                     <input type="number" value={battAfter} onChange={e => setBattAfter(e.target.value)}
                       placeholder="0" min="0" max="100"
-                      className="w-full px-4 py-4 rounded-[14px] text-[36px] font-mono font-bold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                      className="w-full px-4 py-4 rounded-[14px] text-[36px] font-mono font-bold text-center outline-none bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082] transition-all text-[#4b1560]"/>
                     <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[24px] font-bold text-[#aeaeb2]">%</span>
                   </div>
                 </div>
@@ -2283,21 +2304,21 @@ function CarActionForm({ carId }) {
                 <>
                   <div className="bg-white rounded-[20px] px-5 py-4"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
-                    <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">เลขไมล์ล่าสุด (จบงาน)</p>
+                    <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-3">เลขไมล์ล่าสุด (จบงาน)</p>
                     <input type="number" value={endMileage} onChange={e => setEndMileage(e.target.value)}
                       placeholder="000000"
-                      className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all text-[#1d1d1f]"/>
+                      className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider text-center outline-none bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082] transition-all text-[#4b1560]"/>
                   </div>
 
                   <div className="bg-white rounded-[20px] overflow-hidden"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                     <div className="px-5 pt-4 pb-3">
-                      <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-3">มีการเติมน้ำมันหรือไม่?</p>
+                      <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-3">มีการเติมน้ำมันหรือไม่?</p>
                       <div className="grid grid-cols-2 gap-2">
                         {[{v:true,l:'เติมน้ำมัน',i:'gas-pump-duotone'},{v:false,l:'ไม่ได้เติม',i:''}].map(item => (
                           <button key={String(item.v)} onClick={() => { setHasRefueled(item.v); setFuelLiters(''); setFuelCost(''); }}
                             className={`py-3.5 rounded-[14px] text-[14px] font-semibold flex justify-center items-center gap-1.5 transition-all active:scale-[0.97] ${
-                              hasRefueled === item.v ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#3c3c43]'
+                              hasRefueled === item.v ? 'bg-[#4b1560] text-white' : 'bg-[#f8f3fa] text-[#5f4664]'
                             }`}>
                             {item.i && <Icon icon={`ph:${item.i}`} width="20" height="20" className={hasRefueled === item.v ? 'text-white' : 'text-[#ff9f0a]'} />} {item.l}
                           </button>
@@ -2307,14 +2328,14 @@ function CarActionForm({ carId }) {
                     {hasRefueled === true && (
                       <div className="px-5 pb-4 grid grid-cols-2 gap-3 border-t border-[rgba(0,0,0,0.05)] pt-4">
                         <div>
-                          <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-2">ปริมาณ (ลิตร)</p>
+                          <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-2">ปริมาณ (ลิตร)</p>
                           <input type="number" value={fuelLiters} onChange={e => setFuelLiters(e.target.value)} placeholder="0.00"
-                            className="w-full px-3 py-3.5 rounded-[14px] text-[18px] font-mono font-semibold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                            className="w-full px-3 py-3.5 rounded-[14px] text-[18px] font-mono font-semibold text-center outline-none bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082] transition-all"/>
                         </div>
                         <div>
-                          <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.07em] mb-2">จำนวนเงิน (บาท)</p>
+                          <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em] mb-2">จำนวนเงิน (บาท)</p>
                           <input type="number" value={fuelCost} onChange={e => setFuelCost(e.target.value)} placeholder="0"
-                            className="w-full px-3 py-3.5 rounded-[14px] text-[18px] font-mono font-semibold text-center outline-none bg-[#f5f5f7] border-[1.5px] border-transparent focus:bg-white focus:border-[#0071e3] transition-all"/>
+                            className="w-full px-3 py-3.5 rounded-[14px] text-[18px] font-mono font-semibold text-center outline-none bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082] transition-all"/>
                         </div>
                       </div>
                     )}
@@ -2325,11 +2346,11 @@ function CarActionForm({ carId }) {
               <button onClick={() => handleReturn(false)} disabled={loading || (!isEV && hasRefueled === null)}
                 className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
                   loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed'
-                  : (!isEV && hasRefueled === null) ? 'bg-[#e5e5ea] text-[#aeaeb2] cursor-not-allowed'
+                  : (!isEV && hasRefueled === null) ? 'bg-[#eadfed] text-[#aeaeb2] cursor-not-allowed'
                   : 'text-white'
                 }`}
                 style={(!loading && !(!isEV && hasRefueled === null)) ? {
-                  background:'linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%)',
+                  background:'linear-gradient(135deg, #4b1560 0%, #702082 100%)',
                   boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
                 } : {}}>
                 {loading ? 'กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จ  →' : 'ยืนยันคืนรถ  →')}
@@ -2350,14 +2371,14 @@ function CarActionForm({ carId }) {
                style={{backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)'}}
                onClick={() => setSelectModal({ ...selectModal, isOpen: false })}/>
           
-          <div className="relative w-full max-w-[440px] bg-[#f2f2f7] rounded-t-[24px] sm:rounded-[24px] z-10 max-h-[75vh] flex flex-col overflow-hidden animate-slideUp"
+          <div className="relative w-full max-w-[440px] bg-[#f8f3fa] rounded-t-[24px] sm:rounded-[24px] z-10 max-h-[75vh] flex flex-col overflow-hidden animate-slideUp"
                style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
             
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3 bg-white border-b border-[rgba(0,0,0,0.05)] z-10">
-              <span className="text-[17px] font-semibold text-[#1d1d1f] tracking-[-0.4px]">{selectModal.title}</span>
+              <span className="text-[17px] font-semibold text-[#4b1560] tracking-[-0.4px]">{selectModal.title}</span>
               <button onClick={() => setSelectModal({ ...selectModal, isOpen: false })}
-                className="w-[28px] h-[28px] rounded-full bg-[#e5e5ea] flex items-center justify-center text-[13px] text-[#3c3c43] font-bold active:bg-[#d1d1d6]">
+                className="w-[28px] h-[28px] rounded-full bg-[#eadfed] flex items-center justify-center text-[13px] text-[#5f4664] font-bold active:bg-[#d1d1d6]">
                 ✕
               </button>
             </div>
@@ -2383,15 +2404,15 @@ function CarActionForm({ carId }) {
                         setSelectModal({ ...selectModal, isOpen: false });
                       }}
                       className={`w-full flex items-center justify-between px-5 py-4 rounded-[14px] bg-white text-left transition-all active:scale-[0.98] ${
-                        isSelected ? 'border-[1.5px] border-[#0071e3] shadow-[0_2px_8px_rgba(0,113,227,0.12)]' : 'border-[1.5px] border-transparent shadow-sm'
+                        isSelected ? 'border-[1.5px] border-[#702082] shadow-[0_2px_8px_rgba(0,113,227,0.12)]' : 'border-[1.5px] border-transparent shadow-sm'
                       }`}>
                       <div className="flex items-center gap-3">
                         {isOther && <Icon icon="ph:pencil-line-duotone" width="22" height="22" className="text-[#ff9f0a]" />}
-                        <span className={`text-[15px] ${isSelected ? 'text-[#0071e3] font-semibold' : isOther ? 'text-[#ff9f0a] font-medium' : 'text-[#1d1d1f]'}`}>
+                        <span className={`text-[15px] ${isSelected ? 'text-[#702082] font-semibold' : isOther ? 'text-[#ff9f0a] font-medium' : 'text-[#4b1560]'}`}>
                           {opt}
                         </span>
                       </div>
-                      {isSelected && <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#0071e3"/><path d="M7 12l3 3 7-7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      {isSelected && <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#702082"/><path d="M7 12l3 3 7-7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </button>
                   )
               })}

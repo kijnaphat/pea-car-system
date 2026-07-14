@@ -1,8 +1,9 @@
 'use client'
+
 import { useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function AdminLogin() {
   const router = useRouter()
@@ -12,44 +13,14 @@ export default function AdminLogin() {
   const [errorMsg, setErrorMsg] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  // ================= State สำหรับ มินิเกมสตาร์ทรถ =================
-  const [appState, setAppState] = useState('intro') 
-  const [taps, setTaps] = useState(0)
-  const [isShaking, setIsShaking] = useState(false)
-
-  const startGame = () => {
-    setTaps(0)
-    setAppState('playing')
-  }
-
-  const tapScooter = () => {
-    if (appState !== 'playing') return
-    
-    const newTaps = taps + 1
-    setTaps(newTaps)
-    
-    setIsShaking(true)
-    setTimeout(() => setIsShaking(false), 150)
-
-    if (newTaps >= 3) {
-      setTimeout(() => {
-        setAppState('unlocked')
-        // หน่วงเวลาให้โชว์หน้าปลดล็อกสักพัก แล้วเปลี่ยนเป็นหน้า Login
-        setTimeout(() => {
-          setAppState('login')
-        }, 1200)
-      }, 350)
-    }
-  }
-
-  const handleLogin = async (e) => {
-    e.preventDefault()
+  const handleLogin = async (event) => {
+    event.preventDefault()
     setLoading(true)
     setErrorMsg('')
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      router.push('/admin') 
+      router.push('/admin')
     } catch (error) {
       setErrorMsg(error.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง')
     } finally {
@@ -58,190 +29,85 @@ export default function AdminLogin() {
   }
 
   return (
-    // บนมือถือพื้นหลังดำเต็มจอ / บน Desktop พื้นหลังเทาเพื่อเน้น Card
-    <div className="fixed inset-0 bg-[#1c1c1e] md:bg-[#8e8e93] overflow-hidden flex items-center justify-center md:p-8 font-sans"
-         style={{ WebkitFontSmoothing: 'antialiased' }}>
-      
-      <style>{`
-        * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        
-        @keyframes subtleShake {
-          0%, 100% { transform: translateX(0) scale(1.02); }
-          25% { transform: translateX(-3px) scale(1.02); }
-          75% { transform: translateX(3px) scale(1.02); }
-        }
-        .animate-subtle-shake { animation: subtleShake 0.15s ease-in-out; }
-        
-        @keyframes floatMinimal {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        .animate-float-minimal { animation: floatMinimal 5s ease-in-out infinite; }
-        
-        @keyframes fadeScaleUp {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .animate-fade-scale-up { animation: fadeScaleUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    <main className="min-h-[calc(100dvh-78px)] bg-[#f8f3fa] font-sarabun flex items-center justify-center p-4 sm:p-7 relative overflow-hidden">
+      <div className="absolute -top-32 -left-28 w-80 h-80 rounded-full bg-[#702082]/10 blur-2xl" />
+      <div className="absolute -bottom-36 -right-24 w-96 h-96 rounded-full bg-[#ffdd00]/20 blur-3xl" />
 
-        @keyframes pulseRing {
-          0% { transform: scale(0.9); opacity: 0.5; }
-          50% { transform: scale(1); opacity: 0.8; }
-          100% { transform: scale(0.9); opacity: 0.5; }
-        }
-        .animate-pulse-ring { animation: pulseRing 4s ease-in-out infinite; }
-      `}</style>
+      <section className="relative w-full max-w-[1040px] min-h-[640px] bg-white rounded-[30px] overflow-hidden border border-[#eadfed] shadow-[0_24px_70px_rgba(79,28,91,.16)] grid grid-cols-1 lg:grid-cols-[1.05fr_.95fr]">
+        <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden px-10 py-10 text-white"
+          style={{background:'linear-gradient(145deg,#451257 0%,#702082 58%,#963ba5 100%)'}}>
+          <div className="absolute -right-36 -top-32 w-96 h-96 rounded-full border-[58px] border-white/[0.05]" />
+          <div className="absolute -left-32 -bottom-40 w-96 h-96 rounded-full bg-[#ffdd00]/10" />
 
-      {/* ================= 💻 Main Container (Card) ================= */}
-      {/* บนมือถือ = เต็มจอไร้ขอบ, บน Desktop = มีขอบโค้งและเงา */}
-      <div className="w-full h-[100dvh] md:max-w-[1100px] md:h-[700px] bg-[#1c1c1e] md:rounded-[16px] md:shadow-[0_30px_80px_rgba(0,0,0,0.4)] flex flex-col relative z-10 overflow-hidden">
-        
-        {/* ── Top Navigation Bar (แสดงเฉพาะ Desktop) ตัดเมนูตรงกลางออกตามรีเควสต์ ── */}
-        <div className="hidden md:flex items-center justify-between px-10 py-6 relative z-30">
-          <div className="flex items-center gap-2 text-[#f5f5f7]">
-            <div className="w-6 h-6 bg-[#f5f5f7] rounded-md flex items-center justify-center text-[#1c1c1e] font-bold text-[10px]">PEA</div>
-            <span className="text-[17px] font-semibold tracking-tight">Fleet</span>
+          <div className="relative flex items-center gap-3">
+            <div className="w-14 h-14 bg-white rounded-[16px] p-1.5 shadow-lg"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
+            <div><p className="text-[11px] font-bold tracking-[.14em] text-[#ffea70]">การไฟฟ้าส่วนภูมิภาค</p><p className="text-[20px] font-bold">PEA Fleet</p></div>
           </div>
-          
-          <div className="flex gap-5 text-[#86868b]">
-            <Icon icon="ph:magnifying-glass" width="18" height="18" className="hover:text-[#f5f5f7] cursor-pointer transition-colors" />
-            <Icon icon="ph:bag" width="18" height="18" className="hover:text-[#f5f5f7] cursor-pointer transition-colors" />
+
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3.5 py-2 text-[11px] font-semibold mb-5"><span className="w-2 h-2 rounded-full bg-[#ffdd00]" />ระบบบริหารจัดการยานพาหนะ</span>
+            <h1 className="text-[42px] font-bold leading-[1.08] tracking-[-1.3px]">จัดการรถ PEA<br/>อย่างมั่นใจในทุกวัน</h1>
+            <p className="mt-5 text-[15px] leading-relaxed text-white/70 max-w-[390px]">เข้าสู่ระบบสำหรับผู้ดูแล เพื่อจัดการรถ บุคลากร งาน พื้นที่ปฏิบัติงาน และตรวจสอบข้อมูล Fleet จากศูนย์กลางเดียว</p>
           </div>
-        </div>
 
-        {/* ── Main Content Area (สลับเลเยอร์บนมือถือ / แบ่งซ้ายขวาบน Desktop) ── */}
-        <div className="flex flex-1 relative z-20">
-          
-          {/* ⚪ ฝั่งซ้าย: Form Login */}
-          {/* บนมือถือ: ซ่อนตอนเล่นเกม และเฟด+เลื่อนขึ้นมาตอน Login */}
-          <div className={`absolute inset-0 md:relative w-full md:w-[45%] px-8 md:pl-20 md:pr-10 flex flex-col justify-center transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] z-30 ${
-            appState === 'login' 
-              ? 'opacity-100 translate-y-0 md:translate-x-0' 
-              : 'opacity-0 translate-y-12 md:translate-y-0 md:-translate-x-12 pointer-events-none'
-          }`}>
-            
-            {/* โลโก้ PEA Fleet เหนือ Login (เหมือนในภาพ Reference) */}
-            <div className="flex items-center gap-3 text-[#f5f5f7] mb-8 md:mb-12">
-              <div className="w-10 h-10 bg-[#f5f5f7] rounded-[10px] flex items-center justify-center text-[#1c1c1e] font-bold text-[14px]">
-                PEA
-              </div>
-              <span className="text-[22px] font-semibold tracking-tight">Fleet</span>
-            </div>
+          <div className="relative grid grid-cols-3 gap-3">
+            {[
+              {icon:'ph:car-profile-duotone',label:'จัดการรถ'},
+              {icon:'ph:users-three-duotone',label:'บุคลากร'},
+              {icon:'ph:chart-pie-slice-duotone',label:'รายงาน'},
+            ].map(item => <div key={item.label} className="rounded-[18px] bg-white/10 border border-white/10 px-3 py-4 text-center"><Icon icon={item.icon} width="25" height="25" className="mx-auto text-[#ffdd00]"/><p className="mt-2 text-[11px] font-semibold">{item.label}</p></div>)}
+          </div>
+        </aside>
 
-            <h1 className="text-[34px] md:text-[42px] font-medium text-[#f5f5f7] tracking-tight leading-tight mb-8">
-              Login With PEA
-            </h1>
+        <div className="flex flex-col px-6 py-7 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+            <div className="w-[52px] h-[52px] bg-white rounded-[14px] border border-[#eadfed] p-1.5 shadow-sm"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
+            <div><p className="text-[10px] font-bold tracking-[.12em] text-[#702082]">การไฟฟ้าส่วนภูมิภาค</p><p className="text-[18px] font-bold text-[#4b1560]">PEA Fleet</p></div>
+          </div>
 
-            {errorMsg && (
-              <div className="bg-[#ff3b30]/10 text-[#ff453a] p-3 rounded-lg text-[13px] mb-6 flex items-center gap-2 border border-[#ff3b30]/20">
-                <Icon icon="ph:warning-circle" className="text-[16px] flex-shrink-0" />
-                {errorMsg}
-              </div>
-            )}
+          <button onClick={() => router.push('/')} className="self-start inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#765c7c] hover:text-[#702082] transition-colors"><Icon icon="ph:arrow-left" width="16" height="16" />กลับหน้าหลัก</button>
 
-            <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              <input 
-                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-[10px] border border-[#424245] bg-transparent px-4 py-4 text-[15px] text-[#f5f5f7] placeholder-[#86868b] focus:border-[#86868b] focus:ring-1 focus:ring-[#86868b] outline-none transition-colors"
-                placeholder="Enter PEA ID or Email"
-              />
-              
-              <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-[10px] border border-[#424245] bg-transparent px-4 py-4 pr-10 text-[15px] text-[#f5f5f7] placeholder-[#86868b] focus:border-[#86868b] focus:ring-1 focus:ring-[#86868b] outline-none transition-colors"
-                  placeholder="Password"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#f5f5f7] transition-colors outline-none">
-                  <Icon icon={showPassword ? "ph:eye" : "ph:eye-closed"} width="18" height="18" />
-                </button>
-              </div>
+          <div className="my-auto py-8">
+            <p className="text-[11px] font-bold tracking-[.14em] text-[#8b3c98] mb-2">ADMIN PORTAL</p>
+            <h2 className="text-[32px] sm:text-[38px] font-bold text-[#35133f] tracking-[-1px]">ยินดีต้อนรับ</h2>
+            <p className="mt-2 text-[14px] text-[#765c7c]">เข้าสู่ระบบด้วยบัญชีผู้ดูแล PEA</p>
 
-              <p className="text-[12px] text-[#86868b] mt-2 mb-4 leading-relaxed">
-                Your PEA ID is the email address or employee number you use to sign in to internal systems, Fleet, and services.
-              </p>
+            {errorMsg && <div className="mt-6 flex items-start gap-2.5 rounded-[15px] bg-[#fff0f0] border border-[#ffd7d4] px-4 py-3.5 text-[12px] text-[#c93830]"><Icon icon="ph:warning-circle-duotone" width="19" height="19" className="flex-shrink-0"/><span>{errorMsg}</span></div>}
 
-              <button 
-                type="submit" disabled={loading}
-                className={`w-full py-4 rounded-[10px] font-medium text-[15px] transition-all flex items-center justify-center gap-2 ${
-                  loading 
-                    ? 'bg-[#424245] text-[#86868b] cursor-not-allowed' 
-                    : 'bg-[#f5d596] text-[#1c1c1e] hover:bg-[#e3c38b] active:scale-[0.98]'
-                }`}
-              >
-                {loading ? <Icon icon="ph:spinner-gap-bold" className="animate-spin" width="20" height="20" /> : 'Login'}
+            <form onSubmit={handleLogin} className="mt-7 space-y-5">
+              <label className="block">
+                <span className="text-[12px] font-bold text-[#4b4050]">อีเมลหรือรหัสผู้ใช้งาน</span>
+                <div className="relative mt-2">
+                  <Icon icon="ph:user-circle-duotone" width="21" height="21" className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b3c98]" />
+                  <input type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@pea.co.th"
+                    className="w-full rounded-[16px] border border-[#ded1e2] bg-[#fcf9fd] pl-12 pr-4 py-4 text-[14px] text-[#35133f] outline-none transition-all placeholder:text-[#b5a7b8] focus:bg-white focus:border-[#702082] focus:ring-4 focus:ring-[#702082]/10" />
+                </div>
+              </label>
+
+              <label className="block">
+                <span className="text-[12px] font-bold text-[#4b4050]">รหัสผ่าน</span>
+                <div className="relative mt-2">
+                  <Icon icon="ph:lock-key-duotone" width="21" height="21" className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b3c98]" />
+                  <input type={showPassword ? 'text' : 'password'} required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="กรอกรหัสผ่าน"
+                    className="w-full rounded-[16px] border border-[#ded1e2] bg-[#fcf9fd] pl-12 pr-12 py-4 text-[14px] text-[#35133f] outline-none transition-all placeholder:text-[#b5a7b8] focus:bg-white focus:border-[#702082] focus:ring-4 focus:ring-[#702082]/10" />
+                  <button type="button" onClick={() => setShowPassword(value => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8e7d92] hover:text-[#702082]" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}><Icon icon={showPassword ? 'ph:eye-duotone' : 'ph:eye-slash-duotone'} width="20" height="20" /></button>
+                </div>
+              </label>
+
+              <button type="submit" disabled={loading} className={`w-full rounded-[16px] py-4 text-[14px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[.985] ${loading ? 'bg-[#d8c5dc] text-white cursor-not-allowed' : 'bg-[#702082] text-white shadow-[0_10px_24px_rgba(112,32,130,.24)] hover:bg-[#5c176d]'}`}>
+                {loading ? <><Icon icon="ph:spinner-gap-bold" width="19" height="19" className="animate-spin"/>กำลังเข้าสู่ระบบ...</> : <>เข้าสู่ระบบ <Icon icon="ph:arrow-right-bold" width="16" height="16" className="text-[#ffdd00]"/></>}
               </button>
             </form>
 
-            <div className="mt-8 text-[12px] text-[#86868b] flex flex-col gap-1.5">
-              <span className="hover:text-[#f5f5f7] cursor-pointer transition-colors w-max">Forgot your PEA ID or password?</span>
-              <span>Don't have an account? <span className="text-[#f5f5f7] cursor-pointer">Contact IT support.</span></span>
+            <div className="mt-6 flex items-start gap-2.5 rounded-[15px] bg-[#fff9d9] border border-[#f3df70] px-4 py-3.5 text-[#66510d]">
+              <Icon icon="ph:shield-check-duotone" width="20" height="20" className="flex-shrink-0 text-[#a88000]" />
+              <p className="text-[11px] leading-relaxed">หน้านี้สำหรับผู้ดูแลระบบเท่านั้น หากไม่สามารถเข้าสู่ระบบได้ กรุณาติดต่อผู้ดูแล IT ของหน่วยงาน</p>
             </div>
           </div>
 
-          {/* ⚫ ฝั่งขวา: Graphic น้อง Watt-D (ขยายขนาดแล้ว) */}
-          <div className={`absolute inset-0 md:relative w-full md:w-[55%] flex items-center justify-center transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] z-20 ${
-            appState === 'login' 
-              ? 'opacity-0 md:opacity-100 scale-95 md:scale-100 pointer-events-none md:pointer-events-auto' 
-              : 'opacity-100 scale-100 pointer-events-auto'
-          }`}>
-            
-            {/* ── วงแหวน (Concentric Circles) ปรับขยายขนาดให้เข้ากับน้อง Watt-D ที่ใหญ่ขึ้น ── */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none scale-90 md:scale-100">
-              <div className="absolute w-[300px] md:w-[360px] h-[300px] md:h-[360px] rounded-full border border-white/10 animate-pulse-ring" style={{ animationDuration: '4s' }} />
-              <div className="absolute w-[420px] md:w-[500px] h-[420px] md:h-[500px] rounded-full border border-white/5 animate-pulse-ring" style={{ animationDuration: '5s' }} />
-              <div className="absolute w-[540px] md:w-[640px] h-[540px] md:h-[640px] rounded-full border border-white/[0.03] animate-pulse-ring" style={{ animationDuration: '6s' }} />
-              <div className="absolute w-[680px] md:w-[800px] h-[680px] md:h-[800px] rounded-full border border-white/[0.015]" />
-            </div>
-
-            {/* ── แสง Glow ตรงกลาง ขยายให้ใหญ่ขึ้นเช่นกัน ── */}
-            <div className="absolute w-[200px] md:w-[260px] h-[200px] md:h-[260px] rounded-full bg-gradient-to-tr from-[#0071e3] via-[#ff9f0a] to-[#f5d596] opacity-30 blur-[40px] pointer-events-none" />
-
-            {/* ── Interactive Element (น้อง Watt-D) ── */}
-            <div className="relative z-20 flex flex-col items-center">
-              
-              {/* ข้อความบอกสถานะมินิเกม */}
-              {appState !== 'login' && (
-                <div className="absolute -top-24 md:-top-32 text-center w-max animate-fade-scale-up">
-                   <h2 className="text-[24px] md:text-[28px] font-medium text-[#f5f5f7] tracking-tight mb-2">
-                     {appState === 'intro' ? 'Authenticate' : appState === 'playing' ? 'Tap 3 Times' : 'Access Granted'}
-                   </h2>
-                   {appState === 'intro' && <p className="text-[12px] md:text-[13px] text-[#86868b]">Tap Watt-D to connect to Fleet System.</p>}
-                   
-                   {appState === 'playing' && (
-                      <div className="flex gap-2 justify-center mt-3">
-                        {[1, 2, 3].map((step) => (
-                          <div key={step} className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[10px] md:text-[12px] font-medium transition-all ${
-                              taps >= step ? 'bg-[#f5d596] text-[#1c1c1e]' : 'bg-[#424245] text-[#86868b]'
-                          }`}>
-                            {taps >= step ? <Icon icon="ph:check-bold" /> : step}
-                          </div>
-                        ))}
-                      </div>
-                   )}
-                </div>
-              )}
-
-              {/* รูปรถน้อง Watt-D (ขยายขนาดเป็น 240px บนมือถือ / 320px บนเดสก์ท็อป) */}
-              <button 
-                onClick={appState === 'playing' || appState === 'intro' ? (appState === 'intro' ? startGame : tapScooter) : undefined}
-                disabled={appState === 'unlocked' || appState === 'login'}
-                className={`transition-all duration-300 focus:outline-none ${
-                  isShaking ? 'animate-subtle-shake' : 
-                  (appState === 'intro' || appState === 'playing') ? 'hover:scale-105 cursor-pointer' : 
-                  'cursor-default animate-float-minimal'
-                }`}
-              >
-                <img 
-                  src="/scooter.png" 
-                  alt="Vehicle" 
-                  className="w-[240px] md:w-[320px] h-auto object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]" 
-                />
-              </button>
-            </div>
-          </div>
+          <p className="text-center text-[10px] text-[#aa9cae]">PEA Smart Vehicle Management · Secure Admin Access</p>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }

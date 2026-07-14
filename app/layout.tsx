@@ -1,17 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Suspense } from "react"; // ✅ 1. เพิ่มบรรทัดนี้
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import GlobalBottomNav from "./components/GlobalBottomNav";
 
 export const metadata: Metadata = {
   title: "PEA Smart Car",
@@ -24,11 +14,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="th">
+      <body className="antialiased">
         {/* ✅ 2. ครอบ children ด้วย Suspense */}
         <Suspense fallback={<div className="p-10 text-center text-[#742F99]">กำลังโหลดระบบ...</div>}>
           {children}
+          <div className="h-[78px] print:hidden" aria-hidden="true" />
+          <GlobalBottomNav />
         </Suspense>
       </body>
     </html>
