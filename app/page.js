@@ -233,7 +233,7 @@ function CarSelector() {
   const signatureDeadline = formatThaiDate(signatureEnd)
   const signatureMonth = signatureStart.toLocaleDateString('th-TH', { month:'long', year:'numeric' })
   const bannerSlides = [
-    { eyebrow:'PEA FLEET', title:'ระบบรถ PEA ใหม่!', accent:'จัดการง่ายกว่าเดิม', button:'ดูคู่มือเลย !!', icon:'ph:car-profile-duotone', background:'linear-gradient(115deg,#4b156d 0%,#762789 58%,#9139a6 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:1 },
+    { eyebrow:'PEA FLEET', title:'ระบบรถ PEA ใหม่!', accent:'จัดการง่ายกว่าเดิม', button:'ดูคู่มือเลย !!', icon:'ph:car-profile-duotone', background:'linear-gradient(115deg,#4b156d 0%,#762789 58%,#9139a6 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', guideType:'overview' },
     { eyebrow:'SCAN & GO', title:'สแกนก่อนใช้รถ', accent:'บันทึกได้ในไม่กี่ขั้นตอน', button:'ดูวิธีสแกน', icon:'ph:qr-code-duotone', background:'linear-gradient(115deg,#5a1f75 0%,#7f2b8f 55%,#a34db0 100%)', iconBg:'#ffdd00', iconColor:'#571b70', detailIndex:1 },
     { eyebrow:'MONTHLY SIGN', title:'ลงชื่อประจำเดือน', accent:signaturePeriod, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(115deg,#40155f 0%,#69277e 55%,#8d3fa1 100%)', iconBg:'#ffea5c', iconColor:'#4b156d', detailIndex:0 },
     { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(115deg,#55206f 0%,#7c2f8d 56%,#963ca7 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:2 }
@@ -269,6 +269,21 @@ function CarSelector() {
       note:'ตรวจสอบว่าหน้า Home แสดงสถานะ “ว่างพร้อมใช้” ก่อนออกจากพื้นที่'
     }
   ]
+  const systemOverviewGuide = {
+    title:'ระบบรถ PEA ทำอะไรได้บ้าง?', badge:'คู่มือ', icon:'ph:car-profile-duotone',
+    period:'คู่มือภาพรวมสำหรับผู้ใช้งาน PEA FLEET',
+    kicker:'คู่มือระบบรถ PEA',
+    sectionTitle:'ฟังก์ชันที่ใช้งานได้',
+    detail:'เว็บแอป PEA FLEET ช่วยให้ผู้ใช้งานตรวจสอบและจัดการรถส่วนกลางได้จากหน้าเดียว ตั้งแต่เลือกดูรถที่ว่าง บันทึกการนำรถออก ไปจนถึงคืนรถและติดตามข้อมูลการใช้งานให้เป็นปัจจุบัน',
+    steps:[
+      'ดูจำนวนรถทั้งหมด พร้อมสถานะว่าง กำลังใช้งาน และรถ EV แบบเรียลไทม์',
+      'ค้นหาและดูรายละเอียดรถ เช่น ทะเบียน ประเภทรถ ผู้ใช้งานล่าสุด และเวลาอัปเดต',
+      'สแกน QR ประจำรถเพื่อบันทึกการนำรถออก คืนรถ หรือเริ่ม–หยุดชาร์จรถ EV',
+      'บันทึกผู้ขับ ประเภทงาน พื้นที่ปฏิบัติงาน เลขไมล์ น้ำมัน และระดับแบตเตอรี่',
+      'ตรวจสอบประวัติการเดินทาง รายงานการใช้รถ และลงชื่อรับรองประจำเดือน'
+    ],
+    note:'เลือกเมนูหรือสแกน QR ที่ติดอยู่กับรถเพื่อเริ่มใช้งาน ระบบจะแสดงแบบฟอร์มให้ตรงกับสถานะของรถโดยอัตโนมัติ'
+  }
 
   const renderCarRow = (car) => {
     const carImageSrc = getCarImage(car)
@@ -319,13 +334,13 @@ function CarSelector() {
       `}</style>
 
       <header className="bg-white">
-        <div className="max-w-[620px] mx-auto px-5 pt-8 pb-5 flex items-center justify-between">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-14 h-14 rounded-[16px] bg-white border border-[#eadfed] p-1.5 flex items-center justify-center shadow-sm overflow-hidden"><img src="/pea_logo.png" alt="ตราสัญลักษณ์การไฟฟ้าส่วนภูมิภาค PEA" className="w-full h-full object-contain" /></div>
-            <div className="min-w-0"><p className="text-[10px] font-bold text-[#702082] tracking-[.12em]">การไฟฟ้าส่วนภูมิภาค</p><h1 className="text-[21px] sm:text-[24px] font-bold tracking-[-.7px] truncate">สวัสดี ผู้ใช้งาน PEA!</h1></div>
+        <div className="max-w-[620px] mx-auto px-5 pt-3 pb-2 sm:pt-5 sm:pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[12px] sm:rounded-[14px] bg-white border border-[#eadfed] p-1 sm:p-1.5 flex items-center justify-center shadow-sm overflow-hidden"><img src="/pea_logo.png" alt="ตราสัญลักษณ์การไฟฟ้าส่วนภูมิภาค PEA" className="w-full h-full object-contain" /></div>
+            <div className="min-w-0"><p className="text-[8px] sm:text-[9px] font-bold text-[#702082] tracking-[.12em]">การไฟฟ้าส่วนภูมิภาค</p><h1 className="text-[17px] sm:text-[21px] font-bold tracking-[-.7px] truncate">สวัสดี ผู้ใช้งาน PEA!</h1></div>
           </div>
-          <a href="https://lin.ee/vA3z1ZL" target="_blank" rel="noopener noreferrer" className="relative w-11 h-11 rounded-full flex items-center justify-center text-black active:scale-90 transition-transform" aria-label="ติดต่อผ่าน LINE">
-            <Icon icon="ph:chat-circle-dots-bold" width="29" height="29" />
+          <a href="https://lin.ee/vA3z1ZL" target="_blank" rel="noopener noreferrer" className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-black active:scale-90 transition-transform" aria-label="ติดต่อผ่าน LINE">
+            <Icon icon="ph:chat-circle-dots-bold" width="27" height="27" />
             <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#ffdd00] border-2 border-white"/>
           </a>
         </div>
@@ -361,38 +376,38 @@ function CarSelector() {
             }, 120)
           }} className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-5 hide-scrollbar px-5">
             {loopedBannerSlides.map((slide, index) => (
-              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[184px] min-w-[88%] snap-center rounded-[25px] px-6 py-5 text-white" style={{background:slide.background, boxShadow:'0 10px 28px rgba(73,20,88,.16)'}}>
+              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[128px] sm:h-[150px] min-w-[90%] sm:min-w-[88%] snap-center rounded-[19px] sm:rounded-[22px] px-5 sm:px-6 py-3 sm:py-4 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
                 <div className="absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
                 <div className="absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
                 <div className="relative z-10 max-w-[70%]">
-                  <p className="text-[9px] font-bold tracking-[.16em] text-[#ffea6a] mb-1.5">{slide.eyebrow}</p>
-                  <h2 className="text-[23px] sm:text-[27px] font-bold leading-[1.14] tracking-[-.7px]">{slide.title}<br/><span className="text-[#ffea4d] text-[18px] sm:text-[21px]">{slide.accent}</span></h2>
-                  <button onClick={() => setSelectedNews({...newsItems[slide.detailIndex], index:slide.detailIndex})} className="mt-3 bg-[#ffdd00] text-[#4b156d] rounded-full px-5 py-2 text-[11px] font-bold active:scale-95 transition-transform inline-flex items-center gap-1.5"><Icon icon="ph:arrow-right-bold" width="13" height="13" />{slide.button}</button>
+                  <p className="text-[8px] sm:text-[9px] font-bold tracking-[.16em] text-[#ffea6a] mb-1">{slide.eyebrow}</p>
+                  <h2 className="text-[18px] sm:text-[23px] font-bold leading-[1.1] tracking-[-.7px]">{slide.title}<br/><span className="text-[#ffea4d] text-[14px] sm:text-[18px]">{slide.accent}</span></h2>
+                  <button onClick={() => setSelectedNews(slide.guideType === 'overview' ? systemOverviewGuide : {...newsItems[slide.detailIndex], index:slide.detailIndex})} className="mt-1.5 sm:mt-2 bg-[#ffdd00] text-[#4b156d] rounded-full px-3.5 sm:px-4 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-bold active:scale-95 transition-transform inline-flex items-center gap-1.5"><Icon icon="ph:arrow-right-bold" width="11" height="11" />{slide.button}</button>
                 </div>
                 <div className="absolute right-3 bottom-0 w-[38%] h-full flex items-center justify-center float-car">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full shadow-[0_15px_35px_rgba(37,5,49,.3)] flex items-center justify-center rotate-[-5deg]" style={{background:slide.iconBg,color:slide.iconColor}}><Icon icon={slide.icon} width="68" height="68" /></div>
+                  <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full shadow-[0_12px_28px_rgba(37,5,49,.3)] flex items-center justify-center rotate-[-5deg]" style={{background:slide.iconBg,color:slide.iconColor}}><Icon icon={slide.icon} width="44" height="44" /></div>
                 </div>
               </article>
             ))}
           </div>
-          <div className="flex justify-center gap-2 py-4">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => { const track=bannerRef.current; const item=track?.children[index + 1]; if(track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-2 rounded-full transition-all ${activeBanner === index ? 'w-6 bg-[#702082]' : 'w-2 bg-[#d9cddd]'}`}/>)}</div>
+          <div className="flex justify-center gap-2 py-2 sm:py-2.5">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => { const track=bannerRef.current; const item=track?.children[index + 1]; if(track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeBanner === index ? 'w-5 sm:w-6 bg-[#702082]' : 'w-1.5 sm:w-2 bg-[#d9cddd]'}`}/>)}</div>
         </section>
 
-        <section className="pb-6">
-          <div className="flex gap-3 overflow-x-auto hide-scrollbar px-5 pb-2">
+        <section className="pb-3 sm:pb-4">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar px-5 pb-2">
             {[
               {label:'รถทั้งหมด', value:cars.length, sub:'ในระบบ', icon:'ph:car-profile-duotone', accent:'#702082'},
               {label:'พร้อมใช้งาน', value:availableCars.length, sub:'คัน', icon:'ph:check-circle-duotone', accent:'#8b3c98'},
               {label:'กำลังใช้งาน', value:busyCars.length, sub:'คัน', icon:'ph:steering-wheel-duotone', accent:'#d29f00'},
               {label:'รถ EV', value:evCars.length, sub:'คัน', icon:'ph:lightning-duotone', accent:'#702082'}
-            ].map(stat => <div key={stat.label} className="min-w-[145px] h-[126px] bg-white rounded-[21px] p-4 border border-[#eee3f1]" style={{boxShadow:'0 8px 28px rgba(91,35,104,.08)'}}><div className="flex items-center gap-2 text-[12px] font-bold whitespace-nowrap"><span className="w-7 h-7 rounded-[9px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="18" height="18" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-2.5 text-[23px] font-bold" style={{color:stat.accent}}>{stat.value} <span className="text-[13px]">{stat.sub}</span></p><p className="mt-1 text-[11px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="11" height="11" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
+            ].map(stat => <div key={stat.label} className="min-w-[118px] sm:min-w-[138px] h-[82px] sm:h-[96px] bg-white rounded-[16px] sm:rounded-[19px] p-2.5 sm:p-3 border border-[#eee3f1]" style={{boxShadow:'0 6px 22px rgba(91,35,104,.08)'}}><div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-bold whitespace-nowrap"><span className="w-5 h-5 sm:w-6 sm:h-6 rounded-[7px] sm:rounded-[8px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="14" height="14" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-1 sm:mt-1.5 text-[18px] sm:text-[21px] font-bold leading-tight" style={{color:stat.accent}}>{stat.value} <span className="text-[10px] sm:text-[12px]">{stat.sub}</span></p><p className="mt-0.5 text-[8px] sm:text-[10px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="9" height="9" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
           </div>
         </section>
 
-        <section className="relative pt-6 pb-7 overflow-hidden" style={{background:'linear-gradient(155deg,#fbf6fc 0%,#ead8ef 55%,#ffe97a 140%)'}}>
+        <section className="relative pt-3 sm:pt-4 pb-4 sm:pb-5 overflow-hidden" style={{background:'linear-gradient(155deg,#fbf6fc 0%,#ead8ef 55%,#ffe97a 140%)'}}>
           <div className="absolute -right-24 bottom-0 w-80 h-80 rounded-full border border-white/35"/>
-          <div className="relative px-5 flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3"><span className="w-11 h-11 rounded-full bg-[#702082] text-[#ffdd00] flex items-center justify-center"><Icon icon="ph:newspaper-clipping-duotone" width="26" height="26" /></span><div><h2 className="text-[24px] font-bold leading-tight text-[#4b1560]">ข่าวสาร PEA</h2><p className="text-[10px] text-[#765c7c]">เลื่อนเพื่อดูข่าวทั้งหมด 4 เรื่อง</p></div></div>
+          <div className="relative px-5 flex items-center justify-between mb-3 sm:mb-4">
+            <div className="flex items-center gap-2.5 sm:gap-3"><span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#702082] text-[#ffdd00] flex items-center justify-center"><Icon icon="ph:newspaper-clipping-duotone" width="22" height="22" /></span><div><h2 className="text-[20px] sm:text-[24px] font-bold leading-tight text-[#4b1560]">ข่าวสาร PEA</h2><p className="text-[9px] sm:text-[10px] text-[#765c7c]">เลื่อนเพื่อดูข่าวทั้งหมด 4 เรื่อง</p></div></div>
             <button onClick={() => setNewsExpanded(value => !value)} className="flex items-center gap-1.5 text-[11px] font-bold active:scale-95 transition-transform" aria-expanded={newsExpanded} aria-controls="pea-news-content">
               <span className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">4</span>
               <Icon icon={newsExpanded ? 'ph:caret-up-bold' : 'ph:caret-down-bold'} width="20" height="20" />
@@ -407,14 +422,14 @@ function CarSelector() {
             setActiveNews(nearest.index)
           }} className="relative flex gap-3 overflow-x-auto snap-x snap-mandatory hide-scrollbar px-5 pb-2">
             {newsItems.map((news, index) => (
-              <article key={news.title} className="snap-center min-w-[88%] bg-white rounded-[25px] px-5 py-5 border border-[#eee3f1]" style={{boxShadow:'0 9px 28px rgba(91,35,104,.09)'}}>
-                <div className="flex items-center justify-between gap-3 mb-3"><div className="flex items-center gap-2.5 min-w-0"><span className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0" style={{background:news.iconBg,color:news.iconColor}}><Icon icon={news.icon} width="23" height="23" /></span><div className="min-w-0"><span className="block text-[17px] font-bold truncate">{news.title}</span><span className="text-[9px] text-[#919793]">ข่าวที่ {index + 1} จาก 4</span></div></div><span className="bg-[#ffad2f] rounded-full px-3 py-1 text-[10px] font-bold whitespace-nowrap">{news.badge}</span></div>
-                <p className="text-[14px] leading-[1.65] min-h-[70px]">{news.copy}</p>
-                <button onClick={() => setSelectedNews({...news, index})} className="mt-2 text-[12px] font-semibold text-[#702082] underline underline-offset-2 inline-flex items-center gap-1">{news.meta} · อ่านเพิ่มเติม <Icon icon="ph:arrow-right" width="13" height="13" /></button>
+              <article key={news.title} className="snap-center min-w-[90%] sm:min-w-[88%] bg-white rounded-[21px] sm:rounded-[25px] px-4 sm:px-5 py-4 sm:py-5 border border-[#eee3f1]" style={{boxShadow:'0 9px 28px rgba(91,35,104,.09)'}}>
+                <div className="flex items-center justify-between gap-3 mb-2 sm:mb-3"><div className="flex items-center gap-2 min-w-0"><span className="w-9 h-9 sm:w-10 sm:h-10 rounded-[11px] sm:rounded-[12px] flex items-center justify-center flex-shrink-0" style={{background:news.iconBg,color:news.iconColor}}><Icon icon={news.icon} width="21" height="21" /></span><div className="min-w-0"><span className="block text-[15px] sm:text-[17px] font-bold truncate">{news.title}</span><span className="text-[8px] sm:text-[9px] text-[#919793]">ข่าวที่ {index + 1} จาก 4</span></div></div><span className="bg-[#ffad2f] rounded-full px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold whitespace-nowrap">{news.badge}</span></div>
+                <p className="text-[12px] sm:text-[14px] leading-[1.55] sm:leading-[1.65] min-h-[56px] sm:min-h-[70px]">{news.copy}</p>
+                <button onClick={() => setSelectedNews({...news, index})} className="mt-1.5 sm:mt-2 text-[11px] sm:text-[12px] font-semibold text-[#702082] underline underline-offset-2 inline-flex items-center gap-1">{news.meta} · อ่านเพิ่มเติม <Icon icon="ph:arrow-right" width="12" height="12" /></button>
               </article>
             ))}
           </div>
-          <div className="relative flex justify-center gap-1.5 mt-3">{[0,1,2,3].map((index) => <button key={index} onClick={() => { const track = newsRef.current; const item = track?.children[index]; if (track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปข่าวหน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeNews === index ? 'w-5 bg-[#702082]' : 'w-1.5 bg-white/90'}`}/>)}</div>
+          <div className="relative flex justify-center gap-1.5 mt-2 sm:mt-3">{[0,1,2,3].map((index) => <button key={index} onClick={() => { const track = newsRef.current; const item = track?.children[index]; if (track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปข่าวหน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeNews === index ? 'w-5 bg-[#702082]' : 'w-1.5 bg-white/90'}`}/>)}</div>
           </div>}
         </section>
 
@@ -460,7 +475,7 @@ function CarSelector() {
                 <div className="flex items-center gap-3.5 min-w-0">
                   <span className="w-[52px] h-[52px] min-w-[52px] rounded-[16px] bg-[#ffdd00] text-[#4b1560] flex items-center justify-center shadow-lg"><Icon icon={selectedNews.icon} width="29" height="29" /></span>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold tracking-[.14em] text-[#ffea71]">ข่าวสาร PEA · เรื่องที่ {selectedNews.index + 1} จาก 4</p>
+                    <p className="text-[10px] font-bold tracking-[.14em] text-[#ffea71]">{selectedNews.kicker || `ข่าวสาร PEA · เรื่องที่ ${selectedNews.index + 1} จาก 4`}</p>
                     <h2 id="news-detail-title" className="text-[23px] font-bold tracking-[-.5px] leading-tight mt-1">{selectedNews.title}</h2>
                   </div>
                 </div>
@@ -476,7 +491,7 @@ function CarSelector() {
               </section>
 
               <section>
-                <div className="flex items-center gap-2 mb-3 text-[#4b1560]"><Icon icon="ph:list-checks-duotone" width="21" height="21" /><h3 className="text-[16px] font-bold">ขั้นตอนที่ควรดำเนินการ</h3></div>
+                <div className="flex items-center gap-2 mb-3 text-[#4b1560]"><Icon icon="ph:list-checks-duotone" width="21" height="21" /><h3 className="text-[16px] font-bold">{selectedNews.sectionTitle || 'ขั้นตอนที่ควรดำเนินการ'}</h3></div>
                 <div className="space-y-2.5">
                   {selectedNews.steps.map((step, index) => (
                     <div key={step} className="flex items-start gap-3 bg-white rounded-[17px] px-4 py-3.5 border border-[#eee3f1]">
