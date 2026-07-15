@@ -208,38 +208,48 @@ export default function AdminDashboard() {
   ]
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
   
-  // Reusable Styles for Dark Mode
-  const inputStyle = "w-full rounded-[10px] border border-[#7e4a87] bg-transparent px-4 py-3.5 text-[14px] text-[#fffaf0] placeholder-[#a688ad] focus:border-[#c9b8cd] focus:ring-1 focus:ring-[#c9b8cd] outline-none transition-colors"
-  const labelStyle = "text-[11px] font-medium text-[#c9b8cd] mb-2 block uppercase tracking-wider pl-1"
+  const inputStyle = "w-full rounded-[12px] border border-[#dfcfe4] bg-white px-4 py-3.5 text-[14px] text-[#35133f] placeholder-[#a892ad] focus:border-[#702082] focus:ring-2 focus:ring-[#702082]/10 outline-none transition-all shadow-[0_1px_2px_rgba(75,21,96,.03)]"
+  const labelStyle = "text-[11px] font-bold text-[#702082] mb-2 block uppercase tracking-wider pl-1"
 
   return (
-    <div className="flex h-[calc(100dvh-78px)] bg-[#17081e] font-sans overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
+    <div className="pea-admin flex h-[calc(100dvh-60px)] bg-[#f3edf5] font-sans overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
       
       <style>{`
         * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #7e4a87; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a688ad; }
-        select option { background: #3b1746; color: #fffaf0; }
+        ::-webkit-scrollbar-thumb { background: #cbb6d1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a98caf; }
+        select option { background: #ffffff; color: #35133f; }
         .hide-admin-scrollbar::-webkit-scrollbar { display: none; }
         .hide-admin-scrollbar { scrollbar-width: none; }
+        .admin-main tbody tr:hover { background: #fbf7fc !important; }
+        .admin-main tbody { border-color: #eadfed !important; }
+        .admin-main [class*="bg-[#3b1746]"] { background: #ffffff !important; }
+        .admin-main [class*="bg-[#2a0f33]"] { background: #faf7fb !important; }
+        .admin-main [class*="bg-[#54205f]"] { background: #f5edf7 !important; }
+        .admin-main [class*="border-[#6b3475]"] { border-color: #eadfed !important; }
+        .admin-main [class*="border-[#7e4a87]"] { border-color: #dfcfe4 !important; }
+        .admin-main [class*="text-[#fffaf0]"] { color: #35133f !important; }
+        .admin-main [class*="text-[#c9b8cd]"] { color: #765c7c !important; }
+        .admin-main [class*="text-[#a688ad]"] { color: #8b6f92 !important; }
+        .admin-main [class*="divide-[#6b3475]"] > :not(:last-child) { border-color: #eadfed !important; }
       `}</style>
 
       {/* 🔴 Delete Modal (Dark Theme) */}
       {deleteModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#3b1746] border border-[#6b3475] rounded-[24px] p-8 w-full max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-center transform transition-all">
+          <div className="bg-white border border-[#eadfed] rounded-[24px] p-8 w-full max-w-md shadow-[0_24px_70px_rgba(75,21,96,.22)] text-center transform transition-all">
             <div className="w-16 h-16 bg-[#ff453a]/10 text-[#ff453a] rounded-full flex items-center justify-center mx-auto mb-5 border border-[#ff453a]/20">
               <Icon icon="ph:trash" width="32" height="32" />
             </div>
-            <h3 className="text-xl font-semibold text-[#fffaf0] mb-2 tracking-tight">Delete Record?</h3>
-            <p className="text-[#c9b8cd] text-sm mb-6">This action cannot be undone. This will permanently delete the selected data.</p>
-            <div className="bg-[#2a0f33] text-[#fffaf0] p-4 rounded-xl mb-8 border border-[#6b3475] font-medium break-words">
+            <h3 className="text-xl font-semibold text-[#4b1560] mb-2 tracking-tight">Delete Record?</h3>
+            <p className="text-[#765c7c] text-sm mb-6">This action cannot be undone. This will permanently delete the selected data.</p>
+            <div className="bg-[#f8f3fa] text-[#35133f] p-4 rounded-xl mb-8 border border-[#eadfed] font-medium break-words">
               {deleteModal.data.plate_number || deleteModal.data.full_name || deleteModal.data.name}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteModal({ isOpen: false, table: '', data: null })} className="flex-1 py-3.5 bg-[#6b3475] hover:bg-[#7e4a87] text-[#fffaf0] rounded-[12px] font-medium transition-all">Cancel</button>
+              <button onClick={() => setDeleteModal({ isOpen: false, table: '', data: null })} className="flex-1 py-3.5 bg-[#f1e6f4] hover:bg-[#e6d7ea] text-[#702082] rounded-[12px] font-semibold transition-all">Cancel</button>
               <button onClick={executeDelete} disabled={isSubmitting} className="flex-1 py-3.5 bg-[#ff453a] hover:bg-[#ff3b30] text-white rounded-[12px] font-medium transition-all">
                 {isSubmitting ? 'Deleting...' : 'Delete'}
               </button>
@@ -251,24 +261,24 @@ export default function AdminDashboard() {
       {/* 🟡 Update Modal (Dark Theme) */}
       {updateModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#3b1746] border border-[#6b3475] rounded-[24px] p-8 w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-h-[90vh] flex flex-col relative">
-            <div className="flex items-center gap-4 mb-6 border-b border-[#6b3475] pb-5">
-              <div className="w-12 h-12 bg-[#ffdd00]/10 text-[#ffdd00] rounded-full flex items-center justify-center border border-[#ffdd00]/20">
+          <div className="bg-white border border-[#eadfed] rounded-[24px] p-8 w-full max-w-2xl shadow-[0_24px_70px_rgba(75,21,96,.22)] max-h-[90vh] flex flex-col relative">
+            <div className="flex items-center gap-4 mb-6 border-b border-[#eadfed] pb-5">
+              <div className="w-12 h-12 bg-[#ffdd00] text-[#4b1560] rounded-full flex items-center justify-center border border-[#e7c900]">
                 <Icon icon="ph:arrows-clockwise" width="24" height="24" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-[#fffaf0] tracking-tight">Confirm Changes</h3>
-                <p className="text-[#c9b8cd] text-sm mt-0.5">Please review the updates before saving.</p>
+                <h3 className="text-xl font-semibold text-[#4b1560] tracking-tight">Confirm Changes</h3>
+                <p className="text-[#765c7c] text-sm mt-0.5">Please review the updates before saving.</p>
               </div>
             </div>
             <div className="overflow-y-auto flex-1 space-y-3 mb-8 pr-2">
               {Object.keys(updateModal.newData).map(key => {
                 if (key === 'id' || key === 'created_at' || updateModal.oldData[key] === updateModal.newData[key]) return null;
                 return (
-                  <div key={key} className="bg-[#2a0f33] p-4 rounded-[12px] border border-[#6b3475] flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="sm:w-1/3 text-[11px] uppercase tracking-wider font-semibold text-[#c9b8cd]">{fieldLabels[key] || key}</div>
+                  <div key={key} className="bg-[#faf7fb] p-4 rounded-[12px] border border-[#eadfed] flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="sm:w-1/3 text-[11px] uppercase tracking-wider font-semibold text-[#765c7c]">{fieldLabels[key] || key}</div>
                     <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm">
-                      <span className="text-[#c9b8cd] line-through bg-[#3b1746] px-3 py-1.5 rounded-md border border-[#6b3475]">{updateModal.oldData[key] || '-'}</span>
+                      <span className="text-[#846c89] line-through bg-white px-3 py-1.5 rounded-md border border-[#eadfed]">{updateModal.oldData[key] || '-'}</span>
                       <span className="hidden sm:inline text-[#7e4a87]"><Icon icon="ph:arrow-right-bold"/></span>
                       <span className="text-[#ffdd00] font-medium bg-[#ffdd00]/10 px-3 py-1.5 rounded-md border border-[#ffdd00]/20">{updateModal.newData[key] || '-'}</span>
                     </div>
@@ -277,7 +287,7 @@ export default function AdminDashboard() {
               })}
             </div>
             <div className="flex gap-3 mt-auto shrink-0">
-              <button onClick={() => setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })} className="flex-1 py-3.5 bg-[#6b3475] hover:bg-[#7e4a87] text-[#fffaf0] rounded-[12px] font-medium transition-all">Cancel</button>
+              <button onClick={() => setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })} className="flex-1 py-3.5 bg-[#f1e6f4] hover:bg-[#e6d7ea] text-[#702082] rounded-[12px] font-semibold transition-all">Cancel</button>
               <button onClick={executeUpdate} disabled={isSubmitting} className="flex-1 py-3.5 bg-[#ffdd00] hover:bg-[#e8c900] text-[#3b1746] rounded-[12px] font-medium transition-all">
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </button>
@@ -292,8 +302,8 @@ export default function AdminDashboard() {
         <div className="absolute bottom-10 -left-20 w-48 h-48 rounded-full bg-[#ffdd00]/5 blur-3xl pointer-events-none"/>
         
         <div className="h-[106px] flex items-center gap-3.5 px-6 shrink-0 border-b border-white/10 relative z-10">
-          <div className="w-11 h-11 bg-[#ffdd00] rounded-[14px] flex items-center justify-center text-[#3b1746] font-black text-[13px] shadow-[0_8px_24px_rgba(255,221,0,.18)]">
-            PEA
+          <div className="w-11 h-11 bg-white rounded-[14px] p-1.5 flex items-center justify-center border-2 border-[#ffdd00] shadow-[0_8px_24px_rgba(255,221,0,.18)] overflow-hidden">
+            <img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-white text-[17px] tracking-tight">Admin Portal</h1>
@@ -337,24 +347,24 @@ export default function AdminDashboard() {
       </aside>
 
       {/* 👉 Main Content */}
-      <main className="min-w-0 flex-1 bg-[radial-gradient(circle_at_top_right,_#42144f_0%,_#2a0f33_38%,_#220b2b_100%)] flex flex-col overflow-hidden relative md:rounded-[26px] md:border md:border-white/10 md:shadow-[0_24px_70px_rgba(0,0,0,.22)]">
+      <main className="admin-main min-w-0 flex-1 bg-[radial-gradient(circle_at_top_right,_#fff6bd_0%,_#fbf7fc_24%,_#f6f0f8_100%)] flex flex-col overflow-hidden relative md:rounded-[26px] md:border md:border-[#e5d6e9] md:shadow-[0_20px_60px_rgba(75,21,96,.12)]">
         
         {/* Header */}
-        <header className="min-h-[76px] bg-[#250c2e]/85 backdrop-blur-xl flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-b border-white/10 sticky top-0">
+        <header className="min-h-[76px] bg-white/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-t-[4px] border-t-[#ffdd00] border-b border-b-[#eadfed] sticky top-0 shadow-[0_4px_20px_rgba(75,21,96,.04)]">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="md:hidden w-10 h-10 bg-[#ffdd00] rounded-[13px] flex items-center justify-center text-[#4b1560] font-black text-[11px] shrink-0 shadow-[0_6px_20px_rgba(255,221,0,.16)]">PEA</div>
+            <div className="md:hidden w-10 h-10 bg-white rounded-[13px] p-1.5 flex items-center justify-center border-2 border-[#ffdd00] shrink-0 shadow-[0_6px_20px_rgba(255,221,0,.16)] overflow-hidden"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
             <div>
-                <p className="md:hidden text-[9px] text-[#bfa6c5] uppercase tracking-[.16em] font-semibold mb-0.5">Admin Portal</p>
-                <h1 className="text-[18px] md:text-[24px] font-bold text-white tracking-tight truncate">{activeMenuObj?.title}</h1>
-                <p className="hidden md:block text-[11px] text-[#ad92b4] mt-0.5">จัดการข้อมูล {activeMenuObj?.desc} ของระบบ</p>
+                <p className="md:hidden text-[9px] text-[#8b3c98] uppercase tracking-[.16em] font-semibold mb-0.5">Admin Portal</p>
+                <h1 className="text-[18px] md:text-[24px] font-bold text-[#4b1560] tracking-tight truncate">{activeMenuObj?.title}</h1>
+                <p className="hidden md:block text-[11px] text-[#846c89] mt-0.5">จัดการข้อมูล {activeMenuObj?.desc} ของระบบ</p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden sm:block text-right">
-                <p className="text-[13px] font-medium text-[#fffaf0]">Admin_PEA</p>
+                <p className="text-[13px] font-semibold text-[#4b1560]">Admin_PEA</p>
                 <p className="text-[10px] text-[#34c759] font-medium tracking-wide">● Online</p>
             </div>
-            <button onClick={handleLogout} aria-label="ออกจากระบบ" className="h-10 px-3 sm:px-4 rounded-[12px] border border-white/10 bg-white/[.06] text-[#e7dce9] hover:bg-[#ff453a]/15 hover:text-[#ff8d87] active:scale-95 transition-all flex items-center gap-2 text-[11px] font-semibold">
+            <button onClick={handleLogout} aria-label="ออกจากระบบ" className="h-10 px-3 sm:px-4 rounded-[12px] border border-[#e3d4e7] bg-[#f7f1f8] text-[#702082] hover:bg-[#fff0ef] hover:text-[#d33c35] active:scale-95 transition-all flex items-center gap-2 text-[11px] font-semibold">
               <Icon icon="ph:sign-out-bold" width="19" height="19" />
               <span className="hidden sm:inline">ออกจากระบบ</span>
             </button>
@@ -362,9 +372,9 @@ export default function AdminDashboard() {
         </header>
 
         {/* เมนูมือถือ: ไม่บังเนื้อหาและเลื่อนได้แนวนอน */}
-        <nav className="md:hidden shrink-0 flex gap-2 overflow-x-auto hide-admin-scrollbar px-4 py-3 bg-[#250c2e]/72 border-b border-white/10 backdrop-blur-lg">
+        <nav className="md:hidden shrink-0 flex gap-2 overflow-x-auto hide-admin-scrollbar px-4 py-3 bg-white/80 border-b border-[#eadfed] backdrop-blur-lg">
           {sidebarMenus.map(menu => (
-            <button key={menu.id} onClick={() => setActiveMenu(menu.id)} className={`shrink-0 h-11 px-3.5 rounded-[13px] flex items-center gap-2 border transition-all active:scale-95 ${activeMenu === menu.id ? 'bg-[#ffdd00] border-[#ffdd00] text-[#4b1560] shadow-[0_6px_18px_rgba(255,221,0,.13)]' : 'bg-white/[.06] border-white/10 text-[#d3c1d7]'}`}>
+            <button key={menu.id} onClick={() => setActiveMenu(menu.id)} className={`shrink-0 h-11 px-3.5 rounded-[13px] flex items-center gap-2 border transition-all active:scale-95 ${activeMenu === menu.id ? 'bg-[#ffdd00] border-[#e5c700] text-[#4b1560] shadow-[0_6px_18px_rgba(255,221,0,.18)]' : 'bg-white border-[#e7dbe9] text-[#765c7c]'}`}>
               <Icon icon={menu.icon} width="19" height="19" />
               <span className="text-[12px] font-bold whitespace-nowrap">{menu.title}</span>
             </button>
@@ -376,15 +386,15 @@ export default function AdminDashboard() {
           <div className="max-w-7xl mx-auto space-y-6 pb-12">
 
             {/* ส่วนที่ 1: ฟอร์ม (Dark Card) */}
-            <div id="form-section" className="bg-[#3b1746] p-6 sm:p-8 rounded-[16px] border border-[#6b3475]">
+            <div id="form-section" className="bg-white p-6 sm:p-8 rounded-[22px] border border-[#eadfed] shadow-[0_12px_36px_rgba(75,21,96,.07)]">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-                <h3 className="text-[18px] font-medium text-[#fffaf0] flex items-center gap-3 tracking-tight">
+                <h3 className="text-[18px] font-bold text-[#4b1560] flex items-center gap-3 tracking-tight">
                   {editingId ? 
                     <><Icon icon="ph:pencil-simple" className="text-[#ffdd00]" width="22" height="22" /> Edit Record (ID: {editingId})</> :
-                    <><Icon icon="ph:plus-circle" className="text-[#c9b8cd]" width="22" height="22" /> Add New Record</>
+                    <><Icon icon="ph:plus-circle" className="text-[#702082]" width="22" height="22" /> Add New Record</>
                   }
                 </h3>
-                {editingId && <button onClick={cancelEdit} className="text-[12px] bg-[#6b3475] text-[#fffaf0] px-4 py-2 rounded-[8px] font-medium hover:bg-[#7e4a87] transition-all border border-[#7e4a87]">Cancel Edit</button>}
+                {editingId && <button onClick={cancelEdit} className="text-[12px] bg-[#f3eaf5] text-[#702082] px-4 py-2 rounded-[10px] font-semibold hover:bg-[#eadfed] transition-all border border-[#dfcfe4]">Cancel Edit</button>}
               </div>
 
               {/* ฟอร์มรถ */}
@@ -456,10 +466,10 @@ export default function AdminDashboard() {
             </div>
 
             {/* ส่วนที่ 2: รายการข้อมูล (Table) */}
-            <div className="bg-[#3b1746] rounded-[16px] border border-[#6b3475] overflow-hidden">
-              <div className="px-6 py-5 border-b border-[#6b3475] flex justify-between items-center bg-[#3b1746]">
-                <h3 className="text-[13px] font-medium text-[#fffaf0] tracking-wider uppercase">Database Records</h3>
-                <span className="bg-[#54205f] text-[#c9b8cd] py-1 px-3 rounded-md text-[11px] font-medium border border-[#6b3475]">
+            <div className="bg-white rounded-[22px] border border-[#eadfed] overflow-hidden shadow-[0_12px_36px_rgba(75,21,96,.07)]">
+              <div className="px-6 py-5 border-b border-[#eadfed] flex justify-between items-center bg-white">
+                <h3 className="text-[13px] font-bold text-[#4b1560] tracking-wider uppercase">Database Records</h3>
+                <span className="bg-[#fff7bf] text-[#4b1560] py-1 px-3 rounded-full text-[11px] font-bold border border-[#f3df4b]">
                   {activeMenu === 'cars' ? carsList.length : activeMenu === 'staff' ? staffList.length : activeMenu === 'tasks' ? tasksList.length : activeMenu === 'departments' ? departmentsList.length : operationAreasList.length} ITEMS
                 </span>
               </div>

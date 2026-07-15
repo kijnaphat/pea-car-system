@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 
+const BANNER_SLIDE_COUNT = 4
+
 // --- Main Component ---
 export default function App() {
   return (
@@ -37,8 +39,10 @@ function CarSelector() {
   const [activeNews, setActiveNews] = useState(0)
   const [selectedNews, setSelectedNews] = useState(null)
   const [newsExpanded, setNewsExpanded] = useState(true)
+  const bannerViewportRef = useRef(null)
   const bannerRef = useRef(null)
-  const bannerScrollTimerRef = useRef(null)
+  const bannerPositionRef = useRef(1)
+  const bannerTouchStartRef = useRef(null)
   const newsRef = useRef(null)
   
   // State สำหรับ Modal โทรออก
@@ -127,6 +131,20 @@ function CarSelector() {
     }
   }
 
+  const moveBannerTo = (position, animate = true) => {
+    const viewport = bannerViewportRef.current
+    const track = bannerRef.current
+    const item = track?.children[position]
+    if (!viewport || !track || !item) return
+
+    const centeredOffset = item.offsetLeft - (viewport.clientWidth - item.offsetWidth) / 2
+    track.style.transition = animate ? 'transform 560ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none'
+    track.style.transform = `translate3d(${-centeredOffset}px, 0, 0)`
+    track.style.opacity = '1'
+    bannerPositionRef.current = position
+    setActiveBanner((position - 1 + BANNER_SLIDE_COUNT) % BANNER_SLIDE_COUNT)
+  }
+
   useEffect(() => {
     fetchCars()
     const interval = setInterval(fetchCars, 5000) 
@@ -136,43 +154,35 @@ function CarSelector() {
   useEffect(() => {
     if (loading) return
 
-    // เริ่มที่แบนเนอร์จริงอันแรก (child 0 เป็นสำเนาของอันสุดท้าย)
-    const frame = requestAnimationFrame(() => {
-      const track = bannerRef.current
-      const item = track?.children[1]
-      if (track && item) {
-        track.scrollTo({
-          left: item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,
-          behavior: 'auto'
-        })
-      }
-    })
+    const placeBanner = () => moveBannerTo(bannerPositionRef.current, false)
+    const frame = requestAnimationFrame(placeBanner)
+    window.addEventListener('resize', placeBanner)
 
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', placeBanner)
+    }
   }, [loading])
 
   useEffect(() => {
+    if (loading) return
+
     const interval = setInterval(() => {
-      setActiveBanner(current => {
-        const nextPosition = current + 1
-        const track = bannerRef.current
-        // children: [สำเนาอันสุดท้าย, ...แบนเนอร์จริง, สำเนาอันแรก]
-        const item = track?.children[nextPosition + 1]
-        if (track && item) {
-          track.scrollTo({
-            left: item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,
-            behavior: 'smooth'
-          })
-        }
-        return nextPosition % 4
-      })
+      const track = bannerRef.current
+      if (!track) return
+
+      let nextPosition = bannerPositionRef.current + 1
+      if (nextPosition >= track.children.length) {
+        moveBannerTo(1, false)
+        nextPosition = 2
+      }
+      moveBannerTo(nextPosition, true)
     }, 5000)
 
     return () => {
       clearInterval(interval)
-      if (bannerScrollTimerRef.current) clearTimeout(bannerScrollTimerRef.current)
     }
-  }, [])
+  }, [loading])
 
   // ฟังก์ชันคลิกปุ่มโทร
   const handleCallClick = async (e, driverName) => {
@@ -238,7 +248,7 @@ function CarSelector() {
     { eyebrow:'MONTHLY SIGN', title:'ลงชื่อประจำเดือน', accent:signaturePeriod, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(115deg,#40155f 0%,#69277e 55%,#8d3fa1 100%)', iconBg:'#ffea5c', iconColor:'#4b156d', detailIndex:0 },
     { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(115deg,#55206f 0%,#7c2f8d 56%,#963ca7 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:2 }
   ]
-  const loopedBannerSlides = [bannerSlides[bannerSlides.length - 1], ...bannerSlides, bannerSlides[0]]
+  const loopedBannerSlides = [bannerSlides[bannerSlides.length - 1], ...bannerSlides, bannerSlides[0], bannerSlides[1]]
   const newsItems = [
     {
       title:'ลงชื่อประจำเดือน', badge:'สำคัญ', icon:'ph:pencil-line-duotone', iconBg:'#f1e6f4', iconColor:'#702082',
@@ -348,35 +358,25 @@ function CarSelector() {
 
       <main className="max-w-[620px] mx-auto bg-white overflow-hidden">
         <section>
-          <div ref={bannerRef} onScroll={(e) => {
-            const track = e.currentTarget
-            const center = track.scrollLeft + track.clientWidth / 2
-            const items = Array.from(track.children)
-            const nearest = items.reduce((best, item, index) => Math.abs((item.offsetLeft + item.offsetWidth / 2) - center) < best.distance ? {index, distance:Math.abs((item.offsetLeft + item.offsetWidth / 2) - center)} : best, {index:0, distance:Infinity})
-            const logicalIndex = (nearest.index - 1 + bannerSlides.length) % bannerSlides.length
-            setActiveBanner(logicalIndex)
-
-            // เมื่อหยุดที่สำเนาหัว/ท้าย ให้ย้ายไปแบนเนอร์จริงตำแหน่งเดียวกันทันที
-            if (bannerScrollTimerRef.current) clearTimeout(bannerScrollTimerRef.current)
-            bannerScrollTimerRef.current = setTimeout(() => {
-              const currentTrack = bannerRef.current
-              if (!currentTrack) return
-
-              let realIndex = null
-              if (nearest.index === 0) realIndex = bannerSlides.length
-              if (nearest.index === items.length - 1) realIndex = 1
-
-              const realItem = realIndex === null ? null : currentTrack.children[realIndex]
-              if (realItem) {
-                currentTrack.scrollTo({
-                  left: realItem.offsetLeft - (currentTrack.clientWidth - realItem.offsetWidth) / 2,
-                  behavior: 'auto'
-                })
-              }
-            }, 120)
-          }} className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-5 hide-scrollbar px-5">
+          <div ref={bannerViewportRef}
+            onTouchStart={(e) => { bannerTouchStartRef.current = e.touches[0]?.clientX ?? null }}
+            onTouchEnd={(e) => {
+              if (bannerTouchStartRef.current === null) return
+              const endX = e.changedTouches[0]?.clientX ?? bannerTouchStartRef.current
+              const distance = bannerTouchStartRef.current - endX
+              bannerTouchStartRef.current = null
+              if (Math.abs(distance) < 35) return
+              const nextPosition = Math.max(0, Math.min(BANNER_SLIDE_COUNT + 1, bannerPositionRef.current + (distance > 0 ? 1 : -1)))
+              moveBannerTo(nextPosition, true)
+            }}
+            className="overflow-hidden touch-pan-y">
+          <div ref={bannerRef} onTransitionEnd={(e) => {
+            if (e.target !== e.currentTarget || e.propertyName !== 'transform') return
+            if (bannerPositionRef.current === 0) moveBannerTo(BANNER_SLIDE_COUNT, false)
+            if (bannerPositionRef.current === BANNER_SLIDE_COUNT + 1) moveBannerTo(1, false)
+          }} className="flex gap-3 px-5 opacity-0 will-change-transform">
             {loopedBannerSlides.map((slide, index) => (
-              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[128px] sm:h-[150px] min-w-[90%] sm:min-w-[88%] snap-center rounded-[19px] sm:rounded-[22px] px-5 sm:px-6 py-3 sm:py-4 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
+              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[128px] sm:h-[150px] min-w-[90%] sm:min-w-[88%] rounded-[19px] sm:rounded-[22px] px-5 sm:px-6 py-3 sm:py-4 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
                 <div className="absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
                 <div className="absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
                 <div className="relative z-10 max-w-[70%]">
@@ -390,7 +390,8 @@ function CarSelector() {
               </article>
             ))}
           </div>
-          <div className="flex justify-center gap-2 py-2 sm:py-2.5">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => { const track=bannerRef.current; const item=track?.children[index + 1]; if(track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeBanner === index ? 'w-5 sm:w-6 bg-[#702082]' : 'w-1.5 sm:w-2 bg-[#d9cddd]'}`}/>)}</div>
+          </div>
+          <div className="flex justify-center gap-2 py-2 sm:py-2.5">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => moveBannerTo(index + 1, true)} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeBanner === index ? 'w-5 sm:w-6 bg-[#702082]' : 'w-1.5 sm:w-2 bg-[#d9cddd]'}`}/>)}</div>
         </section>
 
         <section className="pb-3 sm:pb-4">
