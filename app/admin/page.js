@@ -22,7 +22,6 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [loadingSession, setLoadingSession] = useState(true)
   const [activeMenu, setActiveMenu] = useState('cars')
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const [carData, setCarData] = useState(initialCarData)
   const [staffData, setStaffData] = useState(initialStaffData)
@@ -201,11 +200,11 @@ export default function AdminDashboard() {
   )
 
   const sidebarMenus = [
-    { id: 'cars', icon: 'ph:car-profile', title: 'Vehicles', desc: 'Manage fleet' },
-    { id: 'staff', icon: 'ph:users', title: 'Personnel', desc: 'Driver profiles' },
-    { id: 'tasks', icon: 'ph:clipboard-text', title: 'Tasks', desc: 'Routing & assignments' },
-    { id: 'departments', icon: 'ph:buildings', title: 'Departments', desc: 'Organization units' },
-    { id: 'operation_areas', icon: 'ph:map-pin', title: 'Locations', desc: 'Operating zones' },
+    { id: 'cars', icon: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'Vehicles' },
+    { id: 'staff', icon: 'ph:users-three-duotone', title: 'บุคลากร', desc: 'Personnel' },
+    { id: 'tasks', icon: 'ph:clipboard-text-duotone', title: 'ประเภทงาน', desc: 'Tasks' },
+    { id: 'departments', icon: 'ph:buildings-duotone', title: 'แผนก', desc: 'Departments' },
+    { id: 'operation_areas', icon: 'ph:map-pin-duotone', title: 'พื้นที่งาน', desc: 'Locations' },
   ]
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
   
@@ -214,7 +213,7 @@ export default function AdminDashboard() {
   const labelStyle = "text-[11px] font-medium text-[#c9b8cd] mb-2 block uppercase tracking-wider pl-1"
 
   return (
-    <div className="flex h-[calc(100dvh-78px)] bg-[#2a0f33] font-sans overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
+    <div className="flex h-[calc(100dvh-78px)] bg-[#17081e] font-sans overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
       
       <style>{`
         * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -223,6 +222,8 @@ export default function AdminDashboard() {
         ::-webkit-scrollbar-thumb { background: #7e4a87; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #a688ad; }
         select option { background: #3b1746; color: #fffaf0; }
+        .hide-admin-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-admin-scrollbar { scrollbar-width: none; }
       `}</style>
 
       {/* 🔴 Delete Modal (Dark Theme) */}
@@ -285,68 +286,90 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>}
-
-      {/* 👈 Sidebar (Dark Minimalist) */}
-      <aside className={`fixed md:static inset-y-0 left-0 w-[260px] bg-[#2a0f33] border-r border-[#6b3475] text-[#fffaf0] flex flex-col transition-transform duration-300 z-50 overflow-hidden ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      {/* Sidebar สำหรับจอใหญ่ */}
+      <aside className="hidden md:flex w-[272px] shrink-0 bg-gradient-to-b from-[#32103d] via-[#270d31] to-[#1d0925] border border-white/10 text-[#fffaf0] flex-col rounded-[26px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,.28)] relative">
+        <div className="absolute -top-20 -right-20 w-52 h-52 rounded-full bg-[#8e3ba0]/25 blur-3xl pointer-events-none"/>
+        <div className="absolute bottom-10 -left-20 w-48 h-48 rounded-full bg-[#ffdd00]/5 blur-3xl pointer-events-none"/>
         
-        <div className="h-24 flex items-center gap-3 px-8 shrink-0 border-b border-[#3b1746]">
-          <div className="w-8 h-8 bg-[#fffaf0] rounded-[8px] flex items-center justify-center text-[#3b1746] font-bold text-[12px]">
+        <div className="h-[106px] flex items-center gap-3.5 px-6 shrink-0 border-b border-white/10 relative z-10">
+          <div className="w-11 h-11 bg-[#ffdd00] rounded-[14px] flex items-center justify-center text-[#3b1746] font-black text-[13px] shadow-[0_8px_24px_rgba(255,221,0,.18)]">
             PEA
           </div>
           <div>
-            <h1 className="font-semibold text-[#fffaf0] text-[16px] tracking-tight">Admin Portal</h1>
-            <p className="text-[10px] text-[#c9b8cd] uppercase tracking-widest font-medium mt-0.5">Fleet System</p>
+            <h1 className="font-bold text-white text-[17px] tracking-tight">Admin Portal</h1>
+            <p className="text-[10px] text-[#cdb8d2] uppercase tracking-[.18em] font-semibold mt-1">PEA Fleet System</p>
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 relative z-10">
-          <p className="px-4 text-[11px] font-semibold text-[#a688ad] uppercase tracking-widest mb-3">Management</p>
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 relative z-10">
+          <p className="px-3 text-[10px] font-bold text-[#a98caf] uppercase tracking-[.2em] mb-3">Management</p>
           {sidebarMenus.map(menu => (
             <button 
               key={menu.id} 
-              onClick={() => { setActiveMenu(menu.id); setIsSidebarOpen(false) }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[12px] transition-colors text-left group ${
+              onClick={() => setActiveMenu(menu.id)}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-[15px] transition-all text-left group border ${
                 activeMenu === menu.id 
-                  ? 'bg-[#54205f] text-[#fffaf0]'
-                  : 'text-[#c9b8cd] hover:bg-[#3b1746] hover:text-[#fffaf0]'
+                  ? 'bg-gradient-to-r from-[#6f287d] to-[#572063] text-white border-white/10 shadow-[0_8px_22px_rgba(0,0,0,.18)]'
+                  : 'text-[#c9b8cd] border-transparent hover:bg-white/[.06] hover:text-white'
               }`}
             >
-              <Icon icon={menu.icon} width="20" height="20" className={activeMenu === menu.id ? 'text-[#fffaf0]' : 'text-[#c9b8cd] group-hover:text-[#fffaf0]'} />
-              <span className="font-medium text-[14px]">{menu.title}</span>
+              <span className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 ${activeMenu === menu.id ? 'bg-[#ffdd00] text-[#4b1560]' : 'bg-white/[.06] text-[#c9b8cd] group-hover:text-white'}`}>
+                <Icon icon={menu.icon} width="22" height="22" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-[14px]">{menu.title}</span>
+                <span className={`block text-[10px] mt-0.5 ${activeMenu === menu.id ? 'text-white/65' : 'text-[#94789b]'}`}>{menu.desc}</span>
+              </span>
             </button>
           ))}
         </nav>
 
-        <div className="p-4 shrink-0 border-t border-[#3b1746]">
-          <button onClick={handleLogout} className="w-full py-3 rounded-[10px] bg-[#3b1746] hover:bg-[#54205f] text-[#fffaf0] transition-all text-[13px] font-medium flex items-center justify-center gap-2 border border-[#6b3475]">
-             <Icon icon="ph:sign-out" width="18" height="18" />
-             Sign Out
+        <div className="p-4 shrink-0 border-t border-white/10 relative z-10">
+          <div className="flex items-center gap-3 px-2 pb-3">
+            <span className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-[#ffdd00] font-bold text-[12px]">A</span>
+            <div><p className="text-[12px] font-semibold text-white">Admin PEA</p><p className="text-[9px] text-[#62d98b] mt-0.5">● Online</p></div>
+          </div>
+          <button onClick={handleLogout} className="w-full py-3 rounded-[12px] bg-white/[.06] hover:bg-[#ff453a]/15 text-[#e4d6e7] hover:text-[#ff8d87] transition-all text-[12px] font-semibold flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff453a]/30">
+             <Icon icon="ph:sign-out-bold" width="18" height="18" />
+             ออกจากระบบ
           </button>
         </div>
       </aside>
 
       {/* 👉 Main Content */}
-      <main className="flex-1 bg-[#2a0f33] flex flex-col overflow-hidden relative">
+      <main className="min-w-0 flex-1 bg-[radial-gradient(circle_at_top_right,_#42144f_0%,_#2a0f33_38%,_#220b2b_100%)] flex flex-col overflow-hidden relative md:rounded-[26px] md:border md:border-white/10 md:shadow-[0_24px_70px_rgba(0,0,0,.22)]">
         
         {/* Header */}
-        <header className="h-20 bg-[#2a0f33]/80 backdrop-blur-xl flex items-center justify-between px-6 sm:px-10 shrink-0 z-20 border-b border-[#6b3475] sticky top-0">
-          <div className="flex items-center gap-4">
-            <button className="md:hidden p-2 text-[#c9b8cd] hover:text-[#fffaf0] transition-colors" onClick={() => setIsSidebarOpen(true)}>
-              <Icon icon="ph:list" width="24" height="24" />
-            </button>
+        <header className="min-h-[76px] bg-[#250c2e]/85 backdrop-blur-xl flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-b border-white/10 sticky top-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="md:hidden w-10 h-10 bg-[#ffdd00] rounded-[13px] flex items-center justify-center text-[#4b1560] font-black text-[11px] shrink-0 shadow-[0_6px_20px_rgba(255,221,0,.16)]">PEA</div>
             <div>
-                <h1 className="text-[22px] md:text-[24px] font-medium text-[#fffaf0] tracking-tight">{activeMenuObj?.title}</h1>
+                <p className="md:hidden text-[9px] text-[#bfa6c5] uppercase tracking-[.16em] font-semibold mb-0.5">Admin Portal</p>
+                <h1 className="text-[18px] md:text-[24px] font-bold text-white tracking-tight truncate">{activeMenuObj?.title}</h1>
+                <p className="hidden md:block text-[11px] text-[#ad92b4] mt-0.5">จัดการข้อมูล {activeMenuObj?.desc} ของระบบ</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-3">
-            <div className="text-right">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden sm:block text-right">
                 <p className="text-[13px] font-medium text-[#fffaf0]">Admin_PEA</p>
                 <p className="text-[10px] text-[#34c759] font-medium tracking-wide">● Online</p>
             </div>
-            <div className="w-9 h-9 bg-[#3b1746] border border-[#6b3475] rounded-full flex items-center justify-center text-[#fffaf0] text-xs font-bold">A</div>
+            <button onClick={handleLogout} aria-label="ออกจากระบบ" className="h-10 px-3 sm:px-4 rounded-[12px] border border-white/10 bg-white/[.06] text-[#e7dce9] hover:bg-[#ff453a]/15 hover:text-[#ff8d87] active:scale-95 transition-all flex items-center gap-2 text-[11px] font-semibold">
+              <Icon icon="ph:sign-out-bold" width="19" height="19" />
+              <span className="hidden sm:inline">ออกจากระบบ</span>
+            </button>
           </div>
         </header>
+
+        {/* เมนูมือถือ: ไม่บังเนื้อหาและเลื่อนได้แนวนอน */}
+        <nav className="md:hidden shrink-0 flex gap-2 overflow-x-auto hide-admin-scrollbar px-4 py-3 bg-[#250c2e]/72 border-b border-white/10 backdrop-blur-lg">
+          {sidebarMenus.map(menu => (
+            <button key={menu.id} onClick={() => setActiveMenu(menu.id)} className={`shrink-0 h-11 px-3.5 rounded-[13px] flex items-center gap-2 border transition-all active:scale-95 ${activeMenu === menu.id ? 'bg-[#ffdd00] border-[#ffdd00] text-[#4b1560] shadow-[0_6px_18px_rgba(255,221,0,.13)]' : 'bg-white/[.06] border-white/10 text-[#d3c1d7]'}`}>
+              <Icon icon={menu.icon} width="19" height="19" />
+              <span className="text-[12px] font-bold whitespace-nowrap">{menu.title}</span>
+            </button>
+          ))}
+        </nav>
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">

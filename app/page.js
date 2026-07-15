@@ -38,6 +38,7 @@ function CarSelector() {
   const [selectedNews, setSelectedNews] = useState(null)
   const [newsExpanded, setNewsExpanded] = useState(true)
   const bannerRef = useRef(null)
+  const bannerScrollTimerRef = useRef(null)
   const newsRef = useRef(null)
   
   // State สำหรับ Modal โทรออก
@@ -132,6 +133,47 @@ function CarSelector() {
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    if (loading) return
+
+    // เริ่มที่แบนเนอร์จริงอันแรก (child 0 เป็นสำเนาของอันสุดท้าย)
+    const frame = requestAnimationFrame(() => {
+      const track = bannerRef.current
+      const item = track?.children[1]
+      if (track && item) {
+        track.scrollTo({
+          left: item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,
+          behavior: 'auto'
+        })
+      }
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [loading])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveBanner(current => {
+        const nextPosition = current + 1
+        const track = bannerRef.current
+        // children: [สำเนาอันสุดท้าย, ...แบนเนอร์จริง, สำเนาอันแรก]
+        const item = track?.children[nextPosition + 1]
+        if (track && item) {
+          track.scrollTo({
+            left: item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,
+            behavior: 'smooth'
+          })
+        }
+        return nextPosition % 4
+      })
+    }, 5000)
+
+    return () => {
+      clearInterval(interval)
+      if (bannerScrollTimerRef.current) clearTimeout(bannerScrollTimerRef.current)
+    }
+  }, [])
+
   // ฟังก์ชันคลิกปุ่มโทร
   const handleCallClick = async (e, driverName) => {
     if (e) e.stopPropagation();
@@ -188,19 +230,22 @@ function CarSelector() {
     : new Date(today.getFullYear(), today.getMonth() + 1, 5)
   const formatThaiDate = (date) => date.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' })
   const signaturePeriod = `${formatThaiDate(signatureStart)} – ${formatThaiDate(signatureEnd)}`
+  const signatureDeadline = formatThaiDate(signatureEnd)
+  const signatureMonth = signatureStart.toLocaleDateString('th-TH', { month:'long', year:'numeric' })
   const bannerSlides = [
     { eyebrow:'PEA FLEET', title:'ระบบรถ PEA ใหม่!', accent:'จัดการง่ายกว่าเดิม', button:'ดูคู่มือเลย !!', icon:'ph:car-profile-duotone', background:'linear-gradient(115deg,#4b156d 0%,#762789 58%,#9139a6 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:1 },
     { eyebrow:'SCAN & GO', title:'สแกนก่อนใช้รถ', accent:'บันทึกได้ในไม่กี่ขั้นตอน', button:'ดูวิธีสแกน', icon:'ph:qr-code-duotone', background:'linear-gradient(115deg,#5a1f75 0%,#7f2b8f 55%,#a34db0 100%)', iconBg:'#ffdd00', iconColor:'#571b70', detailIndex:1 },
     { eyebrow:'MONTHLY SIGN', title:'ลงชื่อประจำเดือน', accent:signaturePeriod, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(115deg,#40155f 0%,#69277e 55%,#8d3fa1 100%)', iconBg:'#ffea5c', iconColor:'#4b156d', detailIndex:0 },
     { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(115deg,#55206f 0%,#7c2f8d 56%,#963ca7 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:2 }
   ]
+  const loopedBannerSlides = [bannerSlides[bannerSlides.length - 1], ...bannerSlides, bannerSlides[0]]
   const newsItems = [
     {
       title:'ลงชื่อประจำเดือน', badge:'สำคัญ', icon:'ph:pencil-line-duotone', iconBg:'#f1e6f4', iconColor:'#702082',
-      copy:`เปิดลงชื่อรับรองการใช้รถประจำเดือน ตั้งแต่วันที่ ${signaturePeriod} กรุณาดำเนินการให้ครบภายในวันที่ 5`, meta:'ระบบลงชื่อผู้ใช้งานรถ', period:signaturePeriod,
-      detail:'การลงชื่อประจำเดือนเปิดตั้งแต่วันที่ 28 ถึงวันที่ 5 ของเดือนถัดไป เพื่อยืนยันความถูกต้องของประวัติการใช้รถ ผู้ขับและผู้ควบคุมควรตรวจสอบรายการเดินทาง เลขไมล์ และข้อมูลการรับ–คืนรถก่อนลงชื่อทุกครั้ง',
-      steps:['เปิดรายงานของรถคันที่รับผิดชอบ','ตรวจสอบรายการเดินทางและเลขไมล์ประจำเดือน','ลงชื่อผู้ขับรถและผู้ควบคุมให้ครบภายในวันที่ 5','ตรวจสอบสถานะว่าบันทึกลายเซ็นสำเร็จแล้ว'],
-      note:'หากข้อมูลการเดินทางไม่ถูกต้อง ให้แจ้งผู้ดูแลระบบก่อนลงชื่อ'
+      copy:`เปิดลงชื่อรับรองการใช้รถรอบเดือน${signatureMonth} ตั้งแต่ ${signaturePeriod} กรุณาดำเนินการให้ครบภายใน ${signatureDeadline}`, meta:'ระบบลงชื่อผู้ใช้งานรถ', period:`รอบเดือน${signatureMonth} · ${signaturePeriod}`,
+      detail:`การลงชื่อประจำเดือนรอบ ${signatureMonth} เปิดตั้งแต่ ${signaturePeriod} เพื่อยืนยันความถูกต้องของประวัติการใช้รถ ผู้ขับและผู้ควบคุมควรตรวจสอบรายการเดินทาง เลขไมล์ และข้อมูลการรับ–คืนรถก่อนลงชื่อทุกครั้ง ระบบจะคำนวณรอบเดือนและเปลี่ยนวันที่ให้อัตโนมัติ`,
+      steps:['เปิดรายงานของรถคันที่รับผิดชอบ',`ตรวจสอบรายการเดินทางและเลขไมล์รอบเดือน${signatureMonth}`,`ลงชื่อผู้ขับรถและผู้ควบคุมให้ครบภายใน ${signatureDeadline}`,'ตรวจสอบสถานะว่าบันทึกลายเซ็นสำเร็จแล้ว'],
+      note:`หากข้อมูลการเดินทางไม่ถูกต้อง ให้แจ้งผู้ดูแลระบบก่อนหมดเขต ${signatureDeadline}`
     },
     {
       title:'สแกน QR ประจำรถ', badge:'Hot !', icon:'ph:qr-code-duotone', iconBg:'#fff7bf', iconColor:'#702082',
@@ -279,10 +324,10 @@ function CarSelector() {
             <div className="w-14 h-14 rounded-[16px] bg-white border border-[#eadfed] p-1.5 flex items-center justify-center shadow-sm overflow-hidden"><img src="/pea_logo.png" alt="ตราสัญลักษณ์การไฟฟ้าส่วนภูมิภาค PEA" className="w-full h-full object-contain" /></div>
             <div className="min-w-0"><p className="text-[10px] font-bold text-[#702082] tracking-[.12em]">การไฟฟ้าส่วนภูมิภาค</p><h1 className="text-[21px] sm:text-[24px] font-bold tracking-[-.7px] truncate">สวัสดี ผู้ใช้งาน PEA!</h1></div>
           </div>
-          <button onClick={() => router.push('/dashboard')} className="relative w-11 h-11 rounded-full flex items-center justify-center text-black active:scale-90 transition-transform" aria-label="แจ้งเตือน">
+          <a href="https://lin.ee/vA3z1ZL" target="_blank" rel="noopener noreferrer" className="relative w-11 h-11 rounded-full flex items-center justify-center text-black active:scale-90 transition-transform" aria-label="ติดต่อผ่าน LINE">
             <Icon icon="ph:chat-circle-dots-bold" width="29" height="29" />
             <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#ffdd00] border-2 border-white"/>
-          </button>
+          </a>
         </div>
       </header>
 
@@ -293,10 +338,30 @@ function CarSelector() {
             const center = track.scrollLeft + track.clientWidth / 2
             const items = Array.from(track.children)
             const nearest = items.reduce((best, item, index) => Math.abs((item.offsetLeft + item.offsetWidth / 2) - center) < best.distance ? {index, distance:Math.abs((item.offsetLeft + item.offsetWidth / 2) - center)} : best, {index:0, distance:Infinity})
-            setActiveBanner(nearest.index)
+            const logicalIndex = (nearest.index - 1 + bannerSlides.length) % bannerSlides.length
+            setActiveBanner(logicalIndex)
+
+            // เมื่อหยุดที่สำเนาหัว/ท้าย ให้ย้ายไปแบนเนอร์จริงตำแหน่งเดียวกันทันที
+            if (bannerScrollTimerRef.current) clearTimeout(bannerScrollTimerRef.current)
+            bannerScrollTimerRef.current = setTimeout(() => {
+              const currentTrack = bannerRef.current
+              if (!currentTrack) return
+
+              let realIndex = null
+              if (nearest.index === 0) realIndex = bannerSlides.length
+              if (nearest.index === items.length - 1) realIndex = 1
+
+              const realItem = realIndex === null ? null : currentTrack.children[realIndex]
+              if (realItem) {
+                currentTrack.scrollTo({
+                  left: realItem.offsetLeft - (currentTrack.clientWidth - realItem.offsetWidth) / 2,
+                  behavior: 'auto'
+                })
+              }
+            }, 120)
           }} className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-5 hide-scrollbar px-5">
-            {bannerSlides.map((slide) => (
-              <article key={slide.title} className="relative overflow-hidden h-[184px] min-w-[88%] snap-center rounded-[25px] px-6 py-5 text-white" style={{background:slide.background, boxShadow:'0 10px 28px rgba(73,20,88,.16)'}}>
+            {loopedBannerSlides.map((slide, index) => (
+              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[184px] min-w-[88%] snap-center rounded-[25px] px-6 py-5 text-white" style={{background:slide.background, boxShadow:'0 10px 28px rgba(73,20,88,.16)'}}>
                 <div className="absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
                 <div className="absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
                 <div className="relative z-10 max-w-[70%]">
@@ -310,7 +375,7 @@ function CarSelector() {
               </article>
             ))}
           </div>
-          <div className="flex justify-center gap-2 py-4">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => { const track=bannerRef.current; const item=track?.children[index]; if(track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-2 rounded-full transition-all ${activeBanner === index ? 'w-6 bg-[#702082]' : 'w-2 bg-[#d9cddd]'}`}/>)}</div>
+          <div className="flex justify-center gap-2 py-4">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => { const track=bannerRef.current; const item=track?.children[index + 1]; if(track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-2 rounded-full transition-all ${activeBanner === index ? 'w-6 bg-[#702082]' : 'w-2 bg-[#d9cddd]'}`}/>)}</div>
         </section>
 
         <section className="pb-6">
@@ -359,6 +424,28 @@ function CarSelector() {
           {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div>{busyCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
           <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
         </section>
+
+        <footer className="bg-white px-5 pt-2 pb-7">
+          <a
+            href="https://github.com/kijnaphat"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center justify-between gap-4 rounded-[22px] border border-[#eadfed] bg-gradient-to-r from-[#faf5fb] to-[#fffbea] px-4 py-4 transition-all active:scale-[.98]"
+            aria-label="เปิด GitHub Profile ของ Kijnaphat Suksod"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-11 h-11 rounded-[14px] bg-[#702082] text-[#ffdd00] flex items-center justify-center flex-shrink-0 shadow-sm">
+                <Icon icon="ph:github-logo-fill" width="24" height="24" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold tracking-[.12em] text-[#702082]">DEVELOPED BY</p>
+                <p className="text-[16px] font-bold text-[#2d2030] truncate">Kijnaphat Suksod</p>
+                <p className="text-[11px] text-[#817385]">github.com/kijnaphat · Profile</p>
+              </div>
+            </div>
+            <Icon icon="ph:arrow-up-right-bold" width="20" height="20" className="text-[#702082] flex-shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </a>
+        </footer>
       </main>
 
       {/* ── Modal รายละเอียดข่าวสาร ── */}
