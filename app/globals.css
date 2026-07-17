@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Leelawadee UI", Tahoma, "Segoe UI", Arial, sans-serif;
+}
+
+.font-sarabun {
+  font-family: "Leelawadee UI", Tahoma, "Segoe UI", Arial, sans-serif;
+}
+
+/* ตั้งค่าหน้ากระดาษ A4 แนวนอนสำหรับการพิมพ์ */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background-color: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
