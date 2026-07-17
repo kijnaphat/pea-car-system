@@ -9,7 +9,7 @@ export default function GlobalBottomNav() {
   const items = [
     { label:'หน้าหลัก', path:'/', icon:'ph:house-fill', active:pathname === '/' },
     { label:'แดชบอร์ด', path:'/dashboard', icon:'ph:chart-pie-slice-duotone', active:pathname.startsWith('/dashboard') },
-    { label:'แอดมิน', path:'/admin', icon:'ph:user-gear-duotone', active:pathname.startsWith('/admin') },
+    { label:'แอดมิน', path:'/admin/login', icon:'ph:user-gear-duotone', active:pathname.startsWith('/admin') },
   ]
 
   return (

@@ -1,17 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
+import PageSkeleton from '@/app/components/PageSkeleton'
 
 export default function AdminLogin() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          router.replace('/admin')
+          return
+        }
+      } finally {
+        if (active) setCheckingSession(false)
+      }
+    }
+    checkExistingSession()
+    return () => { active = false }
+  }, [router])
 
   const handleLogin = async (event) => {
     event.preventDefault()
@@ -27,6 +46,8 @@ export default function AdminLogin() {
       setLoading(false)
     }
   }
+
+  if (checkingSession || loading) return <PageSkeleton variant="login" />
 
   return (
     <main className="min-h-[calc(100dvh-78px)] bg-[#f8f3fa] font-sarabun flex items-center justify-center p-4 sm:p-7 relative overflow-hidden">
@@ -94,8 +115,8 @@ export default function AdminLogin() {
                 </div>
               </label>
 
-              <button type="submit" disabled={loading} className={`w-full rounded-[16px] py-4 text-[14px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[.985] ${loading ? 'bg-[#d8c5dc] text-white cursor-not-allowed' : 'bg-[#702082] text-white shadow-[0_10px_24px_rgba(112,32,130,.24)] hover:bg-[#5c176d]'}`}>
-                {loading ? <><Icon icon="ph:spinner-gap-bold" width="19" height="19" className="animate-spin"/>กำลังเข้าสู่ระบบ...</> : <>เข้าสู่ระบบ <Icon icon="ph:arrow-right-bold" width="16" height="16" className="text-[#ffdd00]"/></>}
+              <button type="submit" className="w-full rounded-[16px] py-4 text-[14px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[.985] bg-[#702082] text-white shadow-[0_10px_24px_rgba(112,32,130,.24)] hover:bg-[#5c176d]">
+                เข้าสู่ระบบ <Icon icon="ph:arrow-right-bold" width="16" height="16" className="text-[#ffdd00]"/>
               </button>
             </form>
 

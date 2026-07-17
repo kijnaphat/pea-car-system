@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
+import PageSkeleton from '@/app/components/PageSkeleton'
 
 const BANNER_SLIDE_COUNT = 4
 
@@ -221,11 +222,7 @@ function CarSelector() {
     return null 
   }
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#f8f3fa] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
-      <div className="w-9 h-9 border-[3px] border-[#eadff0] border-t-[#702082] rounded-full animate-spin"/>
-    </div>
-  )
+  if (loading) return <PageSkeleton variant="home" />
 
   const busyCars = cars.filter(c => c.status === 'busy')
   const availableCars = cars.filter(c => c.status !== 'busy')
@@ -331,7 +328,7 @@ function CarSelector() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-28 text-[#241c27]" style={{WebkitFontSmoothing:'antialiased'}}>
+    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-28 lg:pb-10 lg:bg-[#f3edf5] text-[#241c27]" style={{WebkitFontSmoothing:'antialiased'}}>
       <style>{`
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
         .animate-slideUp { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
@@ -344,19 +341,22 @@ function CarSelector() {
       `}</style>
 
       <header className="bg-white">
-        <div className="max-w-[620px] mx-auto px-5 pt-3 pb-2 sm:pt-5 sm:pb-3 flex items-center justify-between">
+        <div className="max-w-[620px] lg:max-w-[1280px] mx-auto px-5 lg:px-8 pt-3 pb-2 sm:pt-5 sm:pb-3 lg:py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[12px] sm:rounded-[14px] bg-white border border-[#eadfed] p-1 sm:p-1.5 flex items-center justify-center shadow-sm overflow-hidden"><img src="/pea_logo.png" alt="ตราสัญลักษณ์การไฟฟ้าส่วนภูมิภาค PEA" className="w-full h-full object-contain" /></div>
             <div className="min-w-0"><p className="text-[8px] sm:text-[9px] font-bold text-[#702082] tracking-[.12em]">การไฟฟ้าส่วนภูมิภาค</p><h1 className="text-[17px] sm:text-[21px] font-bold tracking-[-.7px] truncate">สวัสดี ผู้ใช้งาน PEA!</h1></div>
           </div>
-          <a href="https://lin.ee/vA3z1ZL" target="_blank" rel="noopener noreferrer" className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-black active:scale-90 transition-transform" aria-label="ติดต่อผ่าน LINE">
-            <Icon icon="ph:chat-circle-dots-bold" width="27" height="27" />
-            <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#ffdd00] border-2 border-white"/>
-          </a>
+          <div className="flex items-center gap-2">
+            <button onClick={() => router.push('/dashboard')} className="hidden lg:inline-flex items-center gap-2 rounded-full bg-[#f3eaf5] px-4 py-2.5 text-[13px] font-bold text-[#702082] transition-transform hover:-translate-y-0.5" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="19" height="19" />Dashboard</button>
+            <a href="https://lin.ee/7xXA4J2" target="_blank" rel="noopener noreferrer" className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-black active:scale-90 transition-transform" aria-label="ติดต่อผ่าน LINE">
+              <Icon icon="ph:chat-circle-dots-bold" width="27" height="27" />
+              <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#ffdd00] border-2 border-white"/>
+            </a>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-[620px] mx-auto bg-white overflow-hidden">
+      <main className="max-w-[620px] lg:max-w-[1280px] mx-auto bg-white overflow-hidden lg:rounded-[30px] lg:shadow-[0_14px_45px_rgba(75,21,96,.10)]">
         <section>
           <div ref={bannerViewportRef}
             onTouchStart={(e) => { bannerTouchStartRef.current = e.touches[0]?.clientX ?? null }}
@@ -369,19 +369,19 @@ function CarSelector() {
               const nextPosition = Math.max(0, Math.min(BANNER_SLIDE_COUNT + 1, bannerPositionRef.current + (distance > 0 ? 1 : -1)))
               moveBannerTo(nextPosition, true)
             }}
-            className="overflow-hidden touch-pan-y">
+            className="overflow-hidden touch-pan-y lg:px-6 lg:pt-6">
           <div ref={bannerRef} onTransitionEnd={(e) => {
             if (e.target !== e.currentTarget || e.propertyName !== 'transform') return
             if (bannerPositionRef.current === 0) moveBannerTo(BANNER_SLIDE_COUNT, false)
             if (bannerPositionRef.current === BANNER_SLIDE_COUNT + 1) moveBannerTo(1, false)
-          }} className="flex gap-3 px-5 opacity-0 will-change-transform">
+          }} className="flex gap-3 px-5 lg:px-0 opacity-0 will-change-transform">
             {loopedBannerSlides.map((slide, index) => (
-              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[128px] sm:h-[150px] min-w-[90%] sm:min-w-[88%] rounded-[19px] sm:rounded-[22px] px-5 sm:px-6 py-3 sm:py-4 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
+              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[128px] sm:h-[150px] lg:h-[210px] min-w-[90%] sm:min-w-[88%] lg:min-w-full rounded-[19px] sm:rounded-[22px] lg:rounded-[26px] px-5 sm:px-6 lg:px-10 py-3 sm:py-4 lg:py-7 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
                 <div className="absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
                 <div className="absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
                 <div className="relative z-10 max-w-[70%]">
                   <p className="text-[8px] sm:text-[9px] font-bold tracking-[.16em] text-[#ffea6a] mb-1">{slide.eyebrow}</p>
-                  <h2 className="text-[18px] sm:text-[23px] font-bold leading-[1.1] tracking-[-.7px]">{slide.title}<br/><span className="text-[#ffea4d] text-[14px] sm:text-[18px]">{slide.accent}</span></h2>
+                  <h2 className="text-[18px] sm:text-[23px] lg:text-[32px] font-bold leading-[1.1] tracking-[-.7px]">{slide.title}<br/><span className="text-[#ffea4d] text-[14px] sm:text-[18px] lg:text-[23px]">{slide.accent}</span></h2>
                   <button onClick={() => setSelectedNews(slide.guideType === 'overview' ? systemOverviewGuide : {...newsItems[slide.detailIndex], index:slide.detailIndex})} className="mt-1.5 sm:mt-2 bg-[#ffdd00] text-[#4b156d] rounded-full px-3.5 sm:px-4 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-bold active:scale-95 transition-transform inline-flex items-center gap-1.5"><Icon icon="ph:arrow-right-bold" width="11" height="11" />{slide.button}</button>
                 </div>
                 <div className="absolute right-3 bottom-0 w-[38%] h-full flex items-center justify-center float-car">
@@ -391,17 +391,17 @@ function CarSelector() {
             ))}
           </div>
           </div>
-          <div className="flex justify-center gap-2 py-2 sm:py-2.5">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => moveBannerTo(index + 1, true)} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeBanner === index ? 'w-5 sm:w-6 bg-[#702082]' : 'w-1.5 sm:w-2 bg-[#d9cddd]'}`}/>)}</div>
+          <div className="flex justify-center gap-2 py-2 sm:py-2.5 lg:py-4">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => moveBannerTo(index + 1, true)} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeBanner === index ? 'w-5 sm:w-6 bg-[#702082]' : 'w-1.5 sm:w-2 bg-[#d9cddd]'}`}/>)}</div>
         </section>
 
         <section className="pb-3 sm:pb-4">
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar px-5 pb-2">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar px-5 lg:px-6 pb-2 lg:grid lg:grid-cols-4 lg:overflow-visible">
             {[
               {label:'รถทั้งหมด', value:cars.length, sub:'ในระบบ', icon:'ph:car-profile-duotone', accent:'#702082'},
               {label:'พร้อมใช้งาน', value:availableCars.length, sub:'คัน', icon:'ph:check-circle-duotone', accent:'#8b3c98'},
               {label:'กำลังใช้งาน', value:busyCars.length, sub:'คัน', icon:'ph:steering-wheel-duotone', accent:'#d29f00'},
               {label:'รถ EV', value:evCars.length, sub:'คัน', icon:'ph:lightning-duotone', accent:'#702082'}
-            ].map(stat => <div key={stat.label} className="min-w-[118px] sm:min-w-[138px] h-[82px] sm:h-[96px] bg-white rounded-[16px] sm:rounded-[19px] p-2.5 sm:p-3 border border-[#eee3f1]" style={{boxShadow:'0 6px 22px rgba(91,35,104,.08)'}}><div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-bold whitespace-nowrap"><span className="w-5 h-5 sm:w-6 sm:h-6 rounded-[7px] sm:rounded-[8px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="14" height="14" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-1 sm:mt-1.5 text-[18px] sm:text-[21px] font-bold leading-tight" style={{color:stat.accent}}>{stat.value} <span className="text-[10px] sm:text-[12px]">{stat.sub}</span></p><p className="mt-0.5 text-[8px] sm:text-[10px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="9" height="9" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
+            ].map(stat => <div key={stat.label} className="min-w-[118px] sm:min-w-[138px] lg:min-w-0 h-[82px] sm:h-[96px] lg:h-[110px] bg-white rounded-[16px] sm:rounded-[19px] p-2.5 sm:p-3 lg:p-4 border border-[#eee3f1]" style={{boxShadow:'0 6px 22px rgba(91,35,104,.08)'}}><div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-bold whitespace-nowrap"><span className="w-5 h-5 sm:w-6 sm:h-6 rounded-[7px] sm:rounded-[8px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="14" height="14" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-1 sm:mt-1.5 text-[18px] sm:text-[21px] lg:text-[28px] font-bold leading-tight" style={{color:stat.accent}}>{stat.value} <span className="text-[10px] sm:text-[12px]">{stat.sub}</span></p><p className="mt-0.5 text-[8px] sm:text-[10px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="9" height="9" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
           </div>
         </section>
 
@@ -421,27 +421,27 @@ function CarSelector() {
             const items = Array.from(track.children)
             const nearest = items.reduce((best, item, index) => Math.abs((item.offsetLeft + item.offsetWidth / 2) - center) < best.distance ? {index, distance:Math.abs((item.offsetLeft + item.offsetWidth / 2) - center)} : best, {index:0, distance:Infinity})
             setActiveNews(nearest.index)
-          }} className="relative flex gap-3 overflow-x-auto snap-x snap-mandatory hide-scrollbar px-5 pb-2">
+          }} className="relative flex gap-3 overflow-x-auto snap-x snap-mandatory hide-scrollbar px-5 lg:px-6 pb-2 lg:grid lg:grid-cols-2 lg:overflow-visible">
             {newsItems.map((news, index) => (
-              <article key={news.title} className="snap-center min-w-[90%] sm:min-w-[88%] bg-white rounded-[21px] sm:rounded-[25px] px-4 sm:px-5 py-4 sm:py-5 border border-[#eee3f1]" style={{boxShadow:'0 9px 28px rgba(91,35,104,.09)'}}>
+              <article key={news.title} className="snap-center min-w-[90%] sm:min-w-[88%] lg:min-w-0 bg-white rounded-[21px] sm:rounded-[25px] px-4 sm:px-5 py-4 sm:py-5 border border-[#eee3f1]" style={{boxShadow:'0 9px 28px rgba(91,35,104,.09)'}}>
                 <div className="flex items-center justify-between gap-3 mb-2 sm:mb-3"><div className="flex items-center gap-2 min-w-0"><span className="w-9 h-9 sm:w-10 sm:h-10 rounded-[11px] sm:rounded-[12px] flex items-center justify-center flex-shrink-0" style={{background:news.iconBg,color:news.iconColor}}><Icon icon={news.icon} width="21" height="21" /></span><div className="min-w-0"><span className="block text-[15px] sm:text-[17px] font-bold truncate">{news.title}</span><span className="text-[8px] sm:text-[9px] text-[#919793]">ข่าวที่ {index + 1} จาก 4</span></div></div><span className="bg-[#ffad2f] rounded-full px-2.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold whitespace-nowrap">{news.badge}</span></div>
                 <p className="text-[12px] sm:text-[14px] leading-[1.55] sm:leading-[1.65] min-h-[56px] sm:min-h-[70px]">{news.copy}</p>
                 <button onClick={() => setSelectedNews({...news, index})} className="mt-1.5 sm:mt-2 text-[11px] sm:text-[12px] font-semibold text-[#702082] underline underline-offset-2 inline-flex items-center gap-1">{news.meta} · อ่านเพิ่มเติม <Icon icon="ph:arrow-right" width="12" height="12" /></button>
               </article>
             ))}
           </div>
-          <div className="relative flex justify-center gap-1.5 mt-2 sm:mt-3">{[0,1,2,3].map((index) => <button key={index} onClick={() => { const track = newsRef.current; const item = track?.children[index]; if (track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปข่าวหน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeNews === index ? 'w-5 bg-[#702082]' : 'w-1.5 bg-white/90'}`}/>)}</div>
+          <div className="relative flex justify-center gap-1.5 mt-2 sm:mt-3 lg:hidden">{[0,1,2,3].map((index) => <button key={index} onClick={() => { const track = newsRef.current; const item = track?.children[index]; if (track && item) track.scrollTo({left:item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2,behavior:'smooth'}) }} aria-label={`ไปข่าวหน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeNews === index ? 'w-5 bg-[#702082]' : 'w-1.5 bg-white/90'}`}/>)}</div>
           </div>}
         </section>
 
-        <section className="relative -mt-1 bg-white rounded-t-[32px] px-5 pt-6 pb-4">
+        <section className="relative -mt-1 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><h2 className="text-[25px] font-bold tracking-[-.7px] text-[#4b1560]">รายการรถ</h2><Icon icon="ph:info-duotone" width="21" height="21" className="text-[#702082]" /></div><button onClick={() => router.push('/dashboard')} className="w-10 h-10 rounded-full bg-[#f3eaf5] text-[#702082] flex items-center justify-center" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="22" height="22" /></button></div>
           <div className="flex items-center justify-between mt-6 mb-1 text-[13px] text-[#646a66]"><span>{cars.length} รายการ</span><span>สถานะล่าสุด</span></div>
-          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div>{busyCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
+          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{busyCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
           <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
         </section>
 
-        <footer className="bg-white px-5 pt-2 pb-7">
+        <footer className="bg-white px-5 lg:px-6 pt-2 pb-7">
           <a
             href="https://github.com/kijnaphat"
             target="_blank"

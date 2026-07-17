@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
+import PageSkeleton from '@/app/components/PageSkeleton'
 
 // เพิ่ม is_visible เข้าไปใน initial data (ค่าเริ่มต้นให้แสดงผล)
 const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'Gas', status: 'available', budget: '', department: '', usage_type: '', ownership_type: '', is_visible: true }
@@ -188,16 +189,8 @@ export default function AdminDashboard() {
     } catch (error) { alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message) } finally { setIsSubmitting(false) }
   }
 
-  if (loadingSession) return (
-    <div className="min-h-screen bg-[#2a0f33] flex items-center justify-center relative overflow-hidden font-sans">
-      <div className="absolute w-96 h-96 bg-[#ffdd00] rounded-full blur-[120px] opacity-10 animate-pulse"></div>
-      <div className="text-center z-10 flex flex-col items-center">
-        <Icon icon="ph:spinner-gap-bold" className="animate-spin text-[#ffdd00] mb-6" width="48" height="48" />
-        <h1 className="text-2xl font-medium text-[#fffaf0] tracking-tight">Authenticating</h1>
-        <p className="text-sm font-medium text-[#c9b8cd] mt-2 tracking-widest uppercase">Connecting to Fleet...</p>
-      </div>
-    </div>
-  )
+  // ผู้ที่ยังไม่ได้เข้าสู่ระบบจะถูกส่งไปหน้า Login จึงใช้โครง loading ของหน้า Login
+  if (loadingSession) return <PageSkeleton variant="login" />
 
   const sidebarMenus = [
     { id: 'cars', icon: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'Vehicles' },

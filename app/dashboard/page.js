@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
+import PageSkeleton from '@/app/components/PageSkeleton'
 
 // ── Apple-style helpers ──
 const ACard = ({ children, className = '' }) => (
@@ -696,11 +697,7 @@ export default function UltimateDashboard() {
     )
   }
 
-  if (loading && !showWelcome) return (
-    <div className="min-h-screen bg-[#f3eaf5] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
-      <div className="w-8 h-8 border-[2.5px] border-[#d9cadd] border-t-[#4b1560] rounded-full animate-spin"/>
-    </div>
-  )
+  if (loading && !showWelcome) return <PageSkeleton variant="dashboard" />
 
   const maxTrend  = Math.max(...analytics.dailyTrend.map(d => d.val), 1);
   const maxHourly = Math.max(...analytics.hourlyTrend.map(d => d.val), 1);

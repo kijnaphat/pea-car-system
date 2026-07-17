@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import PageSkeleton from '@/app/components/PageSkeleton'
 
 // --- Main Component ---
 function MainApp() {
@@ -96,11 +97,7 @@ function CarSelector() {
     return null 
   }
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#f8f3fa] flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-4 border-[#702082] border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  )
+  if (loading) return <PageSkeleton variant="report" />
 
   return (
     <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-6 relative">
