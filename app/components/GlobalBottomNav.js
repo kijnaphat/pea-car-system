@@ -23,9 +23,10 @@ export default function GlobalBottomNav() {
       <div className="pea-glass-nav flex h-[60px] w-full max-w-[590px] items-center gap-1 rounded-full border border-white/75 p-1.5 shadow-[0_14px_34px_rgba(51,28,67,.2)] md:h-[68px] md:max-w-[760px] md:gap-2 md:p-2">
         {items.map(item => (
           <button key={item.path} onClick={() => router.push(item.path)}
-            className={`flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-extrabold transition-all duration-300 md:gap-2 md:px-5 md:text-sm ${item.active ? 'bg-[#6f218a] text-white shadow-[0_4px_12px_rgba(90,24,116,.3)]' : 'text-[#85818a] hover:bg-[#f4f4f5] hover:text-[#6f218a]'}`}>
+            className={`relative flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-extrabold transition-all duration-300 md:gap-2 md:px-5 md:text-sm ${item.active ? 'text-[#70218a]' : 'text-[#b4adb9] hover:bg-[#f4f4f5] hover:text-[#70218a]'}`}>
             <Icon icon={item.icon} width="20" height="20" className="md:h-[22px] md:w-[22px]" />
             <span>{item.label}</span>
+            {item.active && <span className="absolute top-1.5 h-1.5 w-1.5 rounded-full bg-[#ffdd00] md:top-2 md:h-2 md:w-2" aria-hidden="true" />}
           </button>
         ))}
       </div>
