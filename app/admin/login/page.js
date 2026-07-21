@@ -19,8 +19,8 @@ export default function AdminLogin() {
     let active = true
     const checkExistingSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (!error && user) {
           router.replace('/admin')
           return
         }
@@ -39,7 +39,7 @@ export default function AdminLogin() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      router.push('/admin')
+      router.replace('/admin')
     } catch (error) {
       setErrorMsg(error.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง')
     } finally {

@@ -45,8 +45,8 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) router.push('/admin/login')
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || !user) router.replace('/admin/login')
       else { setLoadingSession(false); fetchDepartmentsOptions() }
     }
     checkSession()
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     if(confirm('ยืนยันการออกจากระบบ PEA Smart Fleet?')) {
         await supabase.auth.signOut()
-        router.push('/') 
+        router.replace('/') 
     }
   }
 
