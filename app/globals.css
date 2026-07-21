@@ -2,14 +2,124 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #261c2b;
+  color-scheme: light;
+}
+
+html.dark {
+  --background: #120c19;
+  --foreground: #fbf6ff;
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Leelawadee UI", Tahoma, "Segoe UI", Arial, sans-serif;
+  transition: background-color .3s ease, color .3s ease;
 }
+
+.pea-glass-nav {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(112deg, rgba(255,255,255,.64), rgba(255,244,249,.48) 30%, rgba(255,235,199,.48) 61%, rgba(224,240,255,.62));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.94), inset 0 -1px 0 rgba(114,82,130,.1), 0 14px 34px rgba(51,28,67,.2);
+  backdrop-filter: blur(28px) saturate(155%);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+}
+
+html:not(.dark) .pea-glass-nav {
+  background: rgba(255,255,255,.98) !important;
+  border-color: rgba(0,0,0,.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.96), 0 12px 30px rgba(20,20,25,.13) !important;
+}
+
+html:not(.dark) .pea-glass-nav button {
+  color: #111111 !important;
+  text-shadow: none !important;
+}
+
+html:not(.dark) .pea-glass-nav .bg-\[\#f1f1f3\] {
+  background: #ededf0 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 3px 10px rgba(15,15,20,.1);
+}
+
+.pea-glass-nav button {
+  color: #111014 !important;
+  text-shadow: 0 1px 1px rgba(255,255,255,.76);
+}
+
+.pea-glass-nav::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255,255,255,.42), transparent 37%, rgba(255,255,255,.16) 65%, rgba(255,255,255,.4));
+  pointer-events: none;
+}
+
+.pea-glass-active {
+  background: linear-gradient(130deg, rgba(255,255,255,.9), rgba(255,255,255,.56));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 4px 13px rgba(75,21,96,.15);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.pea-theme-button:hover {
+  background: rgba(255,255,255,.46);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+html.dark .pea-glass-nav {
+  background: linear-gradient(112deg, rgba(57,24,76,.97), rgba(20,22,52,.98) 52%, rgba(14,42,65,.97)) !important;
+  border-color: rgba(234,213,255,.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15), inset 0 -1px 0 rgba(0,0,0,.35), 0 14px 36px rgba(0,0,0,.46);
+}
+
+html.dark .pea-glass-active {
+  background: linear-gradient(135deg, rgba(255,255,255,.2), rgba(230,201,255,.1));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 4px 15px rgba(0,0,0,.25);
+}
+
+html.dark .pea-glass-nav button {
+  color: #f8f3ff !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,.42);
+}
+
+html.dark .pea-glass-nav .pea-glass-active {
+  color: #ffed88 !important;
+}
+
+html.dark .pea-theme-button:hover {
+  background: rgba(255,255,255,.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+}
+
+/* Theme overrides for existing pages that use Tailwind's white cards. */
+html.dark .bg-white { background-color: #21172b !important; }
+html.dark .bg-white\/95 { background-color: rgba(33, 23, 43, .95) !important; }
+html.dark .text-\[\#4b1560\],
+html.dark .text-\[\#3f3542\],
+html.dark .text-\[\#171717\] { color: #f8f0fa !important; }
+html.dark .text-\[\#765c7c\],
+html.dark .text-\[\#8e8e93\] { color: #d9cbe0 !important; }
+html.dark .border-\[\#eadfed\],
+html.dark .border-\[\#eee3f1\] { border-color: rgba(255,255,255,.14) !important; }
+html.dark .bg-\[\#f8f3fa\],
+html.dark .bg-\[\#fcfaff\] { background-color: #120c19 !important; }
+
+/* Catch remaining light utility surfaces across Home, Dashboard and Admin. */
+html.dark [class*="bg-[#f"],
+html.dark [class*="bg-[#e"],
+html.dark [class*="bg-white/"] { background-color: #1d1426 !important; }
+html.dark [class*="border-[#"] { border-color: rgba(235,218,245,.16) !important; }
+html.dark .text-\[\#35133f\],
+html.dark .text-\[\#4b4050\],
+html.dark .text-\[\#3b1746\],
+html.dark .text-\[\#846c89\],
+html.dark .text-\[\#8e7d92\],
+html.dark .text-\[\#b5a7b8\] { color: #eee4f2 !important; }
 
 .font-sarabun {
   font-family: "Leelawadee UI", Tahoma, "Segoe UI", Arial, sans-serif;

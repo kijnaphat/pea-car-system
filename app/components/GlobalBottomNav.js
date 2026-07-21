@@ -1,27 +1,31 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { Icon } from '@iconify/react'
 
 export default function GlobalBottomNav() {
   const pathname = usePathname()
   const router = useRouter()
+
+  useEffect(() => {
+    document.documentElement.classList.remove('dark')
+    window.localStorage.setItem('pea-theme', 'light')
+  }, [])
   const items = [
-    { label:'หน้าหลัก', path:'/', icon:'ph:house-fill', active:pathname === '/' },
-    { label:'แดชบอร์ด', path:'/dashboard', icon:'ph:chart-pie-slice-duotone', active:pathname.startsWith('/dashboard') },
-    { label:'แอดมิน', path:'/admin/login', icon:'ph:user-gear-duotone', active:pathname.startsWith('/admin') },
+    { label:'Home', path:'/', icon:'ph:house-duotone', active:pathname === '/' },
+    { label:'Dashboard', path:'/dashboard', icon:'ph:chart-pie-slice-duotone', active:pathname.startsWith('/dashboard') },
+    { label:'Admin', path:'/admin', icon:'ph:user-gear-duotone', active:pathname.startsWith('/admin') },
   ]
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-[100] bg-white/95 border-t border-[#eadfed] print:hidden"
-      style={{backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)'}} aria-label="เมนูหลัก">
-      <div className="max-w-[620px] mx-auto h-[60px] px-5 grid grid-cols-3 items-center">
+    <nav className="fixed inset-x-0 bottom-3 z-[100] flex justify-center px-3 print:hidden md:bottom-5 md:px-6" aria-label="เมนูหลัก">
+      <div className="pea-glass-nav flex h-[60px] w-full max-w-[590px] items-center gap-1 rounded-full border border-white/75 p-1.5 shadow-[0_14px_34px_rgba(51,28,67,.2)] md:h-[68px] md:max-w-[760px] md:gap-2 md:p-2">
         {items.map(item => (
           <button key={item.path} onClick={() => router.push(item.path)}
-            className={`relative h-full flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors ${item.active ? 'text-[#702082]' : 'text-[#b9aebc]'}`}>
-            <Icon icon={item.icon} width="22" height="22" />
+            className={`flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-[11px] font-extrabold text-black transition-all duration-300 hover:bg-[#f4f4f5] md:gap-2 md:px-5 md:text-sm ${item.active ? 'bg-[#f1f1f3] shadow-[0_3px_10px_rgba(15,15,20,.1)]' : ''}`}>
+            <Icon icon={item.icon} width="20" height="20" className="md:h-[22px] md:w-[22px]" />
             <span>{item.label}</span>
-            {item.active && <span className="absolute top-1.5 right-[36%] w-2 h-2 rounded-full bg-[#ffdd00] border border-white"/>}
           </button>
         ))}
       </div>
