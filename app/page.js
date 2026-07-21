@@ -190,9 +190,9 @@ function CarSelector() {
     if (e) e.stopPropagation();
     setCallModal({ isOpen: true, driverName, phone: '', loading: true, error: '' });
     try {
-        const { data, error } = await supabase.from('staff').select('phone').eq('full_name', driverName).single();
-        if (data && data.phone) {
-            setCallModal({ isOpen: true, driverName, phone: data.phone, loading: false, error: '' });
+        const { data, error } = await supabase.rpc('get_staff_phone_by_name', { p_full_name: driverName });
+        if (!error && data) {
+            setCallModal({ isOpen: true, driverName, phone: data, loading: false, error: '' });
         } else {
             setCallModal({ isOpen: true, driverName, phone: '', loading: false, error: 'ไม่พบเบอร์โทรศัพท์ในระบบ' });
         }
@@ -807,7 +807,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
     if (!empId) return;
     setIsLoading(true); setError('');
     try {
-        const { data } = await supabase.from('staff').select('id, full_name, position').eq('staff_code', empId).single();
+        const { data } = await supabase.rpc('get_staff_by_code', { p_staff_code: empId }).single();
         if (data) {
             setStaffInfo(data);
             if (onVerifySuccess) onVerifySuccess(); 
@@ -862,7 +862,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
         alert("กรุณาเซ็นชื่อก่อนบันทึกครับ");
         return;
     }
-    onSave(base64Text, staffInfo.full_name, staffInfo.position, staffInfo.id);
+    onSave(base64Text, staffInfo.full_name, staffInfo.position, staffInfo.id, empId);
     onClose();
   };
 
@@ -1064,32 +1064,28 @@ function ReportPage() {
     setToday(new Date())
   }, [carId, selectedMonth])
 
-  const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos, staffId = null) => {
+  const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos, staffId = null, staffCode = null) => {
     try {
-        const { data: existing } = await supabase.from('report_signatures').select('id').eq('car_id', Number(carId)).eq('report_month', selectedMonth).single()
-
-        const payload = {}
+        if (!staffCode) throw new Error('กรุณายืนยันรหัสพนักงานก่อนบันทึก')
+        const { data, error } = await supabase.rpc('save_report_signature', {
+          p_car_id: Number(carId), p_report_month: selectedMonth, p_target: target,
+          p_staff_code: staffCode, p_signature: base64Text,
+        })
+        if (error) throw error
+        if (data?.error) throw new Error(data.error)
         if (target === 'driver') {
-            payload.driver_sig = base64Text; payload.driver_name = fetchedName; payload.driver_pos = fetchedPos;
-            payload.driver_staff_id = staffId;
-            setDriverSigText(base64Text); setDriverName(fetchedName); setDriverPos(fetchedPos);
+          setDriverSigText(base64Text); setDriverName(fetchedName); setDriverPos(fetchedPos);
         } else {
-            payload.controller_sig = base64Text; payload.controller_name = fetchedName; payload.controller_pos = fetchedPos;
-            payload.controller_staff_id = staffId;
-            setControllerSigText(base64Text); setControllerName(fetchedName); setControllerPos(fetchedPos);
-        }
-
-        if (existing) {
-            await supabase.from('report_signatures').update(payload).eq('id', existing.id)
-        } else {
-            await supabase.from('report_signatures').insert([{ ...payload, car_id: Number(carId), report_month: selectedMonth }])
+          setControllerSigText(base64Text); setControllerName(fetchedName); setControllerPos(fetchedPos);
         }
     } catch (err) { alert('เกิดข้อผิดพลาดในการบันทึกลายเซ็น: ' + err.message) }
   }
 
   const handleDeleteSig = async (target) => {
       if(!confirm('ต้องการลบลายเซ็นนี้ใช่หรือไม่?')) return;
-      await saveSignatureToDB(target, null, '', '', null);
+      const staffCode = window.prompt('กรอกรหัสพนักงานของผู้ลงนามเพื่อยืนยันการลบ');
+      if (!staffCode) return;
+      await saveSignatureToDB(target, null, '', '', null, staffCode);
   }
 
   const openSigModal = (target, title) => {
@@ -1202,7 +1198,7 @@ function ReportPage() {
       <SignatureModal 
         isOpen={sigModal.isOpen} title={sigModal.title}
         onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
-        onSave={(base64Text, fetchedName, fetchedPos, staffId) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos, staffId)}
+        onSave={(base64Text, fetchedName, fetchedPos, staffId, staffCode) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos, staffId, staffCode)}
         onVerifySuccess={() => {
             if (signableMonth && selectedMonth !== signableMonth) {
                 setSelectedMonth(signableMonth);
@@ -1760,9 +1756,7 @@ function CarActionForm({ carId }) {
   const checkStaff = async () => {
     if (employeeId.length < 4) return
     const { data, error } = await supabase
-      .from('staff')
-      .select(`full_name, position, departments ( name )`)
-      .eq('staff_code', employeeId)
+      .rpc('get_staff_by_code', { p_staff_code: employeeId })
       .single()
 
     if (data) {
@@ -1770,9 +1764,9 @@ function CarActionForm({ carId }) {
         setStaffPosition(data.position); 
         setStaffError(false);
 
-        if (data.departments?.name) {
-          if (selectedDept !== data.departments.name) {
-            setSelectedDept(data.departments.name);
+        if (data.department_name) {
+          if (selectedDept !== data.department_name) {
+            setSelectedDept(data.department_name);
             setSelectedTask(''); 
             setCustomTask('');
           }
