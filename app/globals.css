@@ -40,6 +40,18 @@ html:not(.dark) .pea-glass-nav button {
   text-shadow: none !important;
 }
 
+.pea-glass-nav button.pea-nav-active {
+  color: #70218a !important;
+}
+
+.pea-glass-nav button.pea-nav-inactive {
+  color: #b4adb9 !important;
+}
+
+.pea-glass-nav button.pea-nav-inactive:hover {
+  color: #70218a !important;
+}
+
 html:not(.dark) .pea-glass-nav .bg-\[\#f1f1f3\] {
   background: #ededf0 !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 3px 10px rgba(15,15,20,.1);
