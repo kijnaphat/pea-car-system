@@ -1581,6 +1581,7 @@ function CarActionForm({ carId }) {
   
   const [departmentsList, setDepartmentsList] = useState([])
   const [areasList, setAreasList] = useState([])
+  const [areaIdByName, setAreaIdByName] = useState({})
 
   const [selectedDept, setSelectedDept] = useState('')
   const [selectedTask, setSelectedTask] = useState('')
@@ -1603,25 +1604,35 @@ function CarActionForm({ carId }) {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const { data: deptData, error: deptError } = await supabase.from('departments').select(`id, name, tasks(name)`);
+        const { data: deptData, error: deptError } = await supabase.from('departments').select(`id, name, tasks(id, name)`);
         if (deptError) console.error("Supabase Dept Error:", deptError);
         if (deptData && deptData.length > 0) {
           const formatted = deptData.map(d => {
             let tasks = d.tasks ? d.tasks.map(t => t.name) : [];
             tasks = tasks.filter(t => t !== 'งานอื่นๆ' && t !== 'อื่นๆ');
             tasks.unshift('อื่นๆ'); 
-            return { name: d.name, tasks };
+            const taskIds = Object.fromEntries(
+              (d.tasks || [])
+                .filter(t => t.name !== 'งานอื่นๆ' && t.name !== 'อื่นๆ')
+                .map(t => [t.name, t.id])
+            );
+            return { id: d.id, name: d.name, tasks, taskIds };
           });
           setDepartmentsList(formatted);
         }
 
-        const { data: areaData, error: areaError } = await supabase.from('operation_areas').select('name');
+        const { data: areaData, error: areaError } = await supabase.from('operation_areas').select('id, name');
         if (areaError) console.error("Supabase Area Error:", areaError);
         if (areaData && areaData.length > 0) {
           let areas = areaData.map(a => a.name);
           areas = areas.filter(a => a !== 'อื่นๆ');
           areas.unshift('อื่นๆ'); 
           setAreasList(areas);
+          setAreaIdByName(Object.fromEntries(
+            areaData
+              .filter(a => a.name !== 'อื่นๆ')
+              .map(a => [a.name, a.id])
+          ));
         }
       } catch (err) {
         console.error("Fetch Data Failed:", err);
@@ -1791,6 +1802,8 @@ function CarActionForm({ carId }) {
       let finalStationName = ''
       let finalStationType = ''
       let finalBattBefore = null
+      let finalTaskId = null
+      let finalOperationAreaIds = []
 
       if (isEV) {
         const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType)
@@ -1803,9 +1816,23 @@ function CarActionForm({ carId }) {
         const actualTask = selectedTask === 'อื่นๆ' ? customTask : selectedTask;
         const actualAreas = selectedAreas.map(a => a.type === 'อื่นๆ' ? a.custom : a.type);
         finalLocation = `[${selectedDept} - ${actualTask}] ${actualAreas.join(', ')}`;
+
+        const selectedDepartment = departmentsList.find(d => d.name === selectedDept)
+        finalTaskId = selectedTask === 'อื่นๆ' ? null : selectedDepartment?.taskIds?.[selectedTask] ?? null
+        finalOperationAreaIds = selectedAreas
+          .filter(area => area.type !== 'อื่นๆ')
+          .map(area => areaIdByName[area.type])
+          .filter(Boolean)
+
+        if (selectedTask !== 'อื่นๆ' && !finalTaskId) {
+          throw new Error('ไม่พบรหัสประเภทงาน กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง')
+        }
+        if (finalOperationAreaIds.length !== selectedAreas.filter(area => area.type !== 'อื่นๆ').length) {
+          throw new Error('ไม่พบรหัสพื้นที่ปฏิบัติงาน กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง')
+        }
       }
 
-      const { data: result, error } = await supabase.rpc('take_car_out', {
+      const { data: result, error } = await supabase.rpc('take_car_out_v2', {
         p_car_id:          Number(carId),
         p_driver_name:     staffName,
         p_driver_position: staffPosition,
@@ -1814,6 +1841,8 @@ function CarActionForm({ carId }) {
         p_battery_before:  finalBattBefore,
         p_station_type:    finalStationType || null,
         p_station_name:    finalStationName || null,
+        p_task_id:          finalTaskId,
+        p_operation_area_ids: finalOperationAreaIds,
       })
 
       if (error) throw error
