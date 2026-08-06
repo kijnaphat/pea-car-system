@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
 
 // เพิ่ม is_visible เข้าไปใน initial data (ค่าเริ่มต้นให้แสดงผล)
-const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'Gas', status: 'available', budget: '', department: '', usage_type: '', ownership_type: '', is_visible: true }
+const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'Gas', status: 'available', budget: '', department: '', department_id: '', usage_type: '', ownership_type: '', is_visible: true }
 const initialStaffData = { staff_code: '', full_name: '', position: '', department_id: '' }
 const initialTaskData = { name: '', department_id: '' }
 const initialDepartmentData = { name: '' }
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     try {
       if (activeMenu === 'cars') {
-        const { data } = await supabase.from('cars').select('*').order('id', { ascending: false })
+        const { data } = await supabase.from('cars').select('*, departments(name)').order('id', { ascending: false })
         setCarsList(data || [])
       } else if (activeMenu === 'staff') {
         const { data } = await supabase.from('staff').select('*, departments(name)').order('id', { ascending: false })
@@ -101,7 +101,7 @@ export default function AdminDashboard() {
     const cleanData = { ...data }
     delete cleanData.departments 
 
-    if (type === 'cars') setCarData(cleanData)
+    if (type === 'cars') setCarData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'staff') setStaffData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'tasks') setTaskData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'departments') setDepartmentData(cleanData)
@@ -134,6 +134,14 @@ export default function AdminDashboard() {
 
     if (payload.department_id !== undefined) {
       payload.department_id = payload.department_id ? parseInt(payload.department_id) : null
+    }
+
+    // Compatibility phase: write both the normalized FK and the legacy text field.
+    // Existing unmapped values (for example "บัญชี") remain untouched until an
+    // administrator explicitly chooses a normalized department.
+    if (table === 'cars' && payload.department_id) {
+      const selectedDepartment = departmentsOptions.find(dept => dept.id === payload.department_id)
+      if (selectedDepartment) payload.department = selectedDepartment.name
     }
 
     if (editingId) {
@@ -399,7 +407,28 @@ export default function AdminDashboard() {
                   
                   <div><label className={labelStyle}>Energy Type</label><select value={carData.fuel_type} onChange={e => setCarData({...carData, fuel_type: e.target.value})} className={inputStyle}><option value="Gas">Gasoline</option><option value="EV">Electric (EV)</option></select></div>
                   <div><label className={labelStyle}>Ownership</label><input type="text" placeholder="e.g. Rental" value={carData.ownership_type} onChange={e => setCarData({...carData, ownership_type: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>Department</label><input type="text" placeholder="e.g. IT Dept" value={carData.department} onChange={e => setCarData({...carData, department: e.target.value})} className={inputStyle} /></div>
+                  <div>
+                    <label className={labelStyle}>Department</label>
+                    <select
+                      value={carData.department_id}
+                      onChange={e => {
+                        const departmentId = e.target.value
+                        const selectedDepartment = departmentsOptions.find(dept => dept.id === Number(departmentId))
+                        setCarData({
+                          ...carData,
+                          department_id: departmentId,
+                          department: selectedDepartment?.name || carData.department,
+                        })
+                      }}
+                      className={inputStyle}
+                    >
+                      <option value="">-- Unassigned / Legacy --</option>
+                      {departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}
+                    </select>
+                    {!carData.department_id && carData.department && (
+                      <p className="mt-1.5 text-[11px] text-[#8a6d91]">Legacy value: {carData.department}</p>
+                    )}
+                  </div>
                   <div><label className={labelStyle}>Usage Type</label><input type="text" placeholder="e.g. Operation" value={carData.usage_type} onChange={e => setCarData({...carData, usage_type: e.target.value})} className={inputStyle} /></div>
                   
                   <div className="sm:col-span-2 lg:col-span-4 mt-2 flex justify-end">
@@ -508,7 +537,7 @@ export default function AdminDashboard() {
                               <Icon icon={item.fuel_type === 'EV' ? "ph:lightning" : "ph:gas-pump"} width="12" height="12" /> {item.fuel_type === 'EV' ? 'EV Mode' : 'Gasoline'}
                             </span>
                           </td>
-                          <td className="p-4 px-4 text-[#c9b8cd] text-[13px]">{item.department || '-'}</td>
+                          <td className="p-4 px-4 text-[#c9b8cd] text-[13px]">{item.departments?.name || item.department || '-'}</td>
                           <td className="p-4 px-6 flex justify-center gap-2">
                             <button onClick={() => handleEdit('cars', item)} className="p-1.5 text-[#c9b8cd] hover:text-[#fffaf0] transition-colors"><Icon icon="ph:pencil-simple" width="18" height="18" /></button>
                             <button onClick={() => confirmDelete('cars', item)} className="p-1.5 text-[#c9b8cd] hover:text-[#ff453a] transition-colors"><Icon icon="ph:trash" width="18" height="18" /></button>

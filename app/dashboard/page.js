@@ -115,7 +115,7 @@ export default function UltimateDashboard() {
             dateRaw: new Date(item.start_time).toISOString().split('T')[0],
             date: new Date(item.start_time).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
             name: `${item.driver_name || '-'} ${item.driver_position ? `(${item.driver_position})` : ''}`,
-            dept: item.cars?.department || '-',
+            dept: item.cars?.departments?.name || item.cars?.department || '-',
             job: job,
             location: loc,
             dist: dist,
@@ -166,7 +166,7 @@ export default function UltimateDashboard() {
     const fetchFilteredData = async () => {
       setLoading(true)
       try {
-        const { data: cars } = await supabase.from('cars').select('*')
+        const { data: cars } = await supabase.from('cars').select('*, departments(name)')
         const { data: repairs } = await supabase.from('repair_logs').select('*')
         
         if (cars) {
@@ -217,7 +217,7 @@ export default function UltimateDashboard() {
         while (hasMore) {
           let query = supabase
             .from('trip_logs')
-            .select('*, cars(*)')
+            .select('*, cars(*, departments(name))')
             .order('start_time', { ascending: false })
             .range(from, from + step - 1)
 
@@ -388,7 +388,7 @@ export default function UltimateDashboard() {
           brand: c.model || '-',
           car_type: c.car_type || '-', 
           budget: c.budget || '-',
-          plan: c.department || '-',
+          plan: c.departments?.name || c.department || '-',
           mainUsage: c.usage_type || '-',
           type: isEV ? 'EV' : 'Gasoline',
           dist: totalD,
