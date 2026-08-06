@@ -1832,10 +1832,9 @@ function CarActionForm({ carId }) {
         }
       }
 
-      const { data: result, error } = await supabase.rpc('take_car_out_v2', {
+      const { data: result, error } = await supabase.rpc('take_car_out_v3', {
         p_car_id:          Number(carId),
-        p_driver_name:     staffName,
-        p_driver_position: staffPosition,
+        p_staff_code:      employeeId,
         p_start_mileage:   parseInt(mileage || 0),
         p_location:        finalLocation,
         p_battery_before:  finalBattBefore,
