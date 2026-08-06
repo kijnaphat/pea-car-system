@@ -1572,6 +1572,7 @@ function CarActionForm({ carId }) {
 
   // Inputs
   const [employeeId, setEmployeeId] = useState('')
+  const [staffId, setStaffId] = useState(null)
   const [staffName, setStaffName] = useState('') 
   const [staffPosition, setStaffPosition] = useState('') 
   const [staffError, setStaffError] = useState(false)
@@ -1706,6 +1707,7 @@ function CarActionForm({ carId }) {
       .single()
 
     if (data) {
+        setStaffId(data.id);
         setStaffName(data.full_name); 
         setStaffPosition(data.position); 
         setStaffError(false);
@@ -1718,6 +1720,7 @@ function CarActionForm({ carId }) {
           }
         }
     } else {
+        setStaffId(null);
         setStaffName(''); 
         setStaffPosition(''); 
         setStaffError(true);
@@ -1726,6 +1729,7 @@ function CarActionForm({ carId }) {
   }
 
   const resetStaff = () => {
+    setStaffId(null);
     setStaffName('');
     setEmployeeId('');
     setStaffPosition('');
@@ -1773,7 +1777,7 @@ function CarActionForm({ carId }) {
       const { data: activeTrips } = await supabase
           .from('trip_logs')
           .select(`car_id, cars ( plate_number )`)
-          .eq('driver_name', staffName)
+          .eq('driver_staff_id', staffId)
           .eq('is_completed', false);
 
       if (activeTrips && activeTrips.length > 0) {
@@ -2066,7 +2070,7 @@ function CarActionForm({ carId }) {
                 {!staffName ? (
                   <>
                     <input type="text" value={employeeId}
-                      onChange={e => { setEmployeeId(e.target.value); setStaffError(false); }}
+                      onChange={e => { setEmployeeId(e.target.value); setStaffId(null); setStaffError(false); }}
                       onBlur={checkStaff} 
                       onKeyDown={e => e.key === 'Enter' && checkStaff()}
                       placeholder="กรอกรหัสพนักงาน แล้วกด Enter"
