@@ -14,7 +14,7 @@ const initialOperationAreaData = { name: '' }
 
 const fieldLabels = {
   plate_number: 'ป้ายทะเบียน', model: 'ยี่ห้อ/รุ่น', car_type: 'ประเภทรถ', fuel_type: 'ประเภทพลังงาน', 
-  budget: 'งบประมาณจัดหา', department: 'สังกัด', usage_type: 'ลักษณะการใช้งาน', ownership_type: 'กรรมสิทธิ์',
+  budget: 'งบประมาณจัดหา', usage_type: 'ลักษณะการใช้งาน', ownership_type: 'กรรมสิทธิ์',
   staff_code: 'รหัสพนักงาน', full_name: 'ชื่อ-นามสกุล', position: 'ตำแหน่ง', department_id: 'รหัสแผนก',
   name: 'ชื่อรายการ (แผนก/สถานที่/งาน)' 
 }
@@ -100,7 +100,6 @@ export default function AdminDashboard() {
     setEditingId(data.id)
     const cleanData = { ...data }
     delete cleanData.departments 
-    delete cleanData.department
 
     if (type === 'cars') setCarData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'staff') setStaffData({ ...cleanData, department_id: cleanData.department_id || '' })
@@ -132,7 +131,6 @@ export default function AdminDashboard() {
     e.preventDefault()
     const payload = { ...currentFormState }
     delete payload.id; delete payload.created_at; delete payload.departments 
-    delete payload.department
 
     if (payload.department_id !== undefined) {
       payload.department_id = payload.department_id ? parseInt(payload.department_id) : null
