@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import PageSkeleton from '@/app/components/PageSkeleton'
+import { getSignatureSchedule } from '@/lib/signatureSchedule'
 
 // --- Main Component ---
 function MainApp() {
@@ -339,7 +340,7 @@ function CarSelector() {
 // ==========================================
 // 🎨 Component: กระดานเซ็นชื่อ (Signature Pad) สำหรับ ReportPage
 // ==========================================
-function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
+function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signaturePeriodText }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [empId, setEmpId] = useState('');
@@ -440,7 +441,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
         </div>
         
         <div className="bg-blue-50/80 border-b border-blue-100 text-blue-700 text-xs py-2 px-4 text-center font-bold flex items-center justify-center gap-2 shadow-sm">
-            อนุญาตให้เซ็นเอกสารเฉพาะวันที่ 28 ถึง 5 ของเดือนถัดไป
+            ช่วงลงลายเซ็นรอบนี้ {signaturePeriodText}
         </div>
 
         <div className="p-6">
@@ -492,6 +493,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
 function MobileControlSheet({ 
   selectedMonth, setSelectedMonth, fromText, setFromText, toText, setToText, dearText, setDearText, 
   isEVCar, canSignAny, isCurrentMonthSignable, signableMonth, driverSigText, controllerSigText, 
+  signaturePeriodText,
   handleDeleteSig, openSigModal, logs, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost, 
   setDrillCost, drillHours, setDrillHours, drillSaving, setDrillSaving, drillSaved, setDrillSaved,
   handleSaveDoc, docSaving, docSaved 
@@ -551,7 +553,7 @@ function MobileControlSheet({
               {/* Status */}
               {!canSignAny ? (
                 <div className="flex items-center gap-2 bg-[#fff8ed] rounded-[12px] px-3 py-2.5">
-                  <span className="text-[12px] font-medium text-[#a05c00]">นอกเวลาเซ็น (วันที่ 28–5)</span>
+                  <span className="text-[12px] font-medium text-[#a05c00]">นอกเวลาเซ็น · รอบถัดไป {signaturePeriodText}</span>
                 </div>
               ) : signableMonth && selectedMonth !== signableMonth ? (
                 <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[12px] px-3 py-2.5">
@@ -723,6 +725,7 @@ function ReportPage() {
   const [signableMonth, setSignableMonth] = useState(null);
   const [canSignAny, setCanSignAny] = useState(false);
   const [isCurrentMonthSignable, setIsCurrentMonthSignable] = useState(false);
+  const signatureSchedule = getSignatureSchedule(today);
 
   // 🟢 เพิ่มฟังก์ชัน extractTaskOnly เพื่อตัดคำเอาเฉพาะประเภทงาน
   const extractTaskOnly = (locationString) => {
@@ -866,7 +869,7 @@ function ReportPage() {
 
   const openSigModal = (target, title) => {
       if (!canSignAny) {
-          alert('นอกเวลาอนุญาต (ระบบให้เซ็นเอกสารได้เฉพาะวันที่ 28 ถึง 5 ของเดือนเท่านั้นครับ)');
+          alert(`นอกเวลาอนุญาต รอบลงลายเซ็นถัดไป ${signatureSchedule.periodText}`);
           return;
       }
       setSigModal({ isOpen: true, target, title });
@@ -971,6 +974,7 @@ function ReportPage() {
 
       <SignatureModal 
         isOpen={sigModal.isOpen} title={sigModal.title}
+        signaturePeriodText={signatureSchedule.periodText}
         onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
         onSave={(base64Text, fetchedName, fetchedPos, staffId, staffCode) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos, staffId, staffCode)}
         onVerifySuccess={() => {
@@ -1004,7 +1008,7 @@ function ReportPage() {
             {/* Status badge */}
             {!canSignAny ? (
               <div className="flex items-center gap-2 bg-[#fff8ed] rounded-[10px] px-3 py-2">
-                <span className="text-[11px] font-medium text-[#a05c00]">นอกเวลาเซ็น (28–5)</span>
+                <span className="text-[11px] font-medium text-[#a05c00]">นอกเวลาเซ็น · รอบถัดไป {signatureSchedule.periodText}</span>
               </div>
             ) : selectedMonth !== signableMonth ? (
               <div className="flex items-center gap-2 bg-[#edf6ff] rounded-[10px] px-3 py-2">
@@ -1143,6 +1147,7 @@ function ReportPage() {
           dearText={dearText} setDearText={setDearText}
           isEVCar={isEVCar} canSignAny={canSignAny}
           isCurrentMonthSignable={isCurrentMonthSignable}
+          signaturePeriodText={signatureSchedule.periodText}
           signableMonth={signableMonth} driverSigText={driverSigText}
           controllerSigText={controllerSigText}
           handleDeleteSig={handleDeleteSig} openSigModal={openSigModal}

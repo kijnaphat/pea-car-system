@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
+import { getSignatureSchedule } from '@/lib/signatureSchedule'
 
 const BANNER_SLIDE_COUNT = 4
 
@@ -228,18 +229,12 @@ function CarSelector() {
   const availableCars = cars.filter(c => c.status !== 'busy')
   const activeCars = cars.filter(c => c.isActivated)
   const evCars = cars.filter(c => c.fuel_type?.toUpperCase() === 'EV' || c.car_type?.toUpperCase().includes('EV'))
-  const today = new Date()
-  const currentDay = today.getDate()
-  const isSignaturePeriod = currentDay >= 28 || currentDay <= 5
-  const signatureStart = currentDay <= 5
-    ? new Date(today.getFullYear(), today.getMonth() - 1, 28)
-    : new Date(today.getFullYear(), today.getMonth(), 28)
-  const signatureEnd = new Date(signatureStart.getFullYear(), signatureStart.getMonth() + 1, 5)
-  const formatThaiDate = (date) => date.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' })
-  const signatureStartDate = formatThaiDate(signatureStart)
-  const signaturePeriod = `${signatureStartDate} – ${formatThaiDate(signatureEnd)}`
-  const signatureDeadline = formatThaiDate(signatureEnd)
-  const signatureMonth = signatureStart.toLocaleDateString('th-TH', { month:'long', year:'numeric' })
+  const signatureSchedule = getSignatureSchedule()
+  const isSignaturePeriod = signatureSchedule.isOpen
+  const signatureStartDate = signatureSchedule.startText
+  const signaturePeriod = signatureSchedule.periodText
+  const signatureDeadline = signatureSchedule.endText
+  const signatureMonth = signatureSchedule.monthText
   const signatureAnnouncement = isSignaturePeriod
     ? signaturePeriod
     : `ประกาศรอบต่อไป ${signatureStartDate}`
@@ -734,7 +729,7 @@ function CarSelector() {
 // ==========================================
 // 🎨 Component: กระดานเซ็นชื่อ (Signature Pad)
 // ==========================================
-function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
+function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signaturePeriodText }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [empId, setEmpId] = useState('');
@@ -839,7 +834,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess }) {
         </div>
         <div className="mx-5 mt-3 flex items-center gap-2 bg-[#f3eaf5] rounded-[10px] px-3 py-2">
           <Icon icon="ph:calendar-dots-duotone" width="20" height="20" className="text-[#ff9f0a]" />
-          <span className="text-[12px] font-medium text-[#702082]">เซ็นได้เฉพาะวันที่ 28–5 ของรอบเดือน</span>
+          <span className="text-[12px] font-medium text-[#702082]">ช่วงลงลายเซ็นรอบนี้ {signaturePeriodText}</span>
         </div>
         <div className="p-5">
           {!staffInfo ? (
@@ -939,6 +934,7 @@ function ReportPage() {
   const [signableMonth, setSignableMonth] = useState(null);
   const [canSignAny, setCanSignAny] = useState(false);
   const [isCurrentMonthSignable, setIsCurrentMonthSignable] = useState(false);
+  const signatureSchedule = getSignatureSchedule(today);
 
   useEffect(() => {
      const d = today;
@@ -1047,7 +1043,7 @@ function ReportPage() {
 
   const openSigModal = (target, title) => {
       if (!canSignAny) {
-          alert('⚠️ นอกเวลาอนุญาต (ระบบให้เซ็นเอกสารได้เฉพาะวันที่ 28 ถึง 5 ของเดือนเท่านั้นครับ)');
+          alert(`⚠️ นอกเวลาอนุญาต รอบลงลายเซ็นถัดไป ${signatureSchedule.periodText}`);
           return;
       }
       setSigModal({ isOpen: true, target, title });
@@ -1154,6 +1150,7 @@ function ReportPage() {
 
       <SignatureModal 
         isOpen={sigModal.isOpen} title={sigModal.title}
+        signaturePeriodText={signatureSchedule.periodText}
         onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
         onSave={(base64Text, fetchedName, fetchedPos, staffId, staffCode) => saveSignatureToDB(sigModal.target, base64Text, fetchedName, fetchedPos, staffId, staffCode)}
         onVerifySuccess={() => {
@@ -1181,7 +1178,7 @@ function ReportPage() {
             {!canSignAny ? (
               <div className="flex items-center gap-2 bg-[#fff3cd] rounded-[10px] px-3 py-2">
                 <Icon icon="ph:lock-key-duotone" width="16" height="16" className="text-[#856404]" />
-                <span className="text-[11px] font-medium text-[#856404]">นอกเวลาอนุญาต (28–5 ของเดือน)</span>
+                <span className="text-[11px] font-medium text-[#856404]">นอกเวลาอนุญาต · รอบถัดไป {signatureSchedule.periodText}</span>
               </div>
             ) : selectedMonth !== signableMonth ? (
               <div className="flex items-center gap-2 bg-[#f3eaf5] rounded-[10px] px-3 py-2">
