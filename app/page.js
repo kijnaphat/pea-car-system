@@ -229,30 +229,40 @@ function CarSelector() {
   const activeCars = cars.filter(c => c.isActivated)
   const evCars = cars.filter(c => c.fuel_type?.toUpperCase() === 'EV' || c.car_type?.toUpperCase().includes('EV'))
   const today = new Date()
-  const signatureStart = today.getDate() <= 5
+  const currentDay = today.getDate()
+  const isSignaturePeriod = currentDay >= 28 || currentDay <= 5
+  const signatureStart = currentDay <= 5
     ? new Date(today.getFullYear(), today.getMonth() - 1, 28)
     : new Date(today.getFullYear(), today.getMonth(), 28)
-  const signatureEnd = today.getDate() <= 5
-    ? new Date(today.getFullYear(), today.getMonth(), 5)
-    : new Date(today.getFullYear(), today.getMonth() + 1, 5)
+  const signatureEnd = new Date(signatureStart.getFullYear(), signatureStart.getMonth() + 1, 5)
   const formatThaiDate = (date) => date.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' })
   const signaturePeriod = `${formatThaiDate(signatureStart)} – ${formatThaiDate(signatureEnd)}`
   const signatureDeadline = formatThaiDate(signatureEnd)
   const signatureMonth = signatureStart.toLocaleDateString('th-TH', { month:'long', year:'numeric' })
+  const signatureAnnouncement = isSignaturePeriod
+    ? signaturePeriod
+    : `ประกาศรอบต่อไป ${formatThaiDate(signatureStart)}`
   const bannerSlides = [
     { eyebrow:'PEA FLEET', title:'ระบบรถ PEA ใหม่!', accent:'จัดการง่ายกว่าเดิม', button:'ดูคู่มือเลย !!', icon:'ph:car-profile-duotone', background:'linear-gradient(115deg,#4b156d 0%,#762789 58%,#9139a6 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', guideType:'overview' },
     { eyebrow:'SCAN & GO', title:'สแกนก่อนใช้รถ', accent:'บันทึกได้ในไม่กี่ขั้นตอน', button:'ดูวิธีสแกน', icon:'ph:qr-code-duotone', background:'linear-gradient(115deg,#5a1f75 0%,#7f2b8f 55%,#a34db0 100%)', iconBg:'#ffdd00', iconColor:'#571b70', detailIndex:1 },
-    { eyebrow:'MONTHLY SIGN', title:'ลงชื่อประจำเดือน', accent:signaturePeriod, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(115deg,#40155f 0%,#69277e 55%,#8d3fa1 100%)', iconBg:'#ffea5c', iconColor:'#4b156d', detailIndex:0 },
+    { eyebrow:'MONTHLY SIGN', title:isSignaturePeriod ? 'ลงชื่อประจำเดือน' : 'ประกาศรอบต่อไป', accent:signatureAnnouncement, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(115deg,#40155f 0%,#69277e 55%,#8d3fa1 100%)', iconBg:'#ffea5c', iconColor:'#4b156d', detailIndex:0 },
     { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(115deg,#55206f 0%,#7c2f8d 56%,#963ca7 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:2 }
   ]
   const loopedBannerSlides = [bannerSlides[bannerSlides.length - 1], ...bannerSlides, bannerSlides[0], bannerSlides[1]]
   const newsItems = [
     {
-      title:'ลงชื่อประจำเดือน', badge:'สำคัญ', icon:'ph:pencil-line-duotone', iconBg:'#f1e6f4', iconColor:'#702082',
-      copy:`เปิดลงชื่อรับรองการใช้รถรอบเดือน${signatureMonth} ตั้งแต่ ${signaturePeriod} กรุณาดำเนินการให้ครบภายใน ${signatureDeadline}`, meta:'ระบบลงชื่อผู้ใช้งานรถ', period:`รอบเดือน${signatureMonth} · ${signaturePeriod}`,
-      detail:`การลงชื่อประจำเดือนรอบ ${signatureMonth} เปิดตั้งแต่ ${signaturePeriod} เพื่อยืนยันความถูกต้องของประวัติการใช้รถ ผู้ขับและผู้ควบคุมควรตรวจสอบรายการเดินทาง เลขไมล์ และข้อมูลการรับ–คืนรถก่อนลงชื่อทุกครั้ง ระบบจะคำนวณรอบเดือนและเปลี่ยนวันที่ให้อัตโนมัติ`,
+      title:isSignaturePeriod ? 'ลงชื่อประจำเดือน' : 'ประกาศรอบลงชื่อถัดไป', badge:'สำคัญ', icon:'ph:pencil-line-duotone', iconBg:'#f1e6f4', iconColor:'#702082',
+      copy:isSignaturePeriod
+        ? `เปิดลงชื่อรับรองการใช้รถรอบเดือน${signatureMonth} ตั้งแต่ ${signaturePeriod} กรุณาดำเนินการให้ครบภายใน ${signatureDeadline}`
+        : `รอบลงชื่อประจำเดือน${signatureMonth} จะเปิดวันที่ ${formatThaiDate(signatureStart)} และปิดวันที่ ${signatureDeadline}`,
+      meta:'ระบบลงชื่อผู้ใช้งานรถ', period:`รอบเดือน${signatureMonth} · ${signaturePeriod}`,
+      detail:isSignaturePeriod
+        ? `การลงชื่อประจำเดือนรอบ ${signatureMonth} เปิดตั้งแต่ ${signaturePeriod} เพื่อยืนยันความถูกต้องของประวัติการใช้รถ ผู้ขับและผู้ควบคุมควรตรวจสอบรายการเดินทาง เลขไมล์ และข้อมูลการรับ–คืนรถก่อนลงชื่อทุกครั้ง ระบบจะคำนวณรอบเดือนและเปลี่ยนวันที่ให้อัตโนมัติ`
+        : `ระบบจะเปิดให้ลงชื่อประจำเดือนรอบ ${signatureMonth} ในวันที่ ${formatThaiDate(signatureStart)} และปิดวันที่ ${signatureDeadline} โดยวันที่ประกาศรอบต่อไปจะเลื่อนไปอัตโนมัติทุกเดือน`,
       steps:['เปิดรายงานของรถคันที่รับผิดชอบ',`ตรวจสอบรายการเดินทางและเลขไมล์รอบเดือน${signatureMonth}`,`ลงชื่อผู้ขับรถและผู้ควบคุมให้ครบภายใน ${signatureDeadline}`,'ตรวจสอบสถานะว่าบันทึกลายเซ็นสำเร็จแล้ว'],
-      note:`หากข้อมูลการเดินทางไม่ถูกต้อง ให้แจ้งผู้ดูแลระบบก่อนหมดเขต ${signatureDeadline}`
+      note:isSignaturePeriod
+        ? `หากข้อมูลการเดินทางไม่ถูกต้อง ให้แจ้งผู้ดูแลระบบก่อนหมดเขต ${signatureDeadline}`
+        : `กรุณาตรวจสอบข้อมูลการเดินทางล่วงหน้าก่อนเปิดรอบวันที่ ${formatThaiDate(signatureStart)}`
     },
     {
       title:'สแกน QR ประจำรถ', badge:'Hot !', icon:'ph:qr-code-duotone', iconBg:'#fff7bf', iconColor:'#702082',
