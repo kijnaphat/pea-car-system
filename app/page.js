@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
+import { getCarImage } from '@/lib/carImages'
 
 const BANNER_SLIDE_COUNT = 4
 
@@ -200,27 +201,6 @@ function CarSelector() {
     } catch (err) {
         setCallModal({ isOpen: true, driverName, phone: '', loading: false, error: 'เกิดข้อผิดพลาดในการค้นหาเบอร์โทร' });
     }
-  }
-
-  const getCarImage = (car) => {
-    const type = car.car_type || ''
-    if (car.car_type?.toUpperCase() === 'รถ EV') return '/mg.png'
-    if (car.car_type?.toUpperCase() === 'รถ EV ทดเเทน') return '/mg2.png'
-    if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
-    if (type.startsWith('รถบรรทุก 2 ตันเเก้ไฟ')) return '/2_ton_truck.png'
-    if (type.startsWith('รถเครน')) return '/crane.png'
-    if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
-    if (type.startsWith('รถกระบะ')) return '/truck.png'
-    if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
-    if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
-    if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
-    if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
-    if (type.startsWith('รถบรรทุก 7.5 ตัน ติดเครนแข็ง')) return '/75ton.png'
-    if (type.startsWith('รถบรรทุก 6 ล้อ')) return '/hotline_6.png'
-    if (type.startsWith('รถบรรทุก 6 ตัน')) return '/6ton.png'
-    if (type.startsWith('รถบรรทุก 3 ตันส่วนบุคคล')) return '/3ton_2.png'
-    if (type.startsWith('TEST_CAR')) return '/scooter.png'
-    return null 
   }
 
   if (loading) return <PageSkeleton variant="home" />
@@ -1555,28 +1535,6 @@ function CarActionForm({ carId }) {
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
-
-  const getCarImage = (c) => {
-    if (!c) return null
-    const type = c.car_type || ''
-    if (type.toUpperCase() === 'รถ EV') return '/mg.png'
-    if (type.toUpperCase() === 'รถ EV ทดเเทน') return '/mg2.png'
-    if (type.startsWith('รถกระเช้า')) return '/aerial_lift.png'
-    if (type.startsWith('รถบรรทุก 2 ตันเเก้ไฟ')) return '/2_ton_truck.png'
-    if (type.startsWith('รถเครน')) return '/crane.png'
-    if (type.startsWith('รถตู้โดยสาร') || type.startsWith('รถตู้')) return '/van.png'
-    if (type.startsWith('รถกระบะ')) return '/truck.png'
-    if (type.startsWith('รถบรรทุก 2')) return '/2ton.png'
-    if (type.startsWith('รถบรรทุก 1 ตันแก้ไฟ')) return '/1ton.png'
-    if (type.startsWith('รถบรรทุก 6 ตัน ฮอทไลน์')) return '/hotline.png'
-    if (type.startsWith('รถบรรทุกขุดเจาะ')) return '/3ton.png'
-    if (type.startsWith('รถบรรทุก 7.5 ตัน ติดเครนแข็ง')) return '/75ton.png'
-    if (type.startsWith('รถบรรทุก 6 ล้อ')) return 'hotline_6.png'
-    if (type.startsWith('รถบรรทุก 6 ตัน')) return '/6ton.png'
-    if (type.startsWith('รถบรรทุก 3 ตันส่วนบุคคล')) return '/3ton_2.png'
-    if (type.startsWith('TEST_CAR')) return '/scooter.png'
-    return null
-  }
 
   // Inputs
   const [employeeId, setEmployeeId] = useState('')

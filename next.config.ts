@@ -12,7 +12,7 @@ const contentSecurityPolicy = [
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   // Iconify retrieves the SVG data from its trusted API at runtime.
-  "img-src 'self' data: blob: https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com",
   "font-src 'self' data:",
   `connect-src 'self' https://*.supabase.co https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com${isDevelopment ? " http: https: ws: wss:" : ""}`,
   "object-src 'none'",

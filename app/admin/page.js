@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
+import CarQrLabel from '@/app/components/CarQrLabel'
+import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
 
 // เพิ่ม is_visible เข้าไปใน initial data (ค่าเริ่มต้นให้แสดงผล)
-const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'Gas', status: 'available', budget: '', department_id: '', usage_type: '', ownership_type: '', is_visible: true }
+const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'ดีเซล', status: 'available', budget: '', department_id: '', usage_type: '', ownership_type: '', is_visible: true, image_path: '' }
 const initialStaffData = { staff_code: '', full_name: '', position: '', department_id: '' }
 const initialTaskData = { name: '', department_id: '' }
 const initialDepartmentData = { name: '' }
@@ -15,6 +17,7 @@ const initialOperationAreaData = { name: '' }
 const fieldLabels = {
   plate_number: 'ป้ายทะเบียน', model: 'ยี่ห้อ/รุ่น', car_type: 'ประเภทรถ', fuel_type: 'ประเภทพลังงาน', 
   budget: 'งบประมาณจัดหา', usage_type: 'ลักษณะการใช้งาน', ownership_type: 'กรรมสิทธิ์',
+  image_path: 'รูปรถ', status: 'สถานะ', is_visible: 'แสดงหน้า Home',
   staff_code: 'รหัสพนักงาน', full_name: 'ชื่อ-นามสกุล', position: 'ตำแหน่ง', department_id: 'รหัสแผนก',
   name: 'ชื่อรายการ (แผนก/สถานที่/งาน)' 
 }
@@ -42,6 +45,11 @@ export default function AdminDashboard() {
 
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, table: '', data: null })
   const [updateModal, setUpdateModal] = useState({ isOpen: false, table: '', oldData: null, newData: null })
+  const [carImageFile, setCarImageFile] = useState(null)
+  const [carImagePreview, setCarImagePreview] = useState('')
+  const [removeCarImage, setRemoveCarImage] = useState(false)
+  const [qrCar, setQrCar] = useState(null)
+  const [isMigratingImages, setIsMigratingImages] = useState(false)
 
   useEffect(() => {
     const checkSession = async () => {
@@ -94,6 +102,10 @@ export default function AdminDashboard() {
     setCarData(initialCarData); setStaffData(initialStaffData)
     setTaskData(initialTaskData); setDepartmentData(initialDepartmentData)
     setOperationAreaData(initialOperationAreaData)
+    if (carImagePreview?.startsWith('blob:')) URL.revokeObjectURL(carImagePreview)
+    setCarImageFile(null)
+    setCarImagePreview('')
+    setRemoveCarImage(false)
   }
 
   const handleEdit = (type, data) => {
@@ -101,13 +113,84 @@ export default function AdminDashboard() {
     const cleanData = { ...data }
     delete cleanData.departments 
 
-    if (type === 'cars') setCarData({ ...cleanData, department_id: cleanData.department_id || '' })
+    if (type === 'cars') {
+      setCarData({ ...cleanData, department_id: cleanData.department_id || '', image_path: cleanData.image_path || '' })
+      setCarImageFile(null)
+      setCarImagePreview(getCarImage(cleanData) || '')
+      setRemoveCarImage(false)
+    }
     if (type === 'staff') setStaffData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'tasks') setTaskData({ ...cleanData, department_id: cleanData.department_id || '' })
     if (type === 'departments') setDepartmentData(cleanData)
     if (type === 'operation_areas') setOperationAreaData(cleanData)
     
     document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleCarImageChange = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+    if (!allowedTypes.includes(file.type)) {
+      alert('รองรับเฉพาะไฟล์ JPG, PNG, WebP หรือ AVIF')
+      event.target.value = ''
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ขนาดรูปต้องไม่เกิน 5 MB')
+      event.target.value = ''
+      return
+    }
+    if (carImagePreview?.startsWith('blob:')) URL.revokeObjectURL(carImagePreview)
+    setCarImageFile(file)
+    setCarImagePreview(URL.createObjectURL(file))
+    setRemoveCarImage(false)
+  }
+
+  const uploadCarImage = async (carId, file) => {
+    const imagePath = `cars/${carId}/main`
+    const { error } = await supabase.storage.from(CAR_IMAGE_BUCKET).upload(imagePath, file, {
+      upsert: true,
+      contentType: file.type,
+      cacheControl: '3600',
+    })
+    if (error) throw error
+    return imagePath
+  }
+
+  const migrateLegacyImages = async () => {
+    const carsToMigrate = carsList.filter(car => !car.image_path && getLegacyCarImage(car))
+    if (carsToMigrate.length === 0) return
+    setIsMigratingImages(true)
+    try {
+      const groupedCars = new Map()
+      carsToMigrate.forEach(car => {
+        const legacyImage = getLegacyCarImage(car)
+        if (!groupedCars.has(legacyImage)) groupedCars.set(legacyImage, [])
+        groupedCars.get(legacyImage).push(car.id)
+      })
+
+      for (const [legacyImage, carIds] of groupedCars) {
+        const response = await fetch(legacyImage)
+        if (!response.ok) throw new Error(`ไม่สามารถอ่านไฟล์เดิม ${legacyImage}`)
+        const blob = await response.blob()
+        const imagePath = `legacy/${legacyImage.split('/').pop()}`
+        const { error: uploadError } = await supabase.storage.from(CAR_IMAGE_BUCKET).upload(imagePath, blob, {
+          upsert: true,
+          contentType: blob.type || 'image/png',
+          cacheControl: '3600',
+        })
+        if (uploadError) throw uploadError
+        const { error: updateError } = await supabase.from('cars').update({ image_path: imagePath }).in('id', carIds)
+        if (updateError) throw updateError
+      }
+      alert(`ย้ายรูปรถเดิมเข้า Supabase Storage สำเร็จ ${carsToMigrate.length} คัน`)
+      fetchData()
+    } catch (error) {
+      alert('ย้ายรูปเดิมไม่สำเร็จ: ' + error.message)
+    } finally {
+      setIsMigratingImages(false)
+    }
   }
 
   // 📍 ฟังก์ชันใหม่สำหรับสลับสวิตช์ เปิด-ปิด การแสดงผล
@@ -132,6 +215,10 @@ export default function AdminDashboard() {
     const payload = { ...currentFormState }
     delete payload.id; delete payload.created_at; delete payload.departments 
 
+    Object.keys(payload).forEach(key => {
+      if (typeof payload[key] === 'string') payload[key] = payload[key].trim()
+    })
+
     if (payload.department_id !== undefined) {
       payload.department_id = payload.department_id ? parseInt(payload.department_id) : null
     }
@@ -154,8 +241,22 @@ export default function AdminDashboard() {
   const executeInsert = async (table, payload) => {
     setIsSubmitting(true)
     try {
-      const { error } = await supabase.from(table).insert([payload])
-      if (error) throw error; 
+      if (table === 'cars') {
+        const insertPayload = { ...payload, image_path: null }
+        const { data: newCar, error } = await supabase.from(table).insert([insertPayload]).select().single()
+        if (error) throw error
+        let savedCar = newCar
+        if (carImageFile) {
+          const imagePath = await uploadCarImage(newCar.id, carImageFile)
+          const { data: updatedCar, error: updateError } = await supabase.from('cars').update({ image_path: imagePath }).eq('id', newCar.id).select().single()
+          if (updateError) throw updateError
+          savedCar = updatedCar
+        }
+        setQrCar(savedCar)
+      } else {
+        const { error } = await supabase.from(table).insert([payload])
+        if (error) throw error
+      }
       alert('บันทึกข้อมูลเข้าสู่ระบบสำเร็จ')
       cancelEdit(); fetchData(); if(table === 'departments') fetchDepartmentsOptions()
     } catch (error) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message) } finally { setIsSubmitting(false) }
@@ -165,9 +266,18 @@ export default function AdminDashboard() {
     setIsSubmitting(true)
     const { table, newData } = updateModal
     try {
-      const { data, error } = await supabase.from(table).update(newData).eq('id', editingId).select()
+      const updatePayload = { ...newData }
+      const previousImagePath = table === 'cars' ? updateModal.oldData?.image_path : null
+      if (table === 'cars' && carImageFile) updatePayload.image_path = await uploadCarImage(editingId, carImageFile)
+      if (table === 'cars' && removeCarImage) updatePayload.image_path = null
+
+      const { data, error } = await supabase.from(table).update(updatePayload).eq('id', editingId).select()
       if (error) throw error; 
       if (!data || data.length === 0) throw new Error('ไม่พบข้อมูลที่ต้องการแก้ไข');
+      if (table === 'cars' && removeCarImage && previousImagePath?.startsWith('cars/')) {
+        const { error: removeError } = await supabase.storage.from(CAR_IMAGE_BUCKET).remove([previousImagePath])
+        if (removeError) console.error('Remove old car image:', removeError.message)
+      }
       alert('อัปเดตข้อมูลสำเร็จ')
       setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })
       cancelEdit(); fetchData(); if(table === 'departments') fetchDepartmentsOptions()
@@ -183,11 +293,25 @@ export default function AdminDashboard() {
       const { data, error } = await supabase.from(table).delete().eq('id', itemToDelete.id).select()
       if (error) throw error; 
       if (!data || data.length === 0) throw new Error('ไม่สามารถลบข้อมูลได้');
+      if (table === 'cars' && itemToDelete.image_path?.startsWith('cars/')) {
+        const { error: removeError } = await supabase.storage.from(CAR_IMAGE_BUCKET).remove([itemToDelete.image_path])
+        if (removeError) console.error('Remove car image:', removeError.message)
+      }
       alert('ลบข้อมูลออกจากระบบเรียบร้อยแล้ว')
       setDeleteModal({ isOpen: false, table: '', data: null })
       fetchData(); if(table === 'departments') fetchDepartmentsOptions()
     } catch (error) { alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message) } finally { setIsSubmitting(false) }
   }
+
+  const uniqueCarValues = (field, defaults = []) => [...new Set([
+    ...defaults,
+    ...carsList.map(car => car[field]).filter(Boolean),
+  ])].sort((a, b) => a.localeCompare(b, 'th'))
+
+  const modelOptions = uniqueCarValues('model', ['อีซูซุ', 'โตโยต้า', 'นิสสัน', 'มิตซูบิชิ', 'ฮีโน่', 'MG'])
+  const carTypeOptions = uniqueCarValues('car_type', ['รถกระบะ 4 ประตู', 'รถตู้โดยสาร', 'รถกระเช้าแก้ไฟ', 'รถเครน บรรทุก', 'รถบรรทุก 2 ตัน', 'รถ EV'])
+  const usageTypeOptions = uniqueCarValues('usage_type')
+  const carsWithoutStoredImages = carsList.filter(car => !car.image_path && getLegacyCarImage(car)).length
 
   // ผู้ที่ยังไม่ได้เข้าสู่ระบบจะถูกส่งไปหน้า Login จึงใช้โครง loading ของหน้า Login
   if (loadingSession) return <PageSkeleton variant="login" />
@@ -228,6 +352,8 @@ export default function AdminDashboard() {
         .admin-main [class*="text-[#a688ad]"] { color: #8b6f92 !important; }
         .admin-main [class*="divide-[#6b3475]"] > :not(:last-child) { border-color: #eadfed !important; }
       `}</style>
+
+      {qrCar && <CarQrLabel car={qrCar} onClose={() => setQrCar(null)} />}
 
       {/* 🔴 Delete Modal (Dark Theme) */}
       {deleteModal.isOpen && (
@@ -393,14 +519,14 @@ export default function AdminDashboard() {
               {/* ฟอร์มรถ */}
               {activeMenu === 'cars' && (
                 <form onSubmit={(e) => handlePreSubmit(e, 'cars', carData)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                  <div className="sm:col-span-1 lg:col-span-1"><label className={labelStyle}>License Plate *</label><input type="text" required placeholder="e.g. กท 1234" value={carData.plate_number} onChange={e => setCarData({...carData, plate_number: e.target.value})} className={inputStyle} /></div>
-                  <div className="sm:col-span-1 lg:col-span-2"><label className={labelStyle}>Brand / Model</label><input type="text" placeholder="e.g. Toyota Hilux Revo" value={carData.model} onChange={e => setCarData({...carData, model: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>Car Type</label><input type="text" placeholder="e.g. Pickup" value={carData.car_type} onChange={e => setCarData({...carData, car_type: e.target.value})} className={inputStyle} /></div>
-                  
-                  <div><label className={labelStyle}>Energy Type</label><select value={carData.fuel_type} onChange={e => setCarData({...carData, fuel_type: e.target.value})} className={inputStyle}><option value="Gas">Gasoline</option><option value="EV">Electric (EV)</option></select></div>
-                  <div><label className={labelStyle}>Ownership</label><input type="text" placeholder="e.g. Rental" value={carData.ownership_type} onChange={e => setCarData({...carData, ownership_type: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ทะเบียนรถ *</label><input type="text" required placeholder="เช่น 1กข-1234 กทม." value={carData.plate_number} onChange={e => setCarData({...carData, plate_number: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ยี่ห้อ / รุ่น</label><input list="car-model-options" type="text" placeholder="เลือกหรือพิมพ์รุ่นใหม่" value={carData.model} onChange={e => setCarData({...carData, model: e.target.value})} className={inputStyle} /><datalist id="car-model-options">{modelOptions.map(value => <option key={value} value={value} />)}</datalist></div>
+                  <div><label className={labelStyle}>ประเภทรถ</label><input list="car-type-options" type="text" placeholder="เลือกหรือพิมพ์ประเภทใหม่" value={carData.car_type} onChange={e => setCarData({...carData, car_type: e.target.value})} className={inputStyle} /><datalist id="car-type-options">{carTypeOptions.map(value => <option key={value} value={value} />)}</datalist></div>
+                  <div><label className={labelStyle}>ประเภทพลังงาน</label><select value={carData.fuel_type} onChange={e => setCarData({...carData, fuel_type: e.target.value})} className={inputStyle}><option value="ดีเซล">ดีเซล</option><option value="เบนซิน">เบนซิน</option><option value="Gas">Gasoline</option><option value="EV">ไฟฟ้า (EV)</option><option value="Hybrid">ไฮบริด</option></select></div>
+
+                  <div><label className={labelStyle}>กรรมสิทธิ์</label><select value={carData.ownership_type || ''} onChange={e => setCarData({...carData, ownership_type: e.target.value})} className={inputStyle}><option value="">-- เลือกกรรมสิทธิ์ --</option><option value="รถของการไฟฟ้า">รถของการไฟฟ้า</option><option value="รถเช่า">รถเช่า</option><option value="รถยืมใช้">รถยืมใช้</option></select></div>
                   <div>
-                    <label className={labelStyle}>Department</label>
+                    <label className={labelStyle}>แผนกผู้รับผิดชอบ</label>
                     <select
                       value={carData.department_id}
                       onChange={e => {
@@ -412,15 +538,29 @@ export default function AdminDashboard() {
                       }}
                       className={inputStyle}
                     >
-                      <option value="">-- Unassigned --</option>
+                      <option value="">-- ยังไม่ระบุแผนก --</option>
                       {departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}
                     </select>
                   </div>
-                  <div><label className={labelStyle}>Usage Type</label><input type="text" placeholder="e.g. Operation" value={carData.usage_type} onChange={e => setCarData({...carData, usage_type: e.target.value})} className={inputStyle} /></div>
-                  
-                  <div className="sm:col-span-2 lg:col-span-4 mt-2 flex justify-end">
-                    <button type="submit" className="px-8 py-3.5 bg-[#ffdd00] hover:bg-[#e8c900] text-[#3b1746] rounded-[10px] font-medium transition-all text-[14px]">
-                      {editingId ? 'Save Changes' : 'Create Record'}
+                  <div><label className={labelStyle}>ลักษณะการใช้งาน</label><input list="car-usage-options" type="text" placeholder="เลือกหรือพิมพ์งานใหม่" value={carData.usage_type || ''} onChange={e => setCarData({...carData, usage_type: e.target.value})} className={inputStyle} /><datalist id="car-usage-options">{usageTypeOptions.map(value => <option key={value} value={value} />)}</datalist></div>
+                  <div><label className={labelStyle}>งบประมาณจัดหา</label><select value={carData.budget || ''} onChange={e => setCarData({...carData, budget: e.target.value})} className={inputStyle}><option value="">-- ยังไม่ระบุ --</option><option value="ทำการ">งบทำการ</option><option value="ลงทุน">งบลงทุน</option></select></div>
+                  <div><label className={labelStyle}>สถานะเริ่มต้น</label><select value={carData.status} onChange={e => setCarData({...carData, status: e.target.value})} className={inputStyle}><option value="available">ว่างพร้อมใช้</option><option value="busy">กำลังใช้งาน</option></select></div>
+                  <div><label className={labelStyle}>แสดงที่หน้า Home</label><select value={String(carData.is_visible !== false)} onChange={e => setCarData({...carData, is_visible: e.target.value === 'true'})} className={inputStyle}><option value="true">แสดงรถ</option><option value="false">ซ่อนรถ</option></select></div>
+
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <label className={labelStyle}>รูปรถ (JPG, PNG, WebP, AVIF · ไม่เกิน 5 MB)</label>
+                    <label className="flex min-h-[116px] cursor-pointer items-center gap-4 rounded-[16px] border-2 border-dashed border-[#d9c8de] bg-[#fcf9fd] p-4 transition-colors hover:border-[#702082]">
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={handleCarImageChange} className="hidden" />
+                      {carImagePreview ? <img src={carImagePreview} alt="ตัวอย่างรูปรถ" className="h-20 w-28 rounded-[12px] border border-[#eadfed] bg-white object-cover" /> : <span className="flex h-20 w-28 items-center justify-center rounded-[12px] bg-[#f1e6f4] text-[#702082]"><Icon icon="ph:image-square-duotone" width="34" height="34" /></span>}
+                      <span className="min-w-0"><span className="block text-[13px] font-bold text-[#4b1560]">{carImageFile ? carImageFile.name : carImagePreview ? 'คลิกเพื่อเปลี่ยนรูปรถ' : 'คลิกเพื่อเลือกรูปรถ'}</span><span className="mt-1 block text-[11px] text-[#846c89]">รูปนี้จะเก็บใน Supabase Storage และแสดงบนหน้า Home</span></span>
+                    </label>
+                    {(carImageFile || carData.image_path) && <button type="button" onClick={() => { if (carImagePreview.startsWith('blob:')) URL.revokeObjectURL(carImagePreview); setCarImageFile(null); setCarImagePreview(''); setCarData({...carData, image_path: ''}); setRemoveCarImage(true) }} className="mt-2 text-[11px] font-semibold text-[#d33c35]">ลบรูปที่เลือก</button>}
+                  </div>
+
+                  <div className="flex flex-col justify-end gap-2">
+                    {carsWithoutStoredImages > 0 && <button type="button" onClick={migrateLegacyImages} disabled={isMigratingImages} className="rounded-[12px] border border-[#dfcfe4] bg-[#f5edf7] px-4 py-3 text-[12px] font-bold text-[#702082] disabled:opacity-50"><Icon icon="ph:database-duotone" width="17" height="17" className="mr-1 inline" />{isMigratingImages ? 'กำลังย้ายรูป...' : `นำรูปเดิมเข้า Storage (${carsWithoutStoredImages} คัน)`}</button>}
+                    <button type="submit" disabled={isSubmitting} className="rounded-[12px] bg-[#ffdd00] px-6 py-3.5 text-[14px] font-bold text-[#3b1746] transition-all hover:bg-[#e8c900] disabled:opacity-50">
+                      {isSubmitting ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'สร้างรถและ QR Code'}
                     </button>
                   </div>
                 </form>
@@ -485,9 +625,10 @@ export default function AdminDashboard() {
 
               <div className="overflow-x-auto">
                 {activeMenu === 'cars' && (
-                  <table className="w-full text-left whitespace-nowrap min-w-[900px]">
+                  <table className="w-full text-left whitespace-nowrap min-w-[1060px]">
                     <thead className="bg-[#3b1746]"><tr className="border-b border-[#6b3475]">
                       <th className="py-4 px-6 text-[#a688ad] font-semibold text-[10px] uppercase tracking-widest w-24">Display</th>
+                      <th className="py-4 px-4 text-[#a688ad] font-semibold text-[10px] uppercase tracking-widest">Image</th>
                       <th className="py-4 px-4 text-[#a688ad] font-semibold text-[10px] uppercase tracking-widest">License Plate</th>
                       <th className="py-4 px-4 text-[#a688ad] font-semibold text-[10px] uppercase tracking-widest">Model & Type</th>
                       <th className="py-4 px-4 text-[#a688ad] font-semibold text-[10px] uppercase tracking-widest">Energy</th>
@@ -515,6 +656,10 @@ export default function AdminDashboard() {
                             </button>
                           </td>
 
+                          <td className="p-3 px-4">
+                            {getCarImage(item) ? <img src={getCarImage(item)} alt={item.plate_number} className="h-12 w-16 rounded-[10px] border border-[#eadfed] bg-white object-cover" /> : <span className="flex h-12 w-16 items-center justify-center rounded-[10px] bg-[#f1e6f4] text-[#702082]"><Icon icon="ph:car-profile-duotone" width="26" height="26" /></span>}
+                          </td>
+
                           <td className="p-4 px-4">
                             <span className="font-medium text-[#fffaf0] text-[14px] bg-[#54205f] px-3 py-1.5 rounded-[6px] border border-[#7e4a87]">{item.plate_number}</span>
                           </td>
@@ -526,8 +671,9 @@ export default function AdminDashboard() {
                           </td>
                           <td className="p-4 px-4 text-[#c9b8cd] text-[13px]">{item.departments?.name || 'Unassigned'}</td>
                           <td className="p-4 px-6 flex justify-center gap-2">
-                            <button onClick={() => handleEdit('cars', item)} className="p-1.5 text-[#c9b8cd] hover:text-[#fffaf0] transition-colors"><Icon icon="ph:pencil-simple" width="18" height="18" /></button>
-                            <button onClick={() => confirmDelete('cars', item)} className="p-1.5 text-[#c9b8cd] hover:text-[#ff453a] transition-colors"><Icon icon="ph:trash" width="18" height="18" /></button>
+                            <button type="button" onClick={() => setQrCar(item)} title="สร้าง QR Code" className="p-1.5 text-[#702082] transition-colors hover:text-[#4b1560]"><Icon icon="ph:qr-code-duotone" width="19" height="19" /></button>
+                            <button type="button" onClick={() => handleEdit('cars', item)} title="แก้ไขรถ" className="p-1.5 text-[#c9b8cd] hover:text-[#fffaf0] transition-colors"><Icon icon="ph:pencil-simple" width="18" height="18" /></button>
+                            <button type="button" onClick={() => confirmDelete('cars', item)} title="ลบรถ" className="p-1.5 text-[#c9b8cd] hover:text-[#ff453a] transition-colors"><Icon icon="ph:trash" width="18" height="18" /></button>
                           </td>
                         </tr>
                       ))}
