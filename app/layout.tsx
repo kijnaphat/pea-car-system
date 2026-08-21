@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Suspense } from "react"; // ✅ 1. เพิ่มบรรทัดนี้
 import GlobalBottomNav from "./components/GlobalBottomNav";
@@ -6,6 +6,23 @@ import GlobalBottomNav from "./components/GlobalBottomNav";
 export const metadata: Metadata = {
   title: "PEA Smart Car",
   description: "ระบบจัดการยานพาหนะ PEA",
+  applicationName: "PEA Smart Car",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "PEA Smart Car",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#702082",
 };
 
 export default function RootLayout({
