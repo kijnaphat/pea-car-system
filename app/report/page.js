@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
+import { normalizeStaffCode } from '@/lib/staffCode'
 
 // --- Main Component ---
 function MainApp() {
@@ -367,18 +368,35 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
 
   if (!isOpen) return null;
 
-  const verifyEmp = async () => {
-    if (!empId) return;
-    setIsLoading(true); setError('');
+  const verifyEmp = async (rawCode = empId) => {
+    const staffCode = normalizeStaffCode(rawCode);
+    setEmpId(staffCode);
+    if (staffCode.length < 6) {
+      setError('กรุณากรอกรหัสพนักงานให้ครบ');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
     try {
-        const { data } = await supabase.rpc('get_staff_by_code', { p_staff_code: empId }).single();
+        const { data, error: lookupError } = await supabase
+          .rpc('get_staff_by_code', { p_staff_code: staffCode })
+          .maybeSingle();
+        if (lookupError) {
+            console.error('Staff lookup failed:', lookupError);
+            setError('เชื่อมต่อระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
+            return;
+        }
         if (data) {
             setStaffInfo(data);
             if (onVerifySuccess) onVerifySuccess(); 
         }
         else setError('ไม่พบรหัสพนักงานในระบบ');
-    } catch (err) { setError('ไม่พบรหัสพนักงานในระบบ'); }
-    setIsLoading(false);
+    } catch (err) {
+        console.error('Staff lookup request failed:', err);
+        setError('เชื่อมต่อระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const getCoordinates = (e) => {
@@ -453,12 +471,12 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
                   <p className="text-xs text-gray-500">กรุณากรอกรหัสพนักงานของคุณ</p>
                </div>
                <div>
-                   <input type="text" value={empId} onChange={e => setEmpId(e.target.value)} onKeyDown={e => e.key === 'Enter' && verifyEmp()} className="w-full border-2 border-gray-200 bg-gray-50 p-4 rounded-2xl text-center text-xl font-bold tracking-widest outline-none focus:border-[#702082] focus:bg-white transition-all" placeholder="XXXXXX" />
+                   <input type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="done" autoComplete="off" maxLength={7} value={empId} onChange={e => { setEmpId(normalizeStaffCode(e.target.value)); setError(''); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); verifyEmp(e.currentTarget.value); } }} className="w-full border-2 border-gray-200 bg-gray-50 p-4 rounded-2xl text-center text-xl font-bold tracking-widest outline-none focus:border-[#702082] focus:bg-white transition-all" placeholder="XXXXXX" />
                    <div className="h-6 mt-1 text-center">{error && <p className="text-red-500 text-sm font-bold animate-pulse">{error}</p>}</div>
                </div>
                <div className="flex gap-3 pt-2">
                    <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-600 p-4 rounded-2xl font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
-                   <button onClick={verifyEmp} disabled={isLoading} className={`flex-1 text-white p-4 rounded-2xl font-bold shadow-lg transition-all ${isLoading ? 'bg-gray-400' : 'bg-[#702082] hover:bg-[#4b1560]'}`}>{isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}</button>
+                   <button onClick={() => verifyEmp()} disabled={isLoading} className={`flex-1 text-white p-4 rounded-2xl font-bold shadow-lg transition-all ${isLoading ? 'bg-gray-400' : 'bg-[#702082] hover:bg-[#4b1560]'}`}>{isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}</button>
                </div>
             </div>
           ) : (

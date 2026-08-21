@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { getCarImage } from '@/lib/carImages'
+import { normalizeStaffCode } from '@/lib/staffCode'
 
 const BANNER_SLIDE_COUNT = 4
 
@@ -735,18 +736,35 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
 
   if (!isOpen) return null;
 
-  const verifyEmp = async () => {
-    if (!empId) return;
-    setIsLoading(true); setError('');
+  const verifyEmp = async (rawCode = empId) => {
+    const staffCode = normalizeStaffCode(rawCode);
+    setEmpId(staffCode);
+    if (staffCode.length < 6) {
+      setError('กรุณากรอกรหัสพนักงานให้ครบ');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
     try {
-        const { data } = await supabase.rpc('get_staff_by_code', { p_staff_code: empId }).single();
+        const { data, error: lookupError } = await supabase
+          .rpc('get_staff_by_code', { p_staff_code: staffCode })
+          .maybeSingle();
+        if (lookupError) {
+            console.error('Staff lookup failed:', lookupError);
+            setError('❌ เชื่อมต่อระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
+            return;
+        }
         if (data) {
             setStaffInfo(data);
             if (onVerifySuccess) onVerifySuccess(); 
         }
         else setError('❌ ไม่พบรหัสพนักงานในระบบ');
-    } catch (err) { setError('❌ ไม่พบรหัสพนักงานในระบบ'); }
-    setIsLoading(false);
+    } catch (err) {
+        console.error('Staff lookup request failed:', err);
+        setError('❌ เชื่อมต่อระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const getCoordinates = (e) => {
@@ -826,8 +844,9 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
                 <h3 className="text-[17px] font-semibold text-[#4b1560] tracking-[-0.3px]">ยืนยันตัวตน</h3>
                 <p className="text-[13px] text-[#765c7c]">กรอกรหัสพนักงานของคุณ</p>
               </div>
-              <input type="text" value={empId} onChange={e => setEmpId(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && verifyEmp()}
+              <input type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="done" autoComplete="off" maxLength={7}
+                value={empId} onChange={e => { setEmpId(normalizeStaffCode(e.target.value)); setError(''); }}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); verifyEmp(e.currentTarget.value); } }}
                 className="w-full bg-white text-[#4b1560] text-[20px] font-semibold tracking-[0.2em] text-center px-4 py-3.5 rounded-[14px] outline-none"
                 style={{boxShadow:'0 0 0 0.5px rgba(0,0,0,0.12)', fontFamily:'monospace'}}
                 placeholder="XXXXXX" />
@@ -837,7 +856,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
                   className="flex-1 py-3.5 rounded-[14px] bg-[#eadfed] text-[#4b1560] text-[15px] font-medium active:bg-[#d1d1d6] transition-colors">
                   ยกเลิก
                 </button>
-                <button onClick={verifyEmp} disabled={isLoading}
+                <button onClick={() => verifyEmp()} disabled={isLoading}
                   className={`flex-1 py-3.5 rounded-[14px] text-white text-[15px] font-medium transition-colors ${isLoading ? 'bg-[#aeaeb2]' : 'bg-[#4b1560] active:bg-[#702082]'}`}>
                   {isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบ'}
                 </button>
@@ -1541,7 +1560,8 @@ function CarActionForm({ carId }) {
   const [staffId, setStaffId] = useState(null)
   const [staffName, setStaffName] = useState('') 
   const [staffPosition, setStaffPosition] = useState('') 
-  const [staffError, setStaffError] = useState(false)
+  const [staffError, setStaffError] = useState('')
+  const staffLookupSequenceRef = useRef(0)
   const [mileage, setMileage] = useState('')
   const [isMileageLocked, setIsMileageLocked] = useState(false)
   
@@ -1677,17 +1697,37 @@ function CarActionForm({ carId }) {
     fetchData()
   }, [carId])
 
-  const checkStaff = async () => {
-    if (employeeId.length < 4) return
-    const { data, error } = await supabase
-      .rpc('get_staff_by_code', { p_staff_code: employeeId })
-      .single()
+  const checkStaff = async (rawCode = employeeId) => {
+    const staffCode = normalizeStaffCode(rawCode)
+    setEmployeeId(staffCode)
+    if (staffCode.length < 6) {
+      setStaffError('กรุณากรอกรหัสพนักงานให้ครบ')
+      return
+    }
 
-    if (data) {
+    const requestSequence = ++staffLookupSequenceRef.current
+    try {
+      const { data, error } = await supabase
+        .rpc('get_staff_by_code', { p_staff_code: staffCode })
+        .maybeSingle()
+
+      if (requestSequence !== staffLookupSequenceRef.current) return
+
+      if (error) {
+        console.error('Staff lookup failed:', error)
+        setStaffId(null)
+        setStaffName('')
+        setStaffPosition('')
+        setStaffError('เชื่อมต่อระบบไม่สำเร็จ กรุณาลองอีกครั้ง')
+        setSelectedDept('')
+        return
+      }
+
+      if (data) {
         setStaffId(data.id);
         setStaffName(data.full_name); 
         setStaffPosition(data.position); 
-        setStaffError(false);
+        setStaffError('');
 
         if (data.department_name) {
           if (selectedDept !== data.department_name) {
@@ -1696,12 +1736,21 @@ function CarActionForm({ carId }) {
             setCustomTask('');
           }
         }
-    } else {
+      } else {
         setStaffId(null);
         setStaffName(''); 
         setStaffPosition(''); 
-        setStaffError(true);
+        setStaffError('ไม่พบรหัสพนักงานนี้');
         setSelectedDept('');
+      }
+    } catch (error) {
+      if (requestSequence !== staffLookupSequenceRef.current) return
+      console.error('Staff lookup request failed:', error)
+      setStaffId(null)
+      setStaffName('')
+      setStaffPosition('')
+      setStaffError('เชื่อมต่อระบบไม่สำเร็จ กรุณาลองอีกครั้ง')
+      setSelectedDept('')
     }
   }
 
@@ -1710,7 +1759,8 @@ function CarActionForm({ carId }) {
     setStaffName('');
     setEmployeeId('');
     setStaffPosition('');
-    setStaffError(false);
+    staffLookupSequenceRef.current += 1
+    setStaffError('');
   }
 
   const handleTakeOut = async () => {
@@ -2063,10 +2113,16 @@ function CarActionForm({ carId }) {
 
                 {!staffName ? (
                   <>
-                    <input type="text" value={employeeId}
-                      onChange={e => { setEmployeeId(e.target.value); setStaffId(null); setStaffError(false); }}
-                      onBlur={checkStaff} 
-                      onKeyDown={e => e.key === 'Enter' && checkStaff()}
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="done" autoComplete="off" maxLength={7}
+                      value={employeeId}
+                      onChange={e => {
+                        staffLookupSequenceRef.current += 1
+                        setEmployeeId(normalizeStaffCode(e.target.value))
+                        setStaffId(null)
+                        setStaffError('')
+                      }}
+                      onBlur={e => checkStaff(e.currentTarget.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                       placeholder="กรอกรหัสพนักงาน แล้วกด Enter"
                       className={`w-full px-4 py-3.5 rounded-[14px] text-[17px] font-medium outline-none transition-all ${
                         staffError ? 'bg-[#fff2f0] border-[1.5px] border-[#ff3b30] text-[#d70015]'
@@ -2075,7 +2131,7 @@ function CarActionForm({ carId }) {
                     {staffError && (
                       <div className="flex items-center gap-2 mt-3 bg-[#fff2f0] px-3 py-2.5 rounded-[12px]">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="9" fill="#ff3b30"/><path d="M6 6l6 6M12 6l-6 6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                        <span className="text-[13px] font-medium text-[#d70015]">ไม่พบรหัสพนักงานนี้</span>
+                        <span className="text-[13px] font-medium text-[#d70015]">{staffError}</span>
                       </div>
                     )}
                   </>
