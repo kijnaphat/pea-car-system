@@ -338,11 +338,14 @@ function CarSelector() {
       : formatTripDateTime(logData?.end_time, 'คืนล่าสุด')
     const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
     const distance = getTripDistance(logData)
-    const durationLabel = isBusy ? (isEV ? 'ชาร์จมา' : 'ใช้งานมา') : (isEV ? 'ชาร์จล่าสุด' : 'ใช้ล่าสุด')
-    const completedSummary = [
-      distance !== null ? `ขับ ${distance.toLocaleString('th-TH')} กม.` : null,
-      durationText ? `${durationLabel} ${durationText}` : null,
-    ].filter(Boolean).join(' · ')
+    const durationLabel = isEV ? 'ชาร์จมา' : 'ใช้งานมา'
+    const completedSummary = distance !== null && durationText
+      ? `ใช้งาน ${distance.toLocaleString('th-TH')} กม. เวลา ${durationText}`
+      : distance !== null
+        ? `ใช้งาน ${distance.toLocaleString('th-TH')} กม.`
+        : durationText
+          ? `เวลา ${durationText}`
+          : ''
 
     return (
       <article key={car.id} onClick={() => setCarDetailModal({ car, logData })}
