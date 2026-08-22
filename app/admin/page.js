@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import CarQrLabel from '@/app/components/CarQrLabel'
+import MileageCorrectionPanel from '@/app/admin/components/MileageCorrectionPanel'
 import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
 
 // เพิ่ม is_visible เข้าไปใน initial data (ค่าเริ่มต้นให้แสดงผล)
@@ -54,7 +55,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { user }, error } = await supabase.auth.getUser()
-      if (error || !user) router.replace('/admin/login')
+      if (error || !user || user.app_metadata?.role !== 'admin') {
+        if (user) await supabase.auth.signOut()
+        router.replace('/admin/login')
+      }
       else { setLoadingSession(false); fetchDepartmentsOptions() }
     }
     checkSession()
@@ -318,6 +322,7 @@ export default function AdminDashboard() {
 
   const sidebarMenus = [
     { id: 'cars', icon: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'Vehicles' },
+    { id: 'mileage', icon: 'ph:speedometer-duotone', title: 'แก้ไขเลขไมล์', desc: 'Mileage' },
     { id: 'staff', icon: 'ph:users-three-duotone', title: 'บุคลากร', desc: 'Personnel' },
     { id: 'tasks', icon: 'ph:clipboard-text-duotone', title: 'ประเภทงาน', desc: 'Tasks' },
     { id: 'departments', icon: 'ph:buildings-duotone', title: 'แผนก', desc: 'Departments' },
@@ -503,6 +508,11 @@ export default function AdminDashboard() {
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-6 pb-12">
+
+            {activeMenu === 'mileage' ? (
+              <MileageCorrectionPanel />
+            ) : (
+              <>
 
             {/* ส่วนที่ 1: ฟอร์ม (Dark Card) */}
             <div id="form-section" className="bg-white p-6 sm:p-8 rounded-[22px] border border-[#eadfed] shadow-[0_12px_36px_rgba(75,21,96,.07)]">
@@ -737,6 +747,9 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+
+              </>
+            )}
 
           </div>
         </div>
