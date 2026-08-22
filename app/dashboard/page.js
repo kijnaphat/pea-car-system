@@ -61,7 +61,7 @@ export default function UltimateDashboard() {
   
   // State สำหรับแสดงผล Dashboard
   const [globalStats, setGlobalStats] = useState({
-    totalDistance: 0, totalTrips: 0, fuelSavings: 0, activeRate: 0, availableCars: 0, totalCars: 0, busyCars: 0, avgTripDist: 0, ecoScore: 0
+    totalDistance: 0, totalTrips: 0, fuelSavings: 0, activeRate: 0, availableCars: 0, totalCars: 0, busyCars: 0, maintenanceCars: 0, avgTripDist: 0, ecoScore: 0
   })
 
   const [gasolineStats, setGasolineStats] = useState({ cost: 0, distance: 0, efficiency: 0, fuelLiters: 0 })
@@ -569,6 +569,7 @@ export default function UltimateDashboard() {
 
     const busy = filteredCarsList.filter(c => c.status === 'busy').length;
     const avail = filteredCarsList.filter(c => c.status === 'available').length;
+    const maintenance = filteredCarsList.filter(c => c.status === 'maintenance').length;
 
     setGlobalStats({
       totalDistance: totalDist,
@@ -577,6 +578,7 @@ export default function UltimateDashboard() {
       activeRate: filteredCarsList.length > 0 ? ((busy / filteredCarsList.length) * 100).toFixed(0) : 0,
       availableCars: avail,
       busyCars: busy,
+      maintenanceCars: maintenance,
       totalCars: filteredCarsList.length,
       avgTripDist: totalTrips > 0 ? (totalDist / totalTrips).toFixed(1) : 0,
       ecoScore: totalDist > 0 ? ((evDist / totalDist) * 100).toFixed(0) : 0 
@@ -1191,6 +1193,7 @@ export default function UltimateDashboard() {
                 {[
                   {label:'ว่างพร้อมใช้', val:globalStats.availableCars, c:'#34c759', bg:'rgba(52,199,89,0.08)', pulse:false},
                   {label:'กำลังใช้งาน', val:globalStats.busyCars,    c:'#ff3b30', bg:'rgba(255,59,48,0.08)', pulse:true},
+                  {label:'กำลังซ่อม', val:globalStats.maintenanceCars, c:'#d57a00', bg:'rgba(213,122,0,0.09)', pulse:false},
                 ].map((s,i)=>(
                   <div key={i} className="flex items-center justify-between px-4 py-3 rounded-[14px]" style={{background:s.bg}}>
                     <div className="flex items-center gap-2.5">

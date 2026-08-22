@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
+import MaintenanceActionModal from '@/app/components/MaintenanceActionModal'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { getCarImage } from '@/lib/carImages'
 import { normalizeStaffCode } from '@/lib/staffCode'
@@ -106,15 +107,27 @@ function CarSelector() {
   
   // 🌟 State สำหรับ Modal รายละเอียดรถ
   const [carDetailModal, setCarDetailModal] = useState(null)
+  const [maintenanceModal, setMaintenanceModal] = useState({ isOpen: false, mode: 'report', car: null, maintenanceRecord: null })
 
   const fetchCars = async () => {
     try {
-      const { data: carsDataRaw } = await supabase.from('cars').select('*')
-      const { data: activeLogs } = await supabase
-        .from('trip_logs')
-        .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, location, is_completed')
-        .eq('is_completed', false)
-        .order('start_time', { ascending: false })
+      const [{ data: carsDataRaw }, { data: activeLogs }, { data: maintenanceRecords, error: maintenanceError }] = await Promise.all([
+        supabase.from('cars').select('*'),
+        supabase
+          .from('trip_logs')
+          .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, location, is_completed')
+          .eq('is_completed', false)
+          .order('start_time', { ascending: false }),
+        supabase
+          .from('car_maintenance_records')
+          .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name), reported_by:staff!car_maintenance_records_reported_by_staff_id_fkey(full_name)')
+          .eq('status', 'open')
+          .order('reported_at', { ascending: false }),
+      ])
+
+      if (maintenanceError && maintenanceError.code !== 'PGRST205') {
+        console.error('Maintenance records failed to load:', maintenanceError)
+      }
 
       if (carsDataRaw) {
         // กรองรถที่ถูกซ่อนออกไป
@@ -139,15 +152,16 @@ function CarSelector() {
           })
         )
 
+        const maintenanceByCar = new Map((maintenanceRecords || []).map(record => [Number(record.car_id), record]))
         const mergedCars = carsData.map((car, i) => {
           const log = activeLogs?.find(l => Number(l.car_id) === Number(car.id))
           const lastLog = activatedResults[i]?.lastLog
           const isActivated = Boolean(log || lastLog)
-          return { ...car, activeLog: log, lastLog, isActivated }
+          return { ...car, activeLog: log, lastLog, maintenanceRecord: maintenanceByCar.get(Number(car.id)) || null, isActivated }
         })
 
         const driverNames = mergedCars
-          .map(c => c.status === 'busy' ? c.activeLog?.driver_name : c.lastLog?.driver_name)
+          .map(c => c.status === 'maintenance' ? c.maintenanceRecord?.reported_by?.full_name : c.status === 'busy' ? c.activeLog?.driver_name : c.lastLog?.driver_name)
           .filter(Boolean);
         const uniqueDrivers = [...new Set(driverNames)];
         
@@ -164,13 +178,15 @@ function CarSelector() {
         }
 
         const finalCars = mergedCars.map(car => {
-          const dName = car.status === 'busy' ? car.activeLog?.driver_name : car.lastLog?.driver_name;
+          const dName = car.status === 'maintenance' ? car.maintenanceRecord?.reported_by?.full_name : car.status === 'busy' ? car.activeLog?.driver_name : car.lastLog?.driver_name;
           return { ...car, driverPosition: dName ? staffMap[dName] : null };
         });
 
         finalCars.sort((a, b) => {
             if (a.status === 'busy' && b.status !== 'busy') return -1 
             if (a.status !== 'busy' && b.status === 'busy') return 1  
+            if (a.status === 'maintenance' && b.status !== 'maintenance') return -1
+            if (a.status !== 'maintenance' && b.status === 'maintenance') return 1
             return a.plate_number.localeCompare(b.plate_number)
         })
 
@@ -255,7 +271,8 @@ function CarSelector() {
   if (loading) return <PageSkeleton variant="home" />
 
   const busyCars = cars.filter(c => c.status === 'busy')
-  const availableCars = cars.filter(c => c.status !== 'busy')
+  const maintenanceCars = cars.filter(c => c.status === 'maintenance')
+  const availableCars = cars.filter(c => c.status === 'available')
   const activeCars = cars.filter(c => c.isActivated)
   const evCars = cars.filter(c => c.fuel_type?.toUpperCase() === 'EV' || c.car_type?.toUpperCase().includes('EV'))
   const signatureSchedule = getSignatureSchedule()
@@ -331,9 +348,12 @@ function CarSelector() {
     const carImageSrc = getCarImage(car)
     const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
     const isBusy = car.status === 'busy'
+    const isMaintenance = car.status === 'maintenance'
     const logData = isBusy ? car.activeLog : car.lastLog
-    const driverName = logData?.driver_name
-    const activityTimeText = isBusy
+    const driverName = isMaintenance ? car.maintenanceRecord?.reported_by?.full_name : logData?.driver_name
+    const activityTimeText = isMaintenance
+      ? formatTripDateTime(car.maintenanceRecord?.reported_at, 'แจ้งซ่อม')
+      : isBusy
       ? formatTripDateTime(logData?.start_time, 'ออก')
       : formatTripDateTime(logData?.end_time, 'คืนล่าสุด')
     const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
@@ -350,22 +370,22 @@ function CarSelector() {
     return (
       <article key={car.id} onClick={() => setCarDetailModal({ car, logData })}
         className="flex items-center gap-3 py-4 border-b border-[#edf0ee] last:border-b-0 cursor-pointer active:bg-[#f8faf8] transition-colors">
-        <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border border-black/[0.05] ${isBusy ? 'bg-[#fff0ed]' : isEV ? 'bg-[#edf3ff]' : 'bg-[#eefaf2]'}`}>
+        <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border border-black/[0.05] ${isMaintenance ? 'bg-[#fff5df]' : isBusy ? 'bg-[#fff0ed]' : isEV ? 'bg-[#edf3ff]' : 'bg-[#eefaf2]'}`}>
           {carImageSrc
-            ? <img src={carImageSrc} alt={car.car_type} className={`w-full h-full object-cover ${!car.isActivated ? 'grayscale opacity-40' : ''}`}/>
-            : <Icon icon="ph:car-profile-duotone" width="30" height="30" className={isBusy ? 'text-[#ff6680]' : 'text-[#14c767]'} />}
+            ? <img src={carImageSrc} alt={car.car_type} className={`w-full h-full object-cover ${isMaintenance ? 'sepia-[.25] opacity-75' : !car.isActivated ? 'grayscale opacity-40' : ''}`}/>
+            : <Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:car-profile-duotone'} width="30" height="30" className={isMaintenance ? 'text-[#d57a00]' : isBusy ? 'text-[#ff6680]' : 'text-[#14c767]'} />}
         </div>
         <div className="min-w-0 flex-1">
-          <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
+          <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isMaintenance ? 'bg-[#fff0ce] text-[#a85f00]' : isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isMaintenance ? 'กำลังซ่อม' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
           <h3 className="text-[18px] font-bold tracking-[-.35px] truncate">{car.plate_number}</h3>
           <p className="text-[11px] text-[#6e7771] truncate">{car.car_type}</p>
-          <p className="mt-0.5 text-[10px] text-[#9aa19c] truncate flex items-center gap-1"><Icon icon={driverName ? 'ph:user-circle' : 'ph:map-pin'} width="12" height="12" />{driverName || logData?.location || 'ยังไม่มีข้อมูลการใช้งาน'}</p>
+          <p className="mt-0.5 text-[10px] text-[#9aa19c] truncate flex items-center gap-1"><Icon icon={isMaintenance ? 'ph:wrench' : driverName ? 'ph:user-circle' : 'ph:map-pin'} width="12" height="12" />{isMaintenance ? (car.maintenanceRecord?.description || 'อยู่ระหว่างตรวจซ่อม') : driverName || logData?.location || 'ยังไม่มีข้อมูลการใช้งาน'}</p>
         </div>
         <div className="w-[126px] flex-shrink-0 text-right sm:w-[145px]">
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${isBusy ? 'bg-[#ffe7ee] text-[#ed4d75]' : 'bg-[#dffbec] text-[#10a951]'}`}><span className={`w-1.5 h-1.5 rounded-full ${isBusy ? 'bg-[#ed4d75]' : 'bg-[#17c965]'}`}/>{isBusy ? 'ไม่ว่าง' : 'ว่างพร้อมใช้'}</span>
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${isMaintenance ? 'bg-[#fff0ce] text-[#a85f00]' : isBusy ? 'bg-[#ffe7ee] text-[#ed4d75]' : 'bg-[#dffbec] text-[#10a951]'}`}><span className={`w-1.5 h-1.5 rounded-full ${isMaintenance ? 'bg-[#f0a61a]' : isBusy ? 'bg-[#ed4d75]' : 'bg-[#17c965]'}`}/>{isMaintenance ? 'กำลังซ่อม' : isBusy ? 'ไม่ว่าง' : 'ว่างพร้อมใช้'}</span>
           <p className="mt-2 text-[9px] font-medium leading-4 text-[#7f8781]">{activityTimeText || 'ยังไม่มีประวัติการใช้งาน'}</p>
           {isBusy && logData?.start_time && <p className="mt-0.5 font-mono text-[9px] font-bold leading-4 tabular-nums text-[#ed4d75]">{durationLabel} <LiveTripDuration startValue={logData.start_time} /></p>}
-          {!isBusy && completedSummary && <p className="mt-0.5 text-[9px] font-bold leading-4 tabular-nums text-[#702082]">{completedSummary}</p>}
+          {!isBusy && !isMaintenance && completedSummary && <p className="mt-0.5 text-[9px] font-bold leading-4 tabular-nums text-[#702082]">{completedSummary}</p>}
         </div>
       </article>
     )
@@ -439,11 +459,12 @@ function CarSelector() {
         </section>
 
         <section className="pb-3 sm:pb-4">
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar px-5 lg:px-6 pb-2 lg:grid lg:grid-cols-4 lg:overflow-visible">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar px-5 lg:px-6 pb-2 lg:grid lg:grid-cols-5 lg:overflow-visible">
             {[
               {label:'รถทั้งหมด', value:cars.length, sub:'ในระบบ', icon:'ph:car-profile-duotone', accent:'#702082'},
               {label:'พร้อมใช้งาน', value:availableCars.length, sub:'คัน', icon:'ph:check-circle-duotone', accent:'#8b3c98'},
               {label:'กำลังใช้งาน', value:busyCars.length, sub:'คัน', icon:'ph:steering-wheel-duotone', accent:'#d29f00'},
+              {label:'กำลังซ่อม', value:maintenanceCars.length, sub:'คัน', icon:'ph:wrench-duotone', accent:'#c26b00'},
               {label:'รถ EV', value:evCars.length, sub:'คัน', icon:'ph:lightning-duotone', accent:'#702082'}
             ].map(stat => <div key={stat.label} className="min-w-[118px] sm:min-w-[138px] lg:min-w-0 h-[82px] sm:h-[96px] lg:h-[110px] bg-white rounded-[16px] sm:rounded-[19px] p-2.5 sm:p-3 lg:p-4 border border-[#eee3f1]" style={{boxShadow:'0 6px 22px rgba(91,35,104,.08)'}}><div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-bold whitespace-nowrap"><span className="w-5 h-5 sm:w-6 sm:h-6 rounded-[7px] sm:rounded-[8px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="14" height="14" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-1 sm:mt-1.5 text-[18px] sm:text-[21px] lg:text-[28px] font-bold leading-tight" style={{color:stat.accent}}>{stat.value} <span className="text-[10px] sm:text-[12px]">{stat.sub}</span></p><p className="mt-0.5 text-[8px] sm:text-[10px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="9" height="9" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
           </div>
@@ -481,7 +502,7 @@ function CarSelector() {
         <section className="relative -mt-1 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><h2 className="text-[25px] font-bold tracking-[-.7px] text-[#4b1560]">รายการรถ</h2><Icon icon="ph:info-duotone" width="21" height="21" className="text-[#702082]" /></div><button onClick={() => router.push('/dashboard')} className="w-10 h-10 rounded-full bg-[#f3eaf5] text-[#702082] flex items-center justify-center" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="22" height="22" /></button></div>
           <div className="flex items-center justify-between mt-6 mb-1 text-[13px] text-[#646a66]"><span>{cars.length} รายการ</span><span>สถานะล่าสุด</span></div>
-          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{busyCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
+          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{busyCars.map(renderCarRow)}{maintenanceCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
           <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
         </section>
 
@@ -563,14 +584,17 @@ function CarSelector() {
         const { car, logData } = carDetailModal
         const carImageSrc = getCarImage(car)
         const isBusy = car.status === 'busy'
-        const driverName = logData?.driver_name
+        const isMaintenance = car.status === 'maintenance'
+        const driverName = isMaintenance ? car.maintenanceRecord?.reported_by?.full_name : logData?.driver_name
         const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
-        const activityTimeText = isBusy
+        const activityTimeText = isMaintenance
+          ? formatTripDateTime(car.maintenanceRecord?.reported_at, 'แจ้งซ่อม')
+          : isBusy
           ? formatTripDateTime(logData?.start_time, 'ออก')
           : formatTripDateTime(logData?.end_time, 'คืนล่าสุด')
-        const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
-        const distance = getTripDistance(logData)
-        const hasDuration = Boolean(logData?.start_time && (isBusy || logData?.end_time))
+        const durationText = isBusy || isMaintenance ? null : formatTripDuration(logData?.start_time, logData?.end_time)
+        const distance = isMaintenance ? null : getTripDistance(logData)
+        const hasDuration = !isMaintenance && Boolean(logData?.start_time && (isBusy || logData?.end_time))
         const durationLabel = isBusy ? (isEV ? 'ระยะเวลาชาร์จปัจจุบัน' : 'ระยะเวลาที่ใช้งานมา') : (isEV ? 'ระยะเวลาชาร์จครั้งล่าสุด' : 'ระยะเวลาใช้งานครั้งล่าสุด')
 
         return (
@@ -597,9 +621,9 @@ function CarSelector() {
                   <p className="mb-1 text-[13px] font-medium text-white/90 truncate">{car.model || 'ยานพาหนะ'} · {car.car_type}</p>
                   <div className="flex items-end justify-between gap-3">
                     <h1 className="min-w-0 truncate text-[29px] sm:text-[36px] font-bold tracking-[-1px] leading-none">{car.plate_number}</h1>
-                    <span className={`mb-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-lg ${!car.isActivated ? 'bg-white/25 text-white' : isBusy ? 'bg-[#ff4438] text-white' : 'bg-[#dff8e8] text-[#176a37]'}`}>
-                      <span className={`h-2 w-2 rounded-full ${isBusy ? 'bg-[#ffb5ad] animate-pulse' : 'bg-[#34c759]'}`} />
-                      {!car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'ใช้งานอยู่') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+                    <span className={`mb-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-lg ${isMaintenance ? 'bg-[#f0a61a] text-white' : !car.isActivated ? 'bg-white/25 text-white' : isBusy ? 'bg-[#ff4438] text-white' : 'bg-[#dff8e8] text-[#176a37]'}`}>
+                      <span className={`h-2 w-2 rounded-full ${isMaintenance ? 'bg-[#fff1b8]' : isBusy ? 'bg-[#ffb5ad] animate-pulse' : 'bg-[#34c759]'}`} />
+                      {isMaintenance ? 'กำลังซ่อม' : !car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'ใช้งานอยู่') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
                     </span>
                   </div>
                 </div>
@@ -612,11 +636,11 @@ function CarSelector() {
                   <div className="absolute -right-16 -bottom-28 h-60 w-60 rounded-full border-[22px] border-white/10" />
                   <div className="relative flex items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#ffdd00] text-[#4b1560] shadow-md">
-                      <Icon icon={isBusy ? 'ph:steering-wheel-duotone' : 'ph:car-profile-duotone'} width="31" height="31" />
+                      <Icon icon={isMaintenance ? 'ph:wrench-duotone' : isBusy ? 'ph:steering-wheel-duotone' : 'ph:car-profile-duotone'} width="31" height="31" />
                     </div>
                     <div className="min-w-0">
                       <p className="mb-1 text-[10px] font-bold tracking-[.12em] text-[#ffea71]">PEA FLEET · สถานะรถล่าสุด</p>
-                      <h2 className="text-[20px] font-bold leading-tight">{isBusy ? 'ข้อมูลการใช้งาน' : 'รายละเอียดรถยนต์'}</h2>
+                      <h2 className="text-[20px] font-bold leading-tight">{isMaintenance ? 'ข้อมูลการแจ้งซ่อม' : isBusy ? 'ข้อมูลการใช้งาน' : 'รายละเอียดรถยนต์'}</h2>
                     </div>
                   </div>
                   <div className="relative mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1.5 text-[10px] font-semibold text-white/95">
@@ -627,10 +651,28 @@ function CarSelector() {
 
                 <section className="mt-2.5 rounded-[20px] border border-[#eadfed] bg-white p-3 shadow-[0_7px_18px_rgba(91,35,104,.07)]">
                   <div className="mb-2 flex items-center gap-1.5 text-[#702082]">
-                    <Icon icon="ph:info-duotone" width="24" height="24" />
-                    <h3 className="text-[18px] font-bold">รายละเอียดการใช้งาน</h3>
+                    <Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:info-duotone'} width="24" height="24" />
+                    <h3 className="text-[18px] font-bold">{isMaintenance ? 'รายละเอียดการซ่อม' : 'รายละเอียดการใช้งาน'}</h3>
                   </div>
                   <div className="space-y-2">
+                    {isMaintenance ? <>
+                      <div className="flex gap-2.5 rounded-[15px] border border-[#f1d7a4] bg-[#fffaf0] p-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#f2d08d] bg-[#fff1cf] text-[#b56700]"><Icon icon="ph:warning-duotone" width="23" height="23" /></div>
+                        <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e7650]">ประเภทปัญหา</p><p className="mt-0.5 text-[16px] font-bold text-[#5d3908]">{car.maintenanceRecord?.maintenance_issue_categories?.name || 'อยู่ระหว่างตรวจซ่อม'}</p></div>
+                      </div>
+                      <div className="flex gap-2.5 rounded-[15px] border border-[#f1d7a4] bg-[#fffaf0] p-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#f2d08d] bg-[#fff1cf] text-[#b56700]"><Icon icon="ph:note-pencil-duotone" width="23" height="23" /></div>
+                        <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e7650]">อาการที่แจ้ง</p><p className="mt-0.5 text-[15px] font-bold leading-snug text-[#5d3908]">{car.maintenanceRecord?.description || 'ไม่มีรายละเอียดเพิ่มเติม'}</p></div>
+                      </div>
+                      <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#dce8f4] bg-[#eff8ff] text-[#702082]"><Icon icon="ph:user-circle-duotone" width="24" height="24" /></div>
+                        <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">ผู้แจ้งซ่อม</p><p className="mt-0.5 truncate text-[16px] font-bold text-[#4b1560]">{driverName || 'ไม่พบข้อมูลผู้แจ้ง'}</p></div>
+                      </div>
+                      <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#eadfed] bg-[#f8f3fa] text-[#8e8e93]"><Icon icon="ph:clock-duotone" width="23" height="23" /></div>
+                        <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">วัน–เวลาที่แจ้งซ่อม</p><p className="mt-0.5 text-[16px] font-bold text-[#4b1560]">{activityTimeText || 'ไม่พบข้อมูลเวลา'}</p></div>
+                      </div>
+                    </> : <>
                     <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#dce8f4] bg-[#eff8ff] text-[#702082]"><Icon icon="ph:user-circle-duotone" width="24" height="24" /></div>
                       <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">ผู้ขับขี่</p><p className="mt-0.5 truncate text-[16px] font-bold text-[#4b1560]">{driverName || 'ไม่มีข้อมูลผู้ขับ'}</p></div>
@@ -651,6 +693,7 @@ function CarSelector() {
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isBusy ? 'border-[#ffd1ce] bg-[#fff2f1] text-[#ed4d75]' : 'border-[#eadfed] bg-[#f8f3fa] text-[#702082]'}`}><Icon icon="ph:timer-duotone" width="23" height="23" /></div>
                       <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">{durationLabel}</p><p className={`mt-0.5 font-mono text-[16px] font-bold tabular-nums ${isBusy ? 'text-[#ed4d75]' : 'text-[#4b1560]'}`}>{isBusy ? <LiveTripDuration startValue={logData.start_time} /> : durationText}</p></div>
                     </div>}
+                    </>}
                   </div>
                 </section>
 
@@ -662,11 +705,39 @@ function CarSelector() {
                     <span className="flex items-center justify-center gap-2"><Icon icon="ph:phone-call-duotone" width="21" height="21" />โทรหาผู้ขับ</span>
                   </button>}
                 </div>
+                <button onClick={() => {
+                  if (isBusy) {
+                    window.location.href = `/?car_id=${car.id}`
+                    return
+                  }
+                  setMaintenanceModal({
+                    isOpen: true,
+                    mode: isMaintenance ? 'complete' : 'report',
+                    car,
+                    maintenanceRecord: car.maintenanceRecord,
+                  })
+                }} className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-[15px] py-3.5 text-[14px] font-bold text-white active:scale-[.98] ${isMaintenance ? 'bg-[#28a653] shadow-[0_8px_18px_rgba(40,166,83,.22)]' : 'bg-[#d57a00] shadow-[0_8px_18px_rgba(213,122,0,.22)]'}`}>
+                  <Icon icon={isMaintenance ? 'ph:check-circle-duotone' : isBusy ? 'ph:arrow-bend-down-left-duotone' : 'ph:wrench-duotone'} width="22" height="22" />
+                  {isMaintenance ? 'ซ่อมเสร็จแล้ว / เปิดใช้งานรถ' : isBusy ? 'คืนรถและส่งซ่อม' : 'แจ้งรถชำรุด / ส่งซ่อม'}
+                </button>
               </main>
             </div>
           </div>
         )
       })()}
+
+      <MaintenanceActionModal
+        isOpen={maintenanceModal.isOpen}
+        mode={maintenanceModal.mode}
+        car={maintenanceModal.car}
+        maintenanceRecord={maintenanceModal.maintenanceRecord}
+        onClose={() => setMaintenanceModal({ isOpen: false, mode: 'report', car: null, maintenanceRecord: null })}
+        onSuccess={() => {
+          setMaintenanceModal({ isOpen: false, mode: 'report', car: null, maintenanceRecord: null })
+          setCarDetailModal(null)
+          fetchCars()
+        }}
+      />
 
       {/* ── Modal คู่มือ (Bottom Sheet) ── */}
       {showInstructions && (
@@ -1626,6 +1697,7 @@ function CarActionForm({ carId }) {
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
+  const [maintenanceReturnModalOpen, setMaintenanceReturnModalOpen] = useState(false)
 
   // Inputs
   const [employeeId, setEmployeeId] = useState('')
@@ -1760,7 +1832,7 @@ function CarActionForm({ carId }) {
            } else {
                setMileage('0')
            }
-        } else {
+        } else if (c.status === 'busy') {
            const { data: l } = await supabase.from('trip_logs').select('*').eq('car_id', carId).eq('is_completed', false).limit(1).single()
            if (l) setActiveLog(l)
         }
@@ -1867,8 +1939,10 @@ function CarActionForm({ carId }) {
 
     try {
       const { data: latestCar } = await supabase.from('cars').select('status').eq('id', carId).single()
-      if (latestCar.status === 'busy') {
-         alert('⚠️ รถคันนี้เพิ่งถูกบุคคลอื่นทำรายการนำออกไปแล้วครับ')
+      if (latestCar.status !== 'available') {
+         alert(latestCar.status === 'maintenance'
+           ? '⚠️ รถคันนี้กำลังซ่อมและยังไม่พร้อมใช้งานครับ'
+           : '⚠️ รถคันนี้เพิ่งถูกบุคคลอื่นทำรายการนำออกไปแล้วครับ')
          window.location.href = '/'
          return
       }
@@ -1994,10 +2068,46 @@ function CarActionForm({ carId }) {
     }
   }
 
+  const openReturnAndMaintenance = () => {
+    const isEV = car?.fuel_type?.toUpperCase() === 'EV'
+    const startM = parseFloat(activeLog?.start_mileage)
+
+    if (isEV) {
+      if (!battAfter) return alert('กรุณากรอก % แบตเตอรี่หลังชาร์จ')
+      if (activeLog?.battery_before && parseInt(battAfter) <= parseInt(activeLog.battery_before)) {
+        return alert('❌ ข้อมูลผิดพลาด!\nเปอร์เซ็นต์แบตเตอรี่ "หลังชาร์จ" ต้องมากกว่า "ก่อนชาร์จ"')
+      }
+    } else {
+      if (!endMileage) return alert('กรุณากรอกเลขไมล์ล่าสุด (จบงาน)')
+      if (parseFloat(endMileage) < startM) {
+        return alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endMileage}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
+      }
+      if (hasRefueled === null) return alert('กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่')
+      if (hasRefueled === true && (!fuelLiters || !fuelCost)) {
+        return alert('กรุณากรอกข้อมูลปริมาณน้ำมันและจำนวนเงินให้ครบถ้วน')
+      }
+    }
+
+    setMaintenanceReturnModalOpen(true)
+  }
+
   if (!car) return (
     <div className="min-h-screen bg-[#f8f3fa] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
       <div className="w-8 h-8 border-[2.5px] border-[#d9cadd] border-t-[#4b1560] rounded-full animate-spin"/>
     </div>
+  )
+
+  if (car.status === 'maintenance') return (
+    <main className="min-h-screen bg-[#f8f3fa] px-5 py-10 font-sarabun flex items-center justify-center">
+      <section className="w-full max-w-[430px] rounded-[28px] border border-[#f0d293] bg-white p-6 text-center shadow-[0_18px_45px_rgba(103,61,7,.14)]">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#fff1cf] text-[#c26b00]"><Icon icon="ph:wrench-duotone" width="46" height="46" /></div>
+        <p className="mt-5 text-[11px] font-bold tracking-[.12em] text-[#b56c09]">สถานะรถล่าสุด</p>
+        <h1 className="mt-1 text-[27px] font-bold text-[#4b2b05]">รถกำลังซ่อม</h1>
+        <p className="mt-2 text-[18px] font-bold text-[#702082]">{car.plate_number}</p>
+        <p className="mt-3 text-[13px] leading-relaxed text-[#796849]">รถคันนี้ยังไม่พร้อมใช้งาน จึงไม่สามารถนำรถออกหรือเริ่มชาร์จผ่าน QR ได้</p>
+        <button onClick={() => window.location.href = '/'} className="mt-6 flex w-full items-center justify-center gap-2 rounded-[17px] bg-[#702082] py-4 text-[15px] font-bold text-white active:scale-[.98]"><Icon icon="ph:house-duotone" width="21" height="21" />กลับหน้า Home</button>
+      </section>
+    </main>
   )
 
   const isEV = car?.fuel_type?.toUpperCase() === 'EV';
@@ -2525,6 +2635,11 @@ function CarActionForm({ carId }) {
                 {loading ? 'กำลังบันทึก...' : (isEV ? 'ยืนยันเลิกชาร์จ  →' : 'ยืนยันคืนรถ  →')}
               </button>
 
+              <button onClick={openReturnAndMaintenance} disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-[18px] border-2 border-[#e2a23c] bg-[#fff8e8] py-4 text-[15px] font-bold text-[#a85f00] transition-all active:scale-[.98] disabled:opacity-50">
+                <Icon icon="ph:wrench-duotone" width="22" height="22" />คืนรถและส่งซ่อม
+              </button>
+
               {!isEV && hasRefueled === null && (
                 <p className="text-center text-[12px] text-[#ff3b30] font-medium -mt-1">กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่</p>
               )}
@@ -2589,6 +2704,20 @@ function CarActionForm({ carId }) {
           </div>
         </div>
       )}
+
+      <MaintenanceActionModal
+        isOpen={maintenanceReturnModalOpen}
+        mode="return"
+        car={car}
+        returnPayload={{
+          endMileage: isEV ? null : parseInt(endMileage || 0),
+          fuelLiters: !isEV && hasRefueled && fuelLiters ? parseFloat(fuelLiters) : 0,
+          fuelCost: !isEV && hasRefueled && fuelCost ? parseFloat(fuelCost) : 0,
+          batteryAfter: isEV ? parseInt(battAfter || 0) : null,
+        }}
+        onClose={() => setMaintenanceReturnModalOpen(false)}
+        onSuccess={() => { window.location.href = '/' }}
+      />
 
     </div>
   )
