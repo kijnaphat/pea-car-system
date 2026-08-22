@@ -3,6 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
+import {
+  buildAnomalyReviewSet,
+  buildTripSequence,
+  countPendingAnomalies,
+  getIssueFingerprint,
+  getTripCar,
+  getTripIssues,
+  isEVTrip,
+  isRelevantMileageLog,
+  isTripAnomalyReviewed,
+  tripTime,
+} from '@/lib/tripAnomalies'
 
 const THAI_DATE = new Intl.DateTimeFormat('th-TH', {
   dateStyle: 'medium',
@@ -19,54 +31,7 @@ const mileage = value => value === null || value === undefined
   ? '—'
   : Number(value).toLocaleString('th-TH')
 
-const tripTime = trip => new Date(trip.start_time || trip.created_at).getTime()
-
-const getCar = trip => Array.isArray(trip.cars) ? trip.cars[0] : trip.cars
-
-function buildTripSequence(logs) {
-  const byCar = new Map()
-
-  logs.forEach(log => {
-    const carLogs = byCar.get(log.car_id) || []
-    carLogs.push(log)
-    byCar.set(log.car_id, carLogs)
-  })
-
-  const decorated = new Map()
-  byCar.forEach(carLogs => {
-    carLogs.sort((a, b) => tripTime(a) - tripTime(b) || Number(a.id) - Number(b.id))
-    carLogs.forEach((trip, index) => {
-      decorated.set(trip.id, {
-        ...trip,
-        previousTrip: carLogs[index - 1] || null,
-        nextTrip: carLogs[index + 1] || null,
-      })
-    })
-  })
-
-  return logs
-    .map(log => decorated.get(log.id))
-    .sort((a, b) => tripTime(b) - tripTime(a) || Number(b.id) - Number(a.id))
-}
-
-function getTripIssues(trip) {
-  const issues = []
-  const start = trip.start_mileage
-  const end = trip.end_mileage
-  const previousEnd = trip.previousTrip?.end_mileage
-
-  if (start !== null && end !== null && end < start) {
-    issues.push('เลขไมล์คืนต่ำกว่าเลขไมล์ออก')
-  }
-  if (start !== null && end !== null && end - start > 1000) {
-    issues.push('ระยะทางมากกว่า 1,000 กม.')
-  }
-  if (previousEnd !== null && previousEnd !== undefined && start !== null && previousEnd !== start) {
-    issues.push(`ไม่ต่อจากเที่ยวก่อน (${mileage(previousEnd)} กม.)`)
-  }
-
-  return issues
-}
+const getCar = getTripCar
 
 function MileageBox({ label, value, tone, onEdit, disabled }) {
   return (
@@ -92,11 +57,13 @@ function MileageBox({ label, value, tone, onEdit, disabled }) {
   )
 }
 
-export default function MileageCorrectionPanel() {
+export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
   const [logs, setLogs] = useState([])
   const [corrections, setCorrections] = useState([])
+  const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [reviewingTripId, setReviewingTripId] = useState(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
@@ -112,11 +79,10 @@ export default function MileageCorrectionPanel() {
     setLoading(true)
     setError('')
 
-    const [logsResult, correctionsResult] = await Promise.all([
+    const [logsResult, correctionsResult, reviewsResult] = await Promise.all([
       supabase
         .from('trip_logs')
-        .select('id, created_at, car_id, driver_name, start_time, end_time, start_mileage, end_mileage, is_completed, cars(id, plate_number, model, fuel_type)')
-        .not('start_mileage', 'is', null)
+        .select('id, created_at, car_id, driver_name, start_time, end_time, start_mileage, end_mileage, battery_before, battery_after, is_completed, cars(id, plate_number, model, fuel_type)')
         .order('start_time', { ascending: false })
         .limit(500),
       supabase
@@ -124,6 +90,10 @@ export default function MileageCorrectionPanel() {
         .select('id, batch_id, trip_log_id, field_name, old_value, new_value, reason, corrected_at')
         .order('corrected_at', { ascending: false })
         .limit(50),
+      supabase
+        .from('trip_anomaly_reviews')
+        .select('trip_log_id, issue_fingerprint, note, reviewed_at')
+        .order('reviewed_at', { ascending: false }),
     ])
 
     if (logsResult.error) {
@@ -138,10 +108,20 @@ export default function MileageCorrectionPanel() {
       return
     }
 
-    setLogs(logsResult.data || [])
+    if (reviewsResult.error) {
+      setError(`โหลดรายการที่ตรวจสอบแล้วไม่สำเร็จ: ${reviewsResult.error.message}`)
+      setLoading(false)
+      return
+    }
+
+    const nextLogs = logsResult.data || []
+    const nextReviews = reviewsResult.data || []
+    setLogs(nextLogs)
     setCorrections(correctionsResult.data || [])
+    setReviews(nextReviews)
+    onAnomalyCountChange?.(countPendingAnomalies(nextLogs, nextReviews))
     setLoading(false)
-  }, [])
+  }, [onAnomalyCountChange])
 
   useEffect(() => {
     const timer = window.setTimeout(loadData, 0)
@@ -149,6 +129,7 @@ export default function MileageCorrectionPanel() {
   }, [loadData])
 
   const sequencedLogs = useMemo(() => buildTripSequence(logs), [logs])
+  const reviewSet = useMemo(() => buildAnomalyReviewSet(reviews), [reviews])
   const logsById = useMemo(() => new Map(sequencedLogs.map(trip => [String(trip.id), trip])), [sequencedLogs])
 
   const filteredLogs = useMemo(() => {
@@ -157,14 +138,16 @@ export default function MileageCorrectionPanel() {
     const to = dateTo ? new Date(`${dateTo}T23:59:59.999`).getTime() : null
 
     return sequencedLogs.filter(trip => {
+      if (!isRelevantMileageLog(trip)) return false
       const car = getCar(trip)
       const issues = getTripIssues(trip)
+      const reviewed = isTripAnomalyReviewed(trip, reviewSet, issues)
       const time = tripTime(trip)
       const matchesSearch = !query || [car?.plate_number, car?.model, trip.driver_name, trip.id]
         .filter(Boolean)
         .some(value => String(value).toLocaleLowerCase('th-TH').includes(query))
       const matchesStatus = statusFilter === 'all'
-        || (statusFilter === 'issues' && issues.length > 0)
+        || (statusFilter === 'issues' && issues.length > 0 && !reviewed)
         || (statusFilter === 'active' && !trip.is_completed)
         || (statusFilter === 'completed' && trip.is_completed)
 
@@ -173,11 +156,11 @@ export default function MileageCorrectionPanel() {
         && (from === null || time >= from)
         && (to === null || time <= to)
     })
-  }, [sequencedLogs, search, statusFilter, dateFrom, dateTo])
+  }, [sequencedLogs, reviewSet, search, statusFilter, dateFrom, dateTo])
 
   const openCorrection = (trip, fieldName) => {
     const oldValue = trip[fieldName]
-    const adjacent = fieldName === 'start_mileage' ? trip.previousTrip : trip.nextTrip
+    const adjacent = isEVTrip(trip) ? null : (fieldName === 'start_mileage' ? trip.previousTrip : trip.nextTrip)
     const adjacentValue = fieldName === 'start_mileage' ? adjacent?.end_mileage : adjacent?.start_mileage
     const canSync = Boolean(adjacent && adjacentValue === oldValue)
 
@@ -198,8 +181,11 @@ export default function MileageCorrectionPanel() {
   }
 
   const parsedNewValue = newValue === '' ? null : Number(newValue)
-  const previewStart = modal?.fieldName === 'start_mileage' ? parsedNewValue : modal?.trip.start_mileage
-  const previewEnd = modal?.fieldName === 'end_mileage' ? parsedNewValue : modal?.trip.end_mileage
+  const modalIsEV = Boolean(modal && isEVTrip(modal.trip))
+  const previewStart = modalIsEV ? parsedNewValue : (modal?.fieldName === 'start_mileage' ? parsedNewValue : modal?.trip.start_mileage)
+  const previewEnd = modalIsEV
+    ? (modal?.trip.end_mileage === null ? null : parsedNewValue)
+    : (modal?.fieldName === 'end_mileage' ? parsedNewValue : modal?.trip.end_mileage)
   const previewDistance = previewStart !== null && previewEnd !== null ? previewEnd - previewStart : null
 
   const validationMessage = useMemo(() => {
@@ -229,13 +215,20 @@ export default function MileageCorrectionPanel() {
 
     setSaving(true)
     setError('')
-    const { data, error: rpcError } = await supabase.rpc('admin_correct_trip_mileage', {
-      p_trip_log_id: modal.trip.id,
-      p_field_name: modal.fieldName,
-      p_new_value: parsedNewValue,
-      p_reason: reason.trim(),
-      p_sync_adjacent: syncAdjacent && modal.canSync,
-    })
+    const ev = isEVTrip(modal.trip)
+    const { data, error: rpcError } = ev
+      ? await supabase.rpc('admin_correct_ev_charge_mileage', {
+          p_trip_log_id: modal.trip.id,
+          p_new_value: parsedNewValue,
+          p_reason: reason.trim(),
+        })
+      : await supabase.rpc('admin_correct_trip_mileage', {
+          p_trip_log_id: modal.trip.id,
+          p_field_name: modal.fieldName,
+          p_new_value: parsedNewValue,
+          p_reason: reason.trim(),
+          p_sync_adjacent: syncAdjacent && modal.canSync,
+        })
 
     if (rpcError) {
       setError(`แก้ไขเลขไมล์ไม่สำเร็จ: ${rpcError.message}`)
@@ -243,10 +236,34 @@ export default function MileageCorrectionPanel() {
       return
     }
 
-    const syncedText = data?.synced_trip_log_id ? ' และปรับเที่ยวที่เชื่อมต่อให้แล้ว' : ''
+    const syncedText = ev ? ' และปรับเลขไมล์ก่อน–หลังชาร์จให้ตรงกันแล้ว' : (data?.synced_trip_log_id ? ' และปรับเที่ยวที่เชื่อมต่อให้แล้ว' : '')
     setSuccess(`แก้ไขเลขไมล์สำเร็จ${syncedText}`)
     setModal(null)
     setSaving(false)
+    await loadData()
+  }
+
+  const acknowledgeAnomaly = async (trip, issues) => {
+    const fingerprint = getIssueFingerprint(trip, issues)
+    if (!fingerprint || !window.confirm('ยืนยันว่าตรวจสอบรายการนี้แล้ว และข้อมูลที่แสดงถูกต้องจริง?')) return
+
+    setReviewingTripId(trip.id)
+    setError('')
+    setSuccess('')
+    const { error: rpcError } = await supabase.rpc('admin_acknowledge_trip_anomaly', {
+      p_trip_log_id: trip.id,
+      p_issue_fingerprint: fingerprint,
+      p_note: 'ตรวจสอบแล้ว ข้อมูลถูกต้อง',
+    })
+
+    if (rpcError) {
+      setError(`ยืนยันรายการไม่สำเร็จ: ${rpcError.message}`)
+      setReviewingTripId(null)
+      return
+    }
+
+    setSuccess('บันทึกว่าตรวจสอบแล้ว รายการนี้จะไม่ถูกนับเป็นความผิดปกติค้างอยู่')
+    setReviewingTripId(null)
     await loadData()
   }
 
@@ -267,7 +284,7 @@ export default function MileageCorrectionPanel() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#8e3ba0]">Mileage correction</p>
-                <h2 className="mt-1 text-[20px] font-bold text-[#4b1560]">แก้เลขไมล์{modal.fieldName === 'start_mileage' ? 'ตอนนำรถออก' : 'ตอนคืนรถ'}</h2>
+                <h2 className="mt-1 text-[20px] font-bold text-[#4b1560]">{modalIsEV ? 'แก้เลขไมล์ช่วงชาร์จ EV' : `แก้เลขไมล์${modal.fieldName === 'start_mileage' ? 'ตอนนำรถออก' : 'ตอนคืนรถ'}`}</h2>
                 <p className="mt-1 text-[12px] text-[#765c7c]">{getCar(modal.trip)?.plate_number || `รายการ #${modal.trip.id}`} · {THAI_DATE.format(new Date(modal.trip.start_time || modal.trip.created_at))}</p>
               </div>
               <button type="button" onClick={closeModal} className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3edf5] text-[#765c7c]" aria-label="ปิด"><Icon icon="ph:x-bold" width="17" height="17" /></button>
@@ -291,6 +308,8 @@ export default function MileageCorrectionPanel() {
               onChange={event => setNewValue(event.target.value)}
               className="mt-2 w-full rounded-[14px] border border-[#dac8df] bg-white px-4 py-4 text-[22px] font-bold text-[#35133f] outline-none focus:border-[#702082] focus:ring-2 focus:ring-[#702082]/10"
             />
+
+            {modalIsEV && <p className="mt-2 rounded-[11px] bg-[#f8f5ff] px-3 py-2 text-[10px] font-semibold leading-5 text-[#5e3ab7]">ระบบจะปรับเลขไมล์ก่อนและหลังชาร์จเป็นค่าเดียวกัน พร้อมบันทึกประวัติทั้งสองจุด</p>}
 
             {previewDistance !== null && (
               <div className={`mt-3 flex items-center justify-between rounded-[12px] px-4 py-3 text-[12px] ${previewDistance < 0 || previewDistance > 1000 ? 'bg-[#fff0ef] text-[#c83c35]' : 'bg-[#effaf2] text-[#248a3d]'}`}>
@@ -340,7 +359,7 @@ export default function MileageCorrectionPanel() {
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
               <div className="flex items-center gap-2"><Icon icon="ph:speedometer-duotone" width="24" height="24" className="text-[#702082]" /><h2 className="text-[17px] font-bold text-[#4b1560]">ค้นหารายการที่ต้องแก้</h2></div>
-              <p className="mt-1 text-[11px] text-[#846c89]">แก้ได้เฉพาะเลขไมล์ออกและเลขไมล์คืน พร้อมบันทึกประวัติทุกครั้ง</p>
+              <p className="mt-1 text-[11px] text-[#846c89]">รถทั่วไปตรวจเลขไมล์ต่อเนื่อง ส่วนรถ EV ตรวจเปอร์เซ็นต์แบตเป็นหลัก และเก็บประวัติทุกการแก้ไข</p>
             </div>
             <button type="button" onClick={loadData} className="flex h-10 items-center justify-center gap-2 rounded-[12px] border border-[#dfcfe4] bg-[#f8f3fa] px-4 text-[11px] font-bold text-[#702082]"><Icon icon="ph:arrows-clockwise-bold" width="16" height="16" />รีเฟรชข้อมูล</button>
           </div>
@@ -360,7 +379,7 @@ export default function MileageCorrectionPanel() {
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
             {[
               ['all', 'ทั้งหมด'],
-              ['issues', 'เฉพาะผิดปกติ'],
+              ['issues', 'ผิดปกติที่รอตรวจ'],
               ['active', 'กำลังใช้งาน'],
               ['completed', 'คืนรถแล้ว'],
             ].map(([value, label]) => (
@@ -373,32 +392,66 @@ export default function MileageCorrectionPanel() {
           {filteredLogs.map(trip => {
             const car = getCar(trip)
             const issues = getTripIssues(trip)
+            const reviewed = isTripAnomalyReviewed(trip, reviewSet, issues)
+            const pending = issues.length > 0 && !reviewed
+            const ev = isEVTrip(trip)
             const distance = trip.start_mileage !== null && trip.end_mileage !== null ? trip.end_mileage - trip.start_mileage : null
             return (
-              <article key={trip.id} className={`rounded-[22px] border bg-white p-5 shadow-[0_10px_30px_rgba(75,21,96,.06)] ${issues.length ? 'border-[#f1c2bd]' : 'border-[#eadfed]'}`}>
+              <article key={trip.id} className={`rounded-[22px] border bg-white p-5 shadow-[0_10px_30px_rgba(75,21,96,.06)] ${pending ? 'border-[#f1c2bd]' : reviewed ? 'border-[#bee8ca]' : 'border-[#eadfed]'}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-[17px] font-bold text-[#4b1560]">{car?.plate_number || `รถ #${trip.car_id}`}</h3>
-                      <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${trip.is_completed ? 'bg-[#eaf8ee] text-[#248a3d]' : 'bg-[#fff5cc] text-[#8b6800]'}`}>{trip.is_completed ? 'คืนรถแล้ว' : 'กำลังใช้งาน'}</span>
+                      {ev && <span className="rounded-full bg-[#eee8ff] px-2.5 py-1 text-[9px] font-bold text-[#5e3ab7]">EV</span>}
+                      <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold ${trip.is_completed ? 'bg-[#eaf8ee] text-[#248a3d]' : 'bg-[#fff5cc] text-[#8b6800]'}`}>{trip.is_completed ? (ev ? 'ชาร์จเสร็จแล้ว' : 'คืนรถแล้ว') : (ev ? 'กำลังชาร์จ' : 'กำลังใช้งาน')}</span>
+                      {reviewed && <span className="rounded-full bg-[#eaf8ee] px-2.5 py-1 text-[9px] font-bold text-[#248a3d]">ตรวจสอบแล้ว</span>}
                     </div>
                     <p className="mt-1 text-[11px] text-[#846c89]">{THAI_DATE.format(new Date(trip.start_time || trip.created_at))} · {trip.driver_name || 'ไม่ระบุผู้ขับ'}</p>
                   </div>
                   <span className="shrink-0 rounded-[9px] bg-[#f5edf7] px-2 py-1 text-[9px] font-bold text-[#846c89]">#{trip.id}</span>
                 </div>
 
-                {issues.length > 0 && <div className="mt-4 space-y-1 rounded-[13px] border border-[#ffd1ce] bg-[#fff3f2] p-3">{issues.map(issue => <p key={issue} className="flex items-center gap-2 text-[10px] font-semibold text-[#c83c35]"><Icon icon="ph:warning-fill" width="14" height="14" />{issue}</p>)}</div>}
+                {issues.length > 0 && (
+                  <div className={`mt-4 rounded-[13px] border p-3 ${reviewed ? 'border-[#bee8ca] bg-[#f1faf4]' : 'border-[#ffd1ce] bg-[#fff3f2]'}`}>
+                    <div className="space-y-1">
+                      {issues.map(issue => <p key={issue.code} className={`flex items-center gap-2 text-[10px] font-semibold ${reviewed ? 'text-[#248a3d]' : 'text-[#c83c35]'}`}><Icon icon={reviewed ? 'ph:check-circle-fill' : 'ph:warning-fill'} width="14" height="14" />{issue.label}</p>)}
+                    </div>
+                    {!reviewed && (
+                      <button
+                        type="button"
+                        disabled={reviewingTripId === trip.id}
+                        onClick={() => acknowledgeAnomaly(trip, issues)}
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-[11px] border border-[#e6aea9] bg-white px-3 py-2.5 text-[10px] font-bold text-[#a9332e] transition-all hover:bg-[#fff8f7] disabled:opacity-50"
+                      >
+                        <Icon icon={reviewingTripId === trip.id ? 'ph:spinner-gap-bold' : 'ph:check-circle-bold'} className={reviewingTripId === trip.id ? 'animate-spin' : ''} width="16" height="16" />
+                        {reviewingTripId === trip.id ? 'กำลังบันทึก...' : 'ตรวจสอบแล้ว ข้อมูลถูกต้อง'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {ev && (
+                  <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-[16px] border border-[#dcd0fa] bg-[#f8f5ff] p-4 text-center">
+                    <div><p className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8068aa]">แบตก่อนชาร์จ</p><p className="mt-1 text-[24px] font-bold text-[#5e3ab7]">{trip.battery_before ?? '—'}<span className="ml-0.5 text-[12px]">%</span></p></div>
+                    <Icon icon="ph:lightning-fill" width="20" height="20" className="text-[#f0a800]" />
+                    <div><p className="text-[9px] font-bold uppercase tracking-[.1em] text-[#8068aa]">แบตหลังชาร์จ</p><p className="mt-1 text-[24px] font-bold text-[#248a3d]">{trip.battery_after ?? '—'}<span className="ml-0.5 text-[12px]">%</span></p></div>
+                  </div>
+                )}
 
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <MileageBox label="ตอนนำรถออก" value={trip.start_mileage} onEdit={() => openCorrection(trip, 'start_mileage')} />
-                  <MileageBox label="ตอนคืนรถ" value={trip.end_mileage} tone="green" disabled={trip.end_mileage === null} onEdit={() => openCorrection(trip, 'end_mileage')} />
+                  <MileageBox label={ev ? 'ตอนเริ่มชาร์จ' : 'ตอนนำรถออก'} value={trip.start_mileage} onEdit={() => openCorrection(trip, 'start_mileage')} />
+                  <MileageBox label={ev ? 'หลังชาร์จเสร็จ' : 'ตอนคืนรถ'} value={trip.end_mileage} tone="green" disabled={trip.end_mileage === null} onEdit={() => openCorrection(trip, 'end_mileage')} />
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 divide-x divide-[#eadfed] rounded-[13px] border border-[#eadfed] bg-[#faf7fb] px-2 py-3 text-center">
-                  <div className="px-2"><p className="text-[9px] font-bold text-[#9a83a0]">เที่ยวก่อน</p><p className="mt-1 text-[11px] font-bold text-[#5a3b62]">{mileage(trip.previousTrip?.end_mileage)} กม.</p></div>
-                  <div className="px-2"><p className="text-[9px] font-bold text-[#9a83a0]">ระยะทาง</p><p className="mt-1 text-[11px] font-bold text-[#702082]">{mileage(distance)} กม.</p></div>
-                  <div className="px-2"><p className="text-[9px] font-bold text-[#9a83a0]">เที่ยวถัดไป</p><p className="mt-1 text-[11px] font-bold text-[#5a3b62]">{mileage(trip.nextTrip?.start_mileage)} กม.</p></div>
-                </div>
+                {ev ? (
+                  <p className="mt-3 rounded-[12px] bg-[#f7f1f8] px-3 py-2.5 text-center text-[10px] font-semibold text-[#765c7c]">รถ EV ใช้เปอร์เซ็นต์แบตเป็นหลัก · เลขไมล์ก่อนและหลังชาร์จควรเท่ากัน</p>
+                ) : (
+                  <div className="mt-3 grid grid-cols-3 divide-x divide-[#eadfed] rounded-[13px] border border-[#eadfed] bg-[#faf7fb] px-2 py-3 text-center">
+                    <div className="px-2"><p className="text-[9px] font-bold text-[#9a83a0]">เที่ยวก่อน</p><p className="mt-1 text-[11px] font-bold text-[#5a3b62]">{mileage(trip.previousTrip?.end_mileage)} กม.</p></div>
+                    <div className="px-2"><p className="text-[9px] font-bold text-[#9a83a0]">ระยะทาง</p><p className="mt-1 text-[11px] font-bold text-[#702082]">{mileage(distance)} กม.</p></div>
+                    <div className="px-2"><p className="text-[9px] font-bold text-[#9a83a0]">เที่ยวถัดไป</p><p className="mt-1 text-[11px] font-bold text-[#5a3b62]">{mileage(trip.nextTrip?.start_mileage)} กม.</p></div>
+                  </div>
+                )}
               </article>
             )
           })}
