@@ -53,6 +53,7 @@ export default function MaintenanceActionModal({
   const [otherRepairText, setOtherRepairText] = useState('')
   const [repairAmount, setRepairAmount] = useState('')
   const [repairListOpen, setRepairListOpen] = useState(false)
+  const [repairSearch, setRepairSearch] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const lookupSequenceRef = useRef(0)
@@ -70,6 +71,7 @@ export default function MaintenanceActionModal({
     setOtherRepairText('')
     setRepairAmount('')
     setRepairListOpen(false)
+    setRepairSearch('')
     setErrorMessage('')
     setSubmitting(false)
     lookupSequenceRef.current += 1
@@ -218,6 +220,10 @@ export default function MaintenanceActionModal({
 
   if (!isOpen || !car) return null
 
+  const visibleRepairItems = repairItems.filter(item => (
+    !repairSearch.trim() || item.name.toLocaleLowerCase('th-TH').includes(repairSearch.trim().toLocaleLowerCase('th-TH'))
+  ))
+
   return (
     <div className="fixed inset-0 z-[1200] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby="maintenance-modal-title">
       <button className="absolute inset-0 bg-[#24102b]/60 backdrop-blur-sm" onClick={submitting ? undefined : onClose} aria-label="ปิดหน้าต่าง" />
@@ -318,7 +324,13 @@ export default function MaintenanceActionModal({
                     </button>
                     {repairListOpen && (
                       <div className="mt-2 max-h-52 space-y-1 overflow-y-auto rounded-[14px] border border-[#eadfed] bg-white p-2">
-                        {repairItems.map(item => {
+                        <div className="sticky top-0 z-10 bg-white pb-1">
+                          <div className="relative">
+                            <Icon icon="ph:magnifying-glass" width="17" height="17" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#927a98]" />
+                            <input value={repairSearch} onChange={event => setRepairSearch(event.target.value)} placeholder="ค้นหารายการซ่อม" className="w-full rounded-[11px] bg-[#f8f3fa] py-2.5 pl-9 pr-3 text-[12px] text-[#4b1560] outline-none focus:ring-2 focus:ring-[#702082]/15" />
+                          </div>
+                        </div>
+                        {visibleRepairItems.map(item => {
                           const checked = selectedRepairCodes.includes(item.code)
                           return (
                             <button key={item.code} type="button" onClick={() => setSelectedRepairCodes(codes => checked ? codes.filter(code => code !== item.code) : [...codes, item.code])} className={`flex w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-left text-[13px] ${checked ? 'bg-[#f0e5f3] font-bold text-[#702082]' : 'text-[#5e4863]'}`}>
@@ -327,6 +339,7 @@ export default function MaintenanceActionModal({
                             </button>
                           )
                         })}
+                        {visibleRepairItems.length === 0 && <p className="py-5 text-center text-[11px] text-[#927a98]">ไม่พบรายการที่ค้นหา</p>}
                       </div>
                     )}
                     {selectedRepairCodes.length > 0 && (

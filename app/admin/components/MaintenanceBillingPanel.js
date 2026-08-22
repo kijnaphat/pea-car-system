@@ -16,6 +16,7 @@ export default function MaintenanceBillingPanel({ onPendingCountChange }) {
   const [selectedCodes, setSelectedCodes] = useState([])
   const [otherText, setOtherText] = useState('')
   const [amount, setAmount] = useState('')
+  const [repairSearch, setRepairSearch] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -58,6 +59,7 @@ export default function MaintenanceBillingPanel({ onPendingCountChange }) {
     setSelectedCodes([])
     setOtherText('')
     setAmount('')
+    setRepairSearch('')
     setErrorMessage('')
   }
 
@@ -92,6 +94,10 @@ export default function MaintenanceBillingPanel({ onPendingCountChange }) {
   }
 
   if (loading) return <div className="rounded-[22px] border border-[#eadfed] bg-white py-16 text-center text-[13px] text-[#846c89]">กำลังโหลดรายการรอวางบิล...</div>
+
+  const visibleRepairItems = repairItems.filter(item => (
+    !repairSearch.trim() || item.name.toLocaleLowerCase('th-TH').includes(repairSearch.trim().toLocaleLowerCase('th-TH'))
+  ))
 
   return (
     <>
@@ -146,11 +152,16 @@ export default function MaintenanceBillingPanel({ onPendingCountChange }) {
 
             <div className="mt-4 rounded-[18px] bg-white p-4">
               <label className="text-[11px] font-bold text-[#765c7c]">รายการซ่อมจริง (เลือกได้หลายรายการ)</label>
+              <div className="relative mt-2">
+                <Icon icon="ph:magnifying-glass" width="17" height="17" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#927a98]" />
+                <input value={repairSearch} onChange={event => setRepairSearch(event.target.value)} placeholder="ค้นหารายการซ่อม" className="w-full rounded-[11px] bg-[#f8f3fa] py-2.5 pl-9 pr-3 text-[12px] text-[#4b1560] outline-none focus:ring-2 focus:ring-[#702082]/15" />
+              </div>
               <div className="mt-2 max-h-56 space-y-1 overflow-y-auto">
-                {repairItems.map(item => {
+                {visibleRepairItems.map(item => {
                   const checked = selectedCodes.includes(item.code)
                   return <button key={item.code} type="button" onClick={() => toggleCode(item.code)} className={`flex w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-left text-[13px] ${checked ? 'bg-[#f0e5f3] font-bold text-[#702082]' : 'bg-[#faf7fb] text-[#5e4863]'}`}><Icon icon={checked ? 'ph:check-square-fill' : 'ph:square'} width="20" height="20" />{item.name}</button>
                 })}
+                {visibleRepairItems.length === 0 && <p className="py-5 text-center text-[11px] text-[#927a98]">ไม่พบรายการที่ค้นหา</p>}
               </div>
               {selectedCodes.includes('other') && <input value={otherText} onChange={event => setOtherText(event.target.value)} maxLength={300} placeholder="ระบุรายการซ่อมอื่น ๆ" className="mt-3 w-full rounded-[13px] bg-[#f8f3fa] px-4 py-3 text-[13px] text-[#4b1560] outline-none focus:ring-2 focus:ring-[#702082]/15" />}
 
