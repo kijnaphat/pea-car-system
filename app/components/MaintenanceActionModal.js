@@ -16,7 +16,7 @@ const MODE_COPY = {
   complete: {
     eyebrow: 'ปิดงานซ่อม',
     title: 'เปิดใช้งานรถอีกครั้ง',
-    description: 'ยืนยันว่าตรวจสอบหรือซ่อมเรียบร้อยแล้ว รถจะกลับมาพร้อมใช้งาน',
+    description: 'บันทึกรายการซ่อมและเปิดรถกลับมาใช้งาน หากยังไม่มีบิลสามารถส่งให้ Admin กรอกภายหลังได้',
     submit: 'ยืนยันเปิดใช้งานรถ',
     icon: 'ph:check-circle-duotone',
   },
@@ -41,12 +41,18 @@ export default function MaintenanceActionModal({
   const copy = MODE_COPY[mode] || MODE_COPY.report
   const isComplete = mode === 'complete'
   const [categories, setCategories] = useState([])
+  const [repairItems, setRepairItems] = useState([])
   const [staffCode, setStaffCode] = useState('')
   const [staff, setStaff] = useState(null)
   const [staffError, setStaffError] = useState('')
   const [categoryCode, setCategoryCode] = useState('')
   const [description, setDescription] = useState('')
   const [completionNote, setCompletionNote] = useState('ตรวจสอบและซ่อมเรียบร้อยแล้ว')
+  const [billingStatus, setBillingStatus] = useState('billed')
+  const [selectedRepairCodes, setSelectedRepairCodes] = useState([])
+  const [otherRepairText, setOtherRepairText] = useState('')
+  const [repairAmount, setRepairAmount] = useState('')
+  const [repairListOpen, setRepairListOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const lookupSequenceRef = useRef(0)
@@ -59,11 +65,26 @@ export default function MaintenanceActionModal({
     setCategoryCode('')
     setDescription('')
     setCompletionNote('ตรวจสอบและซ่อมเรียบร้อยแล้ว')
+    setBillingStatus('billed')
+    setSelectedRepairCodes([])
+    setOtherRepairText('')
+    setRepairAmount('')
+    setRepairListOpen(false)
     setErrorMessage('')
     setSubmitting(false)
     lookupSequenceRef.current += 1
 
-    if (!isComplete) {
+    if (isComplete) {
+      supabase
+        .from('maintenance_repair_items')
+        .select('code, name, display_order')
+        .eq('is_active', true)
+        .order('display_order')
+        .then(({ data, error }) => {
+          if (error) setErrorMessage('โหลดรายการซ่อมไม่สำเร็จ กรุณาลองใหม่')
+          else setRepairItems(data || [])
+        })
+    } else {
       supabase
         .from('maintenance_issue_categories')
         .select('code, name, display_order')
@@ -123,15 +144,33 @@ export default function MaintenanceActionModal({
       setErrorMessage('กรุณาระบุผลการตรวจหรือการซ่อมอย่างน้อย 3 ตัวอักษร')
       return
     }
+    if (isComplete && billingStatus === 'billed') {
+      if (selectedRepairCodes.length === 0) {
+        setErrorMessage('กรุณาเลือกรายการซ่อมอย่างน้อย 1 รายการ')
+        return
+      }
+      if (selectedRepairCodes.includes('other') && otherRepairText.trim().length < 2) {
+        setErrorMessage('กรุณาระบุรายละเอียดรายการซ่อมอื่น ๆ')
+        return
+      }
+      if (repairAmount === '' || Number(repairAmount) < 0) {
+        setErrorMessage('กรุณากรอกจำนวนเงินค่าซ่อมตั้งแต่ 0 บาทขึ้นไป')
+        return
+      }
+    }
 
     setSubmitting(true)
     try {
       let request
       if (mode === 'complete') {
-        request = supabase.rpc('complete_car_maintenance', {
+        request = supabase.rpc('complete_car_maintenance_v2', {
           p_car_id: Number(car.id),
           p_staff_code: staffCode,
           p_completion_note: completionNote.trim(),
+          p_billing_status: billingStatus,
+          p_repair_item_codes: billingStatus === 'billed' ? selectedRepairCodes : [],
+          p_other_repair_text: billingStatus === 'billed' && selectedRepairCodes.includes('other') ? otherRepairText.trim() : null,
+          p_repair_amount: billingStatus === 'billed' ? Number(repairAmount) : null,
         })
       } else if (mode === 'return') {
         request = supabase.rpc('return_car_and_report_maintenance', {
@@ -161,7 +200,9 @@ export default function MaintenanceActionModal({
       }
 
       const successMessage = mode === 'complete'
-        ? '✅ เปิดใช้งานรถเรียบร้อยแล้ว'
+        ? billingStatus === 'pending_invoice'
+          ? '✅ เปิดใช้งานรถแล้ว และส่งรายการรอข้อมูลวางบิลให้ Admin เรียบร้อย'
+          : '✅ เปิดใช้งานรถและบันทึกรายการซ่อมลงใบ ยพ.6 เรียบร้อยแล้ว'
         : mode === 'return'
           ? '✅ คืนรถและส่งซ่อมเรียบร้อยแล้ว'
           : '✅ แจ้งส่งซ่อมเรียบร้อยแล้ว'
@@ -244,6 +285,66 @@ export default function MaintenanceActionModal({
                   {categories.map(category => <option key={category.code} value={category.code}>{category.name}</option>)}
                 </select>
               </div>
+            )}
+
+            {isComplete && (
+              <>
+                <div className="rounded-[18px] border border-[#eadfed] bg-white p-4 shadow-sm">
+                  <label className="text-[11px] font-bold text-[#765c7c]">สถานะใบวางบิล</label>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => setBillingStatus('billed')} className={`rounded-[14px] border px-3 py-3 text-left ${billingStatus === 'billed' ? 'border-[#28a653] bg-[#effaf3] text-[#207c42]' : 'border-[#eadfed] bg-[#faf7fb] text-[#765c7c]'}`}>
+                      <span className="block text-[13px] font-bold">มีข้อมูลบิลแล้ว</span>
+                      <span className="mt-0.5 block text-[10px]">กรอกรายการและยอดเงิน</span>
+                    </button>
+                    <button type="button" onClick={() => setBillingStatus('pending_invoice')} className={`rounded-[14px] border px-3 py-3 text-left ${billingStatus === 'pending_invoice' ? 'border-[#d57a00] bg-[#fff8e8] text-[#8a5200]' : 'border-[#eadfed] bg-[#faf7fb] text-[#765c7c]'}`}>
+                      <span className="block text-[13px] font-bold">ยังไม่วางบิล</span>
+                      <span className="mt-0.5 block text-[10px]">ส่งให้ Admin กรอกภายหลัง</span>
+                    </button>
+                  </div>
+                  {billingStatus === 'pending_invoice' && (
+                    <div className="mt-3 flex items-start gap-2 rounded-[13px] bg-[#fff3d6] px-3 py-2.5 text-[11px] leading-relaxed text-[#805000]">
+                      <Icon icon="ph:bell-ringing-duotone" width="18" height="18" className="mt-0.5 shrink-0" />
+                      <span>รถจะเปิดใช้งานได้ทันที แต่ยังไม่ลงใบ ยพ.6 จนกว่า Admin จะกรอกรายการซ่อมและจำนวนเงินครบ</span>
+                    </div>
+                  )}
+                </div>
+
+                {billingStatus === 'billed' && (
+                  <div className="rounded-[18px] border border-[#eadfed] bg-white p-4 shadow-sm">
+                    <label className="text-[11px] font-bold text-[#765c7c]">รายการซ่อมจริง (เลือกได้หลายรายการ)</label>
+                    <button type="button" onClick={() => setRepairListOpen(value => !value)} className="mt-2 flex w-full items-center justify-between rounded-[14px] bg-[#f8f3fa] px-4 py-3.5 text-left text-[14px] font-semibold text-[#4b1560]">
+                      <span>{selectedRepairCodes.length > 0 ? `เลือกแล้ว ${selectedRepairCodes.length} รายการ` : '-- เลือกรายการซ่อม --'}</span>
+                      <Icon icon={repairListOpen ? 'ph:caret-up-bold' : 'ph:caret-down-bold'} width="16" height="16" />
+                    </button>
+                    {repairListOpen && (
+                      <div className="mt-2 max-h-52 space-y-1 overflow-y-auto rounded-[14px] border border-[#eadfed] bg-white p-2">
+                        {repairItems.map(item => {
+                          const checked = selectedRepairCodes.includes(item.code)
+                          return (
+                            <button key={item.code} type="button" onClick={() => setSelectedRepairCodes(codes => checked ? codes.filter(code => code !== item.code) : [...codes, item.code])} className={`flex w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-left text-[13px] ${checked ? 'bg-[#f0e5f3] font-bold text-[#702082]' : 'text-[#5e4863]'}`}>
+                              <Icon icon={checked ? 'ph:check-square-fill' : 'ph:square'} width="20" height="20" className={checked ? 'text-[#702082]' : 'text-[#b7a6bb]'} />
+                              {item.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {selectedRepairCodes.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {selectedRepairCodes.map(code => <span key={code} className="rounded-full bg-[#f0e5f3] px-2.5 py-1 text-[10px] font-bold text-[#702082]">{repairItems.find(item => item.code === code)?.name || code}</span>)}
+                      </div>
+                    )}
+                    {selectedRepairCodes.includes('other') && (
+                      <input value={otherRepairText} onChange={event => setOtherRepairText(event.target.value)} maxLength={300} placeholder="ระบุรายการซ่อมอื่น ๆ" className="mt-3 w-full rounded-[14px] border-[1.5px] border-transparent bg-[#f8f3fa] px-4 py-3 text-[14px] text-[#4b1560] outline-none focus:border-[#d57a00] focus:bg-white" />
+                    )}
+                    <label className="mt-4 block text-[11px] font-bold text-[#765c7c]">จำนวนเงินค่าซ่อม (บาท)</label>
+                    <div className="relative mt-2">
+                      <input type="number" min="0" step="0.01" inputMode="decimal" value={repairAmount} onChange={event => setRepairAmount(event.target.value)} placeholder="0.00" className="w-full rounded-[14px] border-[1.5px] border-transparent bg-[#f8f3fa] px-4 py-3.5 pr-14 text-[18px] font-bold text-[#4b1560] outline-none focus:border-[#d57a00] focus:bg-white" />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[12px] font-bold text-[#927a98]">บาท</span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="rounded-[18px] border border-[#eadfed] bg-white p-4 shadow-sm">

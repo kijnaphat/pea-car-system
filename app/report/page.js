@@ -834,7 +834,42 @@ function ReportPage() {
       .select('*').eq('car_id', carId).eq('is_completed', true)
       .gte('start_time', startDate).lte('start_time', endDate)
       .order('start_time', { ascending: true })
-    setLogs(l || [])
+
+    const tripIds = (l || []).map(log => log.id)
+    let repairs = []
+    if (tripIds.length > 0) {
+      const { data: repairData, error: repairError } = await supabase
+        .from('car_maintenance_records')
+        .select('id, y6_trip_log_id, repair_amount, car_maintenance_repair_items(repair_item_code, custom_text, maintenance_repair_items(name))')
+        .eq('car_id', Number(carId))
+        .eq('status', 'completed')
+        .eq('billing_status', 'billed')
+        .in('y6_trip_log_id', tripIds)
+      if (repairError) console.error('Y.P.6 repair data failed to load:', repairError)
+      else repairs = repairData || []
+    }
+
+    const repairsByTrip = new Map()
+    repairs.forEach(repair => {
+      const descriptions = (repair.car_maintenance_repair_items || []).map(item => (
+        item.repair_item_code === 'other'
+          ? item.custom_text
+          : item.maintenance_repair_items?.name
+      )).filter(Boolean)
+      const current = repairsByTrip.get(Number(repair.y6_trip_log_id)) || { descriptions: [], amount: 0 }
+      current.descriptions.push(...descriptions)
+      current.amount += Number(repair.repair_amount) || 0
+      repairsByTrip.set(Number(repair.y6_trip_log_id), current)
+    })
+
+    setLogs((l || []).map(log => {
+      const repair = repairsByTrip.get(Number(log.id))
+      return {
+        ...log,
+        repair_description: repair?.descriptions.join(', ') || '',
+        repair_cost: repair?.amount || 0,
+      }
+    }))
 
     const { data: sigData } = await supabase
       .from('report_signatures')
@@ -901,6 +936,7 @@ function ReportPage() {
   const totalDistance = logs.reduce((sum, log) => sum + (log.end_mileage - log.start_mileage), 0)
   const totalFuelLiters = logs.reduce((sum, log) => sum + (Number(log.fuel_liters) || 0), 0)
   const totalFuelCost = logs.reduce((sum, log) => sum + (Number(log.fuel_cost) || 0), 0)
+  const totalRepairCost = logs.reduce((sum, log) => sum + (Number(log.repair_cost) || 0), 0)
   const kmPerLiter = (totalDistance > 0 && totalFuelLiters > 0) ? (totalDistance / totalFuelLiters).toFixed(2) : ''
   const startMonthMileage = logs.length > 0 ? logs[0].start_mileage : 0;
   const endMonthMileage = logs.length > 0 ? logs[logs.length - 1].end_mileage : 0;
@@ -1427,8 +1463,8 @@ function ReportPage() {
                                             <td className="border border-black text-center"></td>
                                             <td className="border border-black text-center">{log.fuel_liters ? Number(log.fuel_liters).toFixed(2) : ''}</td>
                                             <td className="border border-black text-center">{log.fuel_cost > 0 ? Number(log.fuel_cost).toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
-                                            <td className="border border-black"></td>
-                                            <td className="border border-black"></td>
+                                            <td className="border border-black px-1 text-left text-[10px] leading-tight">{log.repair_description}</td>
+                                            <td className="border border-black text-center">{log.repair_cost > 0 ? Number(log.repair_cost).toLocaleString(undefined, {minimumFractionDigits: 2}) : (log.repair_description ? '0.00' : '')}</td>
                                             <td className="border border-black"></td>
                                         </tr>
                                         ))}
@@ -1449,7 +1485,7 @@ function ReportPage() {
                                                 <td className="border border-black text-center text-black">{totalFuelLiters > 0 ? totalFuelLiters.toFixed(2) : ''}</td>
                                                 <td className="border border-black text-center text-black">{totalFuelCost > 0 ? totalFuelCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
                                                 <td className="border border-black"></td>
-                                                <td className="border border-black"></td>
+                                                <td className="border border-black text-center text-black">{totalRepairCost > 0 ? totalRepairCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
                                                 <td className="border border-black"></td>
                                             </tr>
                                         )}

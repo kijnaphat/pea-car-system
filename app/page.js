@@ -1697,6 +1697,8 @@ function CarActionForm({ carId }) {
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
+  const [maintenanceRecord, setMaintenanceRecord] = useState(null)
+  const [maintenanceCompleteModalOpen, setMaintenanceCompleteModalOpen] = useState(false)
   const [maintenanceReturnModalOpen, setMaintenanceReturnModalOpen] = useState(false)
 
   // Inputs
@@ -1835,6 +1837,16 @@ function CarActionForm({ carId }) {
         } else if (c.status === 'busy') {
            const { data: l } = await supabase.from('trip_logs').select('*').eq('car_id', carId).eq('is_completed', false).limit(1).single()
            if (l) setActiveLog(l)
+        } else if (c.status === 'maintenance') {
+           const { data: record } = await supabase
+             .from('car_maintenance_records')
+             .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name), reported_by:staff!car_maintenance_records_reported_by_staff_id_fkey(full_name)')
+             .eq('car_id', Number(carId))
+             .eq('status', 'open')
+             .order('reported_at', { ascending: false })
+             .limit(1)
+             .maybeSingle()
+           setMaintenanceRecord(record || null)
         }
       }
     }
@@ -2104,9 +2116,25 @@ function CarActionForm({ carId }) {
         <p className="mt-5 text-[11px] font-bold tracking-[.12em] text-[#b56c09]">สถานะรถล่าสุด</p>
         <h1 className="mt-1 text-[27px] font-bold text-[#4b2b05]">รถกำลังซ่อม</h1>
         <p className="mt-2 text-[18px] font-bold text-[#702082]">{car.plate_number}</p>
-        <p className="mt-3 text-[13px] leading-relaxed text-[#796849]">รถคันนี้ยังไม่พร้อมใช้งาน จึงไม่สามารถนำรถออกหรือเริ่มชาร์จผ่าน QR ได้</p>
-        <button onClick={() => window.location.href = '/'} className="mt-6 flex w-full items-center justify-center gap-2 rounded-[17px] bg-[#702082] py-4 text-[15px] font-bold text-white active:scale-[.98]"><Icon icon="ph:house-duotone" width="21" height="21" />กลับหน้า Home</button>
+        <p className="mt-3 text-[13px] leading-relaxed text-[#796849]">รถคันนี้ยังไม่พร้อมนำออก หากซ่อมเสร็จแล้วสามารถบันทึกรายการซ่อมและเปิดใช้งานรถจากหน้านี้ได้เลย</p>
+        {maintenanceRecord && (
+          <div className="mt-4 rounded-[16px] bg-[#fff8e8] p-3 text-left">
+            <p className="text-[10px] font-bold text-[#9a6200]">อาการที่แจ้งไว้</p>
+            <p className="mt-1 text-[13px] font-bold text-[#593707]">{maintenanceRecord.maintenance_issue_categories?.name || 'ปัญหารถ'}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-[#765b31]">{maintenanceRecord.description}</p>
+          </div>
+        )}
+        <button onClick={() => setMaintenanceCompleteModalOpen(true)} disabled={!maintenanceRecord} className="mt-5 flex w-full items-center justify-center gap-2 rounded-[17px] bg-[#28a653] py-4 text-[15px] font-bold text-white active:scale-[.98] disabled:bg-[#b8a796]"><Icon icon="ph:check-circle-duotone" width="22" height="22" />ซ่อมเสร็จแล้ว / เปิดใช้งานรถ</button>
+        <button onClick={() => window.location.href = '/'} className="mt-2 flex w-full items-center justify-center gap-2 rounded-[17px] bg-[#702082] py-3.5 text-[14px] font-bold text-white active:scale-[.98]"><Icon icon="ph:house-duotone" width="20" height="20" />กลับหน้า Home</button>
       </section>
+      <MaintenanceActionModal
+        isOpen={maintenanceCompleteModalOpen}
+        mode="complete"
+        car={car}
+        maintenanceRecord={maintenanceRecord}
+        onClose={() => setMaintenanceCompleteModalOpen(false)}
+        onSuccess={() => { window.location.href = '/' }}
+      />
     </main>
   )
 

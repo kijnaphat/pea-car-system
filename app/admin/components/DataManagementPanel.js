@@ -1,0 +1,40 @@
+'use client'
+
+import { useState } from 'react'
+import { Icon } from '@iconify/react'
+import MileageCorrectionPanel from '@/app/admin/components/MileageCorrectionPanel'
+import MaintenanceBillingPanel from '@/app/admin/components/MaintenanceBillingPanel'
+
+export default function DataManagementPanel({
+  mileageAnomalyCount,
+  pendingBillingCount,
+  onAnomalyCountChange,
+  onPendingBillingCountChange,
+}) {
+  const [activeTab, setActiveTab] = useState(pendingBillingCount > 0 ? 'maintenance' : 'mileage')
+
+  const tabs = [
+    { id: 'mileage', label: 'เลขไมล์', icon: 'ph:speedometer-duotone', count: mileageAnomalyCount },
+    { id: 'maintenance', label: 'ข้อมูลซ่อมรอวางบิล', icon: 'ph:receipt-duotone', count: pendingBillingCount },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto rounded-[18px] border border-[#eadfed] bg-white p-2 shadow-sm">
+        {tabs.map(tab => (
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`flex min-w-fit flex-1 items-center justify-center gap-2 rounded-[13px] px-4 py-3 text-[12px] font-bold transition-all ${activeTab === tab.id ? 'bg-[#702082] text-white shadow-[0_7px_18px_rgba(112,32,130,.2)]' : 'bg-[#f8f3fa] text-[#765c7c]'}`}>
+            <Icon icon={tab.icon} width="19" height="19" />
+            {tab.label}
+            {tab.count > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold text-white">{tab.count > 99 ? '99+' : tab.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'mileage' ? (
+        <MileageCorrectionPanel onAnomalyCountChange={onAnomalyCountChange} />
+      ) : (
+        <MaintenanceBillingPanel onPendingCountChange={onPendingBillingCountChange} />
+      )}
+    </div>
+  )
+}

@@ -167,13 +167,17 @@ export default function UltimateDashboard() {
       setLoading(true)
       try {
         const { data: cars } = await supabase.from('cars').select('*, departments(name)')
-        const { data: repairs } = await supabase.from('repair_logs').select('*')
+        const { data: repairs } = await supabase
+          .from('car_maintenance_records')
+          .select('id, car_id, repair_amount, completed_at')
+          .eq('status', 'completed')
+          .eq('billing_status', 'billed')
         
         if (cars) {
           const visibleCars = cars.filter(car => car.is_visible !== false)
           setCarsList(visibleCars)
         }
-        if (repairs) setRepairLogs(repairs)
+        if (repairs) setRepairLogs(repairs.map(repair => ({ ...repair, cost: repair.repair_amount })))
 
         const now = new Date()
         let startDate = new Date(0)

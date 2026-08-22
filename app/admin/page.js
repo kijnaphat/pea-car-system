@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import CarQrLabel from '@/app/components/CarQrLabel'
-import MileageCorrectionPanel from '@/app/admin/components/MileageCorrectionPanel'
+import DataManagementPanel from '@/app/admin/components/DataManagementPanel'
 import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
 import { countPendingAnomalies } from '@/lib/tripAnomalies'
 
@@ -53,6 +53,7 @@ export default function AdminDashboard() {
   const [qrCar, setQrCar] = useState(null)
   const [isMigratingImages, setIsMigratingImages] = useState(false)
   const [mileageAnomalyCount, setMileageAnomalyCount] = useState(0)
+  const [pendingBillingCount, setPendingBillingCount] = useState(0)
 
   useEffect(() => {
     const checkSession = async () => {
@@ -88,17 +89,31 @@ export default function AdminDashboard() {
     }
   }, [])
 
+  const fetchPendingBillingCount = useCallback(async () => {
+    const { count, error } = await supabase
+      .from('car_maintenance_records')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed')
+      .eq('billing_status', 'pending_invoice')
+    if (!error) setPendingBillingCount(count || 0)
+  }, [])
+
   useEffect(() => {
     if (loadingSession) return undefined
     fetchMileageAnomalyCount()
-    const interval = window.setInterval(fetchMileageAnomalyCount, 60000)
-    const refreshWhenVisible = () => document.visibilityState === 'visible' && fetchMileageAnomalyCount()
+    fetchPendingBillingCount()
+    const refreshManagementCounts = () => {
+      fetchMileageAnomalyCount()
+      fetchPendingBillingCount()
+    }
+    const interval = window.setInterval(refreshManagementCounts, 60000)
+    const refreshWhenVisible = () => document.visibilityState === 'visible' && refreshManagementCounts()
     document.addEventListener('visibilitychange', refreshWhenVisible)
     return () => {
       window.clearInterval(interval)
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
-  }, [loadingSession, fetchMileageAnomalyCount])
+  }, [loadingSession, fetchMileageAnomalyCount, fetchPendingBillingCount])
 
   const fetchData = useCallback(async () => {
     try {
@@ -353,13 +368,14 @@ export default function AdminDashboard() {
 
   const sidebarMenus = [
     { id: 'cars', icon: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'Vehicles' },
-    { id: 'mileage', icon: 'ph:speedometer-duotone', title: 'แก้ไขเลขไมล์', desc: 'Mileage' },
+    { id: 'mileage', icon: 'ph:database-duotone', title: 'แก้ไขข้อมูล', desc: 'Mileage & Repair' },
     { id: 'staff', icon: 'ph:users-three-duotone', title: 'บุคลากร', desc: 'Personnel' },
     { id: 'tasks', icon: 'ph:clipboard-text-duotone', title: 'ประเภทงาน', desc: 'Tasks' },
     { id: 'departments', icon: 'ph:buildings-duotone', title: 'แผนก', desc: 'Departments' },
     { id: 'operation_areas', icon: 'ph:map-pin-duotone', title: 'พื้นที่งาน', desc: 'Locations' },
   ]
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
+  const dataManagementCount = mileageAnomalyCount + pendingBillingCount
   
   const inputStyle = "w-full rounded-[12px] border border-[#dfcfe4] bg-white px-4 py-3.5 text-[14px] text-[#35133f] placeholder-[#a892ad] focus:border-[#702082] focus:ring-2 focus:ring-[#702082]/10 outline-none transition-all shadow-[0_1px_2px_rgba(75,21,96,.03)]"
   const labelStyle = "text-[11px] font-bold text-[#702082] mb-2 block uppercase tracking-wider pl-1"
@@ -469,7 +485,7 @@ export default function AdminDashboard() {
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 relative z-10">
           <p className="mb-3 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-[#a98caf]">
             Management
-            {mileageAnomalyCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold tracking-normal text-white shadow-[0_0_0_3px_rgba(255,69,58,.14)]">{mileageAnomalyCount > 99 ? '99+' : mileageAnomalyCount}</span>}
+            {dataManagementCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold tracking-normal text-white shadow-[0_0_0_3px_rgba(255,69,58,.14)]">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
           </p>
           {sidebarMenus.map(menu => (
             <button 
@@ -487,7 +503,7 @@ export default function AdminDashboard() {
               <span className="min-w-0">
                 <span className="flex items-center gap-2 font-semibold text-[14px]">
                   {menu.title}
-                  {menu.id === 'mileage' && mileageAnomalyCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">{mileageAnomalyCount > 99 ? '99+' : mileageAnomalyCount}</span>}
+                  {menu.id === 'mileage' && dataManagementCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
                 </span>
                 <span className={`block text-[10px] mt-0.5 ${activeMenu === menu.id ? 'text-white/65' : 'text-[#94789b]'}`}>{menu.desc}</span>
               </span>
@@ -516,7 +532,7 @@ export default function AdminDashboard() {
             <div className="md:hidden w-10 h-10 bg-white rounded-[13px] p-1.5 flex items-center justify-center border-2 border-[#ffdd00] shrink-0 shadow-[0_6px_20px_rgba(255,221,0,.16)] overflow-hidden"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
             <div>
                 <p className="md:hidden text-[9px] text-[#8b3c98] uppercase tracking-[.16em] font-semibold mb-0.5">Admin Portal</p>
-                <h1 className="flex items-center gap-2 text-[18px] font-bold tracking-tight text-[#4b1560] md:text-[24px]">{activeMenuObj?.title}{activeMenu === 'mileage' && mileageAnomalyCount > 0 && <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[10px] font-bold text-white">{mileageAnomalyCount > 99 ? '99+' : mileageAnomalyCount}</span>}</h1>
+                <h1 className="flex items-center gap-2 text-[18px] font-bold tracking-tight text-[#4b1560] md:text-[24px]">{activeMenuObj?.title}{activeMenu === 'mileage' && dataManagementCount > 0 && <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[10px] font-bold text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}</h1>
                 <p className="hidden md:block text-[11px] text-[#846c89] mt-0.5">จัดการข้อมูล {activeMenuObj?.desc} ของระบบ</p>
             </div>
           </div>
@@ -538,7 +554,7 @@ export default function AdminDashboard() {
             <button key={menu.id} onClick={() => setActiveMenu(menu.id)} className={`shrink-0 h-11 px-3.5 rounded-[13px] flex items-center gap-2 border transition-all active:scale-95 ${activeMenu === menu.id ? 'bg-[#ffdd00] border-[#e5c700] text-[#4b1560] shadow-[0_6px_18px_rgba(255,221,0,.18)]' : 'bg-white border-[#e7dbe9] text-[#765c7c]'}`}>
               <Icon icon={menu.icon} width="19" height="19" />
               <span className="text-[12px] font-bold whitespace-nowrap">{menu.title}</span>
-              {menu.id === 'mileage' && mileageAnomalyCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold text-white">{mileageAnomalyCount > 99 ? '99+' : mileageAnomalyCount}</span>}
+              {menu.id === 'mileage' && dataManagementCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
             </button>
           ))}
         </nav>
@@ -548,7 +564,12 @@ export default function AdminDashboard() {
           <div className="max-w-7xl mx-auto space-y-6 pb-12">
 
             {activeMenu === 'mileage' ? (
-              <MileageCorrectionPanel onAnomalyCountChange={setMileageAnomalyCount} />
+              <DataManagementPanel
+                mileageAnomalyCount={mileageAnomalyCount}
+                pendingBillingCount={pendingBillingCount}
+                onAnomalyCountChange={setMileageAnomalyCount}
+                onPendingBillingCountChange={setPendingBillingCount}
+              />
             ) : (
               <>
 
