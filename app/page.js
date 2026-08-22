@@ -10,6 +10,49 @@ import { normalizeStaffCode } from '@/lib/staffCode'
 
 const BANNER_SLIDE_COUNT = 4
 
+const formatTripDeparture = value => {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  const dateText = date.toLocaleDateString('th-TH', {
+    day: 'numeric',
+    month: 'short',
+    year: '2-digit',
+  })
+  const timeText = date.toLocaleTimeString('th-TH', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return `ออก ${dateText} ${timeText} น.`
+}
+
+const formatTripDuration = (startValue, endValue) => {
+  if (!startValue || !endValue) return null
+  const start = new Date(startValue).getTime()
+  const end = typeof endValue === 'number' ? endValue : new Date(endValue).getTime()
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null
+
+  const totalSeconds = Math.max(0, Math.floor((end - start) / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return `${hours} ชม. ${minutes} นาที ${seconds} วิ`
+}
+
+function LiveTripDuration({ startValue }) {
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    const updateClock = () => setNowMs(Date.now())
+    updateClock()
+    const interval = window.setInterval(updateClock, 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  return formatTripDuration(startValue, nowMs) || '—'
+}
+
 // --- Main Component ---
 export default function App() {
   return (
@@ -60,8 +103,9 @@ function CarSelector() {
       const { data: carsDataRaw } = await supabase.from('cars').select('*')
       const { data: activeLogs } = await supabase
         .from('trip_logs')
-        .select('car_id, start_time, driver_name, location') // ดึง location ด้วย
+        .select('id, car_id, start_time, end_time, driver_name, location, is_completed')
         .eq('is_completed', false)
+        .order('start_time', { ascending: false })
 
       if (carsDataRaw) {
         // กรองรถที่ถูกซ่อนออกไป
@@ -69,32 +113,27 @@ function CarSelector() {
 
         const activatedResults = await Promise.all(
           carsData.map(async (car) => {
-            const { count } = await supabase
-              .from('trip_logs')
-              .select('car_id', { count: 'exact', head: true })
-              .eq('car_id', Number(car.id))
-
             let lastLog = null
             if (car.status !== 'busy') {
               const { data } = await supabase
                 .from('trip_logs')
-                .select('*')
+                .select('id, car_id, start_time, end_time, driver_name, location, is_completed')
                 .eq('car_id', Number(car.id))
                 .eq('is_completed', true)
-                .order('created_at', { ascending: false })
+                .order('start_time', { ascending: false })
                 .limit(1)
                 .single()
               if (data) lastLog = data
             }
 
-            return { count, lastLog }
+            return { lastLog }
           })
         )
 
         const mergedCars = carsData.map((car, i) => {
           const log = activeLogs?.find(l => Number(l.car_id) === Number(car.id))
-          const isActivated = (activatedResults[i]?.count ?? 0) > 0
           const lastLog = activatedResults[i]?.lastLog
+          const isActivated = Boolean(log || lastLog)
           return { ...car, activeLog: log, lastLog, isActivated }
         })
 
@@ -285,14 +324,12 @@ function CarSelector() {
     const isBusy = car.status === 'busy'
     const logData = isBusy ? car.activeLog : car.lastLog
     const driverName = logData?.driver_name
-    const returnTime = car.lastLog?.end_time || car.lastLog?.updated_at || car.lastLog?.created_at || car.lastLog?.start_time
-    const timeSource = isBusy ? car.activeLog?.start_time : returnTime
-    const timeString = timeSource
-      ? `${isBusy ? 'ออก' : 'คืน'} ${new Date(timeSource).toLocaleDateString('th-TH', {day:'numeric', month:'short'})} ${new Date(timeSource).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'})} น.`
-      : null
+    const departureText = formatTripDeparture(logData?.start_time)
+    const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
+    const durationLabel = isBusy ? (isEV ? 'ชาร์จมา' : 'ใช้งานมา') : (isEV ? 'ชาร์จล่าสุด' : 'ใช้ล่าสุด')
 
     return (
-      <article key={car.id} onClick={() => setCarDetailModal({ car, timeString, logData })}
+      <article key={car.id} onClick={() => setCarDetailModal({ car, logData })}
         className="flex items-center gap-3 py-4 border-b border-[#edf0ee] last:border-b-0 cursor-pointer active:bg-[#f8faf8] transition-colors">
         <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border border-black/[0.05] ${isBusy ? 'bg-[#fff0ed]' : isEV ? 'bg-[#edf3ff]' : 'bg-[#eefaf2]'}`}>
           {carImageSrc
@@ -300,15 +337,16 @@ function CarSelector() {
             : <Icon icon="ph:car-profile-duotone" width="30" height="30" className={isBusy ? 'text-[#ff6680]' : 'text-[#14c767]'} />}
         </div>
         <div className="min-w-0 flex-1">
-          <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isBusy ? 'กำลังใช้งาน' : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
+          <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
           <h3 className="text-[18px] font-bold tracking-[-.35px] truncate">{car.plate_number}</h3>
           <p className="text-[11px] text-[#6e7771] truncate">{car.car_type}</p>
           <p className="mt-0.5 text-[10px] text-[#9aa19c] truncate flex items-center gap-1"><Icon icon={driverName ? 'ph:user-circle' : 'ph:map-pin'} width="12" height="12" />{driverName || logData?.location || 'ยังไม่มีข้อมูลการใช้งาน'}</p>
         </div>
-        <div className="text-right flex-shrink-0 min-w-[92px]">
+        <div className="w-[126px] flex-shrink-0 text-right sm:w-[145px]">
           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${isBusy ? 'bg-[#ffe7ee] text-[#ed4d75]' : 'bg-[#dffbec] text-[#10a951]'}`}><span className={`w-1.5 h-1.5 rounded-full ${isBusy ? 'bg-[#ed4d75]' : 'bg-[#17c965]'}`}/>{isBusy ? 'ไม่ว่าง' : 'ว่างพร้อมใช้'}</span>
-          <p className="mt-2 text-[9px] text-[#a2a9a4] max-w-[92px] truncate">{timeString || 'อัปเดตล่าสุด'}</p>
-          <Icon icon="ph:caret-right-bold" width="16" height="16" className="ml-auto mt-1 text-[#a4aaa6]" />
+          <p className="mt-2 text-[9px] font-medium leading-4 text-[#7f8781]">{departureText || 'ยังไม่มีประวัติการใช้งาน'}</p>
+          {isBusy && logData?.start_time && <p className="mt-0.5 font-mono text-[9px] font-bold leading-4 tabular-nums text-[#ed4d75]">{durationLabel} <LiveTripDuration startValue={logData.start_time} /></p>}
+          {!isBusy && durationText && <p className="mt-0.5 font-mono text-[9px] font-bold leading-4 tabular-nums text-[#702082]">{durationLabel} {durationText}</p>}
         </div>
       </article>
     )
@@ -503,11 +541,15 @@ function CarSelector() {
 
       {/* ── Modal รายละเอียดรถแบบขยาย (แบบ Full Screen เหมือนหน้าฟอร์ม ไม่ต้องเลื่อนจอ) ── */}
       {carDetailModal && (() => {
-        const { car, timeString, logData } = carDetailModal
+        const { car, logData } = carDetailModal
         const carImageSrc = getCarImage(car)
         const isBusy = car.status === 'busy'
         const driverName = logData?.driver_name
         const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
+        const departureText = formatTripDeparture(logData?.start_time)
+        const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
+        const hasDuration = Boolean(logData?.start_time && (isBusy || logData?.end_time))
+        const durationLabel = isBusy ? (isEV ? 'ระยะเวลาชาร์จปัจจุบัน' : 'ระยะเวลาที่ใช้งานมา') : (isEV ? 'ระยะเวลาชาร์จครั้งล่าสุด' : 'ระยะเวลาใช้งานครั้งล่าสุด')
 
         return (
           <div className="fixed inset-0 z-[999] overflow-y-auto bg-[#f8f3fa] animate-slideUp">
@@ -557,7 +599,7 @@ function CarSelector() {
                   </div>
                   <div className="relative mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1.5 text-[10px] font-semibold text-white/95">
                     <Icon icon="ph:clock-duotone" width="18" height="18" className="shrink-0 text-[#ffdd00]" />
-                    <span className="truncate">{timeString || 'อัปเดตข้อมูลล่าสุดจาก PEA Fleet'}</span>
+                    <span className="truncate">{departureText || 'ยังไม่มีประวัติการใช้งาน'}</span>
                   </div>
                 </section>
 
@@ -575,9 +617,13 @@ function CarSelector() {
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#ebd7ff] bg-[#faf5ff] text-[#8b3c98]"><Icon icon="ph:briefcase-duotone" width="23" height="23" /></div>
                       <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">ประเภทงาน / สถานที่</p><p className="mt-0.5 text-[15px] font-bold leading-snug text-[#4b1560]">{logData?.location || 'ไม่ระบุงาน'}</p></div>
                     </div>
-                    {timeString && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
+                    {departureText && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isBusy ? 'border-[#c8f0d7] bg-[#effcf3] text-[#24a850]' : 'border-[#eadfed] bg-[#f8f3fa] text-[#8e8e93]'}`}><Icon icon={isBusy ? 'ph:clock-duotone' : 'ph:clock-counter-clockwise-duotone'} width="23" height="23" /></div>
-                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">{isBusy ? 'เวลาออกรถ' : 'เวลาคืนรถ'}</p><p className="mt-0.5 text-[16px] font-bold text-[#4b1560]">{timeString}</p></div>
+                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">{isBusy ? 'วัน–เวลาที่นำรถออก' : 'วัน–เวลาที่นำรถออกครั้งล่าสุด'}</p><p className="mt-0.5 text-[16px] font-bold text-[#4b1560]">{departureText}</p></div>
+                    </div>}
+                    {hasDuration && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isBusy ? 'border-[#ffd1ce] bg-[#fff2f1] text-[#ed4d75]' : 'border-[#eadfed] bg-[#f8f3fa] text-[#702082]'}`}><Icon icon="ph:timer-duotone" width="23" height="23" /></div>
+                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">{durationLabel}</p><p className={`mt-0.5 font-mono text-[16px] font-bold tabular-nums ${isBusy ? 'text-[#ed4d75]' : 'text-[#4b1560]'}`}>{isBusy ? <LiveTripDuration startValue={logData.start_time} /> : durationText}</p></div>
                     </div>}
                   </div>
                 </section>
