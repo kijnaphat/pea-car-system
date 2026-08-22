@@ -74,10 +74,11 @@ export default function App() {
 function MainApp() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id') 
+  const maintenanceTakeoutToken = searchParams.get('maintenance_takeout')
 
   // 1. ถ้ามี car_id -> ไปหน้าฟอร์ม
   if (carId) {
-    return <CarActionForm carId={carId} />
+    return <CarActionForm carId={carId} maintenanceTakeoutToken={maintenanceTakeoutToken} />
   }
 
   // 2. ถ้าไม่มี -> ไปหน้า Home
@@ -732,9 +733,15 @@ function CarSelector() {
         car={maintenanceModal.car}
         maintenanceRecord={maintenanceModal.maintenanceRecord}
         onClose={() => setMaintenanceModal({ isOpen: false, mode: 'report', car: null, maintenanceRecord: null })}
-        onSuccess={() => {
+        onSuccess={(result) => {
+          const completedCarId = maintenanceModal.car?.id
+          const shouldContinueTakeout = maintenanceModal.mode === 'complete' && completedCarId && result?.takeout_token
           setMaintenanceModal({ isOpen: false, mode: 'report', car: null, maintenanceRecord: null })
           setCarDetailModal(null)
+          if (shouldContinueTakeout) {
+            router.push(`/?car_id=${completedCarId}&maintenance_takeout=${encodeURIComponent(result.takeout_token)}`)
+            return
+          }
           fetchCars()
         }}
       />
@@ -1693,7 +1700,7 @@ function ReportPage() {
 // ==========================================
 // 2. หน้าฟอร์มบันทึก (Action Form) - อัปเดตใหม่
 // ==========================================
-function CarActionForm({ carId }) {
+function CarActionForm({ carId, maintenanceTakeoutToken }) {
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
@@ -1707,6 +1714,8 @@ function CarActionForm({ carId }) {
   const [staffName, setStaffName] = useState('') 
   const [staffPosition, setStaffPosition] = useState('') 
   const [staffError, setStaffError] = useState('')
+  const [handoffLoading, setHandoffLoading] = useState(Boolean(maintenanceTakeoutToken))
+  const [handoffValid, setHandoffValid] = useState(false)
   const staffLookupSequenceRef = useRef(0)
   const [mileage, setMileage] = useState('')
   const [isMileageLocked, setIsMileageLocked] = useState(false)
@@ -1834,6 +1843,29 @@ function CarActionForm({ carId }) {
            } else {
                setMileage('0')
            }
+
+           if (maintenanceTakeoutToken) {
+             setHandoffLoading(true)
+             const { data: handoff, error: handoffError } = await supabase.rpc('get_maintenance_takeout_handoff', {
+               p_token: maintenanceTakeoutToken,
+               p_car_id: Number(carId),
+             })
+
+             if (!handoffError && handoff && !handoff.error) {
+               setStaffId(handoff.staff_id)
+               setStaffName(handoff.full_name || '')
+               setStaffPosition(handoff.position || '')
+               setStaffError('')
+               setHandoffValid(true)
+               if (handoff.department_name) setSelectedDept(handoff.department_name)
+             } else {
+               setHandoffValid(false)
+               setStaffError(handoff?.error || 'ไม่สามารถดึงผู้ยืนยันเปิดใช้งานรถได้ กรุณากรอกรหัสพนักงานตามปกติ')
+             }
+             setHandoffLoading(false)
+           } else {
+             setHandoffLoading(false)
+           }
         } else if (c.status === 'busy') {
            const { data: l } = await supabase.from('trip_logs').select('*').eq('car_id', carId).eq('is_completed', false).limit(1).single()
            if (l) setActiveLog(l)
@@ -1851,7 +1883,7 @@ function CarActionForm({ carId }) {
       }
     }
     fetchData()
-  }, [carId])
+  }, [carId, maintenanceTakeoutToken])
 
   const checkStaff = async (rawCode = employeeId) => {
     const staffCode = normalizeStaffCode(rawCode)
@@ -2006,9 +2038,11 @@ function CarActionForm({ carId }) {
         }
       }
 
-      const { data: result, error } = await supabase.rpc('take_car_out_v3', {
+      const takeoutArgs = {
+        ...(handoffValid
+          ? { p_token: maintenanceTakeoutToken }
+          : { p_staff_code: employeeId }),
         p_car_id:          Number(carId),
-        p_staff_code:      employeeId,
         p_start_mileage:   parseInt(mileage || 0),
         p_location:        finalLocation,
         p_battery_before:  finalBattBefore,
@@ -2016,7 +2050,11 @@ function CarActionForm({ carId }) {
         p_station_name:    finalStationName || null,
         p_task_id:          finalTaskId,
         p_operation_area_ids: finalOperationAreaIds,
-      })
+      }
+      const { data: result, error } = await supabase.rpc(
+        handoffValid ? 'take_car_out_after_maintenance' : 'take_car_out_v3',
+        takeoutArgs
+      )
 
       if (error) throw error
       if (result?.error) { alert('⚠️ ' + result.error); setLoading(false); return }
@@ -2133,7 +2171,13 @@ function CarActionForm({ carId }) {
         car={car}
         maintenanceRecord={maintenanceRecord}
         onClose={() => setMaintenanceCompleteModalOpen(false)}
-        onSuccess={() => { window.location.href = '/' }}
+        onSuccess={(result) => {
+          if (result?.takeout_token) {
+            router.replace(`/?car_id=${carId}&maintenance_takeout=${encodeURIComponent(result.takeout_token)}`)
+            return
+          }
+          window.location.href = '/'
+        }}
       />
     </main>
   )
@@ -2313,15 +2357,20 @@ function CarActionForm({ carId }) {
               <div className="bg-white rounded-[20px] px-5 py-4"
                    style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                 <div className="flex justify-between items-center mb-3">
-                  <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em]">1. ระบุตัวตนผู้ขับขี่</p>
-                  {staffName && (
+                  <p className="text-[11px] font-semibold text-[#765c7c] uppercase tracking-[0.07em]">1. {handoffValid ? 'ผู้ยืนยันเปิดใช้งานรถ' : 'ระบุตัวตนผู้ขับขี่'}</p>
+                  {staffName && !handoffValid && (
                     <button onClick={resetStaff} className="text-[12px] font-medium text-[#702082] active:opacity-60">
                       เปลี่ยนรหัส
                     </button>
                   )}
                 </div>
 
-                {!staffName ? (
+                {handoffLoading ? (
+                  <div className="flex items-center gap-3 rounded-[14px] bg-[#f8f3fa] px-4 py-3.5 text-[13px] font-medium text-[#765c7c]">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#d9cadd] border-t-[#702082]" />
+                    กำลังดึงข้อมูลผู้ยืนยันเปิดใช้งานรถ...
+                  </div>
+                ) : !staffName ? (
                   <>
                     <input type="text" inputMode="numeric" pattern="[0-9]*" enterKeyHint="done" autoComplete="off" maxLength={7}
                       value={employeeId}
@@ -2353,6 +2402,7 @@ function CarActionForm({ carId }) {
                     <div>
                       <p className="text-[15px] font-bold text-[#1a7f37]">{staffName}</p>
                       <p className="text-[12px] text-[#248a3d]">{staffPosition}</p>
+                      {handoffValid && <p className="mt-1 text-[11px] font-semibold text-[#702082]">ระบบดึงจากขั้นตอนเปิดใช้งานรถ · ไม่ต้องกรอกรหัสซ้ำ</p>}
                     </div>
                   </div>
                 )}

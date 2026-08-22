@@ -165,7 +165,7 @@ export default function MaintenanceActionModal({
     try {
       let request
       if (mode === 'complete') {
-        request = supabase.rpc('complete_car_maintenance_v2', {
+        request = supabase.rpc('complete_car_maintenance_v3', {
           p_car_id: Number(car.id),
           p_staff_code: staffCode,
           p_completion_note: completionNote.trim(),
@@ -203,8 +203,8 @@ export default function MaintenanceActionModal({
 
       const successMessage = mode === 'complete'
         ? billingStatus === 'pending_invoice'
-          ? '✅ เปิดใช้งานรถแล้ว และส่งรายการรอข้อมูลวางบิลให้ Admin เรียบร้อย'
-          : '✅ เปิดใช้งานรถและบันทึกรายการซ่อมลงใบ ยพ.6 เรียบร้อยแล้ว'
+          ? '✅ เปิดใช้งานรถแล้ว และส่งรายการรอวางบิลให้ Admin\nระบบจะพาไปหน้านำรถออกต่อไป'
+          : '✅ เปิดใช้งานรถและบันทึกรายการซ่อมแล้ว\nระบบจะพาไปหน้านำรถออกเพื่อผูกรายการเข้าใบ ยพ.6'
         : mode === 'return'
           ? '✅ คืนรถและส่งซ่อมเรียบร้อยแล้ว'
           : '✅ แจ้งส่งซ่อมเรียบร้อยแล้ว'

@@ -74,7 +74,7 @@ export default function MaintenanceBillingPanel({ onPendingCountChange }) {
     if (amount === '' || Number(amount) < 0) return setErrorMessage('กรุณากรอกจำนวนเงินตั้งแต่ 0 บาทขึ้นไป')
 
     setSaving(true)
-    const { data, error } = await supabase.rpc('admin_finalize_maintenance_billing', {
+    const { data, error } = await supabase.rpc('admin_finalize_maintenance_billing_v2', {
       p_maintenance_id: modal.id,
       p_repair_item_codes: selectedCodes,
       p_other_repair_text: selectedCodes.includes('other') ? otherText.trim() : null,
@@ -90,7 +90,7 @@ export default function MaintenanceBillingPanel({ onPendingCountChange }) {
     setModal(null)
     setSaving(false)
     await fetchPending()
-    window.alert('✅ บันทึกข้อมูลซ่อมและลงรายการในใบ ยพ.6 เรียบร้อยแล้ว')
+    window.alert('✅ บันทึกข้อมูลซ่อมเรียบร้อยแล้ว\nรายการจะผูกเข้าใบ ยพ.6 ของการนำรถออกรอบนี้')
   }
 
   if (loading) return <div className="rounded-[22px] border border-[#eadfed] bg-white py-16 text-center text-[13px] text-[#846c89]">กำลังโหลดรายการรอวางบิล...</div>
