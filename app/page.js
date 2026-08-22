@@ -10,7 +10,7 @@ import { normalizeStaffCode } from '@/lib/staffCode'
 
 const BANNER_SLIDE_COUNT = 4
 
-const formatTripDeparture = value => {
+const formatTripDateTime = (value, prefix) => {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
@@ -24,7 +24,7 @@ const formatTripDeparture = value => {
     hour: '2-digit',
     minute: '2-digit',
   })
-  return `ออก ${dateText} ${timeText} น.`
+  return `${prefix} ${dateText} เวลา ${timeText} น.`
 }
 
 const formatTripDuration = (startValue, endValue) => {
@@ -37,7 +37,16 @@ const formatTripDuration = (startValue, endValue) => {
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
-  return `${hours} ชม. ${minutes} นาที ${seconds} วิ`
+  return [hours, minutes, seconds]
+    .map(value => String(value).padStart(2, '0'))
+    .join(':')
+}
+
+const getTripDistance = log => {
+  if (log?.start_mileage === null || log?.start_mileage === undefined
+    || log?.end_mileage === null || log?.end_mileage === undefined) return null
+  const distance = Number(log.end_mileage) - Number(log.start_mileage)
+  return Number.isFinite(distance) && distance >= 0 ? distance : null
 }
 
 function LiveTripDuration({ startValue }) {
@@ -103,7 +112,7 @@ function CarSelector() {
       const { data: carsDataRaw } = await supabase.from('cars').select('*')
       const { data: activeLogs } = await supabase
         .from('trip_logs')
-        .select('id, car_id, start_time, end_time, driver_name, location, is_completed')
+        .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, location, is_completed')
         .eq('is_completed', false)
         .order('start_time', { ascending: false })
 
@@ -117,7 +126,7 @@ function CarSelector() {
             if (car.status !== 'busy') {
               const { data } = await supabase
                 .from('trip_logs')
-                .select('id, car_id, start_time, end_time, driver_name, location, is_completed')
+                .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, location, is_completed')
                 .eq('car_id', Number(car.id))
                 .eq('is_completed', true)
                 .order('start_time', { ascending: false })
@@ -324,9 +333,16 @@ function CarSelector() {
     const isBusy = car.status === 'busy'
     const logData = isBusy ? car.activeLog : car.lastLog
     const driverName = logData?.driver_name
-    const departureText = formatTripDeparture(logData?.start_time)
+    const activityTimeText = isBusy
+      ? formatTripDateTime(logData?.start_time, 'ออก')
+      : formatTripDateTime(logData?.end_time, 'คืนล่าสุด')
     const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
+    const distance = getTripDistance(logData)
     const durationLabel = isBusy ? (isEV ? 'ชาร์จมา' : 'ใช้งานมา') : (isEV ? 'ชาร์จล่าสุด' : 'ใช้ล่าสุด')
+    const completedSummary = [
+      distance !== null ? `ขับ ${distance.toLocaleString('th-TH')} กม.` : null,
+      durationText ? `${durationLabel} ${durationText}` : null,
+    ].filter(Boolean).join(' · ')
 
     return (
       <article key={car.id} onClick={() => setCarDetailModal({ car, logData })}
@@ -344,9 +360,9 @@ function CarSelector() {
         </div>
         <div className="w-[126px] flex-shrink-0 text-right sm:w-[145px]">
           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${isBusy ? 'bg-[#ffe7ee] text-[#ed4d75]' : 'bg-[#dffbec] text-[#10a951]'}`}><span className={`w-1.5 h-1.5 rounded-full ${isBusy ? 'bg-[#ed4d75]' : 'bg-[#17c965]'}`}/>{isBusy ? 'ไม่ว่าง' : 'ว่างพร้อมใช้'}</span>
-          <p className="mt-2 text-[9px] font-medium leading-4 text-[#7f8781]">{departureText || 'ยังไม่มีประวัติการใช้งาน'}</p>
+          <p className="mt-2 text-[9px] font-medium leading-4 text-[#7f8781]">{activityTimeText || 'ยังไม่มีประวัติการใช้งาน'}</p>
           {isBusy && logData?.start_time && <p className="mt-0.5 font-mono text-[9px] font-bold leading-4 tabular-nums text-[#ed4d75]">{durationLabel} <LiveTripDuration startValue={logData.start_time} /></p>}
-          {!isBusy && durationText && <p className="mt-0.5 font-mono text-[9px] font-bold leading-4 tabular-nums text-[#702082]">{durationLabel} {durationText}</p>}
+          {!isBusy && completedSummary && <p className="mt-0.5 text-[9px] font-bold leading-4 tabular-nums text-[#702082]">{completedSummary}</p>}
         </div>
       </article>
     )
@@ -546,8 +562,11 @@ function CarSelector() {
         const isBusy = car.status === 'busy'
         const driverName = logData?.driver_name
         const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
-        const departureText = formatTripDeparture(logData?.start_time)
+        const activityTimeText = isBusy
+          ? formatTripDateTime(logData?.start_time, 'ออก')
+          : formatTripDateTime(logData?.end_time, 'คืนล่าสุด')
         const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
+        const distance = getTripDistance(logData)
         const hasDuration = Boolean(logData?.start_time && (isBusy || logData?.end_time))
         const durationLabel = isBusy ? (isEV ? 'ระยะเวลาชาร์จปัจจุบัน' : 'ระยะเวลาที่ใช้งานมา') : (isEV ? 'ระยะเวลาชาร์จครั้งล่าสุด' : 'ระยะเวลาใช้งานครั้งล่าสุด')
 
@@ -599,7 +618,7 @@ function CarSelector() {
                   </div>
                   <div className="relative mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1.5 text-[10px] font-semibold text-white/95">
                     <Icon icon="ph:clock-duotone" width="18" height="18" className="shrink-0 text-[#ffdd00]" />
-                    <span className="truncate">{departureText || 'ยังไม่มีประวัติการใช้งาน'}</span>
+                    <span className="truncate">{activityTimeText || 'ยังไม่มีประวัติการใช้งาน'}</span>
                   </div>
                 </section>
 
@@ -617,9 +636,13 @@ function CarSelector() {
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#ebd7ff] bg-[#faf5ff] text-[#8b3c98]"><Icon icon="ph:briefcase-duotone" width="23" height="23" /></div>
                       <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">ประเภทงาน / สถานที่</p><p className="mt-0.5 text-[15px] font-bold leading-snug text-[#4b1560]">{logData?.location || 'ไม่ระบุงาน'}</p></div>
                     </div>
-                    {departureText && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
+                    {activityTimeText && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isBusy ? 'border-[#c8f0d7] bg-[#effcf3] text-[#24a850]' : 'border-[#eadfed] bg-[#f8f3fa] text-[#8e8e93]'}`}><Icon icon={isBusy ? 'ph:clock-duotone' : 'ph:clock-counter-clockwise-duotone'} width="23" height="23" /></div>
-                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">{isBusy ? 'วัน–เวลาที่นำรถออก' : 'วัน–เวลาที่นำรถออกครั้งล่าสุด'}</p><p className="mt-0.5 text-[16px] font-bold text-[#4b1560]">{departureText}</p></div>
+                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">{isBusy ? 'วัน–เวลาที่นำรถออก' : 'วัน–เวลาที่คืนรถครั้งล่าสุด'}</p><p className="mt-0.5 text-[16px] font-bold text-[#4b1560]">{activityTimeText}</p></div>
+                    </div>}
+                    {!isBusy && distance !== null && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#dce8f4] bg-[#eff8ff] text-[#386b9b]"><Icon icon="ph:road-horizon-duotone" width="23" height="23" /></div>
+                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">ระยะทางที่ขับครั้งล่าสุด</p><p className="mt-0.5 text-[16px] font-bold text-[#4b1560]">{distance.toLocaleString('th-TH')} กม.</p></div>
                     </div>}
                     {hasDuration && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isBusy ? 'border-[#ffd1ce] bg-[#fff2f1] text-[#ed4d75]' : 'border-[#eadfed] bg-[#f8f3fa] text-[#702082]'}`}><Icon icon="ph:timer-duotone" width="23" height="23" /></div>
