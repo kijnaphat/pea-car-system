@@ -130,6 +130,7 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
 
   const sequencedLogs = useMemo(() => buildTripSequence(logs), [logs])
   const reviewSet = useMemo(() => buildAnomalyReviewSet(reviews), [reviews])
+  const pendingAnomalyCount = useMemo(() => countPendingAnomalies(logs, reviews), [logs, reviews])
   const logsById = useMemo(() => new Map(sequencedLogs.map(trip => [String(trip.id), trip])), [sequencedLogs])
 
   const filteredLogs = useMemo(() => {
@@ -383,7 +384,14 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
               ['active', 'กำลังใช้งาน'],
               ['completed', 'คืนรถแล้ว'],
             ].map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setStatusFilter(value)} className={`shrink-0 rounded-full border px-3.5 py-2 text-[11px] font-bold transition-all ${statusFilter === value ? 'border-[#702082] bg-[#702082] text-white' : 'border-[#dfcfe4] bg-white text-[#765c7c]'}`}>{label}</button>
+              <button key={value} type="button" onClick={() => setStatusFilter(value)} className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold transition-all ${statusFilter === value ? 'border-[#702082] bg-[#702082] text-white' : 'border-[#dfcfe4] bg-white text-[#765c7c]'}`}>
+                <span>{label}</span>
+                {value === 'issues' && (
+                  <span className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none ${pendingAnomalyCount > 0 ? 'bg-[#ff453a] text-white' : statusFilter === value ? 'bg-white/20 text-white' : 'bg-[#eee5f0] text-[#846c89]'}`}>
+                    {pendingAnomalyCount > 99 ? '99+' : pendingAnomalyCount}
+                  </span>
+                )}
+              </button>
             ))}
           </div>
         </div>
