@@ -1,16 +1,31 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
 
 const categoryMeta = {
-  vehicle: { label: 'รถออก–คืน / EV', icon: 'ph:car-profile-duotone', tone: 'bg-[#e9f8ef] text-[#1c7d45] border-[#c9ecd6]' },
+  vehicle: { label: 'รถ', icon: 'ph:car-profile-duotone', tone: 'bg-[#e9f8ef] text-[#1c7d45] border-[#c9ecd6]' },
   maintenance: { label: 'งานซ่อม', icon: 'ph:wrench-duotone', tone: 'bg-[#fff4df] text-[#a45d00] border-[#f5dbab]' },
   admin: { label: 'Admin', icon: 'ph:user-gear-duotone', tone: 'bg-[#f2e9f6] text-[#702082] border-[#dfcce6]' },
   document: { label: 'เอกสาร', icon: 'ph:signature-duotone', tone: 'bg-[#eaf2ff] text-[#2965ad] border-[#cbddf8]' },
   security: { label: 'ความปลอดภัย', icon: 'ph:shield-check-duotone', tone: 'bg-[#fff0ef] text-[#b93c34] border-[#f4d0cd]' },
-  system: { label: 'ระบบ', icon: 'ph:gear-six-duotone', tone: 'bg-[#f1f1f3] text-[#5e5e68] border-[#ddddE2]' },
+  database: { label: 'Database', icon: 'ph:database-duotone', tone: 'bg-[#e9f2ff] text-[#345f9b] border-[#cfdef3]' },
+  system: { label: 'ระบบ', icon: 'ph:gear-six-duotone', tone: 'bg-[#f1f1f3] text-[#5e5e68] border-[#dddde2]' },
+}
+
+const channelIcons = {
+  all: 'ph:stack-duotone',
+  car_out: 'ph:sign-out-duotone',
+  car_return: 'ph:sign-in-duotone',
+  ev: 'ph:lightning-duotone',
+  maintenance: 'ph:wrench-duotone',
+  mileage: 'ph:speedometer-duotone',
+  admin: 'ph:user-gear-duotone',
+  documents: 'ph:file-text-duotone',
+  security: 'ph:shield-check-duotone',
+  database: 'ph:database-duotone',
+  system: 'ph:gear-six-duotone',
 }
 
 const deliveryMeta = {
@@ -18,7 +33,7 @@ const deliveryMeta = {
   sending: { label: 'กำลังส่ง', icon: 'ph:spinner-gap-bold', style: 'text-[#2972b8]' },
   pending: { label: 'รอส่ง', icon: 'ph:clock-countdown-duotone', style: 'text-[#a45d00]' },
   failed: { label: 'ส่งไม่สำเร็จ', icon: 'ph:warning-circle-fill', style: 'text-[#d13f37]' },
-  disabled: { label: 'ไม่ได้ส่ง', icon: 'ph:minus-circle-duotone', style: 'text-[#8c7b90]' },
+  disabled: { label: 'เก็บในฐานข้อมูล', icon: 'ph:database-duotone', style: 'text-[#8c7b90]' },
 }
 
 const formatDateTime = value => {
@@ -31,49 +46,55 @@ const formatDateTime = value => {
 }
 
 export default function DiscordAuditPanel() {
-  const [status, setStatus] = useState(null)
+  const [status, setStatus] = useState({ channels: [], totals: {} })
   const [events, setEvents] = useState([])
-  const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookUrls, setWebhookUrls] = useState({})
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState('')
   const [notice, setNotice] = useState(null)
 
-  const refresh = useCallback(async (showLoading = false) => {
-    if (showLoading) setLoading(true)
+  const channelNames = useMemo(() => Object.fromEntries(
+    (status.channels || []).map(channel => [channel.channel_key, channel.channel_name])
+  ), [status.channels])
+
+  const refresh = useCallback(async () => {
     const [statusResult, eventsResult] = await Promise.all([
-      supabase.rpc('get_discord_audit_status'),
+      supabase.rpc('get_discord_audit_channels_status'),
       supabase
         .from('audit_events')
-        .select('id, occurred_at, category, event_type, title, description, actor_label, delivery_status, last_error')
+        .select('id, occurred_at, category, event_type, title, description, actor_label, intended_channel_key, delivery_channel_key, delivery_status, last_error')
         .order('occurred_at', { ascending: false })
-        .limit(30),
+        .limit(40),
     ])
 
     if (statusResult.error) {
       setNotice({ type: 'error', text: statusResult.error.message })
     } else {
-      setStatus(statusResult.data || {})
+      setStatus(statusResult.data || { channels: [], totals: {} })
     }
     if (!eventsResult.error) setEvents(eventsResult.data || [])
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    const initialRefresh = window.setTimeout(() => refresh(false), 0)
-    const interval = window.setInterval(() => refresh(false), 15000)
+    const initialRefresh = window.setTimeout(refresh, 0)
+    const interval = window.setInterval(refresh, 15000)
     return () => {
       window.clearTimeout(initialRefresh)
       window.clearInterval(interval)
     }
   }, [refresh])
 
-  const saveWebhook = async event => {
+  const saveWebhook = async (event, channel) => {
     event.preventDefault()
-    if (!webhookUrl.trim()) return
-    setWorking('save')
+    const webhookUrl = webhookUrls[channel.channel_key]?.trim()
+    if (!webhookUrl) return
+    setWorking(`save:${channel.channel_key}`)
     setNotice(null)
-    const { error: saveError } = await supabase.rpc('configure_discord_audit_webhook', {
-      p_webhook_url: webhookUrl.trim(),
+
+    const { error: saveError } = await supabase.rpc('configure_discord_audit_channel', {
+      p_channel_key: channel.channel_key,
+      p_webhook_url: webhookUrl,
       p_enabled: true,
     })
     if (saveError) {
@@ -82,126 +103,153 @@ export default function DiscordAuditPanel() {
       return
     }
 
-    setWebhookUrl('')
-    const { error: testError } = await supabase.rpc('test_discord_audit_webhook')
+    setWebhookUrls(values => ({ ...values, [channel.channel_key]: '' }))
+    const { error: testError } = await supabase.rpc('test_discord_audit_channel', {
+      p_channel_key: channel.channel_key,
+    })
     setNotice(testError
-      ? { type: 'error', text: `บันทึก Webhook แล้ว แต่ส่งข้อความทดสอบไม่ได้: ${testError.message}` }
-      : { type: 'success', text: 'บันทึก Webhook และส่งข้อความทดสอบแล้ว กรุณาตรวจช่อง Discord' })
+      ? { type: 'error', text: `บันทึก #${channel.channel_name} แล้ว แต่ส่งข้อความทดสอบไม่ได้: ${testError.message}` }
+      : { type: 'success', text: `เชื่อมต่อและส่งข้อความทดสอบไปที่ #${channel.channel_name} แล้ว` })
     setWorking('')
-    await refresh(false)
+    await refresh()
   }
 
-  const toggleEnabled = async () => {
-    setWorking('toggle')
+  const toggleEnabled = async channel => {
+    setWorking(`toggle:${channel.channel_key}`)
     setNotice(null)
-    const nextEnabled = !status?.enabled
-    const { error } = await supabase.rpc('set_discord_audit_enabled', { p_enabled: nextEnabled })
+    const nextEnabled = !channel.enabled
+    const { error } = await supabase.rpc('set_discord_audit_channel_enabled', {
+      p_channel_key: channel.channel_key,
+      p_enabled: nextEnabled,
+    })
     setNotice(error
       ? { type: 'error', text: error.message }
-      : { type: 'success', text: nextEnabled ? 'เปิดส่ง Discord Log แล้ว' : 'หยุดส่ง Discord Log ชั่วคราวแล้ว' })
+      : { type: 'success', text: `${nextEnabled ? 'เปิด' : 'ปิด'} #${channel.channel_name} แล้ว` })
     setWorking('')
-    await refresh(false)
+    await refresh()
   }
 
-  const sendTest = async () => {
-    setWorking('test')
+  const sendTest = async channel => {
+    setWorking(`test:${channel.channel_key}`)
     setNotice(null)
-    const { error } = await supabase.rpc('test_discord_audit_webhook')
+    const { error } = await supabase.rpc('test_discord_audit_channel', {
+      p_channel_key: channel.channel_key,
+    })
     setNotice(error
       ? { type: 'error', text: error.message }
-      : { type: 'success', text: 'ส่งข้อความทดสอบแล้ว กรุณาตรวจช่อง Discord' })
+      : { type: 'success', text: `ส่งข้อความทดสอบไปที่ #${channel.channel_name} แล้ว` })
     setWorking('')
-    await refresh(false)
+    await refresh()
   }
 
-  const retryFailed = async () => {
-    setWorking('retry')
+  const retryFailed = async channelKey => {
+    setWorking(`retry:${channelKey || 'all'}`)
     setNotice(null)
-    const { data, error } = await supabase.rpc('retry_failed_discord_audits')
+    const { data, error } = await supabase.rpc('retry_failed_discord_audits_for_channel', {
+      p_channel_key: channelKey || null,
+    })
     setNotice(error
       ? { type: 'error', text: error.message }
       : { type: 'success', text: `นำ ${data?.queued_count || 0} รายการกลับเข้าคิวส่งแล้ว` })
     setWorking('')
-    await refresh(false)
+    await refresh()
   }
 
   if (loading) {
-    return <div className="rounded-[22px] border border-[#eadfed] bg-white p-8 text-center text-[13px] text-[#765c7c]"><Icon icon="ph:spinner-gap-bold" width="26" height="26" className="mx-auto mb-3 animate-spin text-[#702082]" />กำลังโหลดสถานะ Discord Log...</div>
+    return <div className="rounded-[22px] border border-[#eadfed] bg-white p-8 text-center text-[13px] text-[#765c7c]"><Icon icon="ph:spinner-gap-bold" width="26" height="26" className="mx-auto mb-3 animate-spin text-[#702082]" />กำลังโหลด Discord Log Channels...</div>
   }
+
+  const totals = status.totals || {}
+  const configuredCount = (status.channels || []).filter(channel => channel.configured).length
+  const enabledCount = (status.channels || []).filter(channel => channel.enabled).length
 
   return (
     <div className="space-y-5">
       <section className="overflow-hidden rounded-[24px] border border-[#d9c6df] bg-gradient-to-br from-[#32103d] via-[#4c165b] to-[#702082] text-white shadow-[0_18px_45px_rgba(75,21,96,.2)]">
-        <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.05fr_.95fr]">
+        <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.1fr_.9fr]">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-[#ffe86a]"><Icon icon="ph:discord-logo-fill" width="17" height="17" /> Discord Audit Log</span>
-            <h2 className="mt-5 text-[25px] font-bold tracking-tight sm:text-[31px]">บันทึกเหตุการณ์สำคัญของเว็บแบบอัตโนมัติ</h2>
-            <p className="mt-3 max-w-xl text-[13px] leading-6 text-white/70">ครอบคลุมรถออก–คืนรถ, ชาร์จ EV, งานซ่อม, แก้เลขไมล์, ลายเซ็นเอกสาร, การเปลี่ยนข้อมูลโดย Admin และการเข้า–ออกระบบ</p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {Object.entries(categoryMeta).slice(0, 5).map(([key, meta]) => <span key={key} className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5 text-[10px] font-semibold text-white/80">{meta.label}</span>)}
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-[#ffe86a]"><Icon icon="ph:discord-logo-fill" width="17" height="17" /> Multi-channel Audit Center</span>
+            <h2 className="mt-5 text-[25px] font-bold tracking-tight sm:text-[31px]">แยก Log ทุกความเคลื่อนไหวตาม Channel</h2>
+            <p className="mt-3 max-w-xl text-[13px] leading-6 text-white/70">เหตุการณ์สำคัญจะไปห้องเฉพาะของตัวเอง และทุก INSERT / UPDATE / DELETE จะถูกบันทึกซ้ำใน #log-database-changes พร้อมข้อมูลก่อน–หลังที่ตัดข้อมูลลับแล้ว</p>
+            <div className="mt-6 flex flex-wrap gap-2 text-[10px] font-semibold text-white/75">
+              <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">{configuredCount}/{status.channels?.length || 0} Channels ตั้งค่าแล้ว</span>
+              <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">{enabledCount} Channels เปิดใช้งาน</span>
+              <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">เก็บแล้ว {totals.stored_count || 0} เหตุการณ์</span>
             </div>
           </div>
 
           <div className="rounded-[20px] border border-white/12 bg-black/15 p-5 backdrop-blur-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[.14em] text-white/50">Connection</p>
-                <p className="mt-2 flex items-center gap-2 text-[15px] font-bold"><span className={`h-2.5 w-2.5 rounded-full ${status?.enabled ? 'bg-[#4ee58a] shadow-[0_0_12px_#4ee58a]' : 'bg-white/30'}`} />{status?.configured ? status?.enabled ? 'เชื่อมต่อและเปิดใช้งาน' : 'ตั้งค่าแล้ว · ปิดชั่วคราว' : 'ยังไม่ได้ตั้งค่า'}</p>
-              </div>
-              {status?.configured && <button type="button" onClick={toggleEnabled} disabled={Boolean(working)} className={`rounded-[12px] px-4 py-2.5 text-[11px] font-bold transition-all disabled:opacity-50 ${status?.enabled ? 'border border-white/15 bg-white/10 text-white hover:bg-white/15' : 'bg-[#ffdd00] text-[#35133f]'}`}>{working === 'toggle' ? 'กำลังบันทึก...' : status?.enabled ? 'หยุดส่งชั่วคราว' : 'เปิดใช้งาน'}</button>}
+            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-white/50">Delivery Overview</p>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">ส่งแล้ว</p><p className="mt-1 text-[20px] font-bold">{totals.delivered_count || 0}</p></div>
+              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">รอส่ง</p><p className="mt-1 text-[20px] font-bold text-[#ffe86a]">{totals.pending_count || 0}</p></div>
+              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">ผิดพลาด</p><p className="mt-1 text-[20px] font-bold text-[#ff8e88]">{totals.failed_count || 0}</p></div>
             </div>
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">ส่งแล้ว</p><p className="mt-1 text-[20px] font-bold">{status?.delivered_count || 0}</p></div>
-              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">รอส่ง</p><p className="mt-1 text-[20px] font-bold text-[#ffe86a]">{status?.pending_count || 0}</p></div>
-              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">ผิดพลาด</p><p className="mt-1 text-[20px] font-bold text-[#ff8e88]">{status?.failed_count || 0}</p></div>
-            </div>
+            <button type="button" onClick={() => retryFailed(null)} disabled={Boolean(working) || !totals.failed_count} className="mt-3 flex w-full items-center justify-center gap-2 rounded-[12px] border border-white/12 bg-white/[.08] py-2.5 text-[10px] font-bold text-white disabled:opacity-40"><Icon icon={working === 'retry:all' ? 'ph:spinner-gap-bold' : 'ph:arrows-clockwise-bold'} width="16" height="16" className={working === 'retry:all' ? 'animate-spin' : ''} />ส่งรายการผิดพลาดทั้งหมดซ้ำ</button>
           </div>
         </div>
       </section>
 
       {notice && <div className={`flex items-start gap-2.5 rounded-[16px] border px-4 py-3.5 text-[12px] ${notice.type === 'error' ? 'border-[#ffd0cd] bg-[#fff0ef] text-[#b93c34]' : 'border-[#c9ecd6] bg-[#edf9f1] text-[#1c7d45]'}`}><Icon icon={notice.type === 'error' ? 'ph:warning-circle-fill' : 'ph:check-circle-fill'} width="19" height="19" className="shrink-0" /><span>{notice.text}</span></div>}
 
-      <section className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
-        <form onSubmit={saveWebhook} className="rounded-[22px] border border-[#eadfed] bg-white p-6 shadow-[0_10px_30px_rgba(75,21,96,.06)]">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#f1e6f4] text-[#702082]"><Icon icon="ph:webhooks-logo-duotone" width="25" height="25" /></span>
-            <div><h3 className="text-[16px] font-bold text-[#4b1560]">Discord Webhook</h3><p className="mt-0.5 text-[10px] text-[#846c89]">เก็บแบบเข้ารหัสใน Supabase Vault</p></div>
-          </div>
-          <label className="mt-5 block">
-            <span className="text-[11px] font-bold text-[#604568]">{status?.configured ? 'ใส่ URL ใหม่เมื่อต้องการเปลี่ยนช่อง' : 'วาง Webhook URL จากช่อง Discord'}</span>
-            <div className="relative mt-2">
-              <Icon icon="ph:link-simple-bold" width="19" height="19" className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b3c98]" />
-              <input type="password" autoComplete="off" value={webhookUrl} onChange={event => setWebhookUrl(event.target.value)} required placeholder="https://discord.com/api/webhooks/..." className="w-full rounded-[14px] border border-[#dfcfe4] bg-[#fcf9fd] py-3.5 pl-11 pr-4 text-[13px] text-[#35133f] outline-none placeholder:text-[#b4a4b8] focus:border-[#702082] focus:ring-3 focus:ring-[#702082]/10" />
-            </div>
-          </label>
-          <button type="submit" disabled={Boolean(working) || !webhookUrl.trim()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-[14px] bg-[#702082] py-3.5 text-[12px] font-bold text-white shadow-[0_8px_20px_rgba(112,32,130,.2)] disabled:cursor-not-allowed disabled:opacity-45"><Icon icon={working === 'save' ? 'ph:spinner-gap-bold' : 'ph:floppy-disk-back-duotone'} width="18" height="18" className={working === 'save' ? 'animate-spin' : ''} />{working === 'save' ? 'กำลังบันทึกและทดสอบ...' : status?.configured ? 'เปลี่ยน Webhook และทดสอบ' : 'บันทึก Webhook และทดสอบ'}</button>
-          <p className="mt-3 text-[10px] leading-5 text-[#8b7a8f]">ระบบจะไม่แสดง Webhook URL เดิมกลับมาที่หน้าเว็บ และจะไม่ส่งรหัสผ่าน, Token, เบอร์โทร หรือภาพลายเซ็นไป Discord</p>
-        </form>
-
-        <div className="rounded-[22px] border border-[#eadfed] bg-white p-6 shadow-[0_10px_30px_rgba(75,21,96,.06)]">
-          <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#fff7c7] text-[#806400]"><Icon icon="ph:pulse-duotone" width="25" height="25" /></span><div><h3 className="text-[16px] font-bold text-[#4b1560]">ตรวจสอบการส่ง</h3><p className="mt-0.5 text-[10px] text-[#846c89]">คิวส่งซ้ำอัตโนมัติทุก 1 นาที</p></div></div>
-          <div className="mt-5 space-y-2.5">
-            <button type="button" onClick={sendTest} disabled={Boolean(working) || !status?.enabled} className="flex w-full items-center justify-between rounded-[14px] border border-[#dfcfe4] bg-[#faf7fb] px-4 py-3.5 text-left text-[12px] font-bold text-[#604568] disabled:opacity-45"><span className="flex items-center gap-2"><Icon icon={working === 'test' ? 'ph:spinner-gap-bold' : 'ph:paper-plane-tilt-duotone'} width="19" height="19" className={working === 'test' ? 'animate-spin text-[#702082]' : 'text-[#702082]'} />ส่งข้อความทดสอบ</span><Icon icon="ph:caret-right-bold" width="15" height="15" /></button>
-            <button type="button" onClick={retryFailed} disabled={Boolean(working) || !status?.failed_count} className="flex w-full items-center justify-between rounded-[14px] border border-[#f0d7d4] bg-[#fff7f6] px-4 py-3.5 text-left text-[12px] font-bold text-[#a13d37] disabled:opacity-45"><span className="flex items-center gap-2"><Icon icon={working === 'retry' ? 'ph:spinner-gap-bold' : 'ph:arrows-clockwise-bold'} width="19" height="19" className={working === 'retry' ? 'animate-spin' : ''} />ส่งรายการที่ผิดพลาดซ้ำ</span><span className="rounded-full bg-[#ffe5e2] px-2 py-0.5 text-[9px]">{status?.failed_count || 0}</span></button>
-          </div>
-          <div className="mt-4 rounded-[14px] bg-[#f4f7fb] px-4 py-3 text-[10px] leading-5 text-[#657184]"><Icon icon="ph:info-duotone" width="17" height="17" className="mr-1.5 inline text-[#3a78b8]" />Discord ขัดข้องหรือจำกัดความถี่ ระบบจะเก็บ Log ไว้ในฐานข้อมูลและลองส่งซ้ำสูงสุด 5 ครั้ง</div>
+      <section className="rounded-[22px] border border-[#eadfed] bg-white p-5 shadow-[0_10px_30px_rgba(75,21,96,.06)] sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#fff7c7] text-[#806400]"><Icon icon="ph:list-numbers-duotone" width="25" height="25" /></span>
+          <div><h3 className="text-[15px] font-bold text-[#4b1560]">ตั้งค่า Discord ครั้งเดียว</h3><p className="mt-1 text-[11px] leading-5 text-[#765c7c]">สร้าง Text Channel ตามชื่อด้านล่าง → เปิด Edit Channel → Integrations → Webhooks → New Webhook → Copy URL แล้วนำมาใส่ในช่องของห้องนั้น</p></div>
         </div>
+        <div className="mt-4 rounded-[14px] border border-[#dce8f7] bg-[#f3f8ff] px-4 py-3 text-[10px] leading-5 text-[#466684]"><Icon icon="ph:info-duotone" width="17" height="17" className="mr-1.5 inline text-[#3a78b8]" />หากยังไม่ได้ตั้งห้องเฉพาะ เหตุการณ์จะส่งไป <strong>#log-all</strong> แทนถ้าห้องรวมเปิดอยู่ และข้อมูลต้นฉบับจะอยู่ใน Supabase เสมอ</div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        {(status.channels || []).map(channel => {
+          const saveKey = `save:${channel.channel_key}`
+          const testKey = `test:${channel.channel_key}`
+          const toggleKey = `toggle:${channel.channel_key}`
+          const retryKey = `retry:${channel.channel_key}`
+          return <form key={channel.channel_key} onSubmit={event => saveWebhook(event, channel)} className={`rounded-[22px] border bg-white p-5 shadow-[0_8px_25px_rgba(75,21,96,.05)] ${channel.enabled ? 'border-[#d7c2de]' : 'border-[#eadfed]'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] ${channel.enabled ? 'bg-[#702082] text-white' : 'bg-[#f1e6f4] text-[#8b6f92]'}`}><Icon icon={channelIcons[channel.channel_key] || 'ph:hash-duotone'} width="24" height="24" /></span>
+                <div className="min-w-0"><h3 className="truncate text-[14px] font-bold text-[#4b1560]">#{channel.channel_name}</h3><p className="mt-0.5 text-[10px] font-semibold text-[#8b3c98]">{channel.display_name}</p><p className="mt-1 text-[10px] leading-4 text-[#8b7a8f]">{channel.description}</p></div>
+              </div>
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[8px] font-bold ${channel.enabled ? 'bg-[#e5f7eb] text-[#237747]' : channel.configured ? 'bg-[#fff4df] text-[#966000]' : 'bg-[#f1eef2] text-[#817184]'}`}>{channel.enabled ? 'เปิดใช้งาน' : channel.configured ? 'ปิดอยู่' : 'ยังไม่ตั้งค่า'}</span>
+            </div>
+
+            <div className="relative mt-4">
+              <Icon icon="ph:link-simple-bold" width="18" height="18" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8b3c98]" />
+              <input type="password" autoComplete="off" value={webhookUrls[channel.channel_key] || ''} onChange={event => setWebhookUrls(values => ({ ...values, [channel.channel_key]: event.target.value }))} required placeholder={channel.configured ? 'ใส่ URL ใหม่เมื่อต้องการเปลี่ยน Webhook' : `Webhook URL ของ #${channel.channel_name}`} className="w-full rounded-[13px] border border-[#dfcfe4] bg-[#fcf9fd] py-3 pl-10 pr-3 text-[11px] text-[#35133f] outline-none placeholder:text-[#b4a4b8] focus:border-[#702082] focus:ring-3 focus:ring-[#702082]/10" />
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <button type="submit" disabled={Boolean(working) || !webhookUrls[channel.channel_key]?.trim()} className="flex items-center justify-center gap-1.5 rounded-[11px] bg-[#702082] px-3 py-2.5 text-[9px] font-bold text-white disabled:opacity-40"><Icon icon={working === saveKey ? 'ph:spinner-gap-bold' : 'ph:floppy-disk-back-duotone'} width="15" height="15" className={working === saveKey ? 'animate-spin' : ''} />{channel.configured ? 'เปลี่ยน URL' : 'บันทึก'}</button>
+              <button type="button" onClick={() => sendTest(channel)} disabled={Boolean(working) || !channel.enabled} className="flex items-center justify-center gap-1.5 rounded-[11px] border border-[#dfcfe4] bg-[#faf7fb] px-3 py-2.5 text-[9px] font-bold text-[#604568] disabled:opacity-40"><Icon icon={working === testKey ? 'ph:spinner-gap-bold' : 'ph:paper-plane-tilt-duotone'} width="15" height="15" className={working === testKey ? 'animate-spin' : ''} />ทดสอบ</button>
+              <button type="button" onClick={() => toggleEnabled(channel)} disabled={Boolean(working) || !channel.configured} className="flex items-center justify-center gap-1.5 rounded-[11px] border border-[#dfcfe4] bg-white px-3 py-2.5 text-[9px] font-bold text-[#604568] disabled:opacity-40"><Icon icon={working === toggleKey ? 'ph:spinner-gap-bold' : channel.enabled ? 'ph:pause-circle-duotone' : 'ph:play-circle-duotone'} width="15" height="15" className={working === toggleKey ? 'animate-spin' : ''} />{channel.enabled ? 'ปิด' : 'เปิด'}</button>
+              <button type="button" onClick={() => retryFailed(channel.channel_key)} disabled={Boolean(working) || !channel.failed_count} className="flex items-center justify-center gap-1.5 rounded-[11px] border border-[#f0d7d4] bg-[#fff7f6] px-3 py-2.5 text-[9px] font-bold text-[#a13d37] disabled:opacity-40"><Icon icon={working === retryKey ? 'ph:spinner-gap-bold' : 'ph:arrows-clockwise-bold'} width="15" height="15" className={working === retryKey ? 'animate-spin' : ''} />ซ้ำ {channel.failed_count || 0}</button>
+            </div>
+
+            <div className="mt-3 flex items-center gap-3 border-t border-[#f0e8f2] pt-3 text-[8px] font-semibold text-[#99899d]"><span>ส่งแล้ว {channel.delivered_count || 0}</span><span>รอ {channel.pending_count || 0}</span><span>ผิดพลาด {channel.failed_count || 0}</span></div>
+          </form>
+        })}
       </section>
 
       <section className="overflow-hidden rounded-[22px] border border-[#eadfed] bg-white shadow-[0_10px_30px_rgba(75,21,96,.06)]">
-        <div className="flex items-center justify-between gap-4 border-b border-[#eadfed] px-5 py-4 sm:px-6"><div><h3 className="text-[15px] font-bold text-[#4b1560]">ประวัติ Audit Log ล่าสุด</h3><p className="mt-0.5 text-[10px] text-[#846c89]">ข้อมูลต้นฉบับยังอยู่ที่นี่ แม้ Discord ส่งไม่สำเร็จ</p></div><button type="button" onClick={() => refresh(false)} className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dfcfe4] bg-[#faf7fb] text-[#702082]" aria-label="รีเฟรช"><Icon icon="ph:arrows-clockwise-bold" width="17" height="17" /></button></div>
+        <div className="flex items-center justify-between gap-4 border-b border-[#eadfed] px-5 py-4 sm:px-6"><div><h3 className="text-[15px] font-bold text-[#4b1560]">Audit Log ล่าสุด</h3><p className="mt-0.5 text-[10px] text-[#846c89]">ข้อมูลตรวจสอบต้นฉบับจากทุก Channel</p></div><button type="button" onClick={refresh} className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dfcfe4] bg-[#faf7fb] text-[#702082]" aria-label="รีเฟรช"><Icon icon="ph:arrows-clockwise-bold" width="17" height="17" /></button></div>
         <div className="divide-y divide-[#f0e8f2]">
-          {events.length === 0 ? <div className="px-6 py-12 text-center text-[12px] text-[#8b7a8f]">ยังไม่มี Audit Log ใหม่หลังติดตั้งระบบ</div> : events.map(item => {
+          {events.length === 0 ? <div className="px-6 py-12 text-center text-[12px] text-[#8b7a8f]">ยังไม่มี Audit Log</div> : events.map(item => {
             const category = categoryMeta[item.category] || categoryMeta.system
             const delivery = deliveryMeta[item.delivery_status] || deliveryMeta.disabled
+            const intendedName = channelNames[item.intended_channel_key] || item.intended_channel_key
+            const deliveryName = channelNames[item.delivery_channel_key] || item.delivery_channel_key
             return <article key={item.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[auto_1fr_auto] sm:items-start sm:px-6">
               <span className={`flex h-10 w-10 items-center justify-center rounded-[13px] border ${category.tone}`}><Icon icon={category.icon} width="21" height="21" /></span>
-              <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="text-[13px] font-bold text-[#4b1560]">{item.title}</h4><span className={`rounded-full border px-2 py-0.5 text-[8px] font-bold ${category.tone}`}>{category.label}</span></div><p className="mt-1 text-[11px] leading-5 text-[#765c7c]">{item.description || item.event_type}</p><p className="mt-1.5 text-[9px] text-[#a08fa4]">{formatDateTime(item.occurred_at)} · {item.actor_label || 'ผู้ใช้งานเว็บไซต์'}</p>{item.last_error && <p className="mt-2 rounded-[9px] bg-[#fff0ef] px-2.5 py-1.5 text-[9px] text-[#b93c34]">{item.last_error}</p>}</div>
+              <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="text-[13px] font-bold text-[#4b1560]">{item.title}</h4><span className={`rounded-full border px-2 py-0.5 text-[8px] font-bold ${category.tone}`}>{category.label}</span></div><p className="mt-1 text-[11px] leading-5 text-[#765c7c]">{item.description || item.event_type}</p><p className="mt-1.5 text-[9px] text-[#a08fa4]">{formatDateTime(item.occurred_at)} · {item.actor_label || 'ผู้ใช้งานเว็บไซต์'} · #{intendedName || 'system'}{deliveryName && deliveryName !== intendedName ? ` → #${deliveryName}` : ''}</p>{item.last_error && <p className="mt-2 rounded-[9px] bg-[#fff0ef] px-2.5 py-1.5 text-[9px] text-[#b93c34]">{item.last_error}</p>}</div>
               <span className={`flex items-center gap-1.5 text-[9px] font-bold ${delivery.style}`}><Icon icon={delivery.icon} width="15" height="15" className={item.delivery_status === 'sending' ? 'animate-spin' : ''} />{delivery.label}</span>
             </article>
           })}
         </div>
       </section>
+
+      <div className="rounded-[14px] border border-[#e5d9e8] bg-[#faf7fb] px-4 py-3 text-[10px] leading-5 text-[#7d6a82]"><Icon icon="ph:lock-key-duotone" width="17" height="17" className="mr-1.5 inline text-[#702082]" />Webhook ทุกห้องเก็บแบบเข้ารหัสใน Supabase Vault ระบบไม่แสดง URL เดิมกลับมา และไม่บันทึกรหัสผ่าน, Token, เบอร์โทร, อีเมลพนักงาน หรือภาพลายเซ็นลง Log</div>
     </div>
   )
 }
