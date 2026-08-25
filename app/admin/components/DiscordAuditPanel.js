@@ -18,12 +18,35 @@ const channelIcons = {
   all: 'ph:stack-duotone',
   car_out: 'ph:sign-out-duotone',
   car_return: 'ph:sign-in-duotone',
+  trip_data: 'ph:route-duotone',
+  fuel: 'ph:gas-pump-duotone',
   ev: 'ph:lightning-duotone',
+  ev_start: 'ph:plug-charging-duotone',
+  ev_complete: 'ph:battery-charging-duotone',
   maintenance: 'ph:wrench-duotone',
+  maintenance_report: 'ph:warning-octagon-duotone',
+  maintenance_complete: 'ph:seal-check-duotone',
+  maintenance_billing: 'ph:receipt-duotone',
+  maintenance_records: 'ph:clipboard-text-duotone',
+  maintenance_items: 'ph:list-checks-duotone',
+  maintenance_handoff: 'ph:hand-arrow-down-duotone',
+  maintenance_catalog: 'ph:list-plus-duotone',
   mileage: 'ph:speedometer-duotone',
+  mileage_corrections: 'ph:ruler-duotone',
+  anomaly_reviews: 'ph:magnifying-glass-duotone',
+  car_status: 'ph:traffic-signal-duotone',
+  car_master: 'ph:car-profile-duotone',
+  car_images: 'ph:image-duotone',
+  staff: 'ph:users-three-duotone',
+  departments: 'ph:buildings-duotone',
+  tasks: 'ph:briefcase-duotone',
+  operation_areas: 'ph:map-pin-area-duotone',
   admin: 'ph:user-gear-duotone',
+  admin_sessions: 'ph:sign-in-duotone',
   documents: 'ph:file-text-duotone',
+  signatures: 'ph:signature-duotone',
   security: 'ph:shield-check-duotone',
+  discord_admin: 'ph:discord-logo-duotone',
   database: 'ph:database-duotone',
   system: 'ph:gear-six-duotone',
 }
@@ -51,10 +74,34 @@ export default function DiscordAuditPanel() {
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState('')
   const [notice, setNotice] = useState(null)
+  const [channelSearch, setChannelSearch] = useState('')
+  const [channelGroup, setChannelGroup] = useState('all')
 
   const channelNames = useMemo(() => Object.fromEntries(
     (status.channels || []).map(channel => [channel.channel_key, channel.channel_name])
   ), [status.channels])
+
+  const channelGroups = useMemo(() => {
+    const groups = []
+    const seen = new Set()
+    for (const channel of status.channels || []) {
+      if (!seen.has(channel.group_key)) {
+        groups.push({ key: channel.group_key, label: channel.group_label })
+        seen.add(channel.group_key)
+      }
+    }
+    return groups
+  }, [status.channels])
+
+  const visibleChannels = useMemo(() => {
+    const query = channelSearch.trim().toLocaleLowerCase('th-TH')
+    return (status.channels || []).filter(channel => {
+      if (channelGroup !== 'all' && channel.group_key !== channelGroup) return false
+      if (!query) return true
+      return [channel.channel_name, channel.display_name, channel.description, channel.group_label]
+        .some(value => String(value || '').toLocaleLowerCase('th-TH').includes(query))
+    })
+  }, [channelGroup, channelSearch, status.channels])
 
   const refresh = useCallback(async () => {
     const [statusResult, eventsResult] = await Promise.all([
@@ -168,8 +215,8 @@ export default function DiscordAuditPanel() {
         <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.1fr_.9fr]">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-[#ffe86a]"><Icon icon="ph:discord-logo-fill" width="17" height="17" /> Multi-channel Audit Center</span>
-            <h2 className="mt-5 text-[25px] font-bold tracking-tight sm:text-[31px]">แยก Log ทุกความเคลื่อนไหวตาม Channel</h2>
-            <p className="mt-3 max-w-xl text-[13px] leading-6 text-white/70">เหตุการณ์สำคัญจะไปห้องเฉพาะของตัวเอง และทุก INSERT / UPDATE / DELETE จะถูกบันทึกซ้ำใน #log-database-changes พร้อมข้อมูลก่อน–หลังที่ตัดข้อมูลลับแล้ว</p>
+            <h2 className="mt-5 text-[25px] font-bold tracking-tight sm:text-[31px]">34 Log Channels แยกทุกงานสำคัญ</h2>
+            <p className="mt-3 max-w-xl text-[13px] leading-6 text-white/70">เหตุการณ์จะเข้าห้องเฉพาะก่อน หากยังไม่ได้ตั้ง Webhook จะถอยไปห้องรวมของหมวด แล้วจึงไป #log-all โดยอัตโนมัติ</p>
             <div className="mt-6 flex flex-wrap gap-2 text-[10px] font-semibold text-white/75">
               <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">{configuredCount}/{status.channels?.length || 0} Channels ตั้งค่าแล้ว</span>
               <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">{enabledCount} Channels เปิดใช้งาน</span>
@@ -199,8 +246,20 @@ export default function DiscordAuditPanel() {
         <div className="mt-4 rounded-[14px] border border-[#dce8f7] bg-[#f3f8ff] px-4 py-3 text-[10px] leading-5 text-[#466684]"><Icon icon="ph:info-duotone" width="17" height="17" className="mr-1.5 inline text-[#3a78b8]" />หากยังไม่ได้ตั้งห้องเฉพาะ เหตุการณ์จะส่งไป <strong>#log-all</strong> แทนถ้าห้องรวมเปิดอยู่ เมื่อ Discord ยืนยันรับสำเร็จ ระบบจะลบรายการนั้นจาก Supabase อัตโนมัติ ส่วนรายการส่งไม่ผ่านจะเก็บไว้เพื่อส่งซ้ำ</div>
       </section>
 
+      <section className="rounded-[22px] border border-[#eadfed] bg-white p-4 shadow-[0_10px_30px_rgba(75,21,96,.06)] sm:p-5">
+        <div className="relative">
+          <Icon icon="ph:magnifying-glass-bold" width="18" height="18" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8b3c98]" />
+          <input value={channelSearch} onChange={event => setChannelSearch(event.target.value)} placeholder="ค้นหาชื่อ Channel หรือประเภท Log..." className="w-full rounded-[13px] border border-[#dfcfe4] bg-[#fcf9fd] py-3 pl-10 pr-3 text-[11px] text-[#35133f] outline-none placeholder:text-[#b4a4b8] focus:border-[#702082] focus:ring-3 focus:ring-[#702082]/10" />
+        </div>
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          <button type="button" onClick={() => setChannelGroup('all')} className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-bold ${channelGroup === 'all' ? 'border-[#702082] bg-[#702082] text-white' : 'border-[#dfcfe4] bg-white text-[#765c7c]'}`}>ทั้งหมด {status.channels?.length || 0}</button>
+          {channelGroups.map(group => <button key={group.key} type="button" onClick={() => setChannelGroup(group.key)} className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-bold ${channelGroup === group.key ? 'border-[#702082] bg-[#702082] text-white' : 'border-[#dfcfe4] bg-white text-[#765c7c]'}`}>{group.label}</button>)}
+        </div>
+        <p className="mt-3 text-[9px] font-semibold text-[#99899d]">แสดง {visibleChannels.length} จาก {status.channels?.length || 0} Channels</p>
+      </section>
+
       <section className="grid gap-4 lg:grid-cols-2">
-        {(status.channels || []).map(channel => {
+        {visibleChannels.map(channel => {
           const saveKey = `save:${channel.channel_key}`
           const testKey = `test:${channel.channel_key}`
           const toggleKey = `toggle:${channel.channel_key}`
@@ -209,7 +268,7 @@ export default function DiscordAuditPanel() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-3">
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] ${channel.enabled ? 'bg-[#702082] text-white' : 'bg-[#f1e6f4] text-[#8b6f92]'}`}><Icon icon={channelIcons[channel.channel_key] || 'ph:hash-duotone'} width="24" height="24" /></span>
-                <div className="min-w-0"><h3 className="truncate text-[14px] font-bold text-[#4b1560]">#{channel.channel_name}</h3><p className="mt-0.5 text-[10px] font-semibold text-[#8b3c98]">{channel.display_name}</p><p className="mt-1 text-[10px] leading-4 text-[#8b7a8f]">{channel.description}</p></div>
+                <div className="min-w-0"><h3 className="truncate text-[14px] font-bold text-[#4b1560]">#{channel.channel_name}</h3><p className="mt-0.5 text-[10px] font-semibold text-[#8b3c98]">{channel.display_name}</p><p className="mt-1 text-[10px] leading-4 text-[#8b7a8f]">{channel.description}</p><span className="mt-2 inline-flex rounded-full bg-[#f4edf6] px-2 py-0.5 text-[8px] font-bold text-[#765c7c]">{channel.group_label}</span></div>
               </div>
               <span className={`shrink-0 rounded-full px-2.5 py-1 text-[8px] font-bold ${channel.enabled ? 'bg-[#e5f7eb] text-[#237747]' : channel.configured ? 'bg-[#fff4df] text-[#966000]' : 'bg-[#f1eef2] text-[#817184]'}`}>{channel.enabled ? 'เปิดใช้งาน' : channel.configured ? 'ปิดอยู่' : 'ยังไม่ตั้งค่า'}</span>
             </div>
@@ -229,6 +288,7 @@ export default function DiscordAuditPanel() {
             <div className="mt-3 flex items-center gap-3 border-t border-[#f0e8f2] pt-3 text-[8px] font-semibold text-[#99899d]"><span>รอส่ง {channel.pending_count || 0}</span><span>ผิดพลาด {channel.failed_count || 0}</span><span>ส่งสำเร็จแล้วลบอัตโนมัติ</span></div>
           </form>
         })}
+        {visibleChannels.length === 0 && <div className="rounded-[20px] border border-dashed border-[#dfcfe4] bg-white px-6 py-12 text-center text-[11px] text-[#8b7a8f] lg:col-span-2">ไม่พบ Channel ที่ค้นหา</div>}
       </section>
 
       <section className="overflow-hidden rounded-[22px] border border-[#eadfed] bg-white shadow-[0_10px_30px_rgba(75,21,96,.06)]">
