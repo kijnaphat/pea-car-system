@@ -29,7 +29,6 @@ const channelIcons = {
 }
 
 const deliveryMeta = {
-  delivered: { label: 'ส่งแล้ว', icon: 'ph:check-circle-fill', style: 'text-[#23834c]' },
   sending: { label: 'กำลังส่ง', icon: 'ph:spinner-gap-bold', style: 'text-[#2972b8]' },
   pending: { label: 'รอส่ง', icon: 'ph:clock-countdown-duotone', style: 'text-[#a45d00]' },
   failed: { label: 'ส่งไม่สำเร็จ', icon: 'ph:warning-circle-fill', style: 'text-[#d13f37]' },
@@ -174,14 +173,14 @@ export default function DiscordAuditPanel() {
             <div className="mt-6 flex flex-wrap gap-2 text-[10px] font-semibold text-white/75">
               <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">{configuredCount}/{status.channels?.length || 0} Channels ตั้งค่าแล้ว</span>
               <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">{enabledCount} Channels เปิดใช้งาน</span>
-              <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">เก็บแล้ว {totals.stored_count || 0} เหตุการณ์</span>
+              <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">คงเหลือในคิว {totals.stored_count || 0} เหตุการณ์</span>
             </div>
           </div>
 
           <div className="rounded-[20px] border border-white/12 bg-black/15 p-5 backdrop-blur-sm">
             <p className="text-[10px] font-bold uppercase tracking-[.14em] text-white/50">Delivery Overview</p>
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">ส่งแล้ว</p><p className="mt-1 text-[20px] font-bold">{totals.delivered_count || 0}</p></div>
+              <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">ในฐานข้อมูล</p><p className="mt-1 text-[20px] font-bold">{totals.stored_count || 0}</p></div>
               <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">รอส่ง</p><p className="mt-1 text-[20px] font-bold text-[#ffe86a]">{totals.pending_count || 0}</p></div>
               <div className="rounded-[14px] bg-white/[.08] p-3"><p className="text-[9px] text-white/50">ผิดพลาด</p><p className="mt-1 text-[20px] font-bold text-[#ff8e88]">{totals.failed_count || 0}</p></div>
             </div>
@@ -197,7 +196,7 @@ export default function DiscordAuditPanel() {
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#fff7c7] text-[#806400]"><Icon icon="ph:list-numbers-duotone" width="25" height="25" /></span>
           <div><h3 className="text-[15px] font-bold text-[#4b1560]">ตั้งค่า Discord ครั้งเดียว</h3><p className="mt-1 text-[11px] leading-5 text-[#765c7c]">สร้าง Text Channel ตามชื่อด้านล่าง → เปิด Edit Channel → Integrations → Webhooks → New Webhook → Copy URL แล้วนำมาใส่ในช่องของห้องนั้น</p></div>
         </div>
-        <div className="mt-4 rounded-[14px] border border-[#dce8f7] bg-[#f3f8ff] px-4 py-3 text-[10px] leading-5 text-[#466684]"><Icon icon="ph:info-duotone" width="17" height="17" className="mr-1.5 inline text-[#3a78b8]" />หากยังไม่ได้ตั้งห้องเฉพาะ เหตุการณ์จะส่งไป <strong>#log-all</strong> แทนถ้าห้องรวมเปิดอยู่ และข้อมูลต้นฉบับจะอยู่ใน Supabase เสมอ</div>
+        <div className="mt-4 rounded-[14px] border border-[#dce8f7] bg-[#f3f8ff] px-4 py-3 text-[10px] leading-5 text-[#466684]"><Icon icon="ph:info-duotone" width="17" height="17" className="mr-1.5 inline text-[#3a78b8]" />หากยังไม่ได้ตั้งห้องเฉพาะ เหตุการณ์จะส่งไป <strong>#log-all</strong> แทนถ้าห้องรวมเปิดอยู่ เมื่อ Discord ยืนยันรับสำเร็จ ระบบจะลบรายการนั้นจาก Supabase อัตโนมัติ ส่วนรายการส่งไม่ผ่านจะเก็บไว้เพื่อส่งซ้ำ</div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
@@ -227,15 +226,15 @@ export default function DiscordAuditPanel() {
               <button type="button" onClick={() => retryFailed(channel.channel_key)} disabled={Boolean(working) || !channel.failed_count} className="flex items-center justify-center gap-1.5 rounded-[11px] border border-[#f0d7d4] bg-[#fff7f6] px-3 py-2.5 text-[9px] font-bold text-[#a13d37] disabled:opacity-40"><Icon icon={working === retryKey ? 'ph:spinner-gap-bold' : 'ph:arrows-clockwise-bold'} width="15" height="15" className={working === retryKey ? 'animate-spin' : ''} />ซ้ำ {channel.failed_count || 0}</button>
             </div>
 
-            <div className="mt-3 flex items-center gap-3 border-t border-[#f0e8f2] pt-3 text-[8px] font-semibold text-[#99899d]"><span>ส่งแล้ว {channel.delivered_count || 0}</span><span>รอ {channel.pending_count || 0}</span><span>ผิดพลาด {channel.failed_count || 0}</span></div>
+            <div className="mt-3 flex items-center gap-3 border-t border-[#f0e8f2] pt-3 text-[8px] font-semibold text-[#99899d]"><span>รอส่ง {channel.pending_count || 0}</span><span>ผิดพลาด {channel.failed_count || 0}</span><span>ส่งสำเร็จแล้วลบอัตโนมัติ</span></div>
           </form>
         })}
       </section>
 
       <section className="overflow-hidden rounded-[22px] border border-[#eadfed] bg-white shadow-[0_10px_30px_rgba(75,21,96,.06)]">
-        <div className="flex items-center justify-between gap-4 border-b border-[#eadfed] px-5 py-4 sm:px-6"><div><h3 className="text-[15px] font-bold text-[#4b1560]">Audit Log ล่าสุด</h3><p className="mt-0.5 text-[10px] text-[#846c89]">ข้อมูลตรวจสอบต้นฉบับจากทุก Channel</p></div><button type="button" onClick={refresh} className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dfcfe4] bg-[#faf7fb] text-[#702082]" aria-label="รีเฟรช"><Icon icon="ph:arrows-clockwise-bold" width="17" height="17" /></button></div>
+        <div className="flex items-center justify-between gap-4 border-b border-[#eadfed] px-5 py-4 sm:px-6"><div><h3 className="text-[15px] font-bold text-[#4b1560]">คิว Audit Log ล่าสุด</h3><p className="mt-0.5 text-[10px] text-[#846c89]">แสดงเฉพาะรายการรอส่ง ปิดอยู่ หรือส่งไม่สำเร็จ รายการที่ Discord รับแล้วจะถูกลบ</p></div><button type="button" onClick={refresh} className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-[#dfcfe4] bg-[#faf7fb] text-[#702082]" aria-label="รีเฟรช"><Icon icon="ph:arrows-clockwise-bold" width="17" height="17" /></button></div>
         <div className="divide-y divide-[#f0e8f2]">
-          {events.length === 0 ? <div className="px-6 py-12 text-center text-[12px] text-[#8b7a8f]">ยังไม่มี Audit Log</div> : events.map(item => {
+          {events.length === 0 ? <div className="px-6 py-12 text-center text-[12px] text-[#8b7a8f]">ส่งเข้า Discord ครบแล้ว ไม่มีรายการค้าง</div> : events.map(item => {
             const category = categoryMeta[item.category] || categoryMeta.system
             const delivery = deliveryMeta[item.delivery_status] || deliveryMeta.disabled
             const intendedName = channelNames[item.intended_channel_key] || item.intended_channel_key
