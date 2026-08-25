@@ -111,6 +111,7 @@ function CarSelector({ adminReportCarId }) {
   const [carDetailModal, setCarDetailModal] = useState(null)
   const [maintenanceModal, setMaintenanceModal] = useState({ isOpen: false, mode: 'report', car: null, maintenanceRecord: null })
   const [maintenanceAuthCheckingCarId, setMaintenanceAuthCheckingCarId] = useState(null)
+  const [isHomeAdmin, setIsHomeAdmin] = useState(false)
   const handledAdminReportCarIdRef = useRef(null)
 
   const openHomeMaintenanceForAdmin = useCallback(async (car) => {
@@ -134,6 +135,25 @@ function CarSelector({ adminReportCarId }) {
       setMaintenanceAuthCheckingCarId(null)
     }
   }, [router])
+
+  useEffect(() => {
+    let active = true
+
+    const syncAdminVisibility = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (active) setIsHomeAdmin(!error && user?.app_metadata?.role === 'admin')
+    }
+
+    syncAdminVisibility()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setIsHomeAdmin(session?.user?.app_metadata?.role === 'admin')
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const fetchCars = async () => {
     try {
@@ -745,7 +765,7 @@ function CarSelector({ adminReportCarId }) {
                     <span className="flex items-center justify-center gap-2"><Icon icon="ph:phone-call-duotone" width="21" height="21" />โทรหาผู้ขับ</span>
                   </button>}
                 </div>
-                <button onClick={() => {
+                {(isBusy || isMaintenance || isHomeAdmin) && <button onClick={() => {
                   if (isBusy) {
                     window.location.href = `/?car_id=${car.id}`
                     return
@@ -763,7 +783,7 @@ function CarSelector({ adminReportCarId }) {
                 }} disabled={maintenanceAuthCheckingCarId === car.id} className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-[15px] py-3.5 text-[14px] font-bold text-white active:scale-[.98] disabled:cursor-wait disabled:opacity-70 ${isMaintenance ? 'bg-[#28a653] shadow-[0_8px_18px_rgba(40,166,83,.22)]' : 'bg-[#d57a00] shadow-[0_8px_18px_rgba(213,122,0,.22)]'}`}>
                   <Icon icon={maintenanceAuthCheckingCarId === car.id ? 'ph:spinner-gap-bold' : isMaintenance ? 'ph:check-circle-duotone' : isBusy ? 'ph:arrow-bend-down-left-duotone' : 'ph:lock-key-duotone'} width="22" height="22" className={maintenanceAuthCheckingCarId === car.id ? 'animate-spin' : ''} />
                   {maintenanceAuthCheckingCarId === car.id ? 'กำลังตรวจสิทธิ์...' : isMaintenance ? 'ซ่อมเสร็จแล้ว / เปิดใช้งานรถ' : isBusy ? 'คืนรถและส่งซ่อม' : 'แจ้งรถชำรุด / ส่งซ่อม'}
-                </button>
+                </button>}
               </main>
             </div>
           </div>
