@@ -6,6 +6,16 @@ import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
 import PageSkeleton from '@/app/components/PageSkeleton'
 
+const getDestinationAfterLogin = () => {
+  if (typeof window === 'undefined') return '/admin'
+  const params = new URLSearchParams(window.location.search)
+  const carId = params.get('car_id')
+  if (params.get('next') === 'home-maintenance' && /^\d+$/.test(carId || '')) {
+    return `/?admin_report_car_id=${carId}`
+  }
+  return '/admin'
+}
+
 export default function AdminLogin() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -20,10 +30,11 @@ export default function AdminLogin() {
     const checkExistingSession = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
-        if (!error && user) {
-          router.replace('/admin')
+        if (!error && user?.app_metadata?.role === 'admin') {
+          router.replace(getDestinationAfterLogin())
           return
         }
+        if (user) await supabase.auth.signOut()
       } finally {
         if (active) setCheckingSession(false)
       }
@@ -37,9 +48,13 @@ export default function AdminLogin() {
     setLoading(true)
     setErrorMsg('')
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      router.replace('/admin')
+      if (data.user?.app_metadata?.role !== 'admin') {
+        await supabase.auth.signOut()
+        throw new Error('บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ')
+      }
+      router.replace(getDestinationAfterLogin())
     } catch (error) {
       setErrorMsg(error.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง')
     } finally {

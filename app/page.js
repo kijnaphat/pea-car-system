@@ -1,5 +1,5 @@
 ﻿'use client'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
@@ -75,6 +75,7 @@ function MainApp() {
   const searchParams = useSearchParams()
   const carId = searchParams.get('car_id') 
   const maintenanceTakeoutToken = searchParams.get('maintenance_takeout')
+  const adminReportCarId = searchParams.get('admin_report_car_id')
 
   // 1. ถ้ามี car_id -> ไปหน้าฟอร์ม
   if (carId) {
@@ -82,13 +83,13 @@ function MainApp() {
   }
 
   // 2. ถ้าไม่มี -> ไปหน้า Home
-  return <CarSelector />
+  return <CarSelector adminReportCarId={adminReportCarId} />
 }
 
 // ==========================================
 // 1. หน้าแสดงผล (Home)
 // ==========================================
-function CarSelector() {
+function CarSelector({ adminReportCarId }) {
   const router = useRouter()
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
@@ -109,6 +110,30 @@ function CarSelector() {
   // 🌟 State สำหรับ Modal รายละเอียดรถ
   const [carDetailModal, setCarDetailModal] = useState(null)
   const [maintenanceModal, setMaintenanceModal] = useState({ isOpen: false, mode: 'report', car: null, maintenanceRecord: null })
+  const [maintenanceAuthCheckingCarId, setMaintenanceAuthCheckingCarId] = useState(null)
+  const handledAdminReportCarIdRef = useRef(null)
+
+  const openHomeMaintenanceForAdmin = useCallback(async (car) => {
+    if (!car) return
+    setMaintenanceAuthCheckingCarId(car.id)
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || user?.app_metadata?.role !== 'admin') {
+        if (user) await supabase.auth.signOut()
+        router.push(`/admin/login?next=home-maintenance&car_id=${car.id}`)
+        return
+      }
+
+      setMaintenanceModal({
+        isOpen: true,
+        mode: 'report',
+        car,
+        maintenanceRecord: null,
+      })
+    } finally {
+      setMaintenanceAuthCheckingCarId(null)
+    }
+  }, [router])
 
   const fetchCars = async () => {
     try {
@@ -219,6 +244,20 @@ function CarSelector() {
     const interval = setInterval(fetchCars, 5000) 
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    if (!adminReportCarId || loading || handledAdminReportCarIdRef.current === adminReportCarId) return
+    handledAdminReportCarIdRef.current = adminReportCarId
+    window.history.replaceState({}, '', '/')
+
+    const targetCar = cars.find(car => String(car.id) === String(adminReportCarId))
+    if (!targetCar || targetCar.status !== 'available') {
+      window.alert('รถคันนี้ไม่อยู่ในสถานะพร้อมแจ้งซ่อมจากหน้า Home')
+      return
+    }
+
+    openHomeMaintenanceForAdmin(targetCar)
+  }, [adminReportCarId, cars, loading, openHomeMaintenanceForAdmin])
 
   useEffect(() => {
     if (loading) return
@@ -711,15 +750,19 @@ function CarSelector() {
                     window.location.href = `/?car_id=${car.id}`
                     return
                   }
+                  if (!isMaintenance) {
+                    openHomeMaintenanceForAdmin(car)
+                    return
+                  }
                   setMaintenanceModal({
                     isOpen: true,
-                    mode: isMaintenance ? 'complete' : 'report',
+                    mode: 'complete',
                     car,
                     maintenanceRecord: car.maintenanceRecord,
                   })
-                }} className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-[15px] py-3.5 text-[14px] font-bold text-white active:scale-[.98] ${isMaintenance ? 'bg-[#28a653] shadow-[0_8px_18px_rgba(40,166,83,.22)]' : 'bg-[#d57a00] shadow-[0_8px_18px_rgba(213,122,0,.22)]'}`}>
-                  <Icon icon={isMaintenance ? 'ph:check-circle-duotone' : isBusy ? 'ph:arrow-bend-down-left-duotone' : 'ph:wrench-duotone'} width="22" height="22" />
-                  {isMaintenance ? 'ซ่อมเสร็จแล้ว / เปิดใช้งานรถ' : isBusy ? 'คืนรถและส่งซ่อม' : 'แจ้งรถชำรุด / ส่งซ่อม'}
+                }} disabled={maintenanceAuthCheckingCarId === car.id} className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-[15px] py-3.5 text-[14px] font-bold text-white active:scale-[.98] disabled:cursor-wait disabled:opacity-70 ${isMaintenance ? 'bg-[#28a653] shadow-[0_8px_18px_rgba(40,166,83,.22)]' : 'bg-[#d57a00] shadow-[0_8px_18px_rgba(213,122,0,.22)]'}`}>
+                  <Icon icon={maintenanceAuthCheckingCarId === car.id ? 'ph:spinner-gap-bold' : isMaintenance ? 'ph:check-circle-duotone' : isBusy ? 'ph:arrow-bend-down-left-duotone' : 'ph:lock-key-duotone'} width="22" height="22" className={maintenanceAuthCheckingCarId === car.id ? 'animate-spin' : ''} />
+                  {maintenanceAuthCheckingCarId === car.id ? 'กำลังตรวจสิทธิ์...' : isMaintenance ? 'ซ่อมเสร็จแล้ว / เปิดใช้งานรถ' : isBusy ? 'คืนรถและส่งซ่อม' : 'แจ้งรถชำรุด / ส่งซ่อม'}
                 </button>
               </main>
             </div>
