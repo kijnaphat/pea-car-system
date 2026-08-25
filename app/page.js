@@ -765,7 +765,7 @@ function CarSelector({ adminReportCarId }) {
                     <span className="flex items-center justify-center gap-2"><Icon icon="ph:phone-call-duotone" width="21" height="21" />โทรหาผู้ขับ</span>
                   </button>}
                 </div>
-                {(isBusy || isMaintenance || isHomeAdmin) && <button onClick={() => {
+                {isHomeAdmin && <button onClick={() => {
                   if (isBusy) {
                     window.location.href = `/?car_id=${car.id}`
                     return
