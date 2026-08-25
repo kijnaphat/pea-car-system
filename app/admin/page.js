@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import CarQrLabel from '@/app/components/CarQrLabel'
 import DataManagementPanel from '@/app/admin/components/DataManagementPanel'
+import DiscordAuditPanel from '@/app/admin/components/DiscordAuditPanel'
 import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
 import { countPendingAnomalies } from '@/lib/tripAnomalies'
 
@@ -142,6 +143,7 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     if(confirm('ยืนยันการออกจากระบบ PEA Smart Fleet?')) {
+        await supabase.rpc('log_admin_session_event', { p_event_type: 'logout' })
         await supabase.auth.signOut()
         router.replace('/') 
     }
@@ -373,6 +375,7 @@ export default function AdminDashboard() {
     { id: 'tasks', icon: 'ph:clipboard-text-duotone', title: 'ประเภทงาน', desc: 'Tasks' },
     { id: 'departments', icon: 'ph:buildings-duotone', title: 'แผนก', desc: 'Departments' },
     { id: 'operation_areas', icon: 'ph:map-pin-duotone', title: 'พื้นที่งาน', desc: 'Locations' },
+    { id: 'discord', icon: 'ph:discord-logo-duotone', title: 'Discord Log', desc: 'Audit & Alerts' },
   ]
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
   const dataManagementCount = mileageAnomalyCount + pendingBillingCount
@@ -570,6 +573,8 @@ export default function AdminDashboard() {
                 onAnomalyCountChange={setMileageAnomalyCount}
                 onPendingBillingCountChange={setPendingBillingCount}
               />
+            ) : activeMenu === 'discord' ? (
+              <DiscordAuditPanel />
             ) : (
               <>
 

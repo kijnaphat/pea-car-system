@@ -54,6 +54,7 @@ export default function AdminLogin() {
         await supabase.auth.signOut()
         throw new Error('บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ')
       }
+      await supabase.rpc('log_admin_session_event', { p_event_type: 'login' })
       router.replace(getDestinationAfterLogin())
     } catch (error) {
       setErrorMsg(error.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง')
