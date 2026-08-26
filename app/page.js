@@ -161,12 +161,12 @@ function CarSelector({ adminReportCarId }) {
         supabase.from('cars').select('*'),
         supabase
           .from('trip_logs')
-          .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, location, is_completed')
+          .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, driver_position, location, is_completed')
           .eq('is_completed', false)
           .order('start_time', { ascending: false }),
         supabase
           .from('car_maintenance_records')
-          .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name), reported_by:staff!car_maintenance_records_reported_by_staff_id_fkey(full_name)')
+          .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name)')
           .eq('status', 'open')
           .order('reported_at', { ascending: false }),
       ])
@@ -185,7 +185,7 @@ function CarSelector({ adminReportCarId }) {
             if (car.status !== 'busy') {
               const { data } = await supabase
                 .from('trip_logs')
-                .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, location, is_completed')
+                .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, driver_position, location, is_completed')
                 .eq('car_id', Number(car.id))
                 .eq('is_completed', true)
                 .order('start_time', { ascending: false })
@@ -206,26 +206,9 @@ function CarSelector({ adminReportCarId }) {
           return { ...car, activeLog: log, lastLog, maintenanceRecord: maintenanceByCar.get(Number(car.id)) || null, isActivated }
         })
 
-        const driverNames = mergedCars
-          .map(c => c.status === 'maintenance' ? c.maintenanceRecord?.reported_by?.full_name : c.status === 'busy' ? c.activeLog?.driver_name : c.lastLog?.driver_name)
-          .filter(Boolean);
-        const uniqueDrivers = [...new Set(driverNames)];
-        
-        let staffMap = {};
-        if (uniqueDrivers.length > 0) {
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('full_name, position')
-            .in('full_name', uniqueDrivers);
-          
-          if (staffData) {
-            staffData.forEach(s => staffMap[s.full_name] = s.position);
-          }
-        }
-
         const finalCars = mergedCars.map(car => {
-          const dName = car.status === 'maintenance' ? car.maintenanceRecord?.reported_by?.full_name : car.status === 'busy' ? car.activeLog?.driver_name : car.lastLog?.driver_name;
-          return { ...car, driverPosition: dName ? staffMap[dName] : null };
+          const log = car.status === 'busy' ? car.activeLog : car.lastLog
+          return { ...car, driverPosition: log?.driver_position || null }
         });
 
         finalCars.sort((a, b) => {
@@ -1935,7 +1918,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
         } else if (c.status === 'maintenance') {
            const { data: record } = await supabase
              .from('car_maintenance_records')
-             .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name), reported_by:staff!car_maintenance_records_reported_by_staff_id_fkey(full_name)')
+             .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name)')
              .eq('car_id', Number(carId))
              .eq('status', 'open')
              .order('reported_at', { ascending: false })
