@@ -243,22 +243,15 @@ function CarSelector() {
 
       {/* ✅ Modal คำอธิบายการใช้งาน */}
       {showInstructions && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div 
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={() => setShowInstructions(false)}
-            ></div>
-            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 max-h-[85vh] flex flex-col overflow-hidden animate-fade-in-up">
-                <div className="bg-gradient-to-r from-[#702082] to-[#4b1560] p-5 text-white flex justify-between items-center shadow-md z-10">
+        <div className="kpn-detail-overlay fixed inset-0 z-[300] flex items-end justify-center sm:items-center">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true"></div>
+            <div className="relative z-10 flex h-[100dvh] max-h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl animate-fade-in-up sm:h-auto sm:max-h-[85vh] sm:rounded-[2rem]">
+                <div className="z-10 flex shrink-0 items-center bg-gradient-to-r from-[#702082] to-[#4b1560] px-5 pb-5 pt-[max(20px,env(safe-area-inset-top))] text-white shadow-md">
                     <h2 className="text-lg font-black flex items-center gap-2">
                         คู่มือการใช้งานระบบ
                     </h2>
-                    <button 
-                        onClick={() => setShowInstructions(false)}
-                        className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors text-sm"
-                    >✖</button>
                 </div>
-                <div className="p-5 overflow-y-auto space-y-5 text-gray-700 bg-gray-50">
+                <div className="min-h-0 flex-1 overflow-y-auto space-y-5 bg-gray-50 p-5 text-gray-700">
                     <div className="bg-white border border-red-200 rounded-2xl overflow-hidden shadow-sm">
                         <div className="bg-red-300 text-red-700 font-bold p-3 flex items-center gap-2 text-sm">
                             รถยนต์ทั่วไป (รถใช้น้ำมัน)
@@ -312,11 +305,11 @@ function CarSelector() {
                         </div>
                     </div>
                 </div>
-                <div className="p-4 border-t bg-white text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div className="shrink-0 border-t bg-white px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                     <button 
-                        onClick={() => setShowInstructions(false)}
+                        onClick={() => { setShowInstructions(false); router.push('/') }}
                         className="w-full bg-[#702082] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#4b1560] transition-colors active:scale-95"
-                    >รับทราบและเข้าใจแล้ว</button>
+                    >รับทราบและกลับหน้าหลัก</button>
                 </div>
             </div>
         </div>

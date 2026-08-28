@@ -214,9 +214,11 @@ body {
   box-shadow: 0 24px 70px rgba(23, 31, 54, .1) !important;
 }
 
-/* Full-screen car details must sit above, and temporarily replace, the dock. */
+/* Full-screen details must sit above, and temporarily replace, the dock. */
 body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"],
-body:has(.car-detail-modal) .global-nav-spacer {
+body:has(.car-detail-modal) .global-nav-spacer,
+body:has(.kpn-detail-overlay) nav[aria-label="เมนูหลัก"],
+body:has(.kpn-detail-overlay) .global-nav-spacer {
   display: none !important;
 }
 

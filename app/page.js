@@ -574,13 +574,12 @@ function CarSelector({ adminReportCarId }) {
 
       {/* ── Modal รายละเอียดข่าวสาร ── */}
       {selectedNews && (
-        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="news-detail-title">
-          <button className="absolute inset-0 bg-[#24102b]/55 backdrop-blur-sm" onClick={() => setSelectedNews(null)} aria-label="ปิดรายละเอียดข่าว"/>
-          <div className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-[#fbf8fc] rounded-t-[30px] sm:rounded-[30px] shadow-[0_-12px_60px_rgba(55,15,66,.28)] animate-slideUp">
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#4b1560] via-[#702082] to-[#913aa1] px-6 pt-5 pb-7 text-white">
+        <div className="kpn-detail-overlay fixed inset-0 z-[300] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby="news-detail-title">
+          <div className="absolute inset-0 bg-[#24102b]/55 backdrop-blur-sm" aria-hidden="true"/>
+          <div className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-[560px] flex-col overflow-hidden bg-[#fbf8fc] shadow-[0_-12px_60px_rgba(55,15,66,.28)] animate-slideUp sm:h-auto sm:max-h-[90vh] sm:rounded-[30px]">
+            <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#4b1560] via-[#702082] to-[#913aa1] px-6 pb-6 pt-[max(20px,env(safe-area-inset-top))] text-white">
               <div className="absolute -right-16 -bottom-24 w-60 h-60 rounded-full bg-white/10"/>
-              <div className="sm:hidden w-10 h-1 rounded-full bg-white/35 mx-auto mb-5"/>
-              <div className="relative flex items-start justify-between gap-4">
+              <div className="relative flex items-start gap-4">
                 <div className="flex items-center gap-3.5 min-w-0">
                   <span className="w-[52px] h-[52px] min-w-[52px] rounded-[16px] bg-[#ffdd00] text-[#4b1560] flex items-center justify-center shadow-lg"><Icon icon={selectedNews.icon} width="29" height="29" /></span>
                   <div className="min-w-0">
@@ -588,12 +587,11 @@ function CarSelector({ adminReportCarId }) {
                     <h2 id="news-detail-title" className="text-[23px] font-bold tracking-[-.5px] leading-tight mt-1">{selectedNews.title}</h2>
                   </div>
                 </div>
-                <button onClick={() => setSelectedNews(null)} className="w-9 h-9 rounded-full bg-white/15 border border-white/15 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform" aria-label="ปิด"><Icon icon="ph:x-bold" width="16" height="16" /></button>
               </div>
               <div className="relative mt-5 inline-flex items-center gap-2 bg-white/12 border border-white/15 rounded-full px-3.5 py-2 text-[11px] font-semibold"><Icon icon="ph:calendar-check-duotone" width="17" height="17" className="text-[#ffdd00]" />{selectedNews.period}</div>
             </div>
 
-            <div className="px-5 sm:px-6 py-6 space-y-5">
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-6 sm:px-6">
               <section className="bg-white rounded-[22px] p-5 border border-[#eee3f1] shadow-[0_6px_24px_rgba(91,35,104,.06)]">
                 <div className="flex items-center gap-2 mb-2 text-[#702082]"><Icon icon="ph:info-duotone" width="20" height="20" /><h3 className="text-[15px] font-bold">รายละเอียด</h3></div>
                 <p className="text-[14px] leading-[1.75] text-[#5f5462]">{selectedNews.detail}</p>
@@ -615,8 +613,9 @@ function CarSelector({ adminReportCarId }) {
                 <Icon icon="ph:warning-circle-duotone" width="22" height="22" className="text-[#b78d00] flex-shrink-0" />
                 <div><p className="text-[12px] font-bold mb-0.5">ข้อควรทราบ</p><p className="text-[12px] leading-relaxed">{selectedNews.note}</p></div>
               </div>
-
-              <button onClick={() => setSelectedNews(null)} className="w-full bg-[#702082] text-white rounded-[17px] py-4 text-[15px] font-bold flex items-center justify-center gap-2 active:scale-[.98] transition-transform shadow-[0_8px_22px_rgba(112,32,130,.22)]"><Icon icon="ph:check-circle-duotone" width="20" height="20" className="text-[#ffdd00]" />รับทราบ</button>
+            </div>
+            <div className="shrink-0 border-t border-[#eadfed] bg-white px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-6">
+              <button onClick={() => { setSelectedNews(null); router.push('/') }} className="w-full bg-[#702082] text-white rounded-[17px] py-4 text-[15px] font-bold flex items-center justify-center gap-2 active:scale-[.98] transition-transform shadow-[0_8px_22px_rgba(112,32,130,.22)]"><Icon icon="ph:check-circle-duotone" width="20" height="20" className="text-[#ffdd00]" />รับทราบและกลับหน้าหลัก</button>
             </div>
           </div>
         </div>
@@ -793,23 +792,15 @@ function CarSelector({ adminReportCarId }) {
 
       {/* ── Modal คู่มือ (Bottom Sheet) ── */}
       {showInstructions && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+        <div className="kpn-detail-overlay fixed inset-0 z-[300] flex items-end justify-center sm:items-center">
           <div className="absolute inset-0 bg-black/40"
-               style={{backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)'}}
-               onClick={() => setShowInstructions(false)}/>
-          <div className="relative w-full max-w-[440px] bg-[#f8f3fa] rounded-t-[26px] sm:rounded-[26px] z-10 max-h-[92vh] flex flex-col overflow-hidden animate-slideUp"
+               style={{backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)'}} aria-hidden="true"/>
+          <div className="relative z-10 flex h-[100dvh] max-h-[100dvh] w-full max-w-[440px] flex-col overflow-hidden bg-[#f8f3fa] animate-slideUp sm:h-auto sm:max-h-[92vh] sm:rounded-[26px]"
                style={{boxShadow:'0 -4px 60px rgba(0,0,0,0.22)'}}>
-            <div className="sm:hidden flex justify-center pt-3 pb-0">
-              <div className="w-9 h-1 rounded-full bg-[#c7c7cc]"/>
-            </div>
-            <div className="flex items-center justify-between px-5 pt-4 pb-4 border-b border-black/[0.06]">
+            <div className="flex shrink-0 items-center px-5 pb-4 pt-[max(20px,env(safe-area-inset-top))] border-b border-black/[0.06]">
               <span className="text-[18px] font-semibold text-[#4b1560] tracking-[-0.4px]">คู่มือการใช้งาน</span>
-              <button onClick={() => setShowInstructions(false)}
-                className="w-[28px] h-[28px] rounded-full bg-[#eadfed] flex items-center justify-center text-[13px] text-[#5f4664] font-semibold active:bg-[#d1d1d6] transition-colors">
-                ✕
-              </button>
             </div>
-            <div className="overflow-y-auto px-5 py-4 space-y-2">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-2">
               <div className="bg-white rounded-[16px] overflow-hidden"
                    style={{boxShadow:'0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.06)'}}>
                 <div className="px-4 py-3 border-b border-[#f8f3fa] flex items-center gap-2">
@@ -854,10 +845,10 @@ function CarSelector({ adminReportCarId }) {
                 </div>
               </div>
             </div>
-            <div className="px-5 pt-3 pb-8 border-t border-black/[0.05]">
-              <button onClick={() => setShowInstructions(false)}
+            <div className="shrink-0 border-t border-black/[0.05] bg-white px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
+              <button onClick={() => { setShowInstructions(false); router.push('/') }}
                 className="w-full bg-[#4b1560] text-white text-[16px] font-semibold py-4 rounded-[16px] active:bg-[#702082] transition-colors tracking-[-0.2px]">
-                รับทราบ
+                รับทราบและกลับหน้าหลัก
               </button>
             </div>
           </div>
