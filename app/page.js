@@ -641,10 +641,10 @@ function CarSelector({ adminReportCarId }) {
         const durationLabel = isBusy ? (isEV ? 'ระยะเวลาชาร์จปัจจุบัน' : 'ระยะเวลาที่ใช้งานมา') : (isEV ? 'ระยะเวลาชาร์จครั้งล่าสุด' : 'ระยะเวลาใช้งานครั้งล่าสุด')
 
         return (
-          <div className="fixed inset-0 z-[999] overflow-y-auto bg-[#f8f3fa] animate-slideUp">
-            <div className="min-h-full w-full max-w-[760px] mx-auto pb-3">
-              {/* ภาพรถและทะเบียนคงไว้แบบเดิม */}
-              <section className="relative h-[34dvh] min-h-[270px] max-h-[330px] overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
+          <div className="car-detail-modal fixed inset-0 z-[999] overflow-hidden bg-[#f4f6fb] animate-slideUp">
+            <div className="mx-auto flex h-full min-h-0 w-full max-w-[760px] flex-col overflow-hidden bg-[#f4f6fb]">
+              {/* ภาพรถและทะเบียนแบบกะทัดรัด เพื่อให้เห็นปุ่มครบในหน้าจอเดียว */}
+              <section className="car-detail-hero relative h-[clamp(150px,24dvh,215px)] shrink-0 overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
                 {carImageSrc ? (
                   <img src={carImageSrc} alt={car.car_type}
                     className={`absolute inset-0 h-full w-full object-cover object-center drop-shadow-[0_12px_18px_rgba(35,8,45,.22)] ${!car.isActivated ? 'grayscale opacity-45' : ''}`} />
@@ -660,7 +660,7 @@ function CarSelector({ adminReportCarId }) {
                     <Icon icon="ph:printer-duotone" width="24" height="24" />
                   </button>
                 </div>
-                <div className="absolute inset-x-0 bottom-0 px-4 pb-5 text-white">
+                <div className="absolute inset-x-0 bottom-0 px-4 pb-4 text-white">
                   <p className="mb-1 text-[13px] font-medium text-white/90 truncate">{car.model || 'ยานพาหนะ'} · {car.car_type}</p>
                   <div className="flex items-end justify-between gap-3">
                     <h1 className="min-w-0 truncate text-[29px] sm:text-[36px] font-bold tracking-[-1px] leading-none">{car.plate_number}</h1>
@@ -672,32 +672,32 @@ function CarSelector({ adminReportCarId }) {
                 </div>
               </section>
 
-              {/* ส่วนข้อมูลใช้ภาษาภาพเดียวกับหน้าคู่มือ */}
-              <main className="relative -mt-4 rounded-t-[24px] bg-[#f8f3fa] px-3 pb-3 pt-2 sm:px-5">
-                <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-[#d7c5dc]" />
-                <section className="relative overflow-hidden rounded-[20px] bg-[linear-gradient(135deg,#4b1560_0%,#702082_58%,#913aa1_100%)] px-4 py-3.5 text-white shadow-[0_12px_28px_rgba(75,21,96,.25)]">
-                  <div className="absolute -right-16 -bottom-28 h-60 w-60 rounded-full border-[22px] border-white/10" />
-                  <div className="relative flex items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-[#ffdd00] text-[#4b1560] shadow-md">
-                      <Icon icon={isMaintenance ? 'ph:wrench-duotone' : isBusy ? 'ph:steering-wheel-duotone' : 'ph:car-profile-duotone'} width="31" height="31" />
+              {/* สรุปข้อมูลในหน้าจอเดียว โดยไม่ต้องเลื่อน */}
+              <main className="relative -mt-3 flex min-h-0 flex-1 flex-col rounded-t-[24px] bg-[#f4f6fb] px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-5">
+                <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-[#ccd1dc]" />
+                <section className="car-detail-summary relative flex shrink-0 items-center justify-between gap-3 overflow-hidden rounded-[18px] bg-[#080d1b] px-3.5 py-2.5 text-white shadow-[0_12px_28px_rgba(8,13,27,.18)]">
+                  <div className="absolute -right-12 -bottom-20 h-40 w-40 rounded-full border-[18px] border-white/10" />
+                  <div className="relative flex min-w-0 items-center gap-2.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#c9ff48] text-[#080d1b]">
+                      <Icon icon={isMaintenance ? 'ph:wrench-duotone' : isBusy ? 'ph:steering-wheel-duotone' : 'ph:car-profile-duotone'} width="27" height="27" />
                     </div>
                     <div className="min-w-0">
-                      <p className="mb-1 text-[10px] font-bold tracking-[.12em] text-[#ffea71]">PEA FLEET · สถานะรถล่าสุด</p>
-                      <h2 className="text-[20px] font-bold leading-tight">{isMaintenance ? 'ข้อมูลการแจ้งซ่อม' : isBusy ? 'ข้อมูลการใช้งาน' : 'รายละเอียดรถยนต์'}</h2>
+                      <p className="text-[9px] font-bold tracking-[.12em] text-[#c9ff48]">KPN SMART CAR</p>
+                      <h2 className="truncate text-[17px] font-bold leading-tight">{isMaintenance ? 'ข้อมูลการแจ้งซ่อม' : isBusy ? 'ข้อมูลการใช้งาน' : 'รายละเอียดรถยนต์'}</h2>
                     </div>
                   </div>
-                  <div className="relative mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 py-1.5 text-[10px] font-semibold text-white/95">
-                    <Icon icon="ph:clock-duotone" width="18" height="18" className="shrink-0 text-[#ffdd00]" />
-                    <span className="truncate">{activityTimeText || 'ยังไม่มีประวัติการใช้งาน'}</span>
+                  <div className="relative flex max-w-[48%] items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-1.5 text-[9px] font-semibold text-white/90">
+                    <Icon icon="ph:clock-duotone" width="15" height="15" className="shrink-0 text-[#c9ff48]" />
+                    <span className="truncate">{activityTimeText || 'ยังไม่มีประวัติ'}</span>
                   </div>
                 </section>
 
-                <section className="mt-2.5 rounded-[20px] border border-[#eadfed] bg-white p-3 shadow-[0_7px_18px_rgba(91,35,104,.07)]">
-                  <div className="mb-2 flex items-center gap-1.5 text-[#702082]">
-                    <Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:info-duotone'} width="24" height="24" />
-                    <h3 className="text-[18px] font-bold">{isMaintenance ? 'รายละเอียดการซ่อม' : 'รายละเอียดการใช้งาน'}</h3>
+                <section className="mt-2 flex min-h-0 flex-1 flex-col rounded-[18px] border border-[#e7eaf1] bg-white p-2.5 shadow-[0_7px_18px_rgba(20,28,50,.06)]">
+                  <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2 px-1 text-[#5547f7]">
+                    <div className="flex items-center gap-1.5"><Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:info-duotone'} width="20" height="20" /><h3 className="text-[15px] font-bold">{isMaintenance ? 'รายละเอียดการซ่อม' : 'รายละเอียดการใช้งาน'}</h3></div>
+                    <span className="text-[9px] font-semibold text-[#8c94a7]">ข้อมูลล่าสุด</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="car-detail-grid grid min-h-0 flex-1 grid-cols-2 gap-2">
                     {isMaintenance ? <>
                       <div className="flex gap-2.5 rounded-[15px] border border-[#f1d7a4] bg-[#fffaf0] p-2.5">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#f2d08d] bg-[#fff1cf] text-[#b56700]"><Icon icon="ph:warning-duotone" width="23" height="23" /></div>
@@ -730,9 +730,9 @@ function CarSelector({ adminReportCarId }) {
                     </div>}
                     {!isBusy && distance !== null && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#dce8f4] bg-[#eff8ff] text-[#386b9b]"><Icon icon="ph:road-horizon-duotone" width="23" height="23" /></div>
-                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">ระยะทางที่ขับครั้งล่าสุด</p><p className="mt-0.5 text-[16px] font-bold text-[#4b1560]">{distance.toLocaleString('th-TH')} กม.</p></div>
+                      <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">การใช้งานครั้งล่าสุด</p><p className="mt-0.5 text-[14px] font-bold text-[#4b1560]">{distance.toLocaleString('th-TH')} กม.{hasDuration ? ` · ${durationText}` : ''}</p></div>
                     </div>}
-                    {hasDuration && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
+                    {hasDuration && (isBusy || distance === null) && <div className="flex gap-2.5 rounded-[15px] border border-[#eee3f1] bg-[#fcfaff] p-2.5">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isBusy ? 'border-[#ffd1ce] bg-[#fff2f1] text-[#ed4d75]' : 'border-[#eadfed] bg-[#f8f3fa] text-[#702082]'}`}><Icon icon="ph:timer-duotone" width="23" height="23" /></div>
                       <div className="min-w-0"><p className="text-[11px] font-medium text-[#8e8e93]">{durationLabel}</p><p className={`mt-0.5 font-mono text-[16px] font-bold tabular-nums ${isBusy ? 'text-[#ed4d75]' : 'text-[#4b1560]'}`}>{isBusy ? <LiveTripDuration startValue={logData.start_time} /> : durationText}</p></div>
                     </div>}
@@ -740,15 +740,14 @@ function CarSelector({ adminReportCarId }) {
                   </div>
                 </section>
 
-                <div className="mt-2.5 flex gap-2.5">
-                  <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')} className="flex-[0.45] rounded-[14px] border-2 border-[#eadfed] bg-white py-3 text-[13px] font-bold text-[#4b1560] shadow-sm active:bg-[#f8f3fa]">
-                    <span className="flex items-center justify-center gap-2"><Icon icon="ph:printer-duotone" width="21" height="21" className="text-[#8b3c98]" />พิมพ์รายงาน</span>
+                <div className={`car-detail-actions mt-2 grid shrink-0 gap-2 ${isHomeAdmin ? (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-3' : 'grid-cols-2') : (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-2' : 'grid-cols-1')}`}>
+                  <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')} className="min-w-0 rounded-[14px] border border-[#dfe3ed] bg-white px-2 py-2.5 text-[12px] font-bold text-[#101522] shadow-sm active:bg-[#f4f6fb]">
+                    <span className="flex items-center justify-center gap-1.5"><Icon icon="ph:printer-duotone" width="20" height="20" className="shrink-0 text-[#5547f7]" /><span className="truncate">พิมพ์รายงาน</span></span>
                   </button>
-                  {driverName && car.driverPosition !== 'ผจก.' && <button onClick={(e) => { setCarDetailModal(null); handleCallClick(e, driverName); }} className="flex-[0.55] rounded-[14px] bg-[#34c759] py-3 text-[13px] font-bold text-white shadow-[0_8px_18px_rgba(52,199,89,.25)] active:scale-[.98]">
-                    <span className="flex items-center justify-center gap-2"><Icon icon="ph:phone-call-duotone" width="21" height="21" />โทรหาผู้ขับ</span>
+                  {driverName && car.driverPosition !== 'ผจก.' && <button onClick={(e) => { setCarDetailModal(null); handleCallClick(e, driverName); }} className="min-w-0 rounded-[14px] bg-[#27b85a] px-2 py-2.5 text-[12px] font-bold text-white shadow-[0_8px_18px_rgba(39,184,90,.22)] active:scale-[.98]">
+                    <span className="flex items-center justify-center gap-1.5"><Icon icon="ph:phone-call-duotone" width="20" height="20" className="shrink-0" /><span className="truncate">โทรหาผู้ขับ</span></span>
                   </button>}
-                </div>
-                {isHomeAdmin && <button onClick={() => {
+                  {isHomeAdmin && <button onClick={() => {
                   if (isBusy) {
                     window.location.href = `/?car_id=${car.id}`
                     return
@@ -763,10 +762,10 @@ function CarSelector({ adminReportCarId }) {
                     car,
                     maintenanceRecord: car.maintenanceRecord,
                   })
-                }} disabled={maintenanceAuthCheckingCarId === car.id} className={`mt-2.5 flex w-full items-center justify-center gap-2 rounded-[15px] py-3.5 text-[14px] font-bold text-white active:scale-[.98] disabled:cursor-wait disabled:opacity-70 ${isMaintenance ? 'bg-[#28a653] shadow-[0_8px_18px_rgba(40,166,83,.22)]' : 'bg-[#d57a00] shadow-[0_8px_18px_rgba(213,122,0,.22)]'}`}>
-                  <Icon icon={maintenanceAuthCheckingCarId === car.id ? 'ph:spinner-gap-bold' : isMaintenance ? 'ph:check-circle-duotone' : isBusy ? 'ph:arrow-bend-down-left-duotone' : 'ph:lock-key-duotone'} width="22" height="22" className={maintenanceAuthCheckingCarId === car.id ? 'animate-spin' : ''} />
-                  {maintenanceAuthCheckingCarId === car.id ? 'กำลังตรวจสิทธิ์...' : isMaintenance ? 'ซ่อมเสร็จแล้ว / เปิดใช้งานรถ' : isBusy ? 'คืนรถและส่งซ่อม' : 'แจ้งรถชำรุด / ส่งซ่อม'}
+                }} disabled={maintenanceAuthCheckingCarId === car.id} className={`min-w-0 rounded-[14px] px-2 py-2.5 text-[11px] font-bold text-white active:scale-[.98] disabled:cursor-wait disabled:opacity-70 ${isMaintenance ? 'bg-[#28a653] shadow-[0_8px_18px_rgba(40,166,83,.22)]' : 'bg-[#d57a00] shadow-[0_8px_18px_rgba(213,122,0,.22)]'}`}>
+                  <span className="flex items-center justify-center gap-1.5"><Icon icon={maintenanceAuthCheckingCarId === car.id ? 'ph:spinner-gap-bold' : isMaintenance ? 'ph:check-circle-duotone' : isBusy ? 'ph:arrow-bend-down-left-duotone' : 'ph:lock-key-duotone'} width="20" height="20" className={`shrink-0 ${maintenanceAuthCheckingCarId === car.id ? 'animate-spin' : ''}`} /><span className="line-clamp-2 leading-tight">{maintenanceAuthCheckingCarId === car.id ? 'กำลังตรวจสิทธิ์...' : isMaintenance ? 'ซ่อมเสร็จ / เปิดใช้งาน' : isBusy ? 'คืนรถ / ส่งซ่อม' : 'แจ้งชำรุด / ส่งซ่อม'}</span></span>
                 </button>}
+                </div>
               </main>
             </div>
           </div>

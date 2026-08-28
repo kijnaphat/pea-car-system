@@ -214,6 +214,73 @@ body {
   box-shadow: 0 24px 70px rgba(23, 31, 54, .1) !important;
 }
 
+/* Full-screen car details must sit above, and temporarily replace, the dock. */
+body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
+  display: none !important;
+}
+
+.car-detail-modal {
+  padding-top: env(safe-area-inset-top);
+}
+
+.car-detail-modal .car-detail-grid > div {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  gap: .5rem !important;
+  padding: .625rem !important;
+  border-color: var(--kpn-line) !important;
+  background: var(--kpn-surface-soft) !important;
+}
+
+.car-detail-modal .car-detail-grid > div > div:first-child {
+  width: 2rem !important;
+  height: 2rem !important;
+  flex-basis: 2rem;
+}
+
+.car-detail-modal .car-detail-grid p:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .625rem !important;
+}
+
+.car-detail-modal .car-detail-grid p:last-child {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: .8125rem !important;
+  line-height: 1.25 !important;
+}
+
+.car-detail-modal .car-detail-actions button {
+  min-height: 2.875rem;
+}
+
+@media (max-height: 700px) {
+  .car-detail-modal .car-detail-hero {
+    height: 132px;
+  }
+
+  .car-detail-modal .car-detail-summary {
+    padding-block: .4rem;
+  }
+
+  .car-detail-modal .car-detail-grid {
+    gap: .35rem;
+  }
+
+  .car-detail-modal .car-detail-grid > div {
+    padding: .45rem !important;
+  }
+
+  .car-detail-modal .car-detail-actions {
+    margin-top: .35rem;
+  }
+}
+
 .kpn-hero {
   border: 1px solid rgba(255,255,255,.1);
   box-shadow: 0 20px 45px rgba(8, 13, 27, .22) !important;
