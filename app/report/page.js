@@ -1,29 +1,16 @@
 ﻿'use client'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { normalizeStaffCode } from '@/lib/staffCode'
 
 // --- Main Component ---
 function MainApp() {
-  const searchParams = useSearchParams()
-  const pathname = usePathname()
-  const carId = searchParams.get('car_id') 
-
-  // 1. ถ้า URL มีคำว่า /report ให้แสดงหน้ารายงาน
-  if (pathname && pathname.includes('/report')) {
-    return <ReportPage />
-  }
-
-  // 2. ถ้ามี car_id -> ไปหน้าฟอร์มสแกนรถ
-  if (carId) {
-    return <CarActionForm carId={carId} />
-  }
-
-  // 3. ถ้าไม่มี -> ไปหน้า Home (Dashboard เลือกรถ)
-  return <CarSelector />
+  // This module is mounted only at /report; keep the entry point explicit and
+  // avoid referencing the vehicle workflow component that lives on app/page.js.
+  return <ReportPage />
 }
 
 // ==========================================
@@ -102,14 +89,14 @@ function CarSelector() {
   if (loading) return <PageSkeleton variant="report" />
 
   return (
-    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-6 relative">
+    <div className="kpn-screen kpn-report min-h-screen bg-[#f8f3fa] font-sarabun pb-6 relative">
       
       {/* 🟣 Header */}
-      <div className="bg-gradient-to-r from-[#702082] to-[#4b1560] px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
+      <div className="kpn-dark-card px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
         <div className="flex justify-between items-start">
           <div>
-             <h1 className="text-2xl font-black tracking-tight">PEA SMART VEHICLE MANAGEMENT</h1>
-             <p className="text-purple-200 text-sm opacity-90">ระบบบริหารจัดการยานพาหนะ</p>
+             <h1 className="text-2xl font-black tracking-tight">KPN SMART CAR</h1>
+             <p className="text-white/65 text-sm">รายงานและเอกสารยานพาหนะ</p>
           </div>
           <button 
             onClick={() => router.push('/dashboard')} 
@@ -136,8 +123,8 @@ function CarSelector() {
           }
         `}</style>
 
-        <div className="bg-gradient-to-r from-[#702082] to-[#ffdd00] p-1 rounded-[2rem] shadow-2xl shadow-[#702082]/30">
-          <div className="bg-white/10 backdrop-blur-xl rounded-[1.8rem] p-4 flex flex-col gap-3 border border-white/30">
+        <div className="bg-gradient-to-r from-[#5547f7] to-[#c9ff48] p-1 rounded-[2rem] shadow-2xl shadow-[#5547f7]/20">
+          <div className="bg-[#10182e] backdrop-blur-xl rounded-[1.8rem] p-4 flex flex-col gap-3 border border-white/10">
               
               <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -453,8 +440,8 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
-        <div className="bg-gradient-to-r from-[#702082] to-[#4b1560] text-white p-5 text-center font-black text-lg">
+      <div className="kpn-modal-surface bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
+        <div className="kpn-dark-card text-white p-5 text-center font-black text-lg">
           {title}
         </div>
         
@@ -530,7 +517,7 @@ function MobileControlSheet({
   }
 
   return (
-    <div className="bg-[rgba(245,245,247,0.95)] backdrop-blur-2xl"
+    <div className="mobile-control-sheet bg-[rgba(245,245,247,0.95)] backdrop-blur-2xl"
          style={{boxShadow:'0 4px 20px rgba(0,0,0,0.12)', borderBottom:'0.5px solid rgba(0,0,0,0.1)', WebkitFontSmoothing:'antialiased'}}>
 
       {/* Tab bar */}
@@ -977,7 +964,7 @@ function ReportPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8f3fa] flex flex-col items-center print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden pt-0 pb-8 xl:pt-8 xl:pb-12"
+    <div className="kpn-screen kpn-report min-h-screen bg-[#f8f3fa] flex flex-col items-center print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden pt-0 pb-8 xl:pt-8 xl:pb-12"
          style={{WebkitFontSmoothing:'antialiased'}}>
       
       <style>{`

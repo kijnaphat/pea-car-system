@@ -2,7 +2,7 @@ const Bone = ({ className = '' }) => <div className={`pea-skeleton ${className}`
 
 function HomeSkeleton() {
   return (
-    <main className="min-h-screen bg-[#f8f3fa] pb-28 lg:bg-[#f3edf5] lg:px-6 lg:py-6">
+    <main className="kpn-screen min-h-screen bg-[#f8f3fa] pb-28 lg:bg-[#f3edf5] lg:px-6 lg:py-6">
       <header className="bg-white"><div className="mx-auto flex max-w-[620px] lg:max-w-[1280px] items-center justify-between px-5 py-3 lg:px-8 lg:py-5"><div className="flex items-center gap-3"><Bone className="h-11 w-11 rounded-[14px]" /><div><Bone className="h-2.5 w-24" /><Bone className="mt-2 h-5 w-44" /></div></div><Bone className="h-11 w-11 rounded-full" /></div></header>
       <div className="mx-auto max-w-[620px] overflow-hidden bg-white lg:max-w-[1280px] lg:rounded-[30px] lg:shadow-[0_14px_45px_rgba(75,21,96,.10)]">
         <section className="px-5 pt-4 lg:px-6 lg:pt-6"><div className="relative h-[128px] overflow-hidden rounded-[22px] bg-[#702082] p-5 sm:h-[150px] lg:h-[210px] lg:rounded-[26px] lg:p-8"><div className="pea-skeleton-dark h-2.5 w-20" /><div className="pea-skeleton-dark mt-3 h-6 w-44 lg:h-9 lg:w-64" /><div className="pea-skeleton-dark mt-2 h-4 w-32 lg:w-44" /><div className="pea-skeleton-dark mt-3 h-6 w-28 rounded-full" /><div className="pea-skeleton-dark absolute bottom-5 right-6 h-16 w-16 rounded-full lg:bottom-8 lg:right-12 lg:h-28 lg:w-28" /></div><div className="mx-auto mt-3 flex w-16 justify-between">{Array.from({length:4}).map((_, i) => <Bone key={i} className={`h-1.5 ${i === 0 ? 'w-5' : 'w-1.5'} rounded-full`} />)}</div></section>
@@ -16,7 +16,7 @@ function HomeSkeleton() {
 
 function DashboardSkeleton() {
   return (
-    <main className="min-h-screen bg-[#f3eaf5] p-4 md:p-6">
+    <main className="kpn-screen min-h-screen bg-[#f3eaf5] p-4 md:p-6">
       <div className="mx-auto max-w-7xl"><Bone className="h-9 w-56" /><Bone className="mt-3 h-4 w-36" />
         <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="rounded-[22px] bg-white p-5 shadow-sm"><Bone className="h-4 w-2/3" /><Bone className="mt-5 h-8 w-1/2" /><Bone className="mt-4 h-3 w-3/4" /></div>)}</div>
         <div className="mt-4 grid gap-4 lg:grid-cols-5"><div className="rounded-[24px] bg-white p-5 lg:col-span-3"><Bone className="h-5 w-32" /><Bone className="mt-6 h-56 w-full rounded-xl" /></div><div className="rounded-[24px] bg-white p-5 lg:col-span-2"><Bone className="h-5 w-28" />{Array.from({ length: 5 }).map((_, i) => <Bone key={i} className="mt-5 h-4 w-full" />)}</div></div>
@@ -27,7 +27,7 @@ function DashboardSkeleton() {
 
 function AdminSkeleton() {
   return (
-    <main className="min-h-screen bg-[#f3edf5] p-4 md:p-6"><div className="mx-auto flex max-w-7xl gap-4">
+    <main className="kpn-screen min-h-screen bg-[#f3edf5] p-4 md:p-6"><div className="mx-auto flex max-w-7xl gap-4">
       <aside className="hidden w-64 shrink-0 rounded-[24px] bg-[#35133f] p-5 md:block"><Bone className="h-8 w-32 bg-white/20" />{Array.from({ length: 5 }).map((_, i) => <Bone key={i} className="mt-5 h-11 w-full bg-white/15" />)}</aside>
       <section className="min-w-0 flex-1"><Bone className="h-9 w-48" /><div className="mt-6 rounded-[24px] bg-white p-5"><div className="flex justify-between"><Bone className="h-8 w-36" /><Bone className="h-10 w-28" /></div>{Array.from({ length: 7 }).map((_, i) => <div key={i} className="mt-5 flex gap-4"><Bone className="h-5 w-1/5" /><Bone className="h-5 flex-1" /><Bone className="h-5 w-16" /></div>)}</div></section>
     </div></main>
@@ -42,7 +42,7 @@ function ReportSkeleton() {
 
 function LoginSkeleton() {
   return (
-    <main className="relative flex min-h-[calc(100dvh-78px)] items-center justify-center overflow-hidden bg-[#f8f3fa] p-4 font-sarabun sm:p-7">
+    <main className="kpn-screen relative flex min-h-[calc(100dvh-78px)] items-center justify-center overflow-hidden bg-[#f8f3fa] p-4 font-sarabun sm:p-7">
       <div className="absolute -top-32 -left-28 h-80 w-80 rounded-full bg-[#702082]/10 blur-2xl" />
       <div className="absolute -bottom-36 -right-24 h-96 w-96 rounded-full bg-[#ffdd00]/20 blur-3xl" />
       <section className="relative grid min-h-[640px] w-full max-w-[1040px] grid-cols-1 overflow-hidden rounded-[30px] border border-[#eadfed] bg-white shadow-[0_24px_70px_rgba(79,28,91,.16)] lg:grid-cols-[1.05fr_.95fr]">

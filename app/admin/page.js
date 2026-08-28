@@ -384,7 +384,7 @@ export default function AdminDashboard() {
   const labelStyle = "text-[11px] font-bold text-[#702082] mb-2 block uppercase tracking-wider pl-1"
 
   return (
-    <div className="pea-admin flex h-[calc(100dvh-60px)] bg-[#f3edf5] font-sans overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
+    <div className="kpn-screen kpn-admin pea-admin flex h-[calc(100dvh-60px)] bg-[#f3edf5] font-sans overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
       
       <style>{`
         * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -471,7 +471,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Sidebar สำหรับจอใหญ่ */}
-      <aside className="hidden md:flex w-[272px] shrink-0 bg-gradient-to-b from-[#32103d] via-[#270d31] to-[#1d0925] border border-white/10 text-[#fffaf0] flex-col rounded-[26px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,.28)] relative">
+      <aside className="kpn-admin-sidebar hidden md:flex w-[272px] shrink-0 bg-gradient-to-b from-[#32103d] via-[#270d31] to-[#1d0925] border border-white/10 text-[#fffaf0] flex-col rounded-[26px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,.28)] relative">
         <div className="absolute -top-20 -right-20 w-52 h-52 rounded-full bg-[#8e3ba0]/25 blur-3xl pointer-events-none"/>
         <div className="absolute bottom-10 -left-20 w-48 h-48 rounded-full bg-[#ffdd00]/5 blur-3xl pointer-events-none"/>
         
@@ -530,7 +530,7 @@ export default function AdminDashboard() {
       <main className="admin-main min-w-0 flex-1 bg-[radial-gradient(circle_at_top_right,_#fff6bd_0%,_#fbf7fc_24%,_#f6f0f8_100%)] flex flex-col overflow-hidden relative md:rounded-[26px] md:border md:border-[#e5d6e9] md:shadow-[0_20px_60px_rgba(75,21,96,.12)]">
         
         {/* Header */}
-        <header className="min-h-[76px] bg-white/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-t-[4px] border-t-[#ffdd00] border-b border-b-[#eadfed] sticky top-0 shadow-[0_4px_20px_rgba(75,21,96,.04)]">
+        <header className="kpn-dashboard-nav min-h-[76px] bg-white/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-t-[4px] border-t-[#ffdd00] border-b border-b-[#eadfed] sticky top-0 shadow-[0_4px_20px_rgba(75,21,96,.04)]">
           <div className="flex items-center gap-3 min-w-0">
             <div className="md:hidden w-10 h-10 bg-white rounded-[13px] p-1.5 flex items-center justify-center border-2 border-[#ffdd00] shrink-0 shadow-[0_6px_20px_rgba(255,221,0,.16)] overflow-hidden"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
             <div>

@@ -7,7 +7,7 @@ import PageSkeleton from '@/app/components/PageSkeleton'
 
 // ── Apple-style helpers ──
 const ACard = ({ children, className = '' }) => (
-  <div className={`bg-white rounded-[24px] overflow-hidden ${className}`}
+  <div className={`kpn-surface bg-white rounded-[24px] overflow-hidden ${className}`}
        style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
     {children}
   </div>
@@ -649,7 +649,7 @@ export default function UltimateDashboard() {
 
   if (showWelcome) {
     return (
-      <div className="min-h-[100dvh] bg-[#f8f3fa] flex flex-col items-center justify-center p-4 md:p-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="kpn-screen kpn-dashboard min-h-[100dvh] bg-[#f8f3fa] flex flex-col items-center justify-center p-4 md:p-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
         <style>{`
           @keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
           .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
@@ -671,7 +671,7 @@ export default function UltimateDashboard() {
               <button 
                 key={cat.id} 
                 onClick={() => handleSelectCategory(cat.id)}
-                className="group text-left bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] border border-transparent hover:border-[#702082]/30 transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 relative overflow-hidden flex flex-col justify-center items-center md:items-start text-center md:text-left h-full min-h-[140px] md:min-h-[180px]"
+                className="kpn-surface group text-left bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] border border-transparent hover:border-[#702082]/30 transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 relative overflow-hidden flex flex-col justify-center items-center md:items-start text-center md:text-left h-full min-h-[140px] md:min-h-[180px]"
                 style={{boxShadow:'0 4px 20px rgba(0,0,0,0.05)', animationDelay: `${index * 80}ms`}}
               >
                 <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[14px] md:rounded-[18px] ${cat.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm`}
@@ -710,7 +710,7 @@ export default function UltimateDashboard() {
   const maxLoc    = Math.max(...analytics.topLocations.map(l => l.count), 1);
 
   const Card = ({ children, className = '', style = {} }) => (
-    <div className={`bg-white rounded-[24px] overflow-hidden ${className}`}
+    <div className={`kpn-surface bg-white rounded-[24px] overflow-hidden ${className}`}
          style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 20px rgba(0,0,0,0.07)', ...style}}>
       {children}
     </div>
@@ -905,7 +905,7 @@ export default function UltimateDashboard() {
                   <Icon icon="ph:file-text-duotone" width="22" height="22" className="text-[#702082]" />
                   จัดการเอกสารเตรียมพิมพ์
                 </h3>
-                <p className="text-[12px] text-[#765c7c] mt-0.5">คลิกที่ช่อง "สาเหตุ" เพื่อพิมพ์ข้อความได้โดยตรง จากนั้นกดยืนยันสั่งพิมพ์</p>
+                <p className="text-[12px] text-[#765c7c] mt-0.5">คลิกที่ช่อง &ldquo;สาเหตุ&rdquo; เพื่อพิมพ์ข้อความได้โดยตรง จากนั้นกดยืนยันสั่งพิมพ์</p>
               </div>
               <div className="flex items-center gap-3 self-end sm:self-auto">
                 <button onClick={() => setShowPrintModal(false)}
@@ -1046,8 +1046,8 @@ export default function UltimateDashboard() {
       )}
 
       {/* ── Dashboard ปกติ ── */}
-      <div className="no-print min-h-screen bg-[#f8f3fa] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
-        <nav className="sticky top-0 z-50 border-b border-black/[0.06] py-3 md:py-0 md:h-[60px]"
+      <div className="kpn-screen kpn-dashboard no-print min-h-screen bg-[#f8f3fa] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
+        <nav className="kpn-dashboard-nav sticky top-0 z-50 border-b border-black/[0.06] py-3 md:py-0 md:h-[60px]"
              style={{background:'rgba(248,243,250,0.92)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)'}}>
           <div className="max-w-[1440px] mx-auto px-4 md:px-5 h-full flex flex-col md:flex-row md:items-center justify-between gap-3">
             
@@ -1113,7 +1113,7 @@ export default function UltimateDashboard() {
         <div className="max-w-[1440px] mx-auto px-4 md:px-5 pt-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 fu" style={{animationDelay:'0ms'}}>
             
-            <div className="col-span-1 sm:col-span-2 xl:col-span-1 rounded-[24px] p-5 flex flex-col justify-between min-h-[140px] relative overflow-hidden"
+            <div className="kpn-dark-card col-span-1 sm:col-span-2 xl:col-span-1 rounded-[24px] p-5 flex flex-col justify-between min-h-[140px] relative overflow-hidden"
                  style={{background:'#4b1560', boxShadow:'0 4px 24px rgba(0,0,0,0.18)'}}>
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
               <div className="w-10 h-10 rounded-[12px] bg-white/10 flex items-center justify-center z-10">

@@ -328,10 +328,10 @@ function CarSelector({ adminReportCarId }) {
     ? signaturePeriod
     : `ประกาศรอบต่อไป ${signatureStartDate}`
   const bannerSlides = [
-    { eyebrow:'PEA FLEET', title:'ระบบรถ PEA ใหม่!', accent:'จัดการง่ายกว่าเดิม', button:'ดูคู่มือเลย !!', icon:'ph:car-profile-duotone', background:'linear-gradient(115deg,#4b156d 0%,#762789 58%,#9139a6 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', guideType:'overview' },
-    { eyebrow:'SCAN & GO', title:'สแกนก่อนใช้รถ', accent:'บันทึกได้ในไม่กี่ขั้นตอน', button:'ดูวิธีสแกน', icon:'ph:qr-code-duotone', background:'linear-gradient(115deg,#5a1f75 0%,#7f2b8f 55%,#a34db0 100%)', iconBg:'#ffdd00', iconColor:'#571b70', detailIndex:1 },
-    { eyebrow:'MONTHLY SIGN', title:isSignaturePeriod ? 'ลงชื่อประจำเดือน' : 'ประกาศรอบต่อไป', accent:signatureAnnouncement, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(115deg,#40155f 0%,#69277e 55%,#8d3fa1 100%)', iconBg:'#ffea5c', iconColor:'#4b156d', detailIndex:0 },
-    { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(115deg,#55206f 0%,#7c2f8d 56%,#963ca7 100%)', iconBg:'#ffdd00', iconColor:'#4b156d', detailIndex:2 }
+    { eyebrow:'KPN SMART CAR', title:'ระบบรถพร้อมใช้งาน', accent:'จัดการง่ายในหน้าเดียว', button:'ดูคู่มือระบบ', icon:'ph:car-profile-duotone', background:'linear-gradient(120deg,#080d1b 0%,#111a32 62%,#3746a0 100%)', iconBg:'#c9ff48', iconColor:'#080d1b', guideType:'overview' },
+    { eyebrow:'SCAN & GO', title:'สแกนก่อนใช้รถ', accent:'บันทึกได้ในไม่กี่ขั้นตอน', button:'ดูวิธีสแกน', icon:'ph:qr-code-duotone', background:'linear-gradient(120deg,#3529d6 0%,#5a50f6 58%,#7898ff 100%)', iconBg:'#c9ff48', iconColor:'#17124f', detailIndex:1 },
+    { eyebrow:'MONTHLY SIGN', title:isSignaturePeriod ? 'ลงชื่อประจำเดือน' : 'ประกาศรอบต่อไป', accent:signatureAnnouncement, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(120deg,#10182e 0%,#273a76 58%,#607ef5 100%)', iconBg:'#c9ff48', iconColor:'#10182e', detailIndex:0 },
+    { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(120deg,#0b1222 0%,#17294a 58%,#325b82 100%)', iconBg:'#c9ff48', iconColor:'#0b1222', detailIndex:2 }
   ]
   const loopedBannerSlides = [bannerSlides[bannerSlides.length - 1], ...bannerSlides, bannerSlides[0], bannerSlides[1]]
   const newsItems = [
@@ -435,7 +435,7 @@ function CarSelector({ adminReportCarId }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-28 lg:pb-10 lg:bg-[#f3edf5] text-[#241c27]" style={{WebkitFontSmoothing:'antialiased'}}>
+    <div className="kpn-screen kpn-home min-h-screen bg-[#f8f3fa] font-sarabun pb-28 lg:pb-10 lg:bg-[#f3edf5] text-[#241c27]" style={{WebkitFontSmoothing:'antialiased'}}>
       <style>{`
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
         .animate-slideUp { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
@@ -447,11 +447,11 @@ function CarSelector({ adminReportCarId }) {
         .hide-scrollbar::-webkit-scrollbar { display:none; }
       `}</style>
 
-      <header className="bg-white">
+      <header className="sticky top-0 z-40 bg-white">
         <div className="max-w-[620px] lg:max-w-[1280px] mx-auto px-5 lg:px-8 pt-3 pb-2 sm:pt-5 sm:pb-3 lg:py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[12px] sm:rounded-[14px] bg-white border border-[#eadfed] p-1 sm:p-1.5 flex items-center justify-center shadow-sm overflow-hidden"><img src="/pea_logo.png" alt="ตราสัญลักษณ์การไฟฟ้าส่วนภูมิภาค PEA" className="w-full h-full object-contain" /></div>
-            <div className="min-w-0"><p className="text-[8px] sm:text-[9px] font-bold text-[#702082] tracking-[.12em]">การไฟฟ้าส่วนภูมิภาค</p><h1 className="text-[17px] sm:text-[21px] font-bold tracking-[-.7px] truncate">สวัสดี ผู้ใช้งาน PEA!</h1></div>
+            <div className="min-w-0"><p className="text-[8px] sm:text-[9px] font-bold text-[#702082] tracking-[.15em]">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</p><h1 className="text-[17px] sm:text-[21px] font-black tracking-[-.7px] truncate">KPN SMART CAR</h1></div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => router.push('/dashboard')} className="hidden lg:inline-flex items-center gap-2 rounded-full bg-[#f3eaf5] px-4 py-2.5 text-[13px] font-bold text-[#702082] transition-transform hover:-translate-y-0.5" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="19" height="19" />Dashboard</button>
@@ -483,13 +483,13 @@ function CarSelector({ adminReportCarId }) {
             if (bannerPositionRef.current === BANNER_SLIDE_COUNT + 1) moveBannerTo(1, false)
           }} className="flex gap-3 px-5 lg:px-0 opacity-0 will-change-transform">
             {loopedBannerSlides.map((slide, index) => (
-              <article key={`${slide.title}-${index}`} className="relative overflow-hidden h-[128px] sm:h-[150px] lg:h-[210px] min-w-[90%] sm:min-w-[88%] lg:min-w-full rounded-[19px] sm:rounded-[22px] lg:rounded-[26px] px-5 sm:px-6 lg:px-10 py-3 sm:py-4 lg:py-7 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
+              <article key={`${slide.title}-${index}`} className="kpn-hero relative overflow-hidden h-[128px] sm:h-[150px] lg:h-[210px] min-w-[90%] sm:min-w-[88%] lg:min-w-full rounded-[19px] sm:rounded-[22px] lg:rounded-[26px] px-5 sm:px-6 lg:px-10 py-3 sm:py-4 lg:py-7 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
                 <div className="absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
                 <div className="absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
                 <div className="relative z-10 max-w-[70%]">
                   <p className="text-[8px] sm:text-[9px] font-bold tracking-[.16em] text-[#ffea6a] mb-1">{slide.eyebrow}</p>
                   <h2 className="text-[18px] sm:text-[23px] lg:text-[32px] font-bold leading-[1.1] tracking-[-.7px]">{slide.title}<br/><span className="text-[#ffea4d] text-[14px] sm:text-[18px] lg:text-[23px]">{slide.accent}</span></h2>
-                  <button onClick={() => setSelectedNews(slide.guideType === 'overview' ? systemOverviewGuide : {...newsItems[slide.detailIndex], index:slide.detailIndex})} className="mt-1.5 sm:mt-2 bg-[#ffdd00] text-[#4b156d] rounded-full px-3.5 sm:px-4 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-bold active:scale-95 transition-transform inline-flex items-center gap-1.5"><Icon icon="ph:arrow-right-bold" width="11" height="11" />{slide.button}</button>
+                  <button onClick={() => setSelectedNews(slide.guideType === 'overview' ? systemOverviewGuide : {...newsItems[slide.detailIndex], index:slide.detailIndex})} className="kpn-lime-chip mt-1.5 sm:mt-2 bg-[#ffdd00] text-[#4b156d] rounded-full px-3.5 sm:px-4 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-bold active:scale-95 transition-transform inline-flex items-center gap-1.5"><Icon icon="ph:arrow-right-bold" width="11" height="11" />{slide.button}</button>
                 </div>
                 <div className="absolute right-3 bottom-0 w-[38%] h-full flex items-center justify-center float-car">
                   <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full shadow-[0_12px_28px_rgba(37,5,49,.3)] flex items-center justify-center rotate-[-5deg]" style={{background:slide.iconBg,color:slide.iconColor}}><Icon icon={slide.icon} width="44" height="44" /></div>
@@ -513,10 +513,10 @@ function CarSelector({ adminReportCarId }) {
           </div>
         </section>
 
-        <section className="relative pt-3 sm:pt-4 pb-4 sm:pb-5 overflow-hidden" style={{background:'linear-gradient(155deg,#fbf6fc 0%,#ead8ef 55%,#ffe97a 140%)'}}>
+        <section className="relative pt-3 sm:pt-4 pb-4 sm:pb-5 overflow-hidden" style={{background:'linear-gradient(145deg,#f5f6ff 0%,#eef1ff 58%,#f7ffd9 135%)'}}>
           <div className="absolute -right-24 bottom-0 w-80 h-80 rounded-full border border-white/35"/>
           <div className="relative px-5 flex items-center justify-between mb-3 sm:mb-4">
-            <div className="flex items-center gap-2.5 sm:gap-3"><span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#702082] text-[#ffdd00] flex items-center justify-center"><Icon icon="ph:newspaper-clipping-duotone" width="22" height="22" /></span><div><h2 className="text-[20px] sm:text-[20px] font-bold leading-tight text-[#4b1560]">ข่าวสาร PEA</h2><p className="text-[9px] sm:text-[10px] text-[#765c7c]">เลื่อนเพื่อดูข่าวทั้งหมด 4 เรื่อง</p></div></div>
+            <div className="flex items-center gap-2.5 sm:gap-3"><span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#080d1b] text-[#c9ff48] flex items-center justify-center shadow-[0_9px_22px_rgba(8,13,27,.18)]"><Icon icon="ph:newspaper-clipping-duotone" width="22" height="22" /></span><div><h2 className="text-[20px] sm:text-[20px] font-bold leading-tight text-[#4b1560]">ประกาศและข่าวสาร</h2><p className="text-[9px] sm:text-[10px] text-[#765c7c]">ข้อมูลสำคัญจากระบบ KPN Smart Car</p></div></div>
             <button onClick={() => setNewsExpanded(value => !value)} className="flex items-center gap-1.5 text-[11px] font-bold active:scale-95 transition-transform" aria-expanded={newsExpanded} aria-controls="pea-news-content">
               <span className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">4</span>
               <Icon icon={newsExpanded ? 'ph:caret-up-bold' : 'ph:caret-down-bold'} width="20" height="20" />
@@ -2194,7 +2194,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
   )
 
   if (car.status === 'maintenance') return (
-    <main className="min-h-screen bg-[#f8f3fa] px-5 py-10 font-sarabun flex items-center justify-center">
+    <main className="kpn-screen kpn-action min-h-screen bg-[#f8f3fa] px-5 py-10 font-sarabun flex items-center justify-center">
       <section className="w-full max-w-[430px] rounded-[28px] border border-[#f0d293] bg-white p-6 text-center shadow-[0_18px_45px_rgba(103,61,7,.14)]">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#fff1cf] text-[#c26b00]"><Icon icon="ph:wrench-duotone" width="46" height="46" /></div>
         <p className="mt-5 text-[11px] font-bold tracking-[.12em] text-[#b56c09]">สถานะรถล่าสุด</p>
@@ -2234,7 +2234,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
   const showSignReminder = isSigningPeriod && !isSignReminderDismissed && car.status === 'available';
 
   return (
-    <div className="min-h-screen bg-[#f8f3fa] font-sarabun pb-16" style={{WebkitFontSmoothing:'antialiased'}}>
+    <div className="kpn-screen kpn-action min-h-screen bg-[#f8f3fa] font-sarabun pb-16" style={{WebkitFontSmoothing:'antialiased'}}>
       <style>{`
         * { -webkit-font-smoothing: antialiased; }
         @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -2659,7 +2659,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
 
                   {/* 🟢 ปุ่มยืนยัน */}
                   <button onClick={handleTakeOut} disabled={loading}
-                    className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+                    className={`kpn-primary-action w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
                       loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed' : 'text-white'
                     }`}
                     style={!loading ? {
@@ -2747,7 +2747,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
               )}
 
               <button onClick={() => handleReturn(false)} disabled={loading || (!isEV && hasRefueled === null)}
-                className={`w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
+                className={`kpn-primary-action w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
                   loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed'
                   : (!isEV && hasRefueled === null) ? 'bg-[#eadfed] text-[#aeaeb2] cursor-not-allowed'
                   : 'text-white'

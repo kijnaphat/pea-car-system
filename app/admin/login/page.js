@@ -66,12 +66,12 @@ export default function AdminLogin() {
   if (checkingSession || loading) return <PageSkeleton variant="login" />
 
   return (
-    <main className="min-h-[calc(100dvh-78px)] bg-[#f8f3fa] font-sarabun flex items-center justify-center p-4 sm:p-7 relative overflow-hidden">
+    <main className="kpn-screen kpn-login min-h-[calc(100dvh-78px)] bg-[#f8f3fa] font-sarabun flex items-center justify-center p-4 sm:p-7 relative overflow-hidden">
       <div className="absolute -top-32 -left-28 w-80 h-80 rounded-full bg-[#702082]/10 blur-2xl" />
       <div className="absolute -bottom-36 -right-24 w-96 h-96 rounded-full bg-[#ffdd00]/20 blur-3xl" />
 
       <section className="relative w-full max-w-[1040px] min-h-[640px] bg-white rounded-[30px] overflow-hidden border border-[#eadfed] shadow-[0_24px_70px_rgba(79,28,91,.16)] grid grid-cols-1 lg:grid-cols-[1.05fr_.95fr]">
-        <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden px-10 py-10 text-white"
+        <aside className="kpn-login-visual relative hidden lg:flex flex-col justify-between overflow-hidden px-10 py-10 text-white"
           style={{background:'linear-gradient(145deg,#451257 0%,#702082 58%,#963ba5 100%)'}}>
           <div className="absolute -right-36 -top-32 w-96 h-96 rounded-full border-[58px] border-white/[0.05]" />
           <div className="absolute -left-32 -bottom-40 w-96 h-96 rounded-full bg-[#ffdd00]/10" />
@@ -131,7 +131,7 @@ export default function AdminLogin() {
                 </div>
               </label>
 
-              <button type="submit" className="w-full rounded-[16px] py-4 text-[14px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[.985] bg-[#702082] text-white shadow-[0_10px_24px_rgba(112,32,130,.24)] hover:bg-[#5c176d]">
+              <button type="submit" className="kpn-primary-action w-full rounded-[16px] py-4 text-[14px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[.985] bg-[#702082] text-white shadow-[0_10px_24px_rgba(112,32,130,.24)] hover:bg-[#5c176d]">
                 เข้าสู่ระบบ <Icon icon="ph:arrow-right-bold" width="16" height="16" className="text-[#ffdd00]"/>
               </button>
             </form>

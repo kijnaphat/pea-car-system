@@ -227,8 +227,8 @@ export default function MaintenanceActionModal({
   return (
     <div className="fixed inset-0 z-[1200] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby="maintenance-modal-title">
       <button className="absolute inset-0 bg-[#24102b]/60 backdrop-blur-sm" onClick={submitting ? undefined : onClose} aria-label="ปิดหน้าต่าง" />
-      <section className="relative z-10 flex max-h-[92dvh] w-full max-w-[470px] flex-col overflow-hidden rounded-t-[28px] bg-[#f8f3fa] shadow-[0_-16px_60px_rgba(44,13,51,.3)] sm:rounded-[28px]">
-        <header className="relative overflow-hidden bg-[linear-gradient(135deg,#8b5200_0%,#d57a00_55%,#f0a61a_100%)] px-5 pb-5 pt-4 text-white">
+      <section className="kpn-modal-surface relative z-10 flex max-h-[92dvh] w-full max-w-[470px] flex-col overflow-hidden rounded-t-[28px] bg-[#f8f3fa] shadow-[0_-16px_60px_rgba(44,13,51,.3)] sm:rounded-[28px]">
+        <header className="relative overflow-hidden bg-[linear-gradient(135deg,#8b5200_0%,#d57a00_55%,#f0a61a_100%)] px-5 pb-5 pt-4 text-white" style={{background:'linear-gradient(135deg,#0b1122 0%,#263b78 58%,#596df5 100%)'}}>
           <div className="absolute -bottom-16 -right-10 h-44 w-44 rounded-full border-[22px] border-white/10" />
           <div className="relative mx-auto mb-4 h-1 w-10 rounded-full bg-white/45 sm:hidden" />
           <div className="relative flex items-start justify-between gap-4">
