@@ -315,8 +315,8 @@ body:has(.car-detail-modal) .global-nav-spacer {
 .kpn-dock {
   color: var(--kpn-muted);
   border-color: rgba(255,255,255,.95);
-  background: rgba(255,255,255,.94);
-  box-shadow: 0 24px 55px rgba(18,26,48,.18), inset 0 1px 0 white;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 18px 42px rgba(18,26,48,.16), inset 0 1px 0 white;
   backdrop-filter: blur(24px) saturate(165%);
   -webkit-backdrop-filter: blur(24px) saturate(165%);
 }
@@ -333,9 +333,8 @@ body:has(.car-detail-modal) .global-nav-spacer {
 
 .kpn-dock-icon-active {
   color: var(--kpn-ink);
-  background: var(--kpn-lime);
-  box-shadow: 0 12px 28px rgba(166, 226, 27, .38), 0 0 0 8px rgba(201,255,72,.12);
-  transform: translateY(-3px);
+  background: radial-gradient(circle at 38% 28%, #dcff82 0%, var(--kpn-lime) 48%, #aeea22 100%);
+  box-shadow: 0 10px 24px rgba(166, 226, 27, .38), 0 0 22px rgba(201,255,72,.5);
 }
 
 .kpn-dock-icon-inactive {

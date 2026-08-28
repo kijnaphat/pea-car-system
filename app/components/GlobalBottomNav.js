@@ -24,14 +24,14 @@ export default function GlobalBottomNav() {
 
   return (
     <>
-      <div className="global-nav-spacer h-[96px] print:hidden" aria-hidden="true" />
-      <nav className="fixed inset-x-0 bottom-[max(14px,env(safe-area-inset-bottom))] z-[100] flex justify-center px-5 print:hidden md:bottom-6 md:px-6" aria-label="เมนูหลัก">
-        <div className="kpn-dock flex h-[78px] w-full max-w-[520px] items-center gap-1 rounded-[30px] border px-3 py-2 md:h-[82px] md:max-w-[580px] md:gap-3 md:px-5">
+      <div className="global-nav-spacer h-[84px] print:hidden" aria-hidden="true" />
+      <nav className="fixed inset-x-0 bottom-[max(12px,env(safe-area-inset-bottom))] z-[100] flex justify-center px-6 print:hidden md:bottom-5 md:px-6" aria-label="เมนูหลัก">
+        <div className="kpn-dock flex h-[68px] w-full max-w-[430px] items-center gap-1 rounded-full border px-3 py-1.5 md:h-[72px] md:max-w-[470px] md:gap-3 md:px-5">
           {items.map(item => (
-            <button key={item.path} onClick={() => router.push(item.path)}
-              className={`relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[22px] px-1 text-[10px] font-extrabold transition-all duration-300 md:text-[12px] ${item.active ? 'kpn-dock-active' : 'kpn-dock-inactive'}`}>
-              <span className={`kpn-dock-icon flex items-center justify-center rounded-full transition-all duration-300 ${item.active ? 'kpn-dock-icon-active h-11 w-11' : 'kpn-dock-icon-inactive h-9 w-9'}`}><Icon icon={item.icon} width="22" height="22" className="md:h-[24px] md:w-[24px]" /></span>
-              <span className="leading-none">{item.label}</span>
+            <button key={item.path} type="button" onClick={() => router.push(item.path)} aria-label={item.label} aria-current={item.active ? 'page' : undefined}
+              className={`relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-[10px] font-extrabold transition-all duration-300 md:text-[11px] ${item.active ? 'kpn-dock-active' : 'kpn-dock-inactive'}`}>
+              <span className={`kpn-dock-icon flex items-center justify-center rounded-full transition-all duration-300 ${item.active ? 'kpn-dock-icon-active h-12 w-12' : 'kpn-dock-icon-inactive h-8 w-8'}`}><Icon icon={item.icon} width="22" height="22" className="md:h-[23px] md:w-[23px]" /></span>
+              {!item.active && <span className="leading-none">{item.label}</span>}
             </button>
           ))}
         </div>
