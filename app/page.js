@@ -644,7 +644,7 @@ function CarSelector({ adminReportCarId }) {
           <div className="car-detail-modal fixed inset-0 z-[999] overflow-hidden bg-[#f4f6fb] animate-slideUp">
             <div className="mx-auto flex h-full min-h-0 w-full max-w-[760px] flex-col overflow-hidden bg-[#f4f6fb]">
               {/* ภาพรถขยายตามพื้นที่ว่าง ขณะที่ส่วนข้อมูลสูงเท่าที่จำเป็น */}
-              <section className="car-detail-hero relative min-h-[200px] max-h-[52dvh] flex-1 overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
+              <section className="car-detail-hero relative min-h-[200px] flex-1 overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
                 {carImageSrc ? (
                   <img src={carImageSrc} alt={car.car_type}
                     className={`absolute inset-0 h-full w-full object-cover object-center drop-shadow-[0_12px_18px_rgba(35,8,45,.22)] ${!car.isActivated ? 'grayscale opacity-45' : ''}`} />
@@ -673,7 +673,7 @@ function CarSelector({ adminReportCarId }) {
               </section>
 
               {/* สรุปข้อมูลในหน้าจอเดียว โดยไม่ต้องเลื่อน */}
-              <main className="relative -mt-3 flex min-h-0 flex-1 flex-col rounded-t-[24px] bg-[#f4f6fb] px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-5">
+              <main className="relative -mt-3 flex shrink-0 flex-col rounded-t-[24px] bg-[#f4f6fb] px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-5">
                 <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-[#ccd1dc]" />
                 <section className="car-detail-summary relative flex shrink-0 items-center justify-between gap-3 overflow-hidden rounded-[18px] bg-[#080d1b] px-3.5 py-2.5 text-white shadow-[0_12px_28px_rgba(8,13,27,.18)]">
                   <div className="absolute -right-12 -bottom-20 h-40 w-40 rounded-full border-[18px] border-white/10" />
@@ -740,7 +740,7 @@ function CarSelector({ adminReportCarId }) {
                   </div>
                 </section>
 
-                <div className={`car-detail-actions mt-auto grid shrink-0 gap-2 pt-2 ${isHomeAdmin ? (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-3' : 'grid-cols-2') : (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-2' : 'grid-cols-1')}`}>
+                <div className={`car-detail-actions mt-2 grid shrink-0 gap-2 ${isHomeAdmin ? (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-3' : 'grid-cols-2') : (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-2' : 'grid-cols-1')}`}>
                   <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')} className="min-w-0 rounded-[14px] border border-[#dfe3ed] bg-white px-2 py-2.5 text-[12px] font-bold text-[#101522] shadow-sm active:bg-[#f4f6fb]">
                     <span className="flex items-center justify-center gap-1.5"><Icon icon="ph:printer-duotone" width="20" height="20" className="shrink-0 text-[#5547f7]" /><span className="truncate">พิมพ์รายงาน</span></span>
                   </button>

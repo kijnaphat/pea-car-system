@@ -261,9 +261,7 @@ body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
 
 @media (max-height: 700px) {
   .car-detail-modal .car-detail-hero {
-    height: 160px;
     min-height: 160px;
-    flex: none;
   }
 
   .car-detail-modal .car-detail-summary {
@@ -279,9 +277,6 @@ body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
     padding: .45rem !important;
   }
 
-  .car-detail-modal .car-detail-actions {
-    margin-top: .35rem;
-  }
 }
 
 .kpn-hero {
