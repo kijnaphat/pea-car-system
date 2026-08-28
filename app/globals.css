@@ -313,22 +313,33 @@ body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
 
 .kpn-dock {
   color: var(--kpn-muted);
-  border-color: rgba(223,227,237,.95);
-  background: rgba(255,255,255,.9);
-  box-shadow: 0 18px 45px rgba(18,26,48,.15), inset 0 1px 0 rgba(255,255,255,.9);
+  border-color: rgba(255,255,255,.95);
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 24px 55px rgba(18,26,48,.18), inset 0 1px 0 white;
   backdrop-filter: blur(24px) saturate(165%);
   -webkit-backdrop-filter: blur(24px) saturate(165%);
 }
 
 .kpn-dock-active {
-  color: white;
-  background: linear-gradient(135deg, #080d1b, #17213b);
-  box-shadow: 0 10px 24px rgba(8,13,27,.2);
+  color: var(--kpn-ink);
+  background: transparent;
 }
 
 .kpn-dock-inactive:hover {
   color: var(--kpn-primary);
-  background: #f6f7fb;
+  background: transparent;
+}
+
+.kpn-dock-icon-active {
+  color: var(--kpn-ink);
+  background: var(--kpn-lime);
+  box-shadow: 0 12px 28px rgba(166, 226, 27, .38), 0 0 0 8px rgba(201,255,72,.12);
+  transform: translateY(-3px);
+}
+
+.kpn-dock-icon-inactive {
+  color: #858c9c;
+  background: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

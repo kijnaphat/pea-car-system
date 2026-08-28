@@ -647,16 +647,16 @@ function CarSelector({ adminReportCarId }) {
               <section className="car-detail-hero relative min-h-[200px] flex-1 overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
                 {carImageSrc ? (
                   <img src={carImageSrc} alt={car.car_type}
-                    className={`absolute inset-0 h-full w-full object-cover object-center drop-shadow-[0_12px_18px_rgba(35,8,45,.22)] ${!car.isActivated ? 'grayscale opacity-45' : ''}`} />
+                    className={`absolute inset-0 h-full w-full object-cover object-[center_42%] ${!car.isActivated ? 'grayscale opacity-45' : ''}`} />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center"><Icon icon="ph:car-profile-duotone" width="152" height="152" className="text-white/70" /></div>
                 )}
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(28,18,46,.08)_35%,rgba(54,11,76,.78)_100%)]" />
+                <div className="absolute inset-0" style={{background:'linear-gradient(180deg, transparent 0%, transparent 58%, rgba(0,0,0,.68) 100%)'}} />
                 <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3 text-white">
-                  <button onClick={() => setCarDetailModal(null)} className="inline-flex items-center gap-2 text-[15px] font-bold drop-shadow-md active:scale-95 transition-transform" aria-label="กลับไปหน้ารายการรถ">
+                  <button onClick={() => setCarDetailModal(null)} className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/30 px-3 py-2 text-[14px] font-bold backdrop-blur-md active:scale-95 transition-transform" aria-label="กลับไปหน้ารายการรถ">
                     <Icon icon="ph:caret-left-bold" width="20" height="20" /> กลับ
                   </button>
-                  <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')} className="flex h-11 w-11 items-center justify-center rounded-full border border-white/45 bg-white/15 text-white backdrop-blur-sm active:scale-90 transition-transform" aria-label="พิมพ์รายงานรถ">
+                  <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')} className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/30 text-white backdrop-blur-md active:scale-90 transition-transform" aria-label="พิมพ์รายงานรถ">
                     <Icon icon="ph:printer-duotone" width="24" height="24" />
                   </button>
                 </div>

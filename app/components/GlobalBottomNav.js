@@ -19,14 +19,13 @@ export default function GlobalBottomNav() {
   ]
 
   return (
-    <nav className="fixed inset-x-0 bottom-[max(12px,env(safe-area-inset-bottom))] z-[100] flex justify-center px-3 print:hidden md:bottom-5 md:px-6" aria-label="เมนูหลัก">
-      <div className="kpn-dock flex h-[64px] w-full max-w-[590px] items-center gap-1 rounded-[22px] border p-1.5 md:h-[70px] md:max-w-[680px] md:gap-2 md:p-2">
+    <nav className="fixed inset-x-0 bottom-[max(14px,env(safe-area-inset-bottom))] z-[100] flex justify-center px-5 print:hidden md:bottom-6 md:px-6" aria-label="เมนูหลัก">
+      <div className="kpn-dock flex h-[78px] w-full max-w-[520px] items-center gap-1 rounded-[30px] border px-3 py-2 md:h-[82px] md:max-w-[580px] md:gap-3 md:px-5">
         {items.map(item => (
           <button key={item.path} onClick={() => router.push(item.path)}
-            className={`relative flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[17px] px-2 text-[11px] font-extrabold transition-all duration-300 md:gap-2 md:px-5 md:text-sm ${item.active ? 'kpn-dock-active' : 'kpn-dock-inactive'}`}>
-            <span className={`flex h-8 w-8 items-center justify-center rounded-[11px] transition-colors ${item.active ? 'bg-white/12' : 'bg-[#f2f4f8]'}`}><Icon icon={item.icon} width="20" height="20" className="md:h-[22px] md:w-[22px]" /></span>
-            <span>{item.label}</span>
-            {item.active && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#c9ff48] ring-2 ring-[#080d1b] md:right-3 md:top-3" aria-hidden="true" />}
+            className={`relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[22px] px-1 text-[10px] font-extrabold transition-all duration-300 md:text-[12px] ${item.active ? 'kpn-dock-active' : 'kpn-dock-inactive'}`}>
+            <span className={`kpn-dock-icon flex items-center justify-center rounded-full transition-all duration-300 ${item.active ? 'kpn-dock-icon-active h-11 w-11' : 'kpn-dock-icon-inactive h-9 w-9'}`}><Icon icon={item.icon} width="22" height="22" className="md:h-[24px] md:w-[24px]" /></span>
+            <span className="leading-none">{item.label}</span>
           </button>
         ))}
       </div>
