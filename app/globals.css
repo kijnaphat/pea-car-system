@@ -225,7 +225,7 @@ body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
 
 .car-detail-modal .car-detail-grid > div {
   min-width: 0;
-  min-height: 0;
+  min-height: 4.5rem;
   overflow: hidden;
   gap: .5rem !important;
   padding: .625rem !important;
@@ -261,7 +261,9 @@ body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
 
 @media (max-height: 700px) {
   .car-detail-modal .car-detail-hero {
-    height: 132px;
+    height: 160px;
+    min-height: 160px;
+    flex: none;
   }
 
   .car-detail-modal .car-detail-summary {
@@ -273,6 +275,7 @@ body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
   }
 
   .car-detail-modal .car-detail-grid > div {
+    min-height: 3.8rem;
     padding: .45rem !important;
   }
 

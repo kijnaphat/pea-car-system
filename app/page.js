@@ -643,8 +643,8 @@ function CarSelector({ adminReportCarId }) {
         return (
           <div className="car-detail-modal fixed inset-0 z-[999] overflow-hidden bg-[#f4f6fb] animate-slideUp">
             <div className="mx-auto flex h-full min-h-0 w-full max-w-[760px] flex-col overflow-hidden bg-[#f4f6fb]">
-              {/* ภาพรถและทะเบียนแบบกะทัดรัด เพื่อให้เห็นปุ่มครบในหน้าจอเดียว */}
-              <section className="car-detail-hero relative h-[clamp(150px,24dvh,215px)] shrink-0 overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
+              {/* ภาพรถขยายตามพื้นที่ว่าง ขณะที่ส่วนข้อมูลสูงเท่าที่จำเป็น */}
+              <section className="car-detail-hero relative min-h-[200px] max-h-[52dvh] flex-1 overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
                 {carImageSrc ? (
                   <img src={carImageSrc} alt={car.car_type}
                     className={`absolute inset-0 h-full w-full object-cover object-center drop-shadow-[0_12px_18px_rgba(35,8,45,.22)] ${!car.isActivated ? 'grayscale opacity-45' : ''}`} />
@@ -692,12 +692,12 @@ function CarSelector({ adminReportCarId }) {
                   </div>
                 </section>
 
-                <section className="mt-2 flex min-h-0 flex-1 flex-col rounded-[18px] border border-[#e7eaf1] bg-white p-2.5 shadow-[0_7px_18px_rgba(20,28,50,.06)]">
+                <section className="mt-2 flex shrink-0 flex-col rounded-[18px] border border-[#e7eaf1] bg-white p-2.5 shadow-[0_7px_18px_rgba(20,28,50,.06)]">
                   <div className="mb-1.5 flex shrink-0 items-center justify-between gap-2 px-1 text-[#5547f7]">
                     <div className="flex items-center gap-1.5"><Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:info-duotone'} width="20" height="20" /><h3 className="text-[15px] font-bold">{isMaintenance ? 'รายละเอียดการซ่อม' : 'รายละเอียดการใช้งาน'}</h3></div>
                     <span className="text-[9px] font-semibold text-[#8c94a7]">ข้อมูลล่าสุด</span>
                   </div>
-                  <div className="car-detail-grid grid min-h-0 flex-1 grid-cols-2 gap-2">
+                  <div className="car-detail-grid grid grid-cols-2 gap-2">
                     {isMaintenance ? <>
                       <div className="flex gap-2.5 rounded-[15px] border border-[#f1d7a4] bg-[#fffaf0] p-2.5">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#f2d08d] bg-[#fff1cf] text-[#b56700]"><Icon icon="ph:warning-duotone" width="23" height="23" /></div>
@@ -740,7 +740,7 @@ function CarSelector({ adminReportCarId }) {
                   </div>
                 </section>
 
-                <div className={`car-detail-actions mt-2 grid shrink-0 gap-2 ${isHomeAdmin ? (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-3' : 'grid-cols-2') : (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-2' : 'grid-cols-1')}`}>
+                <div className={`car-detail-actions mt-auto grid shrink-0 gap-2 pt-2 ${isHomeAdmin ? (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-3' : 'grid-cols-2') : (driverName && car.driverPosition !== 'ผจก.' ? 'grid-cols-2' : 'grid-cols-1')}`}>
                   <button onClick={() => window.open(`/report?car_id=${car.id}`,'_blank')} className="min-w-0 rounded-[14px] border border-[#dfe3ed] bg-white px-2 py-2.5 text-[12px] font-bold text-[#101522] shadow-sm active:bg-[#f4f6fb]">
                     <span className="flex items-center justify-center gap-1.5"><Icon icon="ph:printer-duotone" width="20" height="20" className="shrink-0 text-[#5547f7]" /><span className="truncate">พิมพ์รายงาน</span></span>
                   </button>
