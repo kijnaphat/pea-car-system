@@ -10,6 +10,7 @@ import { getCarImage } from '@/lib/carImages'
 import { normalizeStaffCode } from '@/lib/staffCode'
 
 const BANNER_SLIDE_COUNT = 4
+const TAB_ANNOUNCEMENT_KEY = 'kpn-smart-car-welcome-v1'
 
 const formatTripDateTime = (value, prefix) => {
   if (!value) return null
@@ -94,6 +95,7 @@ function CarSelector({ adminReportCarId }) {
   const [cars, setCars] = useState([])
   const [loading, setLoading] = useState(true)
   const [showInstructions, setShowInstructions] = useState(false)
+  const [showWelcomeAnnouncement, setShowWelcomeAnnouncement] = useState(false)
   const [activeBanner, setActiveBanner] = useState(0)
   const [activeNews, setActiveNews] = useState(0)
   const [selectedNews, setSelectedNews] = useState(null)
@@ -113,6 +115,25 @@ function CarSelector({ adminReportCarId }) {
   const [maintenanceAuthCheckingCarId, setMaintenanceAuthCheckingCarId] = useState(null)
   const [isHomeAdmin, setIsHomeAdmin] = useState(false)
   const handledAdminReportCarIdRef = useRef(null)
+
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(TAB_ANNOUNCEMENT_KEY) !== 'dismissed') {
+        setShowWelcomeAnnouncement(true)
+      }
+    } catch {
+      setShowWelcomeAnnouncement(true)
+    }
+  }, [])
+
+  const dismissWelcomeAnnouncement = () => {
+    try {
+      window.sessionStorage.setItem(TAB_ANNOUNCEMENT_KEY, 'dismissed')
+    } catch {
+      // หาก browser ปิดการใช้ storage ยังอนุญาตให้ผู้ใช้ปิดประกาศในรอบนี้ได้
+    }
+    setShowWelcomeAnnouncement(false)
+  }
 
   const openHomeMaintenanceForAdmin = useCallback(async (car) => {
     if (!car) return
@@ -571,6 +592,61 @@ function CarSelector({ adminReportCarId }) {
           </a>
         </footer>
       </main>
+
+      {/* ── ประกาศต้อนรับ: แสดงหนึ่งครั้งต่อหนึ่งแท็บ ── */}
+      {showWelcomeAnnouncement && (
+        <div className="kpn-detail-overlay fixed inset-0 z-[500] flex items-center justify-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="welcome-announcement-title">
+          <div className="absolute inset-0 bg-[#080d1b]/80 backdrop-blur-[5px]" aria-hidden="true" />
+          <section className="relative flex max-h-[calc(100dvh-32px)] w-full max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/15 bg-white shadow-[0_28px_90px_rgba(0,0,0,.42)] animate-slideUp">
+            <div className="relative shrink-0 overflow-hidden bg-[linear-gradient(145deg,#080d1b_0%,#111a32_58%,#3d4db0_100%)] px-5 pb-6 pt-5 text-white">
+              <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[38px] border-white/[.06]" />
+              <div className="absolute -bottom-20 left-10 h-40 w-40 rounded-full bg-[#7258ff]/35 blur-3xl" />
+              <div className="relative flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[13px] border border-white/20 bg-white p-1.5"><img src="/pea_logo.png" alt="PEA" className="h-full w-full object-contain" /></span>
+                  <div className="min-w-0"><p className="text-[9px] font-bold tracking-[.15em] text-[#c9ff48]">WELCOME TO</p><p className="truncate text-[15px] font-black tracking-[-.3px]">KPN SMART CAR</p></div>
+                </div>
+                <button type="button" onClick={dismissWelcomeAnnouncement} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-transform active:scale-90" aria-label="ปิดประกาศ"><Icon icon="ph:x-bold" width="16" height="16" /></button>
+              </div>
+
+              <div className="relative mt-5 flex items-center gap-4">
+                <div className="min-w-0 flex-1">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#c9ff48]/25 bg-[#c9ff48]/10 px-2.5 py-1 text-[9px] font-bold text-[#c9ff48]"><span className="h-1.5 w-1.5 rounded-full bg-[#c9ff48]" />ประกาศสำหรับผู้ใช้งาน</span>
+                  <h2 id="welcome-announcement-title" className="mt-3 text-[27px] font-black leading-[1.08] tracking-[-1px]">จัดการรถส่วนกลาง<br/><span className="text-[#9eb0ff]">ง่ายในหน้าเดียว</span></h2>
+                  <p className="mt-2 text-[11px] leading-relaxed text-white/65">ตรวจสถานะรถ สแกน QR นำรถออก–คืนรถ และติดตามข้อมูลล่าสุดได้ทันที</p>
+                </div>
+                <div className="flex h-[92px] w-[92px] shrink-0 rotate-[-5deg] items-center justify-center rounded-[29px] bg-[#c9ff48] text-[#080d1b] shadow-[0_18px_45px_rgba(174,235,36,.28)]">
+                  <Icon icon="ph:car-profile-duotone" width="58" height="58" />
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8f9fc] px-5 py-5">
+              <p className="text-[11px] font-bold tracking-[.1em] text-[#737b8e]">สิ่งที่ทำได้ในระบบ</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {[
+                  { icon: 'ph:car-duotone', label: 'ดูสถานะรถ', color: 'bg-[#eef0ff] text-[#5547f7]' },
+                  { icon: 'ph:qr-code-duotone', label: 'สแกน QR', color: 'bg-[#eaf9f0] text-[#169d54]' },
+                  { icon: 'ph:chart-pie-slice-duotone', label: 'ดูรายงาน', color: 'bg-[#fff3df] text-[#d57a00]' },
+                ].map(item => (
+                  <div key={item.label} className="rounded-[16px] border border-[#e7eaf1] bg-white px-2 py-3 text-center">
+                    <span className={`mx-auto flex h-9 w-9 items-center justify-center rounded-[12px] ${item.color}`}><Icon icon={item.icon} width="21" height="21" /></span>
+                    <p className="mt-2 text-[10px] font-bold text-[#333a4b]">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex items-start gap-2.5 rounded-[15px] border border-[#dfe4ef] bg-white px-3.5 py-3 text-[#60697c]">
+                <Icon icon="ph:info-duotone" width="19" height="19" className="mt-0.5 shrink-0 text-[#5547f7]" />
+                <p className="text-[10px] leading-relaxed">ประกาศนี้จะแสดงเพียงครั้งเดียวในแท็บนี้ และจะแสดงใหม่เมื่อเปิดเว็บไซต์ในแท็บใหม่</p>
+              </div>
+            </div>
+
+            <div className="shrink-0 border-t border-[#e7eaf1] bg-white px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
+              <button type="button" onClick={dismissWelcomeAnnouncement} className="flex w-full items-center justify-center gap-2 rounded-[17px] bg-[#101522] py-4 text-[15px] font-bold text-white shadow-[0_10px_26px_rgba(16,21,34,.2)] transition-transform active:scale-[.98]"><Icon icon="ph:check-circle-duotone" width="21" height="21" className="text-[#c9ff48]" />รับทราบและเริ่มใช้งาน</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* ── Modal รายละเอียดข่าวสาร ── */}
       {selectedNews && (
