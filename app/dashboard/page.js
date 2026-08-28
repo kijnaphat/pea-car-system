@@ -649,7 +649,7 @@ export default function UltimateDashboard() {
 
   if (showWelcome) {
     return (
-      <div className="kpn-screen kpn-dashboard min-h-[calc(100dvh-84px)] bg-[#f8f3fa] px-4 pb-8 pt-4 md:px-6 md:pb-10 md:pt-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="kpn-screen kpn-dashboard min-h-[calc(100dvh-84px)] bg-[#f8f3fa] px-4 pb-28 pt-2 md:px-6 md:pb-10 md:pt-6 relative font-sarabun overflow-x-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
         <style>{`
           @keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
           .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
@@ -664,7 +664,7 @@ export default function UltimateDashboard() {
             <button type="button" onClick={() => router.push('/')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="กลับหน้าหลัก"><Icon icon="ph:house-duotone" width="21" height="21" /></button>
           </header>
 
-          <section className="kpn-dark-card relative mt-4 overflow-hidden rounded-[28px] px-5 py-6 text-white md:px-8 md:py-8">
+          <section className="kpn-dark-card relative mt-3 overflow-hidden rounded-[28px] px-5 py-5 text-white md:mt-4 md:px-8 md:py-8">
             <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[38px] border-white/[.05]" />
             <div className="absolute bottom-0 right-[20%] h-28 w-28 rounded-full bg-[#7592ff]/20 blur-3xl" />
             <div className="relative flex items-center justify-between gap-5">
@@ -677,12 +677,12 @@ export default function UltimateDashboard() {
             </div>
           </section>
 
-          <div className="mt-4 grid w-full grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mt-3 grid w-full grid-cols-2 gap-3 md:mt-4 lg:grid-cols-4">
             {categories.map((cat, index) => (
               <button 
                 key={cat.id} 
                 onClick={() => handleSelectCategory(cat.id)}
-                className="kpn-surface group relative flex min-h-[158px] flex-col overflow-hidden rounded-[22px] border border-[#e7eaf1] bg-white p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#bac1d2] active:translate-y-0 active:scale-[.98] md:min-h-[190px] md:p-5"
+                className="kpn-surface group relative flex min-h-[148px] flex-col overflow-hidden rounded-[22px] border border-[#e7eaf1] bg-white p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#bac1d2] active:translate-y-0 active:scale-[.98] md:min-h-[190px] md:p-5"
                 style={{animationDelay: `${index * 80}ms`}}
               >
                 <span className="absolute right-3 top-3 text-[10px] font-black tracking-[.12em] text-[#c2c7d2]">0{index + 1}</span>

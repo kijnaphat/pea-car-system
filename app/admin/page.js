@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [loadingSession, setLoadingSession] = useState(true)
   const [activeMenu, setActiveMenu] = useState('cars')
+  const [showMobileMenu, setShowMobileMenu] = useState(true)
 
   const [carData, setCarData] = useState(initialCarData)
   const [staffData, setStaffData] = useState(initialStaffData)
@@ -369,13 +370,13 @@ export default function AdminDashboard() {
   if (loadingSession) return <PageSkeleton variant="login" />
 
   const sidebarMenus = [
-    { id: 'cars', icon: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'Vehicles' },
-    { id: 'mileage', icon: 'ph:database-duotone', title: 'แก้ไขข้อมูล', desc: 'Mileage & Repair' },
-    { id: 'staff', icon: 'ph:users-three-duotone', title: 'บุคลากร', desc: 'Personnel' },
-    { id: 'tasks', icon: 'ph:clipboard-text-duotone', title: 'ประเภทงาน', desc: 'Tasks' },
-    { id: 'departments', icon: 'ph:buildings-duotone', title: 'แผนก', desc: 'Departments' },
-    { id: 'operation_areas', icon: 'ph:map-pin-duotone', title: 'พื้นที่งาน', desc: 'Locations' },
-    { id: 'discord', icon: 'ph:discord-logo-duotone', title: 'Discord Log', desc: 'Audit & Alerts' },
+    { id: 'cars', icon: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'เพิ่ม แก้ไข และจัดการข้อมูลรถ', iconClass: 'bg-[#eef0ff] text-[#5547f7]' },
+    { id: 'mileage', icon: 'ph:database-duotone', title: 'แก้ไขข้อมูล', desc: 'เลขไมล์ รายการผิดปกติ และงานซ่อม', iconClass: 'bg-[#fff0ef] text-[#ef5148]' },
+    { id: 'staff', icon: 'ph:users-three-duotone', title: 'บุคลากร', desc: 'ข้อมูลพนักงานและผู้ใช้งานรถ', iconClass: 'bg-[#eaf9f0] text-[#169d54]' },
+    { id: 'tasks', icon: 'ph:clipboard-text-duotone', title: 'ประเภทงาน', desc: 'จัดการงานและภารกิจในระบบ', iconClass: 'bg-[#fff3df] text-[#d57a00]' },
+    { id: 'departments', icon: 'ph:buildings-duotone', title: 'แผนก', desc: 'หน่วยงานและแผนกรับผิดชอบ', iconClass: 'bg-[#f2edff] text-[#7b54e8]' },
+    { id: 'operation_areas', icon: 'ph:map-pin-duotone', title: 'พื้นที่งาน', desc: 'สถานที่และพื้นที่ปฏิบัติงาน', iconClass: 'bg-[#e9f7fb] text-[#1686a3]' },
+    { id: 'discord', icon: 'ph:discord-logo-duotone', title: 'Discord Log', desc: 'ตรวจสอบ Audit Log และการแจ้งเตือน', iconClass: 'bg-[#eef0ff] text-[#5865f2]' },
   ]
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
   const dataManagementCount = mileageAnomalyCount + pendingBillingCount
@@ -470,6 +471,60 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* หน้าเลือกหมวดสำหรับมือถือเท่านั้น */}
+      <section className={`${showMobileMenu ? 'flex' : 'hidden'} h-full min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-28 pt-2 md:hidden`}>
+        <div className="mx-auto w-full max-w-[560px]">
+          <header className="flex items-center justify-between rounded-[22px] border border-white/90 bg-white/90 px-3.5 py-3 backdrop-blur-xl">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[#e7eaf1] bg-white p-1.5">
+                <img src="/pea_logo.png" alt="PEA" className="h-full w-full object-contain" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold tracking-[.15em] text-[#5547f7]">KPN SMART CAR</p>
+                <h1 className="truncate text-[18px] font-black tracking-[-.5px] text-[#101522]">ADMIN PORTAL</h1>
+              </div>
+            </div>
+            <button type="button" onClick={handleLogout} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="ออกจากระบบ">
+              <Icon icon="ph:sign-out-bold" width="20" height="20" />
+            </button>
+          </header>
+
+          <section className="kpn-dark-card relative mt-3 overflow-hidden rounded-[28px] px-5 py-5 text-white">
+            <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[38px] border-white/[.05]" />
+            <div className="absolute bottom-0 right-[18%] h-28 w-28 rounded-full bg-[#7592ff]/20 blur-3xl" />
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[9px] font-bold tracking-[.12em] text-[#c9ff48]"><span className="h-1.5 w-1.5 rounded-full bg-[#c9ff48]" />SYSTEM MANAGEMENT</div>
+                <h2 className="text-[25px] font-black leading-[1.06] tracking-[-.8px]">ศูนย์จัดการ<br/><span className="text-[#9eb0ff]">ระบบรถ</span></h2>
+                <p className="mt-2 max-w-[310px] text-[11px] leading-relaxed text-white/60">เลือกหมวดเพื่อเพิ่ม แก้ไข และตรวจสอบข้อมูลในระบบ</p>
+              </div>
+              <div className="flex h-[82px] w-[82px] shrink-0 rotate-[-5deg] items-center justify-center rounded-[27px] bg-[#c9ff48] text-[#080d1b] shadow-[0_18px_45px_rgba(174,235,36,.24)]">
+                <Icon icon="ph:user-gear-duotone" width="50" height="50" />
+              </div>
+            </div>
+          </section>
+
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {sidebarMenus.map((menu, index) => (
+              <button
+                key={menu.id}
+                type="button"
+                onClick={() => { setActiveMenu(menu.id); setShowMobileMenu(false) }}
+                className={`kpn-surface group relative flex min-h-[144px] flex-col overflow-hidden rounded-[22px] border border-[#e7eaf1] bg-white p-4 text-left transition-all active:scale-[.98] ${menu.id === 'discord' ? 'col-span-2 min-h-[122px]' : ''}`}
+              >
+                <span className="absolute right-3 top-3 text-[10px] font-black tracking-[.12em] text-[#c2c7d2]">{String(index + 1).padStart(2, '0')}</span>
+                {menu.id === 'mileage' && dataManagementCount > 0 && <span className="absolute right-10 top-3 inline-flex min-w-6 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-1 text-[9px] font-bold leading-none text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
+                <span className={`mb-auto flex h-12 w-12 items-center justify-center rounded-[15px] ${menu.iconClass}`}><Icon icon={menu.icon} width="28" height="28" /></span>
+                <span className="mt-4 w-full">
+                  <span className="flex items-end justify-between gap-2"><span className="text-[16px] font-black tracking-[-.4px] text-[#101522]">{menu.title}</span><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f2f4f8] text-[#101522]"><Icon icon="ph:arrow-up-right-bold" width="14" height="14" /></span></span>
+                  <span className="mt-1.5 block line-clamp-2 text-[10px] leading-snug text-[#737b8e]">{menu.desc}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Sidebar สำหรับจอใหญ่ */}
       <aside className="kpn-admin-sidebar hidden md:flex w-[272px] shrink-0 bg-gradient-to-b from-[#32103d] via-[#270d31] to-[#1d0925] border border-white/10 text-[#fffaf0] flex-col rounded-[26px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,.28)] relative">
         <div className="absolute -top-20 -right-20 w-52 h-52 rounded-full bg-[#8e3ba0]/25 blur-3xl pointer-events-none"/>
@@ -527,12 +582,12 @@ export default function AdminDashboard() {
       </aside>
 
       {/* 👉 Main Content */}
-      <main className="admin-main min-w-0 flex-1 bg-[radial-gradient(circle_at_top_right,_#fff6bd_0%,_#fbf7fc_24%,_#f6f0f8_100%)] flex flex-col overflow-hidden relative md:rounded-[26px] md:border md:border-[#e5d6e9] md:shadow-[0_20px_60px_rgba(75,21,96,.12)]">
+      <main className={`${showMobileMenu ? 'hidden md:flex' : 'flex'} admin-main min-w-0 flex-1 bg-[radial-gradient(circle_at_top_right,_#fff6bd_0%,_#fbf7fc_24%,_#f6f0f8_100%)] flex-col overflow-hidden relative md:rounded-[26px] md:border md:border-[#e5d6e9] md:shadow-[0_20px_60px_rgba(75,21,96,.12)]`}>
         
         {/* Header */}
         <header className="kpn-dashboard-nav min-h-[76px] bg-white/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-t-[4px] border-t-[#ffdd00] border-b border-b-[#eadfed] sticky top-0 shadow-[0_4px_20px_rgba(75,21,96,.04)]">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="md:hidden w-10 h-10 bg-white rounded-[13px] p-1.5 flex items-center justify-center border-2 border-[#ffdd00] shrink-0 shadow-[0_6px_20px_rgba(255,221,0,.16)] overflow-hidden"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
+            <button type="button" onClick={() => setShowMobileMenu(true)} className="md:hidden w-10 h-10 bg-[#c9ff48] rounded-[13px] flex items-center justify-center border border-[#b2e93d] text-[#101522] shrink-0 transition-transform active:scale-95" aria-label="กลับไปเลือกหมวด"><Icon icon="ph:squares-four-duotone" width="23" height="23" /></button>
             <div>
                 <p className="md:hidden text-[9px] text-[#8b3c98] uppercase tracking-[.16em] font-semibold mb-0.5">Admin Portal</p>
                 <h1 className="flex items-center gap-2 text-[18px] font-bold tracking-tight text-[#4b1560] md:text-[24px]">{activeMenuObj?.title}{activeMenu === 'mileage' && dataManagementCount > 0 && <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[10px] font-bold text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}</h1>
@@ -550,17 +605,6 @@ export default function AdminDashboard() {
             </button>
           </div>
         </header>
-
-        {/* เมนูมือถือ: ไม่บังเนื้อหาและเลื่อนได้แนวนอน */}
-        <nav className="md:hidden shrink-0 flex gap-2 overflow-x-auto hide-admin-scrollbar px-4 py-3 bg-white/80 border-b border-[#eadfed] backdrop-blur-lg">
-          {sidebarMenus.map(menu => (
-            <button key={menu.id} onClick={() => setActiveMenu(menu.id)} className={`shrink-0 h-11 px-3.5 rounded-[13px] flex items-center gap-2 border transition-all active:scale-95 ${activeMenu === menu.id ? 'bg-[#ffdd00] border-[#e5c700] text-[#4b1560] shadow-[0_6px_18px_rgba(255,221,0,.18)]' : 'bg-white border-[#e7dbe9] text-[#765c7c]'}`}>
-              <Icon icon={menu.icon} width="19" height="19" />
-              <span className="text-[12px] font-bold whitespace-nowrap">{menu.title}</span>
-              {menu.id === 'mileage' && dataManagementCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
-            </button>
-          ))}
-        </nav>
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">
