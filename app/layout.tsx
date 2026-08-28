@@ -58,7 +58,6 @@ export default function RootLayout({
         {/* ✅ 2. ครอบ children ด้วย Suspense */}
         <Suspense fallback={<div className="p-10 text-center text-[#742F99]">กำลังโหลดระบบ...</div>}>
           {children}
-          <div className="h-[86px] print:hidden" aria-hidden="true" />
           <GlobalBottomNav />
         </Suspense>
       </body>

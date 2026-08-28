@@ -215,7 +215,8 @@ body {
 }
 
 /* Full-screen car details must sit above, and temporarily replace, the dock. */
-body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"] {
+body:has(.car-detail-modal) nav[aria-label="เมนูหลัก"],
+body:has(.car-detail-modal) .global-nav-spacer {
   display: none !important;
 }
 
