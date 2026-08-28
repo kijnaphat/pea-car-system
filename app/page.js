@@ -513,7 +513,7 @@ function CarSelector({ adminReportCarId }) {
           </div>
         </section>
 
-        <section className="relative pt-3 sm:pt-4 pb-4 sm:pb-5 overflow-hidden" style={{background:'linear-gradient(145deg,#f5f6ff 0%,#eef1ff 58%,#f7ffd9 135%)'}}>
+        <section className="relative pt-3 sm:pt-4 pb-8 sm:pb-9 overflow-hidden" style={{background:'linear-gradient(145deg,#f5f6ff 0%,#eef1ff 58%,#f7ffd9 135%)'}}>
           <div className="absolute -right-24 bottom-0 w-80 h-80 rounded-full border border-white/35"/>
           <div className="relative px-5 flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2.5 sm:gap-3"><span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#080d1b] text-[#c9ff48] flex items-center justify-center shadow-[0_9px_22px_rgba(8,13,27,.18)]"><Icon icon="ph:newspaper-clipping-duotone" width="22" height="22" /></span><div><h2 className="text-[20px] sm:text-[20px] font-bold leading-tight text-[#4b1560]">ประกาศและข่าวสาร</h2><p className="text-[9px] sm:text-[10px] text-[#765c7c]">ข้อมูลสำคัญจากระบบ KPN Smart Car</p></div></div>
@@ -542,7 +542,7 @@ function CarSelector({ adminReportCarId }) {
           </div>}
         </section>
 
-        <section className="relative -mt-1 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
+        <section className="relative -mt-6 sm:-mt-7 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><h2 className="text-[25px] font-bold tracking-[-.7px] text-[#4b1560]">รายการรถ</h2><Icon icon="ph:info-duotone" width="21" height="21" className="text-[#702082]" /></div><button onClick={() => router.push('/dashboard')} className="w-10 h-10 rounded-full bg-[#f3eaf5] text-[#702082] flex items-center justify-center" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="22" height="22" /></button></div>
           <div className="flex items-center justify-between mt-6 mb-1 text-[13px] text-[#646a66]"><span>{cars.length} รายการ</span><span>สถานะล่าสุด</span></div>
           {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{busyCars.map(renderCarRow)}{maintenanceCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
