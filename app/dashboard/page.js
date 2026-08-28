@@ -151,10 +151,10 @@ export default function UltimateDashboard() {
   }
 
   const categories = [
-    { id: 'all', iconName: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'ข้อมูลรถทุกคันในระบบรวมเช่าและ EV', bg: 'bg-[#e5f0ff]', iconBg: '#702082', shadow: 'rgba(0,113,227,0.2)' },
-    { id: 'pea', iconName: 'ph:buildings-duotone', title: 'รถ กฟภ.', desc: 'เฉพาะรถยนต์ประจำหน่วยงาน', bg: 'bg-[#f3e5f5]', iconBg: '#8e24aa', shadow: 'rgba(142,36,170,0.2)' },
-    { id: 'rental', iconName: 'ph:handshake-duotone', title: 'รถเช่า', desc: 'เฉพาะรถเช่าเหมาสำหรับปฏิบัติงาน', bg: 'bg-[#fff4e0]', iconBg: '#e67e22', shadow: 'rgba(230,126,34,0.2)' },
-    { id: 'ev', iconName: 'ph:leaf-duotone', title: 'รถ EV', desc: 'เฉพาะรถยนต์พลังงานไฟฟ้า 100%', bg: 'bg-[#edfbf0]', iconBg: '#1a7f37', shadow: 'rgba(26,127,55,0.2)' }
+    { id: 'all', iconName: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'ภาพรวมรถทุกคัน รวมรถเช่าและรถ EV', bg: 'bg-[#eef0ff]', iconBg: '#5547f7', shadow: 'rgba(85,71,247,.18)' },
+    { id: 'pea', iconName: 'ph:buildings-duotone', title: 'รถ กฟภ.', desc: 'ข้อมูลรถยนต์ประจำหน่วยงาน กฟภ.', bg: 'bg-[#f0f2f6]', iconBg: '#101522', shadow: 'rgba(16,21,34,.14)' },
+    { id: 'rental', iconName: 'ph:handshake-duotone', title: 'รถเช่า', desc: 'รถเช่าเหมาสำหรับการปฏิบัติงาน', bg: 'bg-[#fff3df]', iconBg: '#d57a00', shadow: 'rgba(213,122,0,.16)' },
+    { id: 'ev', iconName: 'ph:leaf-duotone', title: 'รถ EV', desc: 'รถยนต์พลังงานไฟฟ้าและข้อมูลการชาร์จ', bg: 'bg-[#eaf9f0]', iconBg: '#169d54', shadow: 'rgba(22,157,84,.16)' }
   ];
 
   const handleSelectCategory = (categoryId) => {
@@ -649,55 +649,57 @@ export default function UltimateDashboard() {
 
   if (showWelcome) {
     return (
-      <div className="kpn-screen kpn-dashboard min-h-[100dvh] bg-[#f8f3fa] flex flex-col items-center justify-center p-4 md:p-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
+      <div className="kpn-screen kpn-dashboard min-h-[calc(100dvh-84px)] bg-[#f8f3fa] px-4 pb-8 pt-4 md:px-6 md:pb-10 md:pt-6 relative font-sarabun overflow-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
         <style>{`
           @keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
           .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
         `}</style>
         
-        <div className="max-w-3xl w-full z-10 animate-slide-up flex flex-col items-center">
-          <div className="text-center mb-6 md:mb-8 flex-shrink-0">
-            <img src="/pea_logo.png" className="h-10 md:h-12 mx-auto mb-3 object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/>
-            <h1 className="text-[24px] md:text-[34px] font-bold text-[#4b1560] tracking-[-1px] leading-tight mb-1">
-              เลือกระบบจัดการฝูงรถ
-            </h1>
-            <p className="text-[13px] md:text-[15px] text-[#765c7c]">
-              กรุณาเลือกหมวดหมู่รถที่ต้องการดูข้อมูลสถิติ
-            </p>
-          </div>
+        <div className="relative z-10 mx-auto w-full max-w-[1080px] animate-slide-up">
+          <header className="flex items-center justify-between rounded-[22px] border border-white/90 bg-white/85 px-3.5 py-3 backdrop-blur-xl md:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[#e7eaf1] bg-white p-1.5"><img src="/pea_logo.png" className="h-full w-full object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/></div>
+              <div className="min-w-0"><p className="text-[9px] font-bold tracking-[.15em] text-[#5547f7]">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</p><h1 className="truncate text-[18px] font-black tracking-[-.5px] text-[#101522] md:text-[21px]">KPN SMART CAR</h1></div>
+            </div>
+            <button type="button" onClick={() => router.push('/')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="กลับหน้าหลัก"><Icon icon="ph:house-duotone" width="21" height="21" /></button>
+          </header>
 
-          <div className="grid grid-cols-2 gap-3 md:gap-5 w-full flex-shrink-0 px-2 md:px-0">
+          <section className="kpn-dark-card relative mt-4 overflow-hidden rounded-[28px] px-5 py-6 text-white md:px-8 md:py-8">
+            <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[38px] border-white/[.05]" />
+            <div className="absolute bottom-0 right-[20%] h-28 w-28 rounded-full bg-[#7592ff]/20 blur-3xl" />
+            <div className="relative flex items-center justify-between gap-5">
+              <div className="min-w-0">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[10px] font-bold tracking-[.12em] text-[#c9ff48]"><span className="h-1.5 w-1.5 rounded-full bg-[#c9ff48]" />FLEET ANALYTICS</div>
+                <h2 className="text-[26px] font-black leading-[1.05] tracking-[-1px] md:text-[38px]">แดชบอร์ด<br/><span className="text-[#9eb0ff]">ข้อมูลยานพาหนะ</span></h2>
+                <p className="mt-3 max-w-[520px] text-[12px] leading-relaxed text-white/60 md:text-[14px]">เลือกหมวดรถเพื่อดูสถิติการใช้งาน ระยะทาง ค่าใช้จ่าย และรายงานที่เกี่ยวข้อง</p>
+              </div>
+              <div className="flex h-[86px] w-[86px] shrink-0 rotate-[-5deg] items-center justify-center rounded-[28px] bg-[#c9ff48] text-[#080d1b] shadow-[0_18px_45px_rgba(174,235,36,.26)] md:h-[120px] md:w-[120px] md:rounded-[36px]"><Icon icon="ph:chart-donut-duotone" width="54" height="54" className="md:h-[72px] md:w-[72px]" /></div>
+            </div>
+          </section>
+
+          <div className="mt-4 grid w-full grid-cols-2 gap-3 lg:grid-cols-4">
             {categories.map((cat, index) => (
               <button 
                 key={cat.id} 
                 onClick={() => handleSelectCategory(cat.id)}
-                className="kpn-surface group text-left bg-white p-4 md:p-6 rounded-[20px] md:rounded-[24px] border border-transparent hover:border-[#702082]/30 transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 relative overflow-hidden flex flex-col justify-center items-center md:items-start text-center md:text-left h-full min-h-[140px] md:min-h-[180px]"
-                style={{boxShadow:'0 4px 20px rgba(0,0,0,0.05)', animationDelay: `${index * 80}ms`}}
+                className="kpn-surface group relative flex min-h-[158px] flex-col overflow-hidden rounded-[22px] border border-[#e7eaf1] bg-white p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#bac1d2] active:translate-y-0 active:scale-[.98] md:min-h-[190px] md:p-5"
+                style={{animationDelay: `${index * 80}ms`}}
               >
-                <div className={`w-12 h-12 md:w-14 md:h-14 rounded-[14px] md:rounded-[18px] ${cat.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm`}
-                     style={{boxShadow: `0 6px 12px ${cat.shadow}`, color: cat.iconBg}}>
-                  <Icon icon={cat.iconName} width="28" height="28" />
+                <span className="absolute right-3 top-3 text-[10px] font-black tracking-[.12em] text-[#c2c7d2]">0{index + 1}</span>
+                <div className={`mb-auto flex h-12 w-12 items-center justify-center rounded-[15px] ${cat.bg} transition-transform duration-300 group-hover:scale-105 md:h-14 md:w-14 md:rounded-[18px]`}
+                     style={{color: cat.iconBg}}>
+                  <Icon icon={cat.iconName} width="29" height="29" />
                 </div>
                 
-                <div className="w-full">
-                  <h2 className="text-[15px] md:text-[19px] font-bold text-[#4b1560] mb-1 tracking-[-0.3px] group-hover:text-[#702082] transition-colors">{cat.title}</h2>
-                  <p className="text-[11px] md:text-[13px] text-[#765c7c] leading-snug line-clamp-2 md:line-clamp-none">{cat.desc}</p>
-                </div>
-                
-                <div className="hidden md:block absolute top-6 right-6 text-[#d9cadd] group-hover:text-[#702082] transition-colors">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                <div className="mt-4 w-full">
+                  <div className="flex items-end justify-between gap-2"><h3 className="text-[16px] font-black tracking-[-.4px] text-[#101522] md:text-[19px]">{cat.title}</h3><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f2f4f8] text-[#101522] transition-colors group-hover:bg-[#c9ff48]"><Icon icon="ph:arrow-up-right-bold" width="14" height="14" /></span></div>
+                  <p className="mt-1.5 line-clamp-2 text-[10px] leading-snug text-[#737b8e] md:text-[12px]">{cat.desc}</p>
                 </div>
               </button>
             ))}
           </div>
 
-          <div className="text-center mt-8 md:mt-10 flex-shrink-0">
-            <button onClick={() => router.push('/')} className="text-[13px] md:text-[14px] font-medium text-[#702082] hover:underline active:opacity-50">
-              กลับสู่หน้าหลัก
-            </button>
-          </div>
+          <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-semibold text-[#8c94a7]"><Icon icon="ph:shield-check-duotone" width="16" height="16" className="text-[#5547f7]" />ข้อมูลอัปเดตจากระบบ KPN Smart Car</div>
         </div>
       </div>
     )
