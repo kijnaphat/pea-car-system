@@ -583,7 +583,7 @@ function CarSelector({ adminReportCarId }) {
   }
 
   return (
-    <div className="kpn-screen kpn-home min-h-screen bg-[#f8f3fa] font-sarabun pb-28 lg:pb-10 lg:bg-[#f3edf5] text-[#241c27]" style={{WebkitFontSmoothing:'antialiased'}}>
+    <div className="kpn-screen kpn-home flex min-h-[calc(100dvh-84px)] flex-col bg-[#f8f3fa] font-sarabun pb-0 text-[#241c27] lg:min-h-screen lg:bg-[#f3edf5] lg:pb-10" style={{WebkitFontSmoothing:'antialiased'}}>
       <style>{`
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
         .animate-slideUp { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
@@ -611,7 +611,7 @@ function CarSelector({ adminReportCarId }) {
         </div>
       </header>
 
-      <main className="max-w-[620px] lg:max-w-[1280px] mx-auto bg-white overflow-hidden lg:rounded-[30px] lg:shadow-[0_14px_45px_rgba(75,21,96,.10)]">
+      <main className="mx-auto flex w-full max-w-[620px] flex-1 flex-col overflow-hidden bg-white lg:max-w-[1280px] lg:rounded-[30px] lg:shadow-[0_14px_45px_rgba(75,21,96,.10)]">
         <section>
           <div ref={bannerViewportRef}
             onTouchStart={(e) => { bannerTouchStartRef.current = e.touches[0]?.clientX ?? null }}
@@ -718,7 +718,7 @@ function CarSelector({ adminReportCarId }) {
           <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
         </section>
 
-        <footer className="bg-white px-5 lg:px-6 pt-2 pb-7">
+        <footer className="mt-auto bg-white px-5 pb-7 pt-2 lg:px-6">
           <a
             href="https://github.com/kijnaphat"
             target="_blank"
