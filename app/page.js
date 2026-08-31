@@ -678,23 +678,27 @@ function CarSelector({ adminReportCarId }) {
 
         <section className="relative -mt-6 sm:-mt-7 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><h2 className="text-[25px] font-bold tracking-[-.7px] text-[#4b1560]">รายการรถ</h2><Icon icon="ph:info-duotone" width="21" height="21" className="text-[#702082]" /></div><button onClick={() => router.push('/dashboard')} className="w-10 h-10 rounded-full bg-[#f3eaf5] text-[#702082] flex items-center justify-center" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="22" height="22" /></button></div>
-          <div className="relative mt-4">
-            <Icon icon="ph:magnifying-glass-bold" width="20" height="20" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#702082]" />
-            <input
-              type="search"
-              value={carSearch}
-              onChange={event => setCarSearch(event.target.value)}
-              placeholder="ค้นหาทะเบียน รุ่น ประเภทรถ หรือสถานะ"
-              aria-label="ค้นหารถ"
-              autoComplete="off"
-              enterKeyHint="search"
-              className="h-12 w-full appearance-none rounded-[16px] border border-[#dfd5e3] bg-[#faf8fb] pl-12 pr-11 text-[13px] font-medium text-[#2d2030] outline-none transition-all placeholder:text-[#a29aa5] focus:border-[#702082] focus:bg-white focus:ring-4 focus:ring-[#702082]/10 [&::-webkit-search-cancel-button]:hidden"
-            />
-            {carSearch && <button type="button" onClick={() => setCarSearch('')} className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#eee8f0] text-[#765c7c] transition-transform active:scale-90" aria-label="ล้างคำค้นหา"><Icon icon="ph:x-bold" width="13" height="13" /></button>}
+          <div className="mt-4 rounded-[22px] border border-[#e7eaf1] bg-[linear-gradient(135deg,#f1edff_0%,#ffffff_52%,#f2ffe1_100%)] p-1.5 shadow-[0_10px_28px_rgba(42,35,74,.09)] transition-shadow focus-within:shadow-[0_12px_34px_rgba(85,71,247,.16)]">
+            <div className="relative flex items-center rounded-[17px] bg-white">
+              <span className="pointer-events-none absolute left-2.5 flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#c9ff48] text-[#101522] shadow-[0_6px_16px_rgba(174,235,36,.24)]">
+                <Icon icon="ph:magnifying-glass-bold" width="21" height="21" />
+              </span>
+              <input
+                type="search"
+                value={carSearch}
+                onChange={event => setCarSearch(event.target.value)}
+                placeholder="ค้นหาทะเบียน รุ่น หรือประเภทรถ"
+                aria-label="ค้นหารถ"
+                autoComplete="off"
+                enterKeyHint="search"
+                className="h-14 w-full appearance-none rounded-[17px] border-0 bg-transparent pl-[60px] pr-12 text-[16px] font-semibold text-[#202636] outline-none placeholder:text-[14px] placeholder:font-medium placeholder:text-[#969dad] focus:ring-0 [&::-webkit-search-cancel-button]:hidden"
+              />
+              {carSearch && <button type="button" onClick={() => setCarSearch('')} className="absolute right-2.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#f0edf3] text-[#765c7c] transition-all active:scale-90" aria-label="ล้างคำค้นหา"><Icon icon="ph:x-bold" width="14" height="14" /></button>}
+            </div>
           </div>
-          <div className="flex items-center justify-between mt-3 mb-1 text-[12px] text-[#646a66]">
-            <span>{hasCarSearch ? `พบ ${searchedCars.length} จาก ${cars.length} คัน` : `${cars.length} รายการ`}</span>
-            <span className="inline-flex items-center gap-1.5">{isCarSearchPending && <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#d9cadd] border-t-[#702082]" />}{hasCarSearch ? 'เรียงจากตรงที่สุด' : 'สถานะล่าสุด'}</span>
+          <div className="flex items-center justify-between mt-3 mb-1 text-[11px] font-semibold text-[#687083]">
+            <span className="rounded-full bg-[#f2f4f8] px-2.5 py-1">{hasCarSearch ? `พบ ${searchedCars.length} จาก ${cars.length} คัน` : `${cars.length} รายการ`}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1">{isCarSearchPending && <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#d9cadd] border-t-[#5547f7]" />}{hasCarSearch ? <><Icon icon="ph:magic-wand-duotone" width="15" height="15" className="text-[#5547f7]" />เรียงจากตรงที่สุด</> : 'สถานะล่าสุด'}</span>
           </div>
           {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : displayedCars.length === 0 ? <div className="py-12 text-center text-[#838b86]"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f3eaf5] text-[#702082]"><Icon icon="ph:magnifying-glass-duotone" width="30" height="30" /></span><p className="mt-3 text-[14px] font-bold text-[#4b1560]">ไม่พบรถที่ค้นหา</p><p className="mt-1 text-[11px] text-[#929994]">ลองพิมพ์ทะเบียน รุ่น หรือประเภทรถใหม่อีกครั้ง</p><button type="button" onClick={() => setCarSearch('')} className="mt-4 rounded-full bg-[#702082] px-4 py-2 text-[11px] font-bold text-white">แสดงรถทั้งหมด</button></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{displayedCars.map(renderCarRow)}</div>}
           <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
