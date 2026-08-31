@@ -1,5 +1,5 @@
 ﻿'use client'
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, useDeferredValue, useMemo, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
@@ -11,6 +11,103 @@ import { normalizeStaffCode } from '@/lib/staffCode'
 
 const BANNER_SLIDE_COUNT = 4
 const TAB_ANNOUNCEMENT_KEY = 'kpn-smart-car-welcome-v1'
+
+const normalizeCarSearch = value => String(value ?? '')
+  .normalize('NFKC')
+  .toLocaleLowerCase('th-TH')
+  .replace(/[‐‑‒–—−]/g, '-')
+  .replace(/\s+/g, ' ')
+  .trim()
+
+const compactCarSearch = value => normalizeCarSearch(value).replace(/[\s\-_/.,()[\]{}]/g, '')
+
+const editDistance = (left, right) => {
+  if (left === right) return 0
+  if (!left.length) return right.length
+  if (!right.length) return left.length
+
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index)
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    let diagonal = previous[0]
+    previous[0] = leftIndex
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const above = previous[rightIndex]
+      previous[rightIndex] = left[leftIndex - 1] === right[rightIndex - 1]
+        ? diagonal
+        : Math.min(diagonal, above, previous[rightIndex - 1]) + 1
+      diagonal = above
+    }
+  }
+  return previous[right.length]
+}
+
+const getCarSearchScore = (car, rawQuery) => {
+  const query = normalizeCarSearch(rawQuery)
+  const compactQuery = compactCarSearch(rawQuery)
+  if (!query) return 0
+
+  const log = car.status === 'busy' ? car.activeLog : car.lastLog
+  const statusText = car.status === 'busy'
+    ? 'กำลังใช้งาน ไม่ว่าง'
+    : car.status === 'maintenance'
+      ? 'กำลังซ่อม ส่งซ่อม ชำรุด'
+      : 'พร้อมใช้งาน ว่างพร้อมใช้'
+  const fields = [
+    { value: car.plate_number, weight: 130 },
+    { value: car.model, weight: 90 },
+    { value: car.car_type, weight: 82 },
+    { value: log?.driver_name, weight: 66 },
+    { value: log?.location, weight: 60 },
+    { value: car.fuel_type, weight: 56 },
+    { value: car.usage_type, weight: 48 },
+    { value: car.ownership_type, weight: 42 },
+    { value: car.driverPosition || log?.driver_position, weight: 38 },
+    { value: statusText, weight: 36 },
+    { value: car.maintenanceRecord?.description, weight: 32 },
+    { value: car.maintenanceRecord?.maintenance_issue_categories?.name, weight: 32 },
+  ].filter(field => field.value)
+
+  const queryTokens = query.split(' ').filter(Boolean)
+  let score = 0
+  let matchedTokens = 0
+
+  fields.forEach(({ value, weight }) => {
+    const normalizedValue = normalizeCarSearch(value)
+    const compactValue = compactCarSearch(value)
+    let fieldScore = 0
+
+    if (normalizedValue === query || compactValue === compactQuery) fieldScore = weight * 5
+    else if (normalizedValue.startsWith(query) || compactValue.startsWith(compactQuery)) fieldScore = weight * 4
+    else if (normalizedValue.includes(query) || compactValue.includes(compactQuery)) fieldScore = weight * 3
+
+    const fieldTokens = normalizedValue.split(/[\s\-_/.,()[\]{}]+/).filter(Boolean)
+    queryTokens.forEach(token => {
+      const compactToken = compactCarSearch(token)
+      if (normalizedValue.includes(token) || compactValue.includes(compactToken)) {
+        fieldScore += weight
+        matchedTokens += 1
+        return
+      }
+
+      if (token.length >= 3) {
+        const allowedDistance = token.length >= 7 ? 2 : 1
+        const fuzzyMatch = fieldTokens.some(fieldToken => {
+          if (Math.abs(fieldToken.length - token.length) > allowedDistance) return false
+          return editDistance(fieldToken, token) <= allowedDistance
+        })
+        if (fuzzyMatch) {
+          fieldScore += weight * 0.7
+          matchedTokens += 1
+        }
+      }
+    })
+
+    score += fieldScore
+  })
+
+  if (matchedTokens >= queryTokens.length && queryTokens.length > 1) score += 120
+  return score
+}
 
 const formatTripDateTime = (value, prefix) => {
   if (!value) return null
@@ -93,6 +190,8 @@ function MainApp() {
 function CarSelector({ adminReportCarId }) {
   const router = useRouter()
   const [cars, setCars] = useState([])
+  const [carSearch, setCarSearch] = useState('')
+  const deferredCarSearch = useDeferredValue(carSearch)
   const [loading, setLoading] = useState(true)
   const [showInstructions, setShowInstructions] = useState(false)
   const [showWelcomeAnnouncement, setShowWelcomeAnnouncement] = useState(false)
@@ -332,6 +431,17 @@ function CarSelector({ adminReportCarId }) {
     }
   }
 
+  const searchedCars = useMemo(() => {
+    const query = normalizeCarSearch(deferredCarSearch)
+    if (!query) return cars
+
+    return cars
+      .map((car, originalIndex) => ({ car, originalIndex, score: getCarSearchScore(car, query) }))
+      .filter(result => result.score > 0)
+      .sort((left, right) => right.score - left.score || left.originalIndex - right.originalIndex)
+      .map(result => result.car)
+  }, [cars, deferredCarSearch])
+
   if (loading) return <PageSkeleton variant="home" />
 
   const busyCars = cars.filter(c => c.status === 'busy')
@@ -339,6 +449,9 @@ function CarSelector({ adminReportCarId }) {
   const availableCars = cars.filter(c => c.status === 'available')
   const activeCars = cars.filter(c => c.isActivated)
   const evCars = cars.filter(c => c.fuel_type?.toUpperCase() === 'EV' || c.car_type?.toUpperCase().includes('EV'))
+  const hasCarSearch = Boolean(normalizeCarSearch(deferredCarSearch))
+  const isCarSearchPending = carSearch !== deferredCarSearch
+  const displayedCars = hasCarSearch ? searchedCars : cars
   const signatureSchedule = getSignatureSchedule()
   const isSignaturePeriod = signatureSchedule.isOpen
   const signatureStartDate = signatureSchedule.startText
@@ -565,8 +678,25 @@ function CarSelector({ adminReportCarId }) {
 
         <section className="relative -mt-6 sm:-mt-7 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><h2 className="text-[25px] font-bold tracking-[-.7px] text-[#4b1560]">รายการรถ</h2><Icon icon="ph:info-duotone" width="21" height="21" className="text-[#702082]" /></div><button onClick={() => router.push('/dashboard')} className="w-10 h-10 rounded-full bg-[#f3eaf5] text-[#702082] flex items-center justify-center" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="22" height="22" /></button></div>
-          <div className="flex items-center justify-between mt-6 mb-1 text-[13px] text-[#646a66]"><span>{cars.length} รายการ</span><span>สถานะล่าสุด</span></div>
-          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{busyCars.map(renderCarRow)}{maintenanceCars.map(renderCarRow)}{availableCars.map(renderCarRow)}</div>}
+          <div className="relative mt-4">
+            <Icon icon="ph:magnifying-glass-bold" width="20" height="20" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#702082]" />
+            <input
+              type="search"
+              value={carSearch}
+              onChange={event => setCarSearch(event.target.value)}
+              placeholder="ค้นหาทะเบียน รุ่น ประเภทรถ หรือสถานะ"
+              aria-label="ค้นหารถ"
+              autoComplete="off"
+              enterKeyHint="search"
+              className="h-12 w-full appearance-none rounded-[16px] border border-[#dfd5e3] bg-[#faf8fb] pl-12 pr-11 text-[13px] font-medium text-[#2d2030] outline-none transition-all placeholder:text-[#a29aa5] focus:border-[#702082] focus:bg-white focus:ring-4 focus:ring-[#702082]/10 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {carSearch && <button type="button" onClick={() => setCarSearch('')} className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#eee8f0] text-[#765c7c] transition-transform active:scale-90" aria-label="ล้างคำค้นหา"><Icon icon="ph:x-bold" width="13" height="13" /></button>}
+          </div>
+          <div className="flex items-center justify-between mt-3 mb-1 text-[12px] text-[#646a66]">
+            <span>{hasCarSearch ? `พบ ${searchedCars.length} จาก ${cars.length} คัน` : `${cars.length} รายการ`}</span>
+            <span className="inline-flex items-center gap-1.5">{isCarSearchPending && <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#d9cadd] border-t-[#702082]" />}{hasCarSearch ? 'เรียงจากตรงที่สุด' : 'สถานะล่าสุด'}</span>
+          </div>
+          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : displayedCars.length === 0 ? <div className="py-12 text-center text-[#838b86]"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f3eaf5] text-[#702082]"><Icon icon="ph:magnifying-glass-duotone" width="30" height="30" /></span><p className="mt-3 text-[14px] font-bold text-[#4b1560]">ไม่พบรถที่ค้นหา</p><p className="mt-1 text-[11px] text-[#929994]">ลองพิมพ์ทะเบียน รุ่น หรือประเภทรถใหม่อีกครั้ง</p><button type="button" onClick={() => setCarSearch('')} className="mt-4 rounded-full bg-[#702082] px-4 py-2 text-[11px] font-bold text-white">แสดงรถทั้งหมด</button></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{displayedCars.map(renderCarRow)}</div>}
           <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
         </section>
 
