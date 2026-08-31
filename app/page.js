@@ -55,6 +55,7 @@ const getCarSearchScore = (car, rawQuery) => {
   const fields = [
     { value: car.plate_number, weight: 130 },
     { value: car.model, weight: 90 },
+    { value: car.departments?.name, weight: 86 },
     { value: car.car_type, weight: 82 },
     { value: log?.driver_name, weight: 66 },
     { value: log?.location, weight: 60 },
@@ -290,7 +291,7 @@ function CarSelector({ adminReportCarId }) {
   const fetchCars = async () => {
     try {
       const [{ data: carsDataRaw }, { data: activeLogs }, { data: maintenanceRecords, error: maintenanceError }] = await Promise.all([
-        supabase.from('cars').select('*'),
+        supabase.from('cars').select('*, departments(name)'),
         supabase
           .from('trip_logs')
           .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, driver_position, location, is_completed')
@@ -569,7 +570,10 @@ function CarSelector({ adminReportCarId }) {
         <div className="min-w-0 flex-1">
           <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isMaintenance ? 'bg-[#fff0ce] text-[#a85f00]' : isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isMaintenance ? 'กำลังซ่อม' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
           <h3 className="text-[18px] font-bold tracking-[-.35px] truncate">{car.plate_number}</h3>
-          <p className="text-[11px] text-[#6e7771] truncate">{car.car_type}</p>
+          <p className="text-[11px] text-[#6e7771] truncate">
+            {car.model || car.car_type}
+            {car.departments?.name ? ` · ${car.departments.name}` : ''}
+          </p>
           <p className="mt-0.5 text-[10px] text-[#9aa19c] truncate flex items-center gap-1"><Icon icon={isMaintenance ? 'ph:wrench' : driverName ? 'ph:user-circle' : 'ph:map-pin'} width="12" height="12" />{isMaintenance ? (car.maintenanceRecord?.description || 'อยู่ระหว่างตรวจซ่อม') : driverName || logData?.location || 'ยังไม่มีข้อมูลการใช้งาน'}</p>
         </div>
         <div className="w-[126px] flex-shrink-0 text-right sm:w-[145px]">
@@ -701,8 +705,8 @@ function CarSelector({ adminReportCarId }) {
                 type="search"
                 value={carSearch}
                 onChange={event => setCarSearch(event.target.value)}
-                placeholder="ค้นหาทะเบียน รุ่น หรือประเภทรถ"
-                aria-label="ค้นหารถ"
+                placeholder="ค้นหาทะเบียน รุ่น หรือแผนก"
+                aria-label="ค้นหารถด้วยทะเบียน รุ่น หรือแผนก"
                 autoComplete="off"
                 enterKeyHint="search"
                 className="h-14 w-full appearance-none rounded-[17px] border-0 bg-transparent pl-[60px] pr-12 text-[16px] font-semibold text-[#202636] outline-none placeholder:text-[14px] placeholder:font-medium placeholder:text-[#969dad] focus:ring-0 [&::-webkit-search-cancel-button]:hidden"
@@ -714,7 +718,7 @@ function CarSelector({ adminReportCarId }) {
             <span className="rounded-full bg-[#f2f4f8] px-2.5 py-1">{hasCarSearch ? `พบ ${searchedCars.length} จาก ${cars.length} คัน` : `${cars.length} รายการ`}</span>
             <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-1">{isCarSearchPending && <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#d9cadd] border-t-[#5547f7]" />}{hasCarSearch ? <><Icon icon="ph:magic-wand-duotone" width="15" height="15" className="text-[#5547f7]" />เรียงจากตรงที่สุด</> : 'สถานะล่าสุด'}</span>
           </div>
-          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : displayedCars.length === 0 ? <div className="py-12 text-center text-[#838b86]"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f3eaf5] text-[#702082]"><Icon icon="ph:magnifying-glass-duotone" width="30" height="30" /></span><p className="mt-3 text-[14px] font-bold text-[#4b1560]">ไม่พบรถที่ค้นหา</p><p className="mt-1 text-[11px] text-[#929994]">ลองพิมพ์ทะเบียน รุ่น หรือประเภทรถใหม่อีกครั้ง</p><button type="button" onClick={() => setCarSearch('')} className="mt-4 rounded-full bg-[#702082] px-4 py-2 text-[11px] font-bold text-white">แสดงรถทั้งหมด</button></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{displayedCars.map(renderCarRow)}</div>}
+          {cars.length === 0 ? <div className="py-14 text-center text-[#939b95]"><Icon icon="ph:car-profile-duotone" width="52" height="52" className="mx-auto mb-2"/><p>ยังไม่มีรถในระบบ</p></div> : displayedCars.length === 0 ? <div className="py-12 text-center text-[#838b86]"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f3eaf5] text-[#702082]"><Icon icon="ph:magnifying-glass-duotone" width="30" height="30" /></span><p className="mt-3 text-[14px] font-bold text-[#4b1560]">ไม่พบรถที่ค้นหา</p><p className="mt-1 text-[11px] text-[#929994]">ลองพิมพ์ทะเบียน รุ่น หรือชื่อแผนกใหม่อีกครั้ง</p><button type="button" onClick={() => setCarSearch('')} className="mt-4 rounded-full bg-[#702082] px-4 py-2 text-[11px] font-bold text-white">แสดงรถทั้งหมด</button></div> : <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">{displayedCars.map(renderCarRow)}</div>}
           <p className="text-center text-[10px] text-[#b5bcb7] mt-5">PEA Fleet System v2.26 · เปิดใช้งาน {activeCars.length} คัน</p>
         </section>
 
