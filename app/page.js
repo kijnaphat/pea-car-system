@@ -109,6 +109,18 @@ const getCarSearchScore = (car, rawQuery) => {
   return score
 }
 
+const CAR_STATUS_SORT_ORDER = { busy: 0, maintenance: 1, available: 2 }
+
+const getCarActivityTimestamp = car => {
+  const value = car.status === 'busy'
+    ? car.activeLog?.start_time
+    : car.status === 'maintenance'
+      ? car.maintenanceRecord?.reported_at
+      : car.lastLog?.end_time || car.lastLog?.start_time
+  const timestamp = value ? new Date(value).getTime() : 0
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
 const formatTripDateTime = (value, prefix) => {
   if (!value) return null
   const date = new Date(value)
@@ -332,11 +344,13 @@ function CarSelector({ adminReportCarId }) {
         });
 
         finalCars.sort((a, b) => {
-            if (a.status === 'busy' && b.status !== 'busy') return -1 
-            if (a.status !== 'busy' && b.status === 'busy') return 1  
-            if (a.status === 'maintenance' && b.status !== 'maintenance') return -1
-            if (a.status !== 'maintenance' && b.status === 'maintenance') return 1
-            return a.plate_number.localeCompare(b.plate_number)
+            const statusDifference = (CAR_STATUS_SORT_ORDER[a.status] ?? 3) - (CAR_STATUS_SORT_ORDER[b.status] ?? 3)
+            if (statusDifference !== 0) return statusDifference
+
+            const activityDifference = getCarActivityTimestamp(b) - getCarActivityTimestamp(a)
+            if (activityDifference !== 0) return activityDifference
+
+            return a.plate_number.localeCompare(b.plate_number, 'th')
         })
 
         setCars(finalCars)
