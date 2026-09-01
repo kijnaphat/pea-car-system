@@ -396,7 +396,7 @@ export default function AdminDashboard() {
 
   const sidebarMenus = [
     { id: 'cars', icon: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'เพิ่ม แก้ไข และจัดการข้อมูลรถ', iconClass: 'bg-[#eef0ff] text-[#5547f7]' },
-    { id: 'mileage', icon: 'ph:database-duotone', title: 'แก้ไขข้อมูล', desc: 'เลขไมล์ รายการผิดปกติ และงานซ่อม', iconClass: 'bg-[#fff0ef] text-[#ef5148]' },
+    { id: 'mileage', icon: 'ph:database-duotone', title: 'แก้ไขข้อมูล', desc: 'เลขไมล์ น้ำมัน รายการผิดปกติ และงานซ่อม', iconClass: 'bg-[#fff0ef] text-[#ef5148]' },
     { id: 'staff', icon: 'ph:users-three-duotone', title: 'บุคลากร', desc: 'ข้อมูลพนักงานและผู้ใช้งานรถ', iconClass: 'bg-[#eaf9f0] text-[#169d54]' },
     { id: 'tasks', icon: 'ph:clipboard-text-duotone', title: 'ประเภทงาน', desc: 'จัดการงานและภารกิจในระบบ', iconClass: 'bg-[#fff3df] text-[#d57a00]' },
     { id: 'departments', icon: 'ph:buildings-duotone', title: 'แผนก', desc: 'หน่วยงานและแผนกรับผิดชอบ', iconClass: 'bg-[#f2edff] text-[#7b54e8]' },

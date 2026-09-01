@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Icon } from '@iconify/react'
 import MileageCorrectionPanel from '@/app/admin/components/MileageCorrectionPanel'
 import MaintenanceBillingPanel from '@/app/admin/components/MaintenanceBillingPanel'
+import FuelCorrectionPanel from '@/app/admin/components/FuelCorrectionPanel'
 
 export default function DataManagementPanel({
   mileageAnomalyCount,
@@ -15,6 +16,7 @@ export default function DataManagementPanel({
 
   const tabs = [
     { id: 'mileage', label: 'เลขไมล์', icon: 'ph:speedometer-duotone', count: mileageAnomalyCount },
+    { id: 'fuel', label: 'ข้อมูลเติมน้ำมัน', icon: 'ph:gas-pump-duotone', count: 0 },
     { id: 'maintenance', label: 'ข้อมูลซ่อมรอวางบิล', icon: 'ph:receipt-duotone', count: pendingBillingCount },
   ]
 
@@ -30,11 +32,9 @@ export default function DataManagementPanel({
         ))}
       </div>
 
-      {activeTab === 'mileage' ? (
-        <MileageCorrectionPanel onAnomalyCountChange={onAnomalyCountChange} />
-      ) : (
-        <MaintenanceBillingPanel onPendingCountChange={onPendingBillingCountChange} />
-      )}
+      {activeTab === 'mileage' && <MileageCorrectionPanel onAnomalyCountChange={onAnomalyCountChange} />}
+      {activeTab === 'fuel' && <FuelCorrectionPanel />}
+      {activeTab === 'maintenance' && <MaintenanceBillingPanel onPendingCountChange={onPendingBillingCountChange} />}
     </div>
   )
 }
