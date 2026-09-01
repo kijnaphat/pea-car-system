@@ -25,6 +25,25 @@ const fieldLabels = {
   name: 'ชื่อรายการ (แผนก/สถานที่/งาน)' 
 }
 
+async function optimizeCarImage(file) {
+  try {
+    const bitmap = await createImageBitmap(file)
+    const maxDimension = 1280
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close()
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.78))
+    if (!blob) return file
+    const name = `${file.name.replace(/\.[^.]+$/, '')}.webp`
+    return new File([blob], name, { type: 'image/webp', lastModified: Date.now() })
+  } catch {
+    return file
+  }
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [loadingSession, setLoadingSession] = useState(true)
@@ -180,7 +199,7 @@ export default function AdminDashboard() {
     document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' })
   }
 
-  const handleCarImageChange = (event) => {
+  const handleCarImageChange = async (event) => {
     const file = event.target.files?.[0]
     if (!file) return
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
@@ -194,18 +213,20 @@ export default function AdminDashboard() {
       event.target.value = ''
       return
     }
+    const optimizedFile = await optimizeCarImage(file)
     if (carImagePreview?.startsWith('blob:')) URL.revokeObjectURL(carImagePreview)
-    setCarImageFile(file)
-    setCarImagePreview(URL.createObjectURL(file))
+    setCarImageFile(optimizedFile)
+    setCarImagePreview(URL.createObjectURL(optimizedFile))
     setRemoveCarImage(false)
   }
 
   const uploadCarImage = async (carId, file) => {
-    const imagePath = `cars/${carId}/main`
+    const extension = file.type === 'image/webp' ? 'webp' : (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const imagePath = `cars/${carId}/main-${Date.now()}.${extension}`
     const { error } = await supabase.storage.from(CAR_IMAGE_BUCKET).upload(imagePath, file, {
-      upsert: true,
+      upsert: false,
       contentType: file.type,
-      cacheControl: '3600',
+      cacheControl: '31536000',
     })
     if (error) throw error
     return imagePath
@@ -231,7 +252,7 @@ export default function AdminDashboard() {
         const { error: uploadError } = await supabase.storage.from(CAR_IMAGE_BUCKET).upload(imagePath, blob, {
           upsert: true,
           contentType: blob.type || 'image/png',
-          cacheControl: '3600',
+          cacheControl: '31536000',
         })
         if (uploadError) throw uploadError
         const { error: updateError } = await supabase.from('cars').update({ image_path: imagePath }).in('id', carIds)
@@ -330,6 +351,10 @@ export default function AdminDashboard() {
       if (table === 'cars' && removeCarImage && previousImagePath?.startsWith('cars/')) {
         const { error: removeError } = await supabase.storage.from(CAR_IMAGE_BUCKET).remove([previousImagePath])
         if (removeError) console.error('Remove old car image:', removeError.message)
+      }
+      if (table === 'cars' && carImageFile && previousImagePath?.startsWith('cars/') && previousImagePath !== updatePayload.image_path) {
+        const { error: removeError } = await supabase.storage.from(CAR_IMAGE_BUCKET).remove([previousImagePath])
+        if (removeError) console.error('Remove replaced car image:', removeError.message)
       }
       alert('อัปเดตข้อมูลสำเร็จ')
       setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })
