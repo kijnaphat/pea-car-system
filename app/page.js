@@ -537,7 +537,7 @@ function CarSelector({ adminReportCarId }) {
   }
 
   const renderCarRow = (car) => {
-    const carImageSrc = getCarImage(car)
+    const carImageSrc = getCarImage(car, 'thumb')
     const isEV = car.fuel_type?.toUpperCase() === 'EV' || car.car_type?.toUpperCase().includes('EV')
     const isBusy = car.status === 'busy'
     const isMaintenance = car.status === 'maintenance'
@@ -564,7 +564,7 @@ function CarSelector({ adminReportCarId }) {
         className="flex items-center gap-3 py-4 border-b border-[#edf0ee] last:border-b-0 cursor-pointer active:bg-[#f8faf8] transition-colors">
         <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border border-black/[0.05] ${isMaintenance ? 'bg-[#fff5df]' : isBusy ? 'bg-[#fff0ed]' : isEV ? 'bg-[#edf3ff]' : 'bg-[#eefaf2]'}`}>
           {carImageSrc
-            ? <img src={carImageSrc} alt={car.car_type} className={`w-full h-full object-cover ${isMaintenance ? 'sepia-[.25] opacity-75' : !car.isActivated ? 'grayscale opacity-40' : ''}`}/>
+            ? <img src={carImageSrc} alt={car.car_type} width="56" height="56" loading="lazy" decoding="async" className={`w-full h-full object-cover ${isMaintenance ? 'sepia-[.25] opacity-75' : !car.isActivated ? 'grayscale opacity-40' : ''}`}/>
             : <Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:car-profile-duotone'} width="30" height="30" className={isMaintenance ? 'text-[#d57a00]' : isBusy ? 'text-[#ff6680]' : 'text-[#14c767]'} />}
         </div>
         <div className="min-w-0 flex-1">
@@ -852,7 +852,7 @@ function CarSelector({ adminReportCarId }) {
       {/* ── Modal รายละเอียดรถแบบขยาย (แบบ Full Screen เหมือนหน้าฟอร์ม ไม่ต้องเลื่อนจอ) ── */}
       {carDetailModal && (() => {
         const { car, logData } = carDetailModal
-        const carImageSrc = getCarImage(car)
+        const carImageSrc = getCarImage(car, 'hero')
         const isBusy = car.status === 'busy'
         const isMaintenance = car.status === 'maintenance'
         const driverName = isMaintenance ? car.maintenanceRecord?.reported_by?.full_name : logData?.driver_name
@@ -873,7 +873,7 @@ function CarSelector({ adminReportCarId }) {
               {/* ภาพรถขยายตามพื้นที่ว่าง ขณะที่ส่วนข้อมูลสูงเท่าที่จำเป็น */}
               <section className="car-detail-hero relative min-h-[200px] flex-1 overflow-hidden bg-[linear-gradient(180deg,#91cdf6_0%,#78b8ed_56%,#4b1560_100%)]">
                 {carImageSrc ? (
-                  <img src={carImageSrc} alt={car.car_type}
+                  <img src={carImageSrc} alt={car.car_type} decoding="async"
                     className={`absolute inset-0 h-full w-full object-cover object-[center_42%] ${!car.isActivated ? 'grayscale opacity-45' : ''}`} />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center"><Icon icon="ph:car-profile-duotone" width="152" height="152" className="text-white/70" /></div>
@@ -2543,7 +2543,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
            style={{height:'55vh', minHeight:'280px', maxHeight:'380px'}}>
         {getCarImage(car) ? (
           <>
-            <img src={getCarImage(car)} alt={car.car_type}
+            <img src={getCarImage(car, 'hero')} alt={car.car_type} decoding="async"
               className="absolute inset-0 w-full h-full object-cover"/>
             <div className="absolute inset-0"
                  style={{background:'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)'}}/>

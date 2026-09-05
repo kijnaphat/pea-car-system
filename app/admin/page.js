@@ -800,7 +800,7 @@ export default function AdminDashboard() {
                           </td>
 
                           <td className="p-3 px-4">
-                            {getCarImage(item) ? <img src={getCarImage(item)} alt={item.plate_number} className="h-12 w-16 rounded-[10px] border border-[#eadfed] bg-white object-cover" /> : <span className="flex h-12 w-16 items-center justify-center rounded-[10px] bg-[#f1e6f4] text-[#702082]"><Icon icon="ph:car-profile-duotone" width="26" height="26" /></span>}
+                            {getCarImage(item, 'thumb') ? <img src={getCarImage(item, 'thumb')} alt={item.plate_number} width="64" height="48" loading="lazy" decoding="async" className="h-12 w-16 rounded-[10px] border border-[#eadfed] bg-white object-cover" /> : <span className="flex h-12 w-16 items-center justify-center rounded-[10px] bg-[#f1e6f4] text-[#702082]"><Icon icon="ph:car-profile-duotone" width="26" height="26" /></span>}
                           </td>
 
                           <td className="p-4 px-4">
