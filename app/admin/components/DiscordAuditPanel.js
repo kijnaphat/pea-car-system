@@ -18,6 +18,7 @@ const channelIcons = {
   all: 'ph:stack-duotone',
   car_out: 'ph:sign-out-duotone',
   car_return: 'ph:sign-in-duotone',
+  daily_summary: 'ph:chart-bar-duotone',
   trip_data: 'ph:route-duotone',
   fuel: 'ph:gas-pump-duotone',
   ev: 'ph:lightning-duotone',
@@ -215,7 +216,7 @@ export default function DiscordAuditPanel() {
         <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.1fr_.9fr]">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-[#ffe86a]"><Icon icon="ph:discord-logo-fill" width="17" height="17" /> Multi-channel Audit Center</span>
-            <h2 className="mt-5 text-[25px] font-bold tracking-tight sm:text-[31px]">34 Log Channels แยกทุกงานสำคัญ</h2>
+            <h2 className="mt-5 text-[25px] font-bold tracking-tight sm:text-[31px]">{status.channels?.length || 0} Log Channels แยกทุกงานสำคัญ</h2>
             <p className="mt-3 max-w-xl text-[13px] leading-6 text-white/70">เหตุการณ์จะเข้าห้องเฉพาะก่อน หากยังไม่ได้ตั้ง Webhook จะถอยไปห้องรวมของหมวด แล้วจึงไป #log-all โดยอัตโนมัติ</p>
             <div className="mt-6 flex flex-wrap gap-2 text-[10px] font-semibold text-white/75">
               <span className="rounded-full border border-white/10 bg-white/[.08] px-3 py-1.5">{configuredCount}/{status.channels?.length || 0} Channels ตั้งค่าแล้ว</span>
