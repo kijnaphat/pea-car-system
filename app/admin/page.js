@@ -25,6 +25,14 @@ const fieldLabels = {
   name: 'ชื่อรายการ (แผนก/สถานที่/งาน)' 
 }
 
+function getDeleteErrorMessage(table, error) {
+  if (table === 'staff' && error?.code === '23503') {
+    return 'ไม่สามารถลบบุคลากรที่มีประวัติการใช้รถหรืองานซ่อมได้ เพื่อรักษารายงานย้อนหลัง กรุณาแก้ไขข้อมูลแทน'
+  }
+
+  return error?.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+}
+
 async function optimizeCarImage(file) {
   try {
     const bitmap = await createImageBitmap(file)
@@ -378,7 +386,7 @@ export default function AdminDashboard() {
       alert('ลบข้อมูลออกจากระบบเรียบร้อยแล้ว')
       setDeleteModal({ isOpen: false, table: '', data: null })
       fetchData(); if(table === 'departments') fetchDepartmentsOptions()
-    } catch (error) { alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message) } finally { setIsSubmitting(false) }
+    } catch (error) { alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + getDeleteErrorMessage(table, error)) } finally { setIsSubmitting(false) }
   }
 
   const uniqueCarValues = (field, defaults = []) => [...new Set([
