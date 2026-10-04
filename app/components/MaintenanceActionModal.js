@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
 import { normalizeStaffCode } from '@/lib/staffCode'
+import { markFleetChanged } from '@/lib/fleetSnapshot'
 
 const MODE_COPY = {
   report: {
@@ -209,6 +210,7 @@ export default function MaintenanceActionModal({
           ? '✅ คืนรถและส่งซ่อมเรียบร้อยแล้ว'
           : '✅ แจ้งส่งซ่อมเรียบร้อยแล้ว'
       window.alert(successMessage)
+      markFleetChanged()
       onSuccess?.(data)
     } catch (error) {
       console.error('Maintenance action failed:', error)

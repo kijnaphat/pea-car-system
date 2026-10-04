@@ -9,6 +9,7 @@ import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { getCarImage } from '@/lib/carImages'
 import { normalizeStaffCode } from '@/lib/staffCode'
 import { startVisiblePolling } from '@/lib/visiblePolling'
+import { loadFleetSnapshot, markFleetChanged } from '@/lib/fleetSnapshot'
 
 const BANNER_SLIDE_COUNT = 4
 const TAB_ANNOUNCEMENT_KEY = 'kpn-smart-car-welcome-v1'
@@ -204,6 +205,7 @@ function MainApp() {
 function CarSelector({ adminReportCarId }) {
   const router = useRouter()
   const [cars, setCars] = useState([])
+  const latestFleetSnapshotAtRef = useRef(0)
   const [carSearch, setCarSearch] = useState('')
   const deferredCarSearch = useDeferredValue(carSearch)
   const [loading, setLoading] = useState(true)
@@ -289,28 +291,25 @@ function CarSelector({ adminReportCarId }) {
     }
   }, [])
 
-  const fetchCars = async () => {
+  const fetchCars = async (fresh = false) => {
     try {
-      const [{ data: carsDataRaw, error: carsError }, { data: activeLogs, error: activeError }, { data: maintenanceRecords, error: maintenanceError }, { data: latestLogs, error: latestError }] = await Promise.all([
-        supabase.from('cars').select('*, departments(name)'),
-        supabase
-          .from('trip_logs')
-          .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, driver_position, location, is_completed')
-          .eq('is_completed', false)
-          .order('start_time', { ascending: false }),
-        supabase
-          .from('car_maintenance_records')
-          .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name)')
-          .eq('status', 'open')
-          .order('reported_at', { ascending: false }),
-        supabase.rpc('get_latest_completed_car_trips')
-          .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, driver_position, location, is_completed'),
-      ])
+      let storage
+      try { storage = window.sessionStorage } catch { /* Private browsing may disable storage. */ }
+      const { carsDataRaw, activeLogs, maintenanceRecords, latestLogs, generatedAt } = await loadFleetSnapshot({
+        fresh,
+        storage,
+        loadFresh: async () => {
+          const { data, error } = await supabase.rpc('get_public_fleet_snapshot')
+          if (error) throw error
+          return data
+        },
+      })
 
-      if (carsError || activeError || latestError) throw carsError || activeError || latestError
-
-      if (maintenanceError && maintenanceError.code !== 'PGRST205') {
-        console.error('Maintenance records failed to load:', maintenanceError)
+      // A cached response must not undo the fresh state read after this user's action.
+      const snapshotAt = new Date(generatedAt).getTime()
+      if (Number.isFinite(snapshotAt)) {
+        if (snapshotAt < latestFleetSnapshotAtRef.current) return
+        latestFleetSnapshotAtRef.current = snapshotAt
       }
 
       if (carsDataRaw) {
@@ -366,7 +365,7 @@ function CarSelector({ adminReportCarId }) {
   }
 
   useEffect(() => {
-    return startVisiblePolling(fetchCars)
+    return startVisiblePolling(fetchCars, 30000)
   }, [])
 
   useEffect(() => {
@@ -1000,7 +999,7 @@ function CarSelector({ adminReportCarId }) {
             router.push(`/?car_id=${completedCarId}&maintenance_takeout=${encodeURIComponent(result.takeout_token)}`)
             return
           }
-          fetchCars()
+          fetchCars(true)
         }}
       />
 
@@ -2309,6 +2308,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
       if (error) throw error
       if (result?.error) { alert('⚠️ ' + result.error); setLoading(false); return }
 
+      markFleetChanged()
       if (isEV) {
         alert(`✅ บันทึกเริ่มการชาร์จสำเร็จ!\nเมื่อชาร์จเสร็จ กรุณาสแกน QR เพื่อนำที่ชาร์จออก`)
       } else {
@@ -2360,6 +2360,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
       if (error) throw error
       if (result?.error) { alert('⚠️ ' + result.error); setLoading(false); return }
 
+      markFleetChanged()
       alert('✅ บันทึกข้อมูลเรียบร้อย ขอบคุณครับ!')
       window.location.href = '/'
     } catch (err) {
