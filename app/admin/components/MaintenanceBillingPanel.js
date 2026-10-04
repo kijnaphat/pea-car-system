@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
+import { startVisiblePolling } from '@/lib/visiblePolling'
 
 const formatDateTime = value => value
   ? new Date(value).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' น.'
@@ -46,12 +47,7 @@ export default function MaintenanceBillingPanel({ onPendingCountChange }) {
   }, [onPendingCountChange])
 
   useEffect(() => {
-    const initialFetch = window.setTimeout(fetchPending, 0)
-    const interval = window.setInterval(fetchPending, 60000)
-    return () => {
-      window.clearTimeout(initialFetch)
-      window.clearInterval(interval)
-    }
+    return startVisiblePolling(fetchPending)
   }, [fetchPending])
 
   const openRecord = record => {

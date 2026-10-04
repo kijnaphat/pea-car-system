@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { normalizeStaffCode } from '@/lib/staffCode'
+import { startVisiblePolling } from '@/lib/visiblePolling'
 
 // --- Main Component ---
 function MainApp() {
@@ -30,11 +31,11 @@ function CarSelector() {
       const { data: activeLogs } = await supabase.from('trip_logs').select('car_id, start_time, driver_name').eq('is_completed', false)
       
       // ✅ ดึงข้อมูล car_id ทั้งหมดใน trip_logs เพื่อเช็คว่าคันไหนเคยใช้งานแล้วบ้าง
-      const { data: allLogs } = await supabase.from('trip_logs').select('car_id')
+      const { data: allLogs } = await supabase.rpc('get_latest_completed_car_trips').select('car_id')
 
       if (carsData) {
         // ✅ สร้าง Set เอาไว้ตรวจสอบว่ามีประวัติการใช้รถหรือไม่
-        const activatedSet = new Set(allLogs?.map(l => l.car_id) || [])
+        const activatedSet = new Set([...(allLogs || []), ...(activeLogs || [])].map(l => l.car_id))
 
         const mergedCars = carsData.map(car => {
             const log = activeLogs?.find(l => l.car_id === car.id)
@@ -58,9 +59,7 @@ function CarSelector() {
   }
 
   useEffect(() => {
-    fetchCars()
-    const interval = setInterval(fetchCars, 5000) 
-    return () => clearInterval(interval)
+    return startVisiblePolling(fetchCars)
   }, [])
 
   // ฟังก์ชันช่วยดึงรูปภาพรถตามประเภท

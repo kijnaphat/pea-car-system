@@ -8,6 +8,7 @@ import MaintenanceActionModal from '@/app/components/MaintenanceActionModal'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { getCarImage } from '@/lib/carImages'
 import { normalizeStaffCode } from '@/lib/staffCode'
+import { startVisiblePolling } from '@/lib/visiblePolling'
 
 const BANNER_SLIDE_COUNT = 4
 const TAB_ANNOUNCEMENT_KEY = 'kpn-smart-car-welcome-v1'
@@ -290,7 +291,7 @@ function CarSelector({ adminReportCarId }) {
 
   const fetchCars = async () => {
     try {
-      const [{ data: carsDataRaw }, { data: activeLogs }, { data: maintenanceRecords, error: maintenanceError }] = await Promise.all([
+      const [{ data: carsDataRaw, error: carsError }, { data: activeLogs, error: activeError }, { data: maintenanceRecords, error: maintenanceError }, { data: latestLogs, error: latestError }] = await Promise.all([
         supabase.from('cars').select('*, departments(name)'),
         supabase
           .from('trip_logs')
@@ -302,7 +303,11 @@ function CarSelector({ adminReportCarId }) {
           .select('id, car_id, description, reported_at, issue_category_code, maintenance_issue_categories(name)')
           .eq('status', 'open')
           .order('reported_at', { ascending: false }),
+        supabase.rpc('get_latest_completed_car_trips')
+          .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, driver_position, location, is_completed'),
       ])
+
+      if (carsError || activeError || latestError) throw carsError || activeError || latestError
 
       if (maintenanceError && maintenanceError.code !== 'PGRST205') {
         console.error('Maintenance records failed to load:', maintenanceError)
@@ -312,29 +317,12 @@ function CarSelector({ adminReportCarId }) {
         // กรองรถที่ถูกซ่อนออกไป
         const carsData = carsDataRaw.filter(car => car.is_visible !== false)
 
-        const activatedResults = await Promise.all(
-          carsData.map(async (car) => {
-            let lastLog = null
-            if (car.status !== 'busy') {
-              const { data } = await supabase
-                .from('trip_logs')
-                .select('id, car_id, start_time, end_time, start_mileage, end_mileage, driver_name, driver_position, location, is_completed')
-                .eq('car_id', Number(car.id))
-                .eq('is_completed', true)
-                .order('start_time', { ascending: false })
-                .limit(1)
-                .single()
-              if (data) lastLog = data
-            }
-
-            return { lastLog }
-          })
-        )
+        const latestByCar = new Map((latestLogs || []).map(log => [Number(log.car_id), log]))
 
         const maintenanceByCar = new Map((maintenanceRecords || []).map(record => [Number(record.car_id), record]))
-        const mergedCars = carsData.map((car, i) => {
+        const mergedCars = carsData.map(car => {
           const log = activeLogs?.find(l => Number(l.car_id) === Number(car.id))
-          const lastLog = activatedResults[i]?.lastLog
+          const lastLog = car.status === 'busy' ? null : latestByCar.get(Number(car.id)) || null
           const isActivated = Boolean(log || lastLog)
           return { ...car, activeLog: log, lastLog, maintenanceRecord: maintenanceByCar.get(Number(car.id)) || null, isActivated }
         })
@@ -378,9 +366,7 @@ function CarSelector({ adminReportCarId }) {
   }
 
   useEffect(() => {
-    fetchCars()
-    const interval = setInterval(fetchCars, 5000) 
-    return () => clearInterval(interval)
+    return startVisiblePolling(fetchCars)
   }, [])
 
   useEffect(() => {

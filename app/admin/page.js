@@ -9,6 +9,7 @@ import DataManagementPanel from '@/app/admin/components/DataManagementPanel'
 import DiscordAuditPanel from '@/app/admin/components/DiscordAuditPanel'
 import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
 import { countPendingAnomalies } from '@/lib/tripAnomalies'
+import { startVisiblePolling } from '@/lib/visiblePolling'
 
 // เพิ่ม is_visible เข้าไปใน initial data (ค่าเริ่มต้นให้แสดงผล)
 const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'ดีเซล', status: 'available', budget: '', department_id: '', usage_type: '', ownership_type: '', is_visible: true, image_path: '' }
@@ -129,19 +130,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (loadingSession) return undefined
-    fetchMileageAnomalyCount()
-    fetchPendingBillingCount()
-    const refreshManagementCounts = () => {
-      fetchMileageAnomalyCount()
-      fetchPendingBillingCount()
-    }
-    const interval = window.setInterval(refreshManagementCounts, 60000)
-    const refreshWhenVisible = () => document.visibilityState === 'visible' && refreshManagementCounts()
-    document.addEventListener('visibilitychange', refreshWhenVisible)
-    return () => {
-      window.clearInterval(interval)
-      document.removeEventListener('visibilitychange', refreshWhenVisible)
-    }
+    const refreshManagementCounts = () => Promise.all([
+      fetchMileageAnomalyCount(),
+      fetchPendingBillingCount(),
+    ])
+    return startVisiblePolling(refreshManagementCounts)
   }, [loadingSession, fetchMileageAnomalyCount, fetchPendingBillingCount])
 
   const fetchData = useCallback(async () => {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
+import { startVisiblePolling } from '@/lib/visiblePolling'
 
 const categoryMeta = {
   vehicle: { label: 'รถ', icon: 'ph:car-profile-duotone', tone: 'bg-[#e9f8ef] text-[#1c7d45] border-[#c9ecd6]' },
@@ -124,12 +125,7 @@ export default function DiscordAuditPanel() {
   }, [])
 
   useEffect(() => {
-    const initialRefresh = window.setTimeout(refresh, 0)
-    const interval = window.setInterval(refresh, 15000)
-    return () => {
-      window.clearTimeout(initialRefresh)
-      window.clearInterval(interval)
-    }
+    return startVisiblePolling(refresh)
   }, [refresh])
 
   const saveWebhook = async (event, channel) => {
