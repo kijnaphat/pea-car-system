@@ -10,6 +10,7 @@ import { getCarImage } from '@/lib/carImages'
 import { normalizeStaffCode } from '@/lib/staffCode'
 import { startVisiblePolling } from '@/lib/visiblePolling'
 import { loadFleetSnapshot, markFleetChanged } from '@/lib/fleetSnapshot'
+import { isElectricCar, isChargeTrip, monthlyReportData } from '@/lib/tripActivity'
 
 const BANNER_SLIDE_COUNT = 4
 const TAB_ANNOUNCEMENT_KEY = 'kpn-smart-car-welcome-v1'
@@ -535,7 +536,8 @@ function CarSelector({ adminReportCarId }) {
       : formatTripDateTime(logData?.end_time, 'คืนล่าสุด')
     const durationText = isBusy ? null : formatTripDuration(logData?.start_time, logData?.end_time)
     const distance = getTripDistance(logData)
-    const durationLabel = isEV ? 'ชาร์จมา' : 'ใช้งานมา'
+    const charging = isChargeTrip(logData, car)
+    const durationLabel = charging ? 'ชาร์จมา' : 'ใช้งานมา'
     const completedSummary = distance !== null && durationText
       ? `ใช้งาน ${distance.toLocaleString('th-TH')} กม. เวลา ${durationText}`
       : distance !== null
@@ -553,7 +555,7 @@ function CarSelector({ adminReportCarId }) {
             : <Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:car-profile-duotone'} width="30" height="30" className={isMaintenance ? 'text-[#d57a00]' : isBusy ? 'text-[#ff6680]' : 'text-[#14c767]'} />}
         </div>
         <div className="min-w-0 flex-1">
-          <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isMaintenance ? 'bg-[#fff0ce] text-[#a85f00]' : isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isMaintenance ? 'กำลังซ่อม' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
+          <span className={`inline-flex mb-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${isMaintenance ? 'bg-[#fff0ce] text-[#a85f00]' : isBusy ? 'bg-[#ffe8ed] text-[#ef476f]' : isEV ? 'bg-[#eee8ff] text-[#7258d8]' : 'bg-[#e2f9eb] text-[#109b4b]'}`}>{isMaintenance ? 'กำลังซ่อม' : isBusy ? (charging ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : isEV ? 'รถ EV' : 'พร้อมใช้งาน'}</span>
           <h3 className="text-[18px] font-bold tracking-[-.35px] truncate">{car.plate_number}</h3>
           <p className="text-[11px] text-[#6e7771] truncate">
             {car.model || car.car_type}
@@ -850,7 +852,8 @@ function CarSelector({ adminReportCarId }) {
         const durationText = isBusy || isMaintenance ? null : formatTripDuration(logData?.start_time, logData?.end_time)
         const distance = isMaintenance ? null : getTripDistance(logData)
         const hasDuration = !isMaintenance && Boolean(logData?.start_time && (isBusy || logData?.end_time))
-        const durationLabel = isBusy ? (isEV ? 'ระยะเวลาชาร์จปัจจุบัน' : 'ระยะเวลาที่ใช้งานมา') : (isEV ? 'ระยะเวลาชาร์จครั้งล่าสุด' : 'ระยะเวลาใช้งานครั้งล่าสุด')
+        const charging = isChargeTrip(logData, car)
+        const durationLabel = isBusy ? (charging ? 'ระยะเวลาชาร์จปัจจุบัน' : 'ระยะเวลาที่ใช้งานมา') : (charging ? 'ระยะเวลาชาร์จครั้งล่าสุด' : 'ระยะเวลาใช้งานครั้งล่าสุด')
 
         return (
           <div className="car-detail-modal fixed inset-0 z-[999] overflow-hidden bg-[#f4f6fb] animate-slideUp">
@@ -878,7 +881,7 @@ function CarSelector({ adminReportCarId }) {
                     <h1 className="min-w-0 truncate text-[29px] sm:text-[36px] font-bold tracking-[-1px] leading-none">{car.plate_number}</h1>
                     <span className={`mb-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-lg ${isMaintenance ? 'bg-[#f0a61a] text-white' : !car.isActivated ? 'bg-white/25 text-white' : isBusy ? 'bg-[#ff4438] text-white' : 'bg-[#dff8e8] text-[#176a37]'}`}>
                       <span className={`h-2 w-2 rounded-full ${isMaintenance ? 'bg-[#fff1b8]' : isBusy ? 'bg-[#ffb5ad] animate-pulse' : 'bg-[#34c759]'}`} />
-                      {isMaintenance ? 'กำลังซ่อม' : !car.isActivated ? 'Inactive' : isBusy ? (isEV ? 'กำลังชาร์จ' : 'ใช้งานอยู่') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+                      {isMaintenance ? 'กำลังซ่อม' : !car.isActivated ? 'Inactive' : isBusy ? (charging ? 'กำลังชาร์จ' : 'ใช้งานอยู่') : 'ว่างพร้อมใช้'}
                     </span>
                   </div>
                 </div>
@@ -1310,7 +1313,9 @@ function ReportPage() {
   const carId = searchParams.get('car_id')
   
   const [car, setCar] = useState(null)
-  const [logs, setLogs] = useState([])
+  const [allMonthLogs, setLogs] = useState([])
+  const reportData = monthlyReportData(allMonthLogs, car)
+  const logs = reportData.rows
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [today, setToday] = useState(new Date())
@@ -1462,8 +1467,8 @@ function ReportPage() {
   const totalFuelLiters = logs.reduce((sum, log) => sum + (Number(log.fuel_liters) || 0), 0)
   const totalFuelCost = logs.reduce((sum, log) => sum + (Number(log.fuel_cost) || 0), 0)
   const kmPerLiter = (totalDistance > 0 && totalFuelLiters > 0) ? (totalDistance / totalFuelLiters).toFixed(2) : ''
-  const startMonthMileage = logs.length > 0 ? logs[0].start_mileage : 0;
-  const endMonthMileage = logs.length > 0 ? logs[logs.length - 1].end_mileage : 0;
+  const startMonthMileage = reportData.startMileage;
+  const endMonthMileage = reportData.endMileage;
   const isEVCar = car?.fuel_type?.toUpperCase() === 'EV' || car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
 
   const ITEMS_PER_PAGE = 10;
@@ -1953,6 +1958,16 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
   const router = useRouter()
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
+  const [activity, setActivity] = useState(null)
+  const [lastMileage, setLastMileage] = useState('')
+  const electric = isElectricCar(car)
+  const isEV = car?.status === 'busy' ? isChargeTrip(activeLog, car) : electric && activity === 'charge'
+  const needsFuel = !electric
+  const chooseActivity = next => {
+    setActivity(next)
+    setMileage(lastMileage || (next === 'charge' ? '' : '0'))
+    setIsMileageLocked(next === 'usage' && Boolean(lastMileage))
+  }
   const [maintenanceRecord, setMaintenanceRecord] = useState(null)
   const [maintenanceCompleteModalOpen, setMaintenanceCompleteModalOpen] = useState(false)
   const [maintenanceReturnModalOpen, setMaintenanceReturnModalOpen] = useState(false)
@@ -2071,18 +2086,18 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
     const fetchData = async () => {
       const { data: c } = await supabase.from('cars').select('*').eq('id', carId).single()
       if (c) {
-        setCar(c)
-        const isThisCarEV = c?.fuel_type?.toUpperCase() === 'EV';
+        const isThisCarEV = isElectricCar(c);
 
         if (c.status === 'available') {
            const { data: l } = await supabase.from('trip_logs')
              .select('end_mileage')
              .eq('car_id', carId)
              .eq('is_completed', true)
-             .order('created_at', { ascending: false })
+             .order('start_time', { ascending: false }).order('id', { ascending: false })
              .limit(1)
-             .single()
+             .maybeSingle()
            
+           setLastMileage(l?.end_mileage == null ? '' : String(l.end_mileage))
            if (isThisCarEV) {
                setMileage('')
                setIsMileageLocked(false)
@@ -2116,7 +2131,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
              setHandoffLoading(false)
            }
         } else if (c.status === 'busy') {
-           const { data: l } = await supabase.from('trip_logs').select('*').eq('car_id', carId).eq('is_completed', false).limit(1).single()
+           const { data: l } = await supabase.from('trip_logs').select('*').eq('car_id', carId).eq('is_completed', false).order('start_time', { ascending: false }).limit(1).maybeSingle()
            if (l) setActiveLog(l)
         } else if (c.status === 'maintenance') {
            const { data: record } = await supabase
@@ -2129,6 +2144,8 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
              .maybeSingle()
            setMaintenanceRecord(record || null)
         }
+        // Show actions only after their mileage/current activity has loaded.
+        setCar(c)
       }
     }
     fetchData()
@@ -2201,13 +2218,13 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
   }
 
   const handleTakeOut = async () => {
-    const isEV = car?.fuel_type?.toUpperCase() === 'EV';
-    
+    if (electric && !activity) return alert('กรุณาเลือกบันทึกใช้งานรถหรือบันทึกการชาร์จ');
+    if (!Number.isInteger(Number(mileage)) || Number(mileage) < 0) return alert('เลขไมล์ต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป');
     if (!staffName) return alert('กรุณาระบุรหัสพนักงานให้ถูกต้องก่อน');
     if (!mileage) return alert('กรุณากรอกเลขไมล์เริ่มต้น');
 
     if (isEV) {
-        if (!battBefore) return alert('กรุณากรอก % แบตเตอรี่ก่อนชาร์จ')
+        if (battBefore === '' || !Number.isInteger(Number(battBefore)) || Number(battBefore) < 0 || Number(battBefore) > 100) return alert('กรุณากรอกแบตเตอรี่ก่อนชาร์จ 0–100%')
         if (!subStationType) return alert('กรุณาระบุประเภทสถานีชาร์จ')
         
         const selectedOption = (stationType === 'PEA' ? peaOptions : otherOptions).find(o => o.id === subStationType);
@@ -2292,6 +2309,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
           ? { p_token: maintenanceTakeoutToken }
           : { p_staff_code: employeeId }),
         p_car_id:          Number(carId),
+        p_activity_type: isEV ? 'charge' : 'usage',
         p_start_mileage:   parseInt(mileage || 0),
         p_location:        finalLocation,
         p_battery_before:  finalBattBefore,
@@ -2301,7 +2319,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
         p_operation_area_ids: finalOperationAreaIds,
       }
       const { data: result, error } = await supabase.rpc(
-        handoffValid ? 'take_car_out_after_maintenance' : 'take_car_out_v3',
+        handoffValid ? 'take_car_out_after_maintenance_v2' : 'take_car_out_v4',
         takeoutArgs
       )
 
@@ -2323,21 +2341,21 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
   }
 
   const handleReturn = async (skipConfirm = false) => {
-    const isEV = car?.fuel_type?.toUpperCase() === 'EV';
+
     const startM = parseFloat(activeLog.start_mileage)
 
     if (isEV) {
-        if (!battAfter) return alert('กรุณากรอก % แบตเตอรี่หลังชาร์จ')
-        if (activeLog.battery_before && parseInt(battAfter) <= parseInt(activeLog.battery_before)) {
+        if (battAfter === '' || !Number.isInteger(Number(battAfter)) || Number(battAfter) < 0 || Number(battAfter) > 100) return alert('กรุณากรอกแบตเตอรี่หลังชาร์จ 0–100%')
+        if (activeLog.battery_before != null && parseInt(battAfter) <= parseInt(activeLog.battery_before)) {
             return alert('❌ ข้อมูลผิดพลาด!\nเปอร์เซ็นต์แบตเตอรี่ "หลังชาร์จ" ต้องมากกว่า "ก่อนชาร์จ"')
         }
     } else {
-        if (!endMileage) return alert('กรุณากรอกเลขไมล์ล่าสุด (จบงาน)')
+        if (endMileage === '' || !Number.isInteger(Number(endMileage)) || Number(endMileage) < 0) return alert('กรุณากรอกเลขไมล์จบงานเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป')
         const endM = parseFloat(endMileage)
         if (endM < startM) {
             return alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endM}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
         }
-        if (hasRefueled === true && (!fuelLiters || !fuelCost)) {
+        if (needsFuel && hasRefueled === true && (!fuelLiters || !fuelCost)) {
              return alert('กรุณากรอกข้อมูล ปริมาณน้ำมัน (ลิตร) และ จำนวนเงิน (บาท) ให้ครบถ้วน')
         }
         if (skipConfirm !== true) {
@@ -2349,11 +2367,12 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
     setLoading(true)
 
     try {
-      const { data: result, error } = await supabase.rpc('return_car', {
+      const { data: result, error } = await supabase.rpc('return_car_v2', {
+        p_trip_log_id: activeLog.id,
         p_car_id:       Number(carId),
         p_end_mileage:  isEV ? null : parseInt(endMileage),
-        p_fuel_liters:  (!isEV && hasRefueled && fuelLiters) ? parseFloat(fuelLiters) : 0,
-        p_fuel_cost:    (!isEV && hasRefueled && fuelCost) ? parseFloat(fuelCost) : 0,
+        p_fuel_liters:  (needsFuel && hasRefueled && fuelLiters) ? parseFloat(fuelLiters) : 0,
+        p_fuel_cost:    (needsFuel && hasRefueled && fuelCost) ? parseFloat(fuelCost) : 0,
         p_battery_after: isEV ? parseInt(battAfter) : null,
       })
 
@@ -2370,21 +2389,21 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
   }
 
   const openReturnAndMaintenance = () => {
-    const isEV = car?.fuel_type?.toUpperCase() === 'EV'
+
     const startM = parseFloat(activeLog?.start_mileage)
 
     if (isEV) {
-      if (!battAfter) return alert('กรุณากรอก % แบตเตอรี่หลังชาร์จ')
-      if (activeLog?.battery_before && parseInt(battAfter) <= parseInt(activeLog.battery_before)) {
+      if (battAfter === '' || !Number.isInteger(Number(battAfter)) || Number(battAfter) < 0 || Number(battAfter) > 100) return alert('กรุณากรอกแบตเตอรี่หลังชาร์จ 0–100%')
+      if (activeLog?.battery_before != null && parseInt(battAfter) <= parseInt(activeLog.battery_before)) {
         return alert('❌ ข้อมูลผิดพลาด!\nเปอร์เซ็นต์แบตเตอรี่ "หลังชาร์จ" ต้องมากกว่า "ก่อนชาร์จ"')
       }
     } else {
-      if (!endMileage) return alert('กรุณากรอกเลขไมล์ล่าสุด (จบงาน)')
+      if (endMileage === '' || !Number.isInteger(Number(endMileage)) || Number(endMileage) < 0) return alert('กรุณากรอกเลขไมล์จบงานเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป')
       if (parseFloat(endMileage) < startM) {
         return alert(`❌ เลขไมล์ผิดพลาด!\nเลขไมล์จบ (${endMileage}) น้อยกว่า เลขไมล์เริ่ม (${startM})`)
       }
-      if (hasRefueled === null) return alert('กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่')
-      if (hasRefueled === true && (!fuelLiters || !fuelCost)) {
+      if (needsFuel && hasRefueled === null) return alert('กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่')
+      if (needsFuel && hasRefueled === true && (!fuelLiters || !fuelCost)) {
         return alert('กรุณากรอกข้อมูลปริมาณน้ำมันและจำนวนเงินให้ครบถ้วน')
       }
     }
@@ -2396,6 +2415,12 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
     <div className="min-h-screen bg-[#f8f3fa] flex items-center justify-center" style={{WebkitFontSmoothing:'antialiased'}}>
       <div className="w-8 h-8 border-[2.5px] border-[#d9cadd] border-t-[#4b1560] rounded-full animate-spin"/>
     </div>
+  )
+
+  if (car.status === 'busy' && !activeLog) return (
+    <main className="kpn-screen min-h-screen flex items-center justify-center bg-[#f8f3fa] p-6 text-center">
+      <p className="text-[#702082]">กำลังตรวจสอบรายการที่ค้างอยู่ กรุณารอสักครู่หรือสแกน QR ใหม่</p>
+    </main>
   )
 
   if (car.status === 'maintenance') return (
@@ -2433,7 +2458,6 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
     </main>
   )
 
-  const isEV = car?.fuel_type?.toUpperCase() === 'EV';
   const currentDay = currentTime.getDate();
   const isSigningPeriod = currentDay >= 28 || currentDay <= 5;
   const showSignReminder = isSigningPeriod && !isSignReminderDismissed && car.status === 'available';
@@ -2565,7 +2589,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
                 : 'bg-[rgba(52,199,89,0.2)] text-white border-[rgba(255,255,255,0.3)]'
             }`} style={{backdropFilter:'blur(12px)', textShadow:'none'}}>
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${car.status === 'busy' ? 'bg-[#ff6b63] animate-pulse' : 'bg-[#4cd964]'}`}/>
-              {car.status === 'busy' ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : (isEV ? 'พร้อมชาร์จ' : 'ว่างพร้อมใช้')}
+              {car.status === 'busy' ? (isEV ? 'กำลังชาร์จ' : 'กำลังใช้งาน') : 'ว่างพร้อมใช้'}
             </span>
           </div>
         </div>
@@ -2590,7 +2614,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
             </div>
             <div>
               <p className="text-[18px] font-bold text-[#4b1560] tracking-[-0.4px]">
-                {car.status === 'available' ? (isEV ? 'เริ่มชาร์จรถ' : 'นำรถออก') : (isEV ? 'นำที่ชาร์จออก' : 'คืนรถ')}
+                {car.status === 'available' ? (electric && !activity ? 'รถ EV · เลือกกิจกรรม' : isEV ? 'เริ่มชาร์จรถ' : 'นำรถออก') : (isEV ? 'นำที่ชาร์จออก' : 'คืนรถ')}
               </p>
               {car.status === 'busy' && (
                 <p className="text-[12px] text-[#765c7c]">เวลา {currentTime.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.</p>
@@ -2600,6 +2624,19 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
         </div>
 
         <div className="px-4 space-y-2">
+          {electric && car.status === 'available' && (
+            <section className="bg-white rounded-[20px] p-4 space-y-3" aria-label="เลือกกิจกรรมรถ EV">
+              <p className="text-[14px] font-bold text-[#4b1560]">เลือกสิ่งที่ต้องการบันทึก</p>
+              {[{value:'usage', icon:'ph:car-profile-duotone', title:'บันทึกการใช้งานรถ', description:'เลขไมล์ · แผนก · งาน · สถานที่ — ไม่ต้องกรอกน้ำมัน'}, {value:'charge', icon:'ph:lightning-duotone', title:'บันทึกการชาร์จ EV', description:'เลขไมล์ · แบตก่อน/หลัง · สถานีชาร์จ แบบเดิม'}].map(option => (
+                <button key={option.value} type="button" aria-pressed={activity === option.value} disabled={loading} onClick={() => chooseActivity(option.value)} className={`w-full rounded-[16px] border-2 px-4 py-4 text-left flex items-center gap-3 transition-colors disabled:opacity-50 ${activity === option.value ? 'border-[#702082] bg-[#f2e9f7]' : 'border-[#eadfed] bg-white'}`}>
+                  <Icon icon={option.icon} width="32" height="32" className="text-[#702082] shrink-0"/>
+                  <span><span className="block font-bold text-[#4b1560]">{option.title}</span><span className="block mt-1 text-[12px] text-[#765c7c]">{option.description}</span></span>
+                </button>
+              ))}
+              <p className="text-[11px] text-[#765c7c]">ใช้ QR เดิม · เมื่อมีรายการค้าง ระบบจะให้ปิดรายการนั้นก่อน</p>
+            </section>
+          )}
+          {(!electric || car.status !== 'available' || activity) && <>
           {car.status === 'available' ? (
             <>
               {/* ================================== */}
@@ -2918,6 +2955,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
                       className="w-full px-4 py-3 rounded-[14px] text-[28px] font-mono font-bold tracking-wider text-center outline-none bg-[#f8f3fa] border-[1.5px] border-transparent focus:bg-white focus:border-[#702082] transition-all text-[#4b1560]"/>
                   </div>
 
+                  {needsFuel && (
                   <div className="bg-white rounded-[20px] overflow-hidden"
                        style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
                     <div className="px-5 pt-4 pb-3">
@@ -2948,16 +2986,17 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
                       </div>
                     )}
                   </div>
+                  )}
                 </>
               )}
 
-              <button onClick={() => handleReturn(false)} disabled={loading || (!isEV && hasRefueled === null)}
+              <button onClick={() => handleReturn(false)} disabled={loading || (needsFuel && hasRefueled === null)}
                 className={`kpn-primary-action w-full py-[18px] rounded-[20px] text-[17px] font-semibold tracking-[-0.3px] transition-all active:scale-[0.98] ${
                   loading ? 'bg-[#aeaeb2] text-white cursor-not-allowed'
-                  : (!isEV && hasRefueled === null) ? 'bg-[#eadfed] text-[#aeaeb2] cursor-not-allowed'
+                  : (needsFuel && hasRefueled === null) ? 'bg-[#eadfed] text-[#aeaeb2] cursor-not-allowed'
                   : 'text-white'
                 }`}
-                style={(!loading && !(!isEV && hasRefueled === null)) ? {
+                style={(!loading && !(needsFuel && hasRefueled === null)) ? {
                   background:'linear-gradient(135deg, #4b1560 0%, #702082 100%)',
                   boxShadow:'0 4px 20px rgba(0,0,0,0.25)'
                 } : {}}>
@@ -2969,11 +3008,12 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
                 <Icon icon="ph:wrench-duotone" width="22" height="22" />คืนรถและส่งซ่อม
               </button>
 
-              {!isEV && hasRefueled === null && (
+              {needsFuel && hasRefueled === null && (
                 <p className="text-center text-[12px] text-[#ff3b30] font-medium -mt-1">กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่</p>
               )}
             </>
           )}
+          </>}
         </div>
       </div>
 
@@ -3039,9 +3079,10 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
         mode="return"
         car={car}
         returnPayload={{
+          tripLogId: activeLog?.id,
           endMileage: isEV ? null : parseInt(endMileage || 0),
-          fuelLiters: !isEV && hasRefueled && fuelLiters ? parseFloat(fuelLiters) : 0,
-          fuelCost: !isEV && hasRefueled && fuelCost ? parseFloat(fuelCost) : 0,
+          fuelLiters: needsFuel && hasRefueled && fuelLiters ? parseFloat(fuelLiters) : 0,
+          fuelCost: needsFuel && hasRefueled && fuelCost ? parseFloat(fuelCost) : 0,
           batteryAfter: isEV ? parseInt(battAfter || 0) : null,
         }}
         onClose={() => setMaintenanceReturnModalOpen(false)}

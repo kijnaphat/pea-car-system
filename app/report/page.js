@@ -1,4 +1,5 @@
-﻿'use client'
+'use client'
+import { monthlyReportData } from '@/lib/tripActivity'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -690,7 +691,9 @@ function ReportPage() {
   const carId = searchParams.get('car_id')
   
   const [car, setCar] = useState(null)
-  const [logs, setLogs] = useState([])
+  const [allMonthLogs, setLogs] = useState([])
+  const reportData = monthlyReportData(allMonthLogs, car)
+  const logs = reportData.rows
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [today, setToday] = useState(new Date())
@@ -917,8 +920,8 @@ function ReportPage() {
   const totalFuelCost = logs.reduce((sum, log) => sum + (Number(log.fuel_cost) || 0), 0)
   const totalRepairCost = logs.reduce((sum, log) => sum + (Number(log.repair_cost) || 0), 0)
   const kmPerLiter = (totalDistance > 0 && totalFuelLiters > 0) ? (totalDistance / totalFuelLiters).toFixed(2) : ''
-  const startMonthMileage = logs.length > 0 ? logs[0].start_mileage : 0;
-  const endMonthMileage = logs.length > 0 ? logs[logs.length - 1].end_mileage : 0;
+  const startMonthMileage = reportData.startMileage;
+  const endMonthMileage = reportData.endMileage;
   const isEVCar = car?.fuel_type?.toUpperCase() === 'EV' || car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
 
   const maxLastPageRows = isEVCar ? 12 : 5;

@@ -1,4 +1,5 @@
 ﻿'use client'
+import { isChargeTrip } from '@/lib/tripActivity'
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
@@ -99,7 +100,7 @@ export default function UltimateDashboard() {
         let job = 'งานทั่วไป';
         let loc = 'ไม่ระบุพื้นที่';
         
-        if (item.cars?.fuel_type?.toUpperCase() === 'EV') {
+        if (isChargeTrip(item)) {
             job = 'ชาร์จรถ EV';
             loc = item.station_name || item.location || 'สถานีชาร์จ';
         } else if (item.location && item.location !== '-') {
@@ -366,7 +367,7 @@ export default function UltimateDashboard() {
         const locations = {};
         cLogs.forEach(l => {
             let p = 'งานทั่วไป';
-            if (isEV) {
+            if (isChargeTrip(l, c)) {
                 p = 'ชาร์จรถ EV';
             } else if (l.location && l.location !== '-') {
                 const matchP = l.location.match(/\[.*? - (.*?)\]/);
@@ -376,7 +377,7 @@ export default function UltimateDashboard() {
             purposes[p] = (purposes[p] || 0) + 1;
 
             let a = 'ไม่ระบุพื้นที่';
-            if (isEV) {
+            if (isChargeTrip(l, c)) {
                 a = l.station_name || l.location || 'สถานีชาร์จ';
             } else if (l.location && l.location !== '-') {
                 const matchA = l.location.match(/\]\s*(.*)/);
@@ -474,7 +475,7 @@ export default function UltimateDashboard() {
       if (l.cars?.plate_number) driverMap[l.driver_name].cars.add(l.cars.plate_number)
       
       let p = 'งานทั่วไป';
-      if (l.cars?.fuel_type?.toUpperCase() === 'EV') { p = 'ชาร์จรถ EV'; } 
+      if (isChargeTrip(l)) { p = 'ชาร์จรถ EV'; }
       else if (l.location && l.location !== '-') {
           const match = l.location.match(/\[.*? - (.*?)\]/);
           p = match ? match[1].trim() : l.location;
@@ -483,7 +484,7 @@ export default function UltimateDashboard() {
       driverMap[l.driver_name].purposes[p] = (driverMap[l.driver_name].purposes[p] || 0) + 1;
 
       let a = 'ไม่ระบุพื้นที่';
-      if (l.cars?.fuel_type?.toUpperCase() === 'EV') { a = l.station_name || l.location || 'สถานีชาร์จ'; } 
+      if (isChargeTrip(l)) { a = l.station_name || l.location || 'สถานีชาร์จ'; }
       else if (l.location && l.location !== '-') {
           const matchA = l.location.match(/\]\s*(.*)/);
           a = matchA && matchA[1] ? matchA[1].trim() : l.location;

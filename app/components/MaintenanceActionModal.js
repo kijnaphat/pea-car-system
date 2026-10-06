@@ -176,7 +176,8 @@ export default function MaintenanceActionModal({
           p_repair_amount: billingStatus === 'billed' ? Number(repairAmount) : null,
         })
       } else if (mode === 'return') {
-        request = supabase.rpc('return_car_and_report_maintenance', {
+        request = supabase.rpc('return_car_and_report_maintenance_v2', {
+          p_trip_log_id: returnPayload?.tripLogId,
           p_car_id: Number(car.id),
           p_staff_code: staffCode,
           p_end_mileage: returnPayload?.endMileage ?? null,
