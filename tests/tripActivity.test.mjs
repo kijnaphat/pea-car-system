@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isChargeTrip, tripActivity, monthlyReportData } from '../lib/tripActivity.js'
+import { isChargeTrip, tripActivity, monthlyReportData, reportTypeForCar, reportSignatureTable } from '../lib/tripActivity.js'
 import { getTripIssues, isEVTrip, buildTripSequence } from '../lib/tripAnomalies.js'
 const ev = {fuel_type:'EV'}
 const oil = {fuel_type:'ดีเซล'}
@@ -41,4 +41,29 @@ test('old EV charging rows still print and the activity sequence stays coherent'
   ]
   assert.deepEqual(monthlyReportData(logs,ev).rows.map(x=>x.id),[1])
   assert.deepEqual(getTripIssues(buildTripSequence(logs).find(x=>x.id===2)),[])
+})
+
+test('EV usage and charge reports partition the month without mixing legacy charge rows',()=>{
+  const logs=[
+    {id:1,start_mileage:100,end_mileage:100,battery_before:10,battery_after:80},
+    {id:2,activity_type:'usage',start_mileage:100,end_mileage:140,fuel_liters:0,fuel_cost:0},
+    {id:3,activity_type:'charge',start_mileage:140,end_mileage:140},
+    {id:4,activity_type:'usage',start_mileage:140,end_mileage:200,fuel_liters:0,fuel_cost:0},
+  ]
+  const usage=monthlyReportData(logs,ev,'usage'), charge=monthlyReportData(logs,ev,'charge')
+  assert.deepEqual(usage.rows.map(x=>x.id),[2,4])
+  assert.deepEqual(charge.rows.map(x=>x.id),[1,3])
+  assert.equal(usage.rows.reduce((sum,x)=>sum+x.end_mileage-x.start_mileage,0),100)
+  assert.equal(usage.rows.reduce((sum,x)=>sum+x.fuel_liters,0),0)
+  assert.equal(charge.endMileage,200)
+  assert.equal(monthlyReportData([],ev,'usage').type,'usage')
+})
+test('report routing preserves oil reports and isolates EV driving signatures',()=>{
+  assert.equal(reportTypeForCar(ev,null),'charge')
+  assert.equal(reportTypeForCar(ev,'bad'),'charge')
+  assert.equal(reportTypeForCar(oil,'charge'),'usage')
+  assert.equal(reportSignatureTable(ev,'usage'),'ev_usage_report_signatures')
+  assert.equal(reportSignatureTable(ev,'charge'),'report_signatures')
+  assert.equal(reportSignatureTable(ev,null),'report_signatures')
+  assert.equal(reportSignatureTable(oil,'usage'),'report_signatures')
 })

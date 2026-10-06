@@ -1,5 +1,6 @@
 'use client'
-import { monthlyReportData } from '@/lib/tripActivity'
+import { isElectricCar, monthlyReportData, reportSignatureTable } from '@/lib/tripActivity'
+import ReportTypeSelector from '@/app/components/ReportTypeSelector'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -688,12 +689,20 @@ function MobileControlSheet({
 
 function ReportPage() {
   const searchParams = useSearchParams()
+  const reportRouter = useRouter()
   const carId = searchParams.get('car_id')
   
   const [car, setCar] = useState(null)
   const [allMonthLogs, setLogs] = useState([])
-  const reportData = monthlyReportData(allMonthLogs, car)
+  const reportData = monthlyReportData(allMonthLogs, car, searchParams.get('report_type'))
   const logs = reportData.rows
+  const electric = isElectricCar(car)
+  const reportType = reportData.type
+  const changeReportType = type => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('report_type', type)
+    reportRouter.replace(`?${params.toString()}`, { scroll: false })
+  }
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
   const [today, setToday] = useState(new Date())
@@ -702,13 +711,15 @@ function ReportPage() {
   const [toText, setToText] = useState('')
   const [dearText, setDearText] = useState('')
 
-  const [driverSigText, setDriverSigText] = useState(null)
-  const [driverName, setDriverName] = useState('')
-  const [driverPos, setDriverPos] = useState('')
-
-  const [controllerSigText, setControllerSigText] = useState(null)
-  const [controllerName, setControllerName] = useState('')
-  const [controllerPos, setControllerPos] = useState('')
+  const [signatureData, setSignatureData] = useState(null)
+  const signatureKey = `${carId}:${selectedMonth}:${reportType}`
+  const currentSignatures = signatureData?.key === signatureKey ? signatureData : {}
+  const driverSigText = currentSignatures.driver_sig || null
+  const driverName = currentSignatures.driver_name || ''
+  const driverPos = currentSignatures.driver_pos || ''
+  const controllerSigText = currentSignatures.controller_sig || null
+  const controllerName = currentSignatures.controller_name || ''
+  const controllerPos = currentSignatures.controller_pos || ''
 
   const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' })
 
@@ -853,25 +864,21 @@ function ReportPage() {
       }
     }))
 
-    const { data: sigData } = await supabase
-      .from('report_signatures')
-      .select('*')
-      .eq('car_id', Number(carId))
-      .eq('report_month', selectedMonth)
-      .single()
-
-    if (sigData) {
-        setDriverSigText(sigData.driver_sig || null)
-        setDriverName(sigData.driver_name || '')
-        setDriverPos(sigData.driver_pos || '')
-        setControllerSigText(sigData.controller_sig || null)
-        setControllerName(sigData.controller_name || '')
-        setControllerPos(sigData.controller_pos || '')
-    } else {
-        setDriverSigText(null); setDriverName(''); setDriverPos('');
-        setControllerSigText(null); setControllerName(''); setControllerPos('');
-    }
   }
+
+  useEffect(() => {
+    if (!car || !carId) return
+    let active = true
+    const loadSignatures = async () => {
+      const { data, error } = await supabase.from(reportSignatureTable(car, reportType))
+        .select('*').eq('car_id', Number(carId)).eq('report_month', selectedMonth).maybeSingle()
+      if (!active) return
+      if (error) console.error('Report signatures failed to load:', error)
+      setSignatureData({ ...(data || {}), key: signatureKey })
+    }
+    loadSignatures()
+    return () => { active = false }
+  }, [car, carId, selectedMonth, reportType, signatureKey])
 
   useEffect(() => {
     if (carId) fetchData()
@@ -881,17 +888,18 @@ function ReportPage() {
   const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos, staffId = null, staffCode = null) => {
     try {
         if (!staffCode) throw new Error('กรุณายืนยันรหัสพนักงานก่อนบันทึก')
-        const { data, error } = await supabase.rpc('save_report_signature', {
+        const { data, error } = await supabase.rpc('save_report_signature_v2', {
           p_car_id: Number(carId), p_report_month: selectedMonth, p_target: target,
-          p_staff_code: staffCode, p_signature: base64Text,
+          p_staff_code: staffCode, p_signature: base64Text, p_report_type: reportType,
         })
         if (error) throw error
         if (data?.error) throw new Error(data.error)
-        if (target === 'driver') {
-          setDriverSigText(base64Text); setDriverName(fetchedName); setDriverPos(fetchedPos);
-        } else {
-          setControllerSigText(base64Text); setControllerName(fetchedName); setControllerPos(fetchedPos);
-        }
+        setSignatureData(previous => ({
+          ...(previous?.key === signatureKey ? previous : {}), key: signatureKey,
+          [`${target}_sig`]: base64Text,
+          [`${target}_name`]: base64Text ? fetchedName : '',
+          [`${target}_pos`]: base64Text ? fetchedPos : '',
+        }))
     } catch (err) { alert('เกิดข้อผิดพลาดในการบันทึกลายเซ็น: ' + err.message) }
   }
 
@@ -922,7 +930,7 @@ function ReportPage() {
   const kmPerLiter = (totalDistance > 0 && totalFuelLiters > 0) ? (totalDistance / totalFuelLiters).toFixed(2) : ''
   const startMonthMileage = reportData.startMileage;
   const endMonthMileage = reportData.endMileage;
-  const isEVCar = car?.fuel_type?.toUpperCase() === 'EV' || car?.plate_number?.includes('6ขฆ-6169') || car?.plate_number?.includes('6ขฆ 6169');
+  const isEVCar = reportType === 'charge';
 
   const maxLastPageRows = isEVCar ? 12 : 5;
   const maxRegularRows = isEVCar ? 12 : 8;
@@ -1041,6 +1049,7 @@ function ReportPage() {
           </div>
 
           <div className="px-4 py-3 space-y-3">
+            {electric && <ReportTypeSelector value={reportType} onChange={changeReportType} count={logs.length} />}
             {/* Status badge */}
             {!canSignAny ? (
               <div className="flex items-center gap-2 bg-[#fff8ed] rounded-[10px] px-3 py-2">
@@ -1176,6 +1185,7 @@ function ReportPage() {
 
       {/* ── Mobile Bottom Sheet ── */}
       <div className="ctrl-panel xl:hidden sticky top-0 z-50 print:hidden w-full">
+        {electric && <div className="px-3 pt-2"><ReportTypeSelector value={reportType} onChange={changeReportType} count={logs.length} /></div>}
         <MobileControlSheet
           selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth}
           fromText={fromText} setFromText={setFromText}
