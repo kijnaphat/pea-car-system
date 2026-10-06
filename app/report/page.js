@@ -1287,8 +1287,8 @@ function ReportPage() {
                                                     <td className="border border-black">{formatDate(log.start_time)}</td>
                                                     <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.กพส.</td>
                                                     <td className="border border-black text-right px-1">{log.end_mileage.toLocaleString()}</td>
-                                                    <td className="border border-black">{log.battery_before || '-'}</td>
-                                                    <td className="border border-black">{log.battery_after || '-'}</td>
+                                                    <td className="border border-black">{log.battery_before ?? '-'}</td>
+                                                    <td className="border border-black">{log.battery_after ?? '-'}</td>
                                                     <td className="border border-black text-center align-middle p-0"><div className="flex justify-center"><CheckboxCell checked={isHQ} showDots={false} /></div></td>
                                                     <td className="border border-black p-0 align-middle"><CheckboxCell checked={isKFK} text={getDetail(stName)} /></td>
                                                     <td className="border border-black p-0 align-middle"><CheckboxCell checked={isBangchak} text={getDetail(stName)} /></td>

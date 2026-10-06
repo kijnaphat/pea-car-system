@@ -12,6 +12,7 @@ import { startVisiblePolling } from '@/lib/visiblePolling'
 import { loadFleetSnapshot, markFleetChanged } from '@/lib/fleetSnapshot'
 import { isElectricCar, isChargeTrip, monthlyReportData, reportSignatureTable } from '@/lib/tripActivity'
 import ReportTypeSelector from '@/app/components/ReportTypeSelector'
+import InTripChargeForm from '@/app/components/InTripChargeForm'
 
 const BANNER_SLIDE_COUNT = 4
 const TAB_ANNOUNCEMENT_KEY = 'kpn-smart-car-welcome-v1'
@@ -1745,8 +1746,8 @@ function ReportPage() {
                                                     <td className="border border-black">{formatDate(log.start_time)}</td>
                                                     <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.กพส.</td>
                                                     <td className="border border-black text-right px-1">{log.end_mileage.toLocaleString()}</td>
-                                                    <td className="border border-black">{log.battery_before || '-'}</td>
-                                                    <td className="border border-black">{log.battery_after || '-'}</td>
+                                                    <td className="border border-black">{log.battery_before ?? '-'}</td>
+                                                    <td className="border border-black">{log.battery_after ?? '-'}</td>
                                                     <td className="border border-black text-center align-middle p-0"><div className="flex justify-center"><CheckboxCell checked={isHQ} showDots={false} /></div></td>
                                                     <td className="border border-black p-0 align-middle"><CheckboxCell checked={isKFK} text={getDetail(stName)} /></td>
                                                     <td className="border border-black p-0 align-middle"><CheckboxCell checked={isBangchak} text={getDetail(stName)} /></td>
@@ -1969,6 +1970,8 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
   const [car, setCar] = useState(null)
   const [activeLog, setActiveLog] = useState(null)
   const [activity, setActivity] = useState(null)
+  const [inTripChargeOpen, setInTripChargeOpen] = useState(false)
+  const [inTripChargeSaved, setInTripChargeSaved] = useState(false)
   const [lastMileage, setLastMileage] = useState('')
   const electric = isElectricCar(car)
   const isEV = car?.status === 'busy' ? isChargeTrip(activeLog, car) : electric && activity === 'charge'
@@ -2103,7 +2106,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
              .select('end_mileage')
              .eq('car_id', carId)
              .eq('is_completed', true)
-             .order('start_time', { ascending: false }).order('id', { ascending: false })
+             .order('end_time', { ascending: false, nullsFirst: false }).order('start_time', { ascending: false }).order('id', { ascending: false })
              .limit(1)
              .maybeSingle()
            
@@ -2643,7 +2646,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
                   <span><span className="block font-bold text-[#4b1560]">{option.title}</span><span className="block mt-1 text-[12px] text-[#765c7c]">{option.description}</span></span>
                 </button>
               ))}
-              <p className="text-[11px] text-[#765c7c]">ใช้ QR เดิม · เมื่อมีรายการค้าง ระบบจะให้ปิดรายการนั้นก่อน</p>
+              <p className="text-[11px] text-[#765c7c]">ใช้ QR เดิม · ระหว่างเที่ยวขับ EV สามารถบันทึกชาร์จได้โดยไม่คืนรถ</p>
             </section>
           )}
           {(!electric || car.status !== 'available' || activity) && <>
@@ -2944,6 +2947,17 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
                 </div>
               </div>
 
+              {electric && !isEV && activeLog && (
+                <section className="bg-white rounded-[20px] p-4 space-y-3" aria-label="ชาร์จระหว่างภารกิจ">
+                  {inTripChargeSaved && <p role="status" className="text-sm text-green-700">บันทึกการชาร์จแล้ว ภารกิจเดิมยังเปิดอยู่ ขับต่อได้และคืนรถเมื่อจบงาน</p>}
+                  {!inTripChargeOpen ? <>
+                    <button type="button" disabled={loading} onClick={() => setInTripChargeOpen(true)} className="w-full rounded-[16px] border-2 border-[#702082] bg-[#f2e9f7] py-4 font-bold text-[#4b1560]">⚡ ชาร์จระหว่างภารกิจ</button>
+                    <p className="text-xs text-[#765c7c]">ชาร์จเสร็จแล้วบันทึกแบตก่อน–หลัง โดยไม่กดคืนรถ</p>
+                  </> : <InTripChargeForm carId={carId} trip={activeLog} onClose={() => setInTripChargeOpen(false)} onSaved={() => { setInTripChargeOpen(false); setInTripChargeSaved(true); markFleetChanged() }} />}
+                </section>
+              )}
+
+              {!inTripChargeOpen && <>
               {isEV ? (
                 <div className="bg-white rounded-[20px] px-5 py-4"
                      style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 16px rgba(0,0,0,0.06)'}}>
@@ -3017,6 +3031,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
                 className="flex w-full items-center justify-center gap-2 rounded-[18px] border-2 border-[#e2a23c] bg-[#fff8e8] py-4 text-[15px] font-bold text-[#a85f00] transition-all active:scale-[.98] disabled:opacity-50">
                 <Icon icon="ph:wrench-duotone" width="22" height="22" />คืนรถและส่งซ่อม
               </button>
+              </>}
 
               {needsFuel && hasRefueled === null && (
                 <p className="text-center text-[12px] text-[#ff3b30] font-medium -mt-1">กรุณาเลือกก่อนว่ามีการเติมน้ำมันหรือไม่</p>

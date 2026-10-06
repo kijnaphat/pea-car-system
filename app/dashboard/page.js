@@ -434,7 +434,7 @@ export default function UltimateDashboard() {
     const evDist = fleetData.filter(c => c.type === 'EV').reduce((s, c) => s + c.dist, 0);
     const gDist = fleetData.filter(c => c.type !== 'EV').reduce((s, c) => s + c.dist, 0);
     const totalDist = gDist + evDist;
-    const totalTrips = completedLogs.length;
+    const totalTrips = completedLogs.filter(l => !l.parent_trip_log_id).length;
 
     const gasLogs = completedLogs.filter(l => !evCarIds.has(String(l.car_id)));
     const gCost = gasLogs.reduce((s, l) => s + parseNum(l.fuel_cost), 0);
@@ -557,7 +557,7 @@ export default function UltimateDashboard() {
 
     const carDriverMap = {}
     filteredCarsList.forEach(c => {
-      const cLogs = completedLogs.filter(l => String(l.car_id) === String(c.id))
+      const cLogs = completedLogs.filter(l => String(l.car_id) === String(c.id) && !l.parent_trip_log_id)
       if (cLogs.length > 0) {
         const drivers = {}
         cLogs.forEach(l => {

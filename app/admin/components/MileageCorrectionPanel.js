@@ -82,7 +82,7 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
     const [logsResult, correctionsResult, reviewsResult] = await Promise.all([
       supabase
         .from('trip_logs')
-        .select('id, created_at, car_id, activity_type, driver_name, start_time, end_time, start_mileage, end_mileage, battery_before, battery_after, is_completed, cars(id, plate_number, model, fuel_type)')
+        .select('id, created_at, car_id, activity_type, parent_trip_log_id, driver_name, start_time, end_time, start_mileage, end_mileage, battery_before, battery_after, is_completed, cars(id, plate_number, model, fuel_type)')
         .order('start_time', { ascending: false })
         .limit(500),
       supabase

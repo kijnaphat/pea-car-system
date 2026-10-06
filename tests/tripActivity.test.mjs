@@ -4,6 +4,23 @@ import { isChargeTrip, tripActivity, monthlyReportData, reportTypeForCar, report
 import { getTripIssues, isEVTrip, buildTripSequence } from '../lib/tripAnomalies.js'
 const ev = {fuel_type:'EV'}
 const oil = {fuel_type:'ดีเซล'}
+test('charging inside a trip does not split driving sequence or double-count report distance', () => {
+  const logs = [
+    {id:1,car_id:24,activity_type:'usage',start_time:'2026-10-07T01:00:00Z',end_time:'2026-10-07T05:00:00Z',start_mileage:100,end_mileage:150,is_completed:true},
+    {id:2,car_id:24,parent_trip_log_id:1,activity_type:'charge',start_time:'2026-10-07T03:00:00Z',end_time:'2026-10-07T03:00:00Z',start_mileage:120,end_mileage:120,battery_before:10,battery_after:90,is_completed:true},
+    {id:3,car_id:24,activity_type:'usage',start_time:'2026-10-07T06:00:00Z',end_time:'2026-10-07T07:00:00Z',start_mileage:150,end_mileage:160,is_completed:true},
+  ]
+  const beforeNextTrip = monthlyReportData(logs.slice(0,2),ev,'charge')
+  assert.equal(beforeNextTrip.rows.length,1)
+  assert.equal(beforeNextTrip.endMileage,150)
+  const sequence = buildTripSequence(logs)
+  const next = sequence.find(log => log.id===3)
+  assert.equal(next.previousTrip.id,1)
+  assert.deepEqual(getTripIssues(next),[])
+  const usage = monthlyReportData(logs,ev,'usage')
+  assert.equal(usage.rows.length,2)
+  assert.equal(usage.rows.reduce((sum,log)=>sum+log.end_mileage-log.start_mileage,0),60)
+})
 test('historical EV charge and oil usage remain compatible',()=>{
   assert.equal(tripActivity({cars:ev}), 'charge')
   assert.equal(tripActivity({cars:oil}), 'usage')
