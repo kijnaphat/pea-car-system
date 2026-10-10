@@ -6,12 +6,11 @@ import { createHash } from 'node:crypto'
 test('decorative campus is offline geometry and does not add telemetry or database polling', () => {
   const campus = readFileSync(new URL('../app/dashboard/components/FleetCampus.js', import.meta.url), 'utf8')
   assert.doesNotMatch(campus, /fetch\(|supabase|useFrame|useTexture|https:\/\//)
-  for (const landmark of ['OfficeBuilding', 'ChargingCourt', 'OfficeGate', 'SimpleTree', 'InternalRoad', 'Arrow']) assert.ok(campus.includes(`function ${landmark}(`))
-  assert.doesNotMatch(campus, /meshStandardMaterial|castShadow|receiveShadow/)
-  assert.ok(campus.includes('meshBasicMaterial'))
-  assert.ok(campus.includes('toneMapped={false}'))
-  assert.ok(campus.includes('#f4f7f7'))
-  assert.ok(campus.includes('#14b8a6'))
+  for (const landmark of ['Office', 'SolarCanopy', 'Gate', 'Tree', 'Planter', 'HipRoof', 'RoundCourt', 'SoftBlock']) assert.ok(campus.includes(`function ${landmark}(`))
+  assert.ok(campus.includes('RoundedBox'))
+  assert.ok(campus.includes('cylinderGeometry args={[2.2,2.2,6.4'))
+  assert.ok(campus.includes('size={[18,6.3,10]}'))
+  assert.ok(campus.includes('const depth = end + 28'))
   const scene = readFileSync(new URL('../app/dashboard/components/FleetScene.js', import.meta.url), 'utf8')
   assert.ok(scene.includes('<FleetCampus end={end}/>'))
   assert.ok(scene.includes('frameloop="demand"'))
@@ -19,7 +18,8 @@ test('decorative campus is offline geometry and does not add telemetry or databa
   assert.ok(scene.includes('<Canvas orthographic '))
   assert.ok(scene.includes('enableRotate={false}'))
   assert.ok(scene.includes('camera.matrixWorldInverse'))
-  assert.doesNotMatch(scene, /<Canvas orthographic shadows|shadow-mapSize/)
+  assert.ok(scene.includes('<Canvas orthographic shadows'))
+  assert.ok(scene.includes('[-25,end+4]'))
 })
 
 test('map-only redesign preserves the approved vehicle meshes and movement controller', () => {

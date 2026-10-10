@@ -40,19 +40,23 @@
 `node --test tests/*.mjs`, `npm run lint -- --quiet`, `npm run build`
 
 ทดสอบ UI: อ่าน fleet จริง, filter/search/select/link, ย้อนหลังและเลื่อนเวลา, สาธิตหลายคันออก/กลับ, เข้า analytics เดิม และมือถือ โดยไม่สร้างธุรกรรมรถจริงระหว่าง QA
-## Map-only infographic redesign
+## Enlarged headquarters campus
 
-The campus is an orthographic 2.5D diagram with white blocks, simple pastel
-windows, sparse sphere trees, off-white ground and light-gray roads. Thin teal
-outlines delineate the compound, buildings and permanent parking slots. Basic
-materials with explicit pastel face colors replace realistic campus shading;
-tone mapping on campus objects and shadow maps are disabled.
-Camera-space bounds fit the whole compound at the default view on desktop and
-mobile, while zoom/pan keep the isometric angle fixed. Small neutral HTML labels
-are projected in the existing React-owned layer (not additional Drei roots).
+The previous landscaped 3D campus style is restored, with soft daylight, shadow
+maps, solar canopies, perimeter planting and the original map-label treatment.
+The HQ footprint is approximately twice the previous office footprint in the
+fictional scene. Its main wing is 18×10 units, with a 7×11 side wing, a rounded
+glass atrium and entrance canopy, pitched hip roofs and circular garden courts.
+Rounded geometry softens the building and precinct edges. These are illustrative
+proportions, not surveyed dimensions or a model of an actual building.
+
+The precinct extends rearward to z=-25, leaving every original car slot and route
+in place. Camera-space bounds fit the larger compound on desktop and mobile,
+while zoom/pan keep the isometric angle fixed. World-anchored HTML labels remain
+in the existing React-owned layer (no additional Drei roots).
 
 Vehicle geometry and classification/paint palettes are unchanged, as are the
-movement controller, QR-only dashboard actions and all fleet data logic. The
-example's 25-space limit does not hide the actual fleet: A10/B8/C7 remain, and
-extra registered cars retain their permanent D slots. Counts use actual records.
+movement controller, QR-only dashboard actions and all fleet data logic.
+A10/B8/C7 and extra registered cars' permanent D slots all remain visible.
+Counts use actual records.
 No textures, location API, telemetry or additional data reads are introduced.

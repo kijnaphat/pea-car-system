@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { MapControls } from '@react-three/drei'
 import { CatmullRomCurve3, Vector3 } from 'three'
+import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
 import FleetCampus from './FleetCampus'
 
@@ -150,13 +151,13 @@ const Vehicle = memo(function Vehicle({ car, moves, end, selected, onSelect, red
 function CameraRig({ view, focus, end }) {
   const controls = useRef(); const { camera, size, invalidate } = useThree()
   useEffect(() => {
-    const centerZ = (end - 10) / 2
+    const centerZ = (end - 22) / 2
     const target = focus ? new Vector3(focus.x, 0, focus.z) : new Vector3(0, .6, centerZ)
-    const offset = view.top ? new Vector3(0, 48, .01) : new Vector3(35, 45, 35)
+    const offset = view.top ? new Vector3(0, 48, .01) : new Vector3(32, 38, 34)
     camera.position.copy(target.clone().add(offset)); camera.lookAt(target)
     camera.updateMatrixWorld()
-    // Fit the entire diagram in camera space on every viewport, including mobile.
-    const corners = [-19,19].flatMap(x => [-14,end+4].flatMap(z => [0,5].map(y => new Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse))))
+    // Fit the extended HQ precinct as well as every original parking slot.
+    const corners = [-19,19].flatMap(x => [-25,end+4].flatMap(z => [0,8.5].map(y => new Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse))))
     const width = Math.max(...corners.map(p=>p.x)) - Math.min(...corners.map(p=>p.x))
     const height = Math.max(...corners.map(p=>p.y)) - Math.min(...corners.map(p=>p.y))
     // Three.js camera is an external mutable scene object, not React state.
@@ -169,15 +170,15 @@ function CameraRig({ view, focus, end }) {
   return <MapControls ref={controls} enableRotate={false} minZoom={1} maxZoom={90} onEnd={() => {
     if (!controls.current) return
     controls.current.target.x = Math.max(-17, Math.min(17, controls.current.target.x))
-    controls.current.target.z = Math.max(-12, Math.min(end, controls.current.target.z))
+    controls.current.target.z = Math.max(-25, Math.min(end, controls.current.target.z))
     controls.current.update(); invalidate()
   }} />
 }
 
 function ParkingSlot({ car, selected, onSelect, visible }) {
-  const border = selected ? '#8b36d1' : '#14b8a6'
+  const border = selected ? '#8b36d1' : FLEET_STATUSES[car.status].color
   return <group position={[car.parking.x,0,car.parking.z]} onClick={event=>{event.stopPropagation();if(visible) onSelect(car.id)}}>
-    <mesh position={[0,.035,0]}><boxGeometry args={[2.7,.04,3.8]}/><meshBasicMaterial color={selected ? '#f1e9fb' : '#eef4f4'}/></mesh>
+    <mesh position={[0,.035,0]} receiveShadow><boxGeometry args={[2.7,.04,3.8]}/><meshStandardMaterial color={selected ? '#ead9ff' : car.status==='on_trip' ? '#e7edf2' : '#daf0e8'} roughness={1}/></mesh>
     {[-1,1].map(n=><group key={n}>
       <mesh position={[n*1.33,.066,0]}><boxGeometry args={[.04,.015,3.8]}/><meshBasicMaterial color={border}/></mesh>
       <mesh position={[0,.066,n*1.88]}><boxGeometry args={[2.7,.015,.04]}/><meshBasicMaterial color={border}/></mesh>
@@ -207,12 +208,12 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
     moves.forEach(move => map.set(String(move.carId), [...(map.get(String(move.carId)) || []), move]))
     return map
   }, [moves])
-  return <Canvas orthographic dpr={[1, 1.5]} frameloop="demand" camera={{ position: [35, 45, 35], near: .1, far: 200 }}
+  return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [32, 38, 34], near: .1, far: 200 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
     gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
-    <color attach="background" args={['#f8fafa']} />
-    <ambientLight intensity={1.1}/>
-    <directionalLight position={[-12,30,12]} intensity={.5}/>
+    <color attach="background" args={['#f2f7fa']} />
+    <ambientLight intensity={.7}/><hemisphereLight args={['#fff7ea','#c0d5db',.65]}/>
+    <directionalLight castShadow position={[-12,30,12]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-26} shadow-camera-right={26} shadow-camera-top={32} shadow-camera-bottom={-32} shadow-bias={-.001}/>
     <FleetCampus end={end}/>
     {vehicles.map(car => car.parking && <group key={car.id}>
       <ParkingSlot car={car} selected={selectedId===car.id} onSelect={onSelect} visible={visibleIds.includes(car.id)}/>
