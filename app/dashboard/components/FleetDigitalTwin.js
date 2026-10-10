@@ -3,12 +3,14 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Car, LayoutGrid, Route, Zap, Wrench, Search, ZoomIn, ZoomOut, RotateCcw, Tag, Maximize2, Play, Pause, ArrowUpRight, X, CalendarDays, Clock, Layers } from 'lucide-react'
+import { Car, LayoutGrid, Route, Zap, Wrench, Search, ZoomIn, ZoomOut, RotateCcw, Tag, Maximize2, Minimize2, QrCode, Play, Pause, ArrowUpRight, X, CalendarDays, Clock, Layers } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { loadFleetSnapshot } from '@/lib/fleetSnapshot'
 import { startVisiblePolling } from '@/lib/visiblePolling'
 import { FLEET_STATUSES, dayBounds, demoSnapshot, fleetVehicles, movementEvents, replaySnapshot } from '@/lib/fleetDigitalTwin'
 import { getCarImage } from '@/lib/carImages'
+import { vehicleStyle } from '@/lib/fleetVehicleStyle'
+import FleetVehicleGlyph from './FleetVehicleGlyph'
 import './fleet-twin.css'
 
 const Scene = dynamic(() => import('./FleetScene'), { ssr: false, loading: () => <div className="twin-loading">กำลังจัดลานรถ 3D…</div> })
@@ -40,8 +42,9 @@ export default function FleetDigitalTwin({ onAnalytics }) {
   const [filter, setFilter] = useState('all')
   const [labels, setLabels] = useState(true)
   const [safeMap, setSafeMap] = useState(false)
+  const [expandedMap, setExpandedMap] = useState(false)
   const [reduced, setReduced] = useState(false)
-  const [view, setView] = useState({ zoom: 1, top: false, reset: 0 })
+  const [view, setView] = useState({ zoom: 1.08, top: false, reset: 0 })
   const [focus, setFocus] = useState(null)
   const [day, setDay] = useState(todayThai)
   const [replayLogs, setReplayLogs] = useState([])
@@ -161,6 +164,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
   const visible = useMemo(() => vehicles.filter(car => (filter === 'all' || car.status === filter) &&
     `${car.plate_number} ${car.model} ${car.driver} ${car.location} ${car.departments?.name} ${car.slotCode}`.toLocaleLowerCase('th-TH').includes(query.trim().toLocaleLowerCase('th-TH'))), [vehicles, filter, query])
   const selected = vehicles.find(car => car.id === selectedId)
+  const selectedStyle = selected ? vehicleStyle(selected) : null
   const select = useCallback(id => { setSelectedId(id); setFocus(null) }, [])
   const visibleIds = useMemo(() => visible.map(car=>car.id), [visible])
   const zones = useMemo(() => [...new Set(vehicles.map(car=>car.parking?.zone).filter(Boolean))].map(zone=>({zone,cars:vehicles.filter(car=>car.parking?.zone===zone),x:zone==='A'||zone==='C'?-8:10.5,z:zone==='A'||zone==='B'?-1.5:9})),[vehicles])
@@ -199,7 +203,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
 
   const flatMap = <div className="twin-flat-map" role="region" aria-label="ผังลานรถ 2D สำรอง"><div className="twin-flat-office">อาคารสำนักงาน กฟภ. กำแพงแสน</div>
     <div className="twin-flat-grid">{visible.map(car => <button key={car.id} onClick={() => select(car.id)} aria-label={`เลือก ${car.plate_number} ช่อง ${car.slotCode}`} style={{ borderColor: selectedId === car.id ? '#6b21a8' : FLEET_STATUSES[car.status].color }}>
-      <Car size={28} style={{ opacity: car.status === 'on_trip' ? .18 : 1 }} /><strong>{car.slotCode}</strong><span>{car.plate_number}</span>
+      <FleetVehicleGlyph car={car} size={52} style={{ opacity: car.status === 'on_trip' ? .18 : 1 }} /><strong>{car.slotCode}</strong><span>{car.plate_number}</span><span>{vehicleStyle(car).label}</span>
     </button>)}</div><p>มุมมอง 2D สำรอง · รถที่ออกภารกิจแสดงช่องจอดว่าง</p></div>
 
   return <section className="fleet-twin" aria-label="ลานรถดิจิทัล">
@@ -223,7 +227,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
         <select aria-label="ความเร็วเล่นย้อนหลัง" value={speed} onChange={event=>setSpeed(Number(event.target.value))}>{[1,10,30,60,120].map(n=><option key={n} value={n}>{n}×</option>)}</select>
         <span>{replayLogs.length} รายการ · ย้อนหลังเฉพาะเที่ยว/ชาร์จ ไม่รวมประวัติซ่อม</span>
       </div>}
-      <div className="twin-workspace">
+      <div className={`twin-workspace${expandedMap ? ' is-map-expanded' : ''}`}>
         <div className="twin-map-panel">
           <div className="twin-map" aria-label="แผนผังสำนักงานจำลองและช่องจอด">
             {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} /></SceneBoundary>}
@@ -235,22 +239,25 @@ export default function FleetDigitalTwin({ onAnalytics }) {
           <div className="twin-map-toolbar">
             <button aria-label="ขยายผัง" onClick={()=>setView(value=>({...value,zoom:Math.min(2.5,value.zoom+.2)}))}><ZoomIn size={20}/></button>
             <button aria-label="ย่อผัง" onClick={()=>setView(value=>({...value,zoom:Math.max(.55,value.zoom-.2)}))}><ZoomOut size={20}/></button>
-            <button aria-label="คืนมุมมองสำนักงาน" onClick={()=>{setFocus(null);setView({zoom:1,top:false,reset:Date.now()})}}><RotateCcw size={19}/></button>
+            <button aria-label="คืนมุมมองสำนักงาน" onClick={()=>{setFocus(null);setView({zoom:1.08,top:false,reset:Date.now()})}}><RotateCcw size={19}/></button>
             <button aria-label="แสดงชื่อช่องจอด" aria-pressed={labels} onClick={()=>setLabels(value=>!value)}><Tag size={19}/></button>
             <button aria-label="สลับมุมมองบน 2D และ isometric 3D" aria-pressed={view.top} onClick={()=>setView(value=>({...value,top:!value.top}))}><Layers size={19}/></button>
             <button aria-label="ใช้ผัง 2D สำรอง" aria-pressed={safeMap} onClick={toggleSafeMap}>2D</button>
+            <button aria-label={expandedMap ? 'คืนขนาดผังและแสดงรายการรถ' : 'ขยายผังเต็มความกว้าง'} aria-pressed={expandedMap} onClick={()=>setExpandedMap(value=>!value)}>{expandedMap ? <Minimize2 size={19}/> : <Maximize2 size={19}/>}</button>
           </div>
           <span className="twin-map-watermark">ผังสำนักงานจำลอง · ไม่ใช่ GPS</span>
           {labels && <div className="twin-office-label twin-office-overlay">◈ อาคารสำนักงาน · กฟภ. กำแพงแสน</div>}
           {selected && <article className="twin-detail" aria-label="ข้อมูลรถที่เลือก"><button className="twin-detail-close" aria-label="ปิดข้อมูลรถ" onClick={()=>{setSelectedId(null);setFocus(null)}}><X size={18}/></button><span className="twin-detail-eyebrow">รถ #{selected.id} · ช่องประจำ {selected.slotCode}</span><h3>{selected.plate_number}</h3><Status status={selected.status}/>
             <div className="twin-car-image">{getCarImage(selected) ? <img src={getCarImage(selected)} alt={selected.model || 'รถที่เลือก'} loading="lazy"/> : <Car size={70}/>}</div>
             <dl><div><dt>รุ่น / ประเภท</dt><dd>{selected.model || '—'} · {selected.car_type || selected.fuel_type}</dd></div><div><dt>{selected.trip?'ผู้ขับปัจจุบัน':'ผู้ใช้งานล่าสุด'}</dt><dd>{selected.driver}</dd></div><div><dt>แผนก</dt><dd>{selected.departments?.name || 'ไม่ระบุ'}</dd></div>{selected.trip && <><div><dt>เวลาออก</dt><dd>{timeText(selected.trip.start_time)}</dd></div><div><dt>งาน / สถานที่บันทึก</dt><dd>{selected.location || 'ไม่ระบุ'}</dd></div></>}{selected.battery!==null && <div><dt>แบตที่บันทึกล่าสุด</dt><dd>{selected.battery}% <small>{timeText(selected.batteryAt)} · ไม่ใช่ค่าปัจจุบันจากเซนเซอร์</small></dd></div>}</dl>
-            <div className="twin-detail-actions"><button onClick={()=>{setFocus(selected.parking);setView(value=>({...value,zoom:1.35}))}}><Maximize2 size={16}/>โฟกัสช่องจอด</button>{mode==='live' && <><Link href={`/?car_id=${selected.id}`}>เปิดรายการรถ<ArrowUpRight size={16}/></Link><Link className="twin-report-link" href={`/report?car_id=${selected.id}`}>รายงานประจำเดือน</Link></>}</div>
+            <div className="twin-model-key"><i style={{background:selectedStyle.color}}/>{selectedStyle.label} · สีจำแนกในผังจำลอง</div>
+            {mode==='live' && <p className="twin-qr-only"><QrCode size={19}/><span>เบิก–คืน / บันทึกชาร์จ<br/><strong>สแกน QR Code ที่รถเท่านั้น</strong></span></p>}
+            <div className="twin-detail-actions"><button onClick={()=>{setFocus(selected.parking);setView(value=>({...value,zoom:1.35}))}}><Maximize2 size={16}/>โฟกัสช่องจอด</button>{mode==='live' && <Link className="twin-report-link" href={`/report?car_id=${selected.id}`}>รายงานประจำเดือน</Link>}</div>
           </article>}
         </div>
-        <aside className="twin-list"><div className="twin-list-heading"><h2>รายการรถยนต์ <span>({vehicles.length})</span></h2><Car size={20}/></div><p className="twin-list-subtitle">แสดง {visible.length} คัน · คลิกเพื่อดูช่องจอดและรายละเอียด</p><div className="twin-list-scroll">{visible.map(car=><button key={car.id} aria-pressed={car.id===selectedId} onClick={()=>select(car.id)} className="twin-list-car"><span className="twin-list-thumbnail"><Car size={29}/></span><span className="twin-list-car-info"><strong>{car.plate_number}</strong><small>{car.slotCode} · {car.model || car.fuel_type}</small><small>{car.driver}</small><Status status={car.status}/></span><ArrowUpRight size={15}/></button>)}{!busy && !visible.length && <p className="twin-empty">ไม่พบรถตามเงื่อนไขนี้</p>}</div><div className="twin-list-footer"><span>{counts.unknown ? `${counts.unknown} คันรอตรวจสอบสถานะ` : 'อิงรายการเบิก–คืนรถของระบบ'}</span>{mode==='live' && <small>ข้อมูล ณ {timeText(snapshot.generatedAt)}</small>}</div></aside>
+        <aside className="twin-list"><div className="twin-list-heading"><h2>รายการรถยนต์ <span>({vehicles.length})</span></h2><Car size={20}/></div><p className="twin-list-subtitle">แสดง {visible.length} คัน · ดูรายละเอียดเท่านั้น</p><div className="twin-list-scroll">{visible.map(car=><button key={car.id} aria-pressed={car.id===selectedId} onClick={()=>select(car.id)} className="twin-list-car"><span className="twin-list-thumbnail"><FleetVehicleGlyph car={car} size={49}/></span><span className="twin-list-car-info"><strong>{car.plate_number}</strong><small>{car.slotCode} · {vehicleStyle(car).label}</small><small>{car.driver}</small><Status status={car.status}/></span><ArrowUpRight size={15}/></button>)}{!busy && !visible.length && <p className="twin-empty">ไม่พบรถตามเงื่อนไขนี้</p>}</div><div className="twin-list-footer"><span>{counts.unknown ? `${counts.unknown} คันรอตรวจสอบสถานะ` : 'อิงรายการเบิก–คืนรถของระบบ'}</span>{mode==='live' && <small>ข้อมูล ณ {timeText(snapshot.generatedAt)}</small>}</div></aside>
       </div>
-      <footer className="twin-footer"><span>ตำแหน่งและการเคลื่อนที่เป็นภาพจำลองจากธุรกรรม ไม่ใช่ตำแหน่ง/ความเร็วจริง ไม่มีการประมาณน้ำมันหรือระยะทางคงเหลือ</span><label><input type="checkbox" checked={reduced} onChange={event=>setReduced(event.target.checked)}/>ลดการเคลื่อนไหว</label></footer>
+      <footer className="twin-footer"><span>โมเดลอิงประเภทรถ · สีใช้จำแนกในผัง ไม่ใช่สีตัวรถจริง · ตำแหน่ง/การเคลื่อนที่เป็นภาพจำลอง ไม่ใช่ GPS</span><label><input type="checkbox" checked={reduced} onChange={event=>setReduced(event.target.checked)}/>ลดการเคลื่อนไหว</label></footer>
     </div>
   </section>
 }
