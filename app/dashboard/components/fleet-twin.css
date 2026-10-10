@@ -25,3 +25,12 @@
 .twin-zone-symbol{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#0bb57d;color:white;box-shadow:0 0 0 5px #e5f6ed}
 .twin-zone-label strong{font-size:20px}.twin-slot-label{background:#ffffffc2;padding:1px 4px;border-radius:4px;color:#6c7e91}
 @media(max-width:760px){.twin-campus-label,.twin-charge-label{padding:7px 9px;font-size:8px;border-radius:10px;gap:5px}.twin-campus-label strong{font-size:9px}.twin-campus-label>span{font-size:19px}.twin-charge-label svg{width:16px}.twin-charge-label small{font-size:7px}.twin-zone-label{gap:5px;padding:5px 7px}.twin-zone-symbol{width:23px;height:23px;box-shadow:0 0 0 3px #e5f6ed}.twin-zone-symbol svg{width:16px}.twin-zone-label strong{font-size:13px}}
+
+/* Diagram-only visual treatment; dashboard chrome and list remain unchanged. */
+.twin-map-panel{background:#f8fafa;box-shadow:0 8px 24px #40597806}
+.twin-campus-label,.twin-charge-label,.twin-zone-label,.twin-gate-label{background:#fffffff2;color:#526879;border:1px solid #dce8e8;box-shadow:0 3px 9px #254d5b0b;border-radius:10px;font-size:10px}
+.twin-campus-label{padding:8px 11px;gap:7px}.twin-campus-label>span{font-size:20px;color:#14b8a6}.twin-campus-label strong{font-size:10px;font-weight:600;color:#78909b}.twin-campus-label:after{display:none}
+.twin-charge-label{padding:8px 10px;gap:7px}.twin-charge-label svg{width:19px;color:#24b2bb}.twin-charge-label small{font-size:8px}
+.twin-zone-label{padding:7px 10px;gap:8px;font-size:9px}.twin-zone-symbol{width:27px;height:27px;background:#e6f6f2;color:#0aab94;box-shadow:none}.twin-zone-symbol svg{width:18px}.twin-zone-label strong{font-size:16px;color:#0ea895}
+.twin-gate-label{padding:6px 10px;white-space:nowrap}.twin-slot-label{font-size:7px;color:#8aa09f;background:transparent;padding:0}
+@media(max-width:760px){.twin-campus-label,.twin-charge-label{font-size:7px;padding:5px 7px;gap:4px}.twin-campus-label strong{font-size:7px}.twin-campus-label>span{font-size:15px}.twin-zone-label{font-size:6px;padding:4px 6px;gap:4px}.twin-zone-label strong{font-size:10px}.twin-zone-symbol{width:18px;height:18px}.twin-zone-symbol svg{width:13px}.twin-charge-label svg{width:14px}.twin-charge-label small{font-size:6px}.twin-gate-label{font-size:7px;padding:4px 6px}.twin-slot-label{font-size:5px}}

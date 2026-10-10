@@ -40,11 +40,19 @@
 `node --test tests/*.mjs`, `npm run lint -- --quiet`, `npm run build`
 
 ทดสอบ UI: อ่าน fleet จริง, filter/search/select/link, ย้อนหลังและเลื่อนเวลา, สาธิตหลายคันออก/กลับ, เข้า analytics เดิม และมือถือ โดยไม่สร้างธุรกรรมรถจริงระหว่าง QA
-# Campus presentation
+## Map-only infographic redesign
 
-The reference-inspired campus is code-native Three.js geometry: two-story office,
-window frames and roof services, landscaped curbs, solar canopies, charging
-pedestals, lane arrows, crosswalk and guardhouse. These are illustrative landmarks,
-not a surveyed site plan. World-anchored callouts follow zoom/pan; no texture,
-location API, telemetry or extra Supabase request is introduced. Parking slot IDs,
-vehicle types, live refresh and checkout/return animations remain unchanged.
+The campus is an orthographic 2.5D diagram with white blocks, simple pastel
+windows, sparse sphere trees, off-white ground and light-gray roads. Thin teal
+outlines delineate the compound, buildings and permanent parking slots. Basic
+materials with explicit pastel face colors replace realistic campus shading;
+tone mapping on campus objects and shadow maps are disabled.
+Camera-space bounds fit the whole compound at the default view on desktop and
+mobile, while zoom/pan keep the isometric angle fixed. Small neutral HTML labels
+are projected in the existing React-owned layer (not additional Drei roots).
+
+Vehicle geometry and classification/paint palettes are unchanged, as are the
+movement controller, QR-only dashboard actions and all fleet data logic. The
+example's 25-space limit does not hide the actual fleet: A10/B8/C7 remain, and
+extra registered cars retain their permanent D slots. Counts use actual records.
+No textures, location API, telemetry or additional data reads are introduced.
