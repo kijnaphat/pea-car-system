@@ -22,6 +22,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['three'],
   turbopack: {
     root: projectRoot,
   },

@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
+import dynamic from 'next/dynamic'
+
+const FleetDigitalTwin = dynamic(() => import('./components/FleetDigitalTwin'), { ssr: false })
 
 // ── Apple-style helpers ──
 const ACard = ({ children, className = '' }) => (
@@ -33,6 +36,7 @@ const Label = ({ children }) => (
 
 export default function UltimateDashboard() {
   const router = useRouter()
+  const [dashboardView, setDashboardView] = useState('fleet')
   
   // State ควบคุมการแสดงผลหน้า UI เลือกหมวดหมู่ 
   const [showWelcome, setShowWelcome] = useState(true)
@@ -165,6 +169,7 @@ export default function UltimateDashboard() {
 
   useEffect(() => {
     const fetchFilteredData = async () => {
+      if (dashboardView === 'fleet') return
       setLoading(true)
       try {
         const { data: cars } = await supabase.from('cars').select('*, departments(name)')
@@ -251,7 +256,7 @@ export default function UltimateDashboard() {
       }
     }
     fetchFilteredData()
-  }, [timeFilter, selectedMonth, customStartDate, customEndDate])
+  }, [timeFilter, selectedMonth, customStartDate, customEndDate, dashboardView])
 
   useEffect(() => {
     if (carsList.length === 0) return
@@ -648,6 +653,8 @@ export default function UltimateDashboard() {
     </div>
   );
 
+  if (dashboardView === 'fleet') return <FleetDigitalTwin onAnalytics={() => setDashboardView('analytics')} />
+
   if (showWelcome) {
     return (
       <div className="kpn-screen kpn-dashboard min-h-[calc(100dvh-84px)] bg-[#f8f3fa] px-4 pb-28 pt-2 md:px-6 md:pb-10 md:pt-6 relative font-sarabun overflow-x-hidden" style={{WebkitFontSmoothing:'antialiased'}}>
@@ -662,7 +669,7 @@ export default function UltimateDashboard() {
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[#e7eaf1] bg-white p-1.5"><img src="/pea_logo.png" className="h-full w-full object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/></div>
               <div className="min-w-0"><p className="text-[9px] font-bold tracking-[.15em] text-[#5547f7]">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</p><h1 className="truncate text-[18px] font-black tracking-[-.5px] text-[#101522] md:text-[21px]">KPN SMART CAR</h1></div>
             </div>
-            <button type="button" onClick={() => router.push('/')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="กลับหน้าหลัก"><Icon icon="ph:house-duotone" width="21" height="21" /></button>
+            <div className="flex gap-2"><button type="button" onClick={() => setDashboardView('fleet')} className="rounded-xl bg-purple-100 px-4 text-sm font-bold text-purple-800">ลานรถ 3D</button><button type="button" onClick={() => router.push('/')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="กลับหน้าหลัก"><Icon icon="ph:house-duotone" width="21" height="21" /></button></div>
           </header>
 
           <section className="kpn-dark-card relative mt-3 overflow-hidden rounded-[28px] px-5 py-5 text-white md:mt-4 md:px-8 md:py-8">
@@ -1105,6 +1112,7 @@ export default function UltimateDashboard() {
                 <Icon icon="ph:printer-duotone" width="16" height="16" /> สั่งพิมพ์
               </button>
 
+              <button onClick={() => setDashboardView('fleet')} className="shrink-0 rounded-lg bg-purple-100 px-3 py-1.5 text-xs font-bold text-purple-800">ลานรถ 3D</button>
               <button onClick={() => setShowWelcome(true)} 
                 className="hidden md:flex items-center gap-1.5 text-[12px] font-medium text-[#4b1560] bg-white border border-[#eadfed] hover:bg-[#f3eaf5] px-3 py-1.5 rounded-[8px] shadow-sm transition-colors shrink-0">
                 <Icon icon="ph:squares-four-duotone" width="16" height="16" className="text-[#702082]" /> เปลี่ยนหมวดหมู่
