@@ -40,3 +40,11 @@
 `node --test tests/*.mjs`, `npm run lint -- --quiet`, `npm run build`
 
 ทดสอบ UI: อ่าน fleet จริง, filter/search/select/link, ย้อนหลังและเลื่อนเวลา, สาธิตหลายคันออก/กลับ, เข้า analytics เดิม และมือถือ โดยไม่สร้างธุรกรรมรถจริงระหว่าง QA
+# Campus presentation
+
+The reference-inspired campus is code-native Three.js geometry: two-story office,
+window frames and roof services, landscaped curbs, solar canopies, charging
+pedestals, lane arrows, crosswalk and guardhouse. These are illustrative landmarks,
+not a surveyed site plan. World-anchored callouts follow zoom/pan; no texture,
+location API, telemetry or extra Supabase request is introduced. Parking slot IDs,
+vehicle types, live refresh and checkout/return animations remain unchanged.

@@ -6,67 +6,12 @@ import { MapControls } from '@react-three/drei'
 import { CatmullRomCurve3, Vector3 } from 'three'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
+import FleetCampus from './FleetCampus'
 
 function Block({ at = [0, 0, 0], size, color = '#fff', ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size} /><meshStandardMaterial color={color} roughness={.9} flatShading /></mesh>
 }
 
-const Tree = memo(function Tree({ x, z, small = false }) {
-  return <group position={[x, 0, z]}>
-    <mesh position={[0, .7, 0]} castShadow><cylinderGeometry args={[.12, .16, 1.4, 6]} /><meshStandardMaterial color="#bd9a76" /></mesh>
-    <mesh position={[0, small ? 1.45 : 2, 0]} castShadow><icosahedronGeometry args={[small ? .7 : 1.05, 1]} /><meshStandardMaterial color="#85dba7" flatShading /></mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .025, 0]}><circleGeometry args={[.8, 16]} /><meshBasicMaterial color="#c2d8cc" /></mesh>
-  </group>
-})
-
-const Office = memo(function Office() {
-  return <group>
-    <Block at={[-4, .12, -8]} size={[16, .24, 9]} color="#e2e8ef" />
-    <Block at={[-5, 2.1, -8]} size={[12, 4.2, 6.8]} color="#fafcff" />
-    <Block at={[3.5, 1.5, -7.5]} size={[4.8, 3, 5.8]} color="#eef3f8" />
-    <Block at={[-5, 4.25, -8]} size={[12.5, .28, 7.3]} color="#e0e5ef" />
-    <Block at={[3.5, 3.1, -7.5]} size={[5.2, .25, 6.2]} color="#dce4ee" />
-    <Block at={[-5, 4.48, -8]} size={[9, .2, 4.4]} color="#ecf0f7" />
-    {[0, 1].flatMap(row => Array.from({ length: 8 }, (_, col) => <Block key={`${row}-${col}`} at={[-10 + col * 1.45, 1.1 + row * 1.7, -4.54]} size={[.78, 1, .06]} color="#b9dbee" />))}
-    {[0, 1, 2].map(n => <Block key={n} at={[5.93, 1.4, -9.1 + n * 1.5]} size={[.06, 1.2, .85]} color="#b9dbee" />)}
-    <Block at={[-3.8, 1, -4.47]} size={[1.2, 2, .1]} color="#8fb5d5" />
-    <Block at={[-3.8, 2.65, -3.7]} size={[3.4, .18, 1.8]} color="#f2f5fc" />
-    <Block at={[-3.8, .15, -3.5]} size={[3.4, .3, 1.5]} color="#dae1ec" />
-    <Block at={[-7, 4.5, -8.5]} size={[3, .12, 2.2]} color="#7987bd" />
-    <Block at={[-14, .1, -7.2]} size={[3, .2, 5]} color="#d1eddf" />
-    <Block at={[-14, 1.2, -9]} size={[2.7, 2.4, 1.8]} color="#e5dcfa" />
-    <Block at={[-14, 2.5, -9]} size={[3, .2, 2.1]} color="#ba9be3" />
-    <Block at={[-14, 1.2, -7.99]} size={[1.4, 1.2, .1]} color="#b6d8ec" />
-  </group>
-})
-
-function Canopy() {
-  return <group position={[12.5, 0, -6]}>
-    {[-2.2, 2.2].flatMap(x => [-1.5, 1.5].map(z => <Block key={`${x}-${z}`} at={[x, 1.6, z]} size={[.13, 3.2, .13]} color="#a6b7c5" />))}
-    <Block at={[0, 3.22, 0]} size={[5.5, .12, 4.2]} color="#709ad1" />
-    {Array.from({ length: 5 }, (_, n) => <Block key={n} at={[-2.1 + n * 1.05, 3.3, 0]} size={[.04, .025, 4.1]} color="#c5daf4" />)}
-    {[0, 1].map(n => <group key={n} position={[-1.5 + n * 3, 0, -1]}><Block at={[0, .7, 0]} size={[.5, 1.4, .5]} color="#327cda" /><Block at={[0, 1, .28]} size={[.32, .35, .02]} color="#aef5f5" /></group>)}
-  </group>
-}
-
-function Gate({ end }) {
-  return <group position={[2, 0, end]}>
-    <Block at={[4, 1.05, -1]} size={[2.7, 2.1, 2.6]} color="#fff" />
-    <Block at={[4, 2.2, -1]} size={[3, .25, 3]} color="#acbfcf" />
-    <Block at={[4, 1.2, .32]} size={[1.8, .9, .05]} color="#b6dbee" />
-    <Block at={[-2.2, .65, 0]} size={[.4, 1.3, .4]} color="#e9b655" />
-    <Block at={[.2, 1.3, 0]} size={[4.5, .16, .2]} color="#f5f6fd" />
-    {[-1, 0, 1, 2].map(n => <Block key={n} at={[n, 1.31, .01]} size={[.32, .18, .21]} color="#9b68d5" />)}
-  </group>
-}
-
-function Person({ x, z }) {
-  return <group position={[x, 0, z]}>
-    <Block at={[0, .65, 0]} size={[.25, .65, .22]} color="#52bca6" />
-    <mesh position={[0, 1.1, 0]}><sphereGeometry args={[.17, 8, 6]} /><meshStandardMaterial color="#edc6a3" /></mesh>
-    <Block at={[-.08, .18, 0]} size={[.09, .4, .12]} color="#667994" /><Block at={[.08, .18, 0]} size={[.09, .4, .12]} color="#667994" />
-  </group>
-}
 
 function Wheels({ axles, width = 1.35, radius = .27 }) {
   return [-1, 1].flatMap(sign => axles.map(z => <group key={`${sign}-${z}`} position={[sign * width / 2, radius, z]} rotation={[0, 0, Math.PI / 2]}>
@@ -249,16 +194,10 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
   return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [32, 38, 34], near: .1, far: 200 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
     gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
-    <color attach="background" args={['#edf3f7']} />
-    <ambientLight intensity={.8} /><hemisphereLight args={['#fff', '#cddde5', .65]} />
+    <color attach="background" args={['#f2f7fa']} />
+    <ambientLight intensity={.7} /><hemisphereLight args={['#fff7ea', '#c0d5db', .65]} />
     <directionalLight castShadow position={[-12, 30, 12]} intensity={1.4} shadow-mapSize={[1024, 1024]} shadow-camera-left={-26} shadow-camera-right={26} shadow-camera-top={32} shadow-camera-bottom={-25} shadow-bias={-.001} />
-    <Block at={[0, -.3, (end - 12) / 2]} size={[37, .5, end + 15]} color="#f4f7fa" />
-    <Block at={[2, .005, (end - 10) / 2]} size={[4.6, .04, end + 18]} color="#c3cfda" />
-    {[3.3, 8.3, 13.3, 18.3].filter(z => z < end).map(z => <Block key={z} at={[0, .035, z]} size={[35, .06, 1.85]} color="#c3cfda" />)}
-    {Array.from({ length: Math.floor((end + 12) / 3) }, (_, i) => <Block key={i} at={[2, .05, -10 + i * 3]} size={[.08, .025, 1.2]} color="#fff" />)}
-    <Office /><Canopy /><Gate end={end} />
-    {[[-17,-11],[-12,-12],[-8,-12],[-3,-12],[3,-12],[8,-12],[16,-10],[-17,-4],[8,-4],[16,-2],[-17,3],[-17,8],[-17,13],[-17,18],[17,4],[17,9],[17,14],[17,19],[-10,20],[-6,20]].map(([x,z],i) => <Tree key={i} x={x} z={z} small={i%3===0} />)}
-    {[[-2,-3],[8,-3],[-16,10],[5,19],[-12,-5]].map(([x,z],i) => <Person key={i} x={x} z={z} />)}
+    <FleetCampus end={end}/>
     {vehicles.map(car => car.parking && <group key={car.id}>
       <group position={[car.parking.x, 0, car.parking.z]} onClick={event => { event.stopPropagation(); if (visibleIds.includes(car.id)) onSelect(car.id) }}>
         <Block at={[0, .04, 0]} size={[2.7, .06, 3.8]} color={selectedId===car.id ? '#ead9ff' : car.status==='on_trip' ? '#e7edf2' : '#daf0e8'} />

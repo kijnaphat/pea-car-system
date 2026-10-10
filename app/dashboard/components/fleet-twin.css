@@ -13,3 +13,15 @@
 @media(min-width:1500px){.twin-workspace{grid-template-columns:minmax(0,1fr) 320px}.twin-workspace.is-map-expanded{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:1100px) and (min-width:761px){.twin-workspace{grid-template-columns:minmax(0,1fr) 260px}}
 @media(max-width:760px){.twin-content{padding:13px 10px}.twin-map{height:520px}.twin-list{height:390px}.is-map-expanded .twin-map{height:max(620px,calc(100dvh - 180px))}.twin-detail{max-height:none}.twin-qr-only{margin-top:9px}.twin-model-key{padding-top:9px}.twin-detail-actions{flex-wrap:wrap}.twin-detail-actions a.twin-report-link{display:flex}}
+
+/* World-anchored callouts follow the camera, like a miniature campus exhibit. */
+.twin-map-panel{background:#f2f7fa;border-color:#dce6ec;box-shadow:0 15px 45px #4059780c}
+.twin-campus-label,.twin-charge-label{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:15px;font-size:11px;font-weight:700;line-height:1.45;white-space:nowrap;box-shadow:0 9px 23px #31436420}
+.twin-campus-label{background:linear-gradient(125deg,#8539db,#52229b);color:#fff;border:1px solid #a866e7}
+.twin-campus-label>span{font-size:27px}.twin-campus-label strong{display:block;font-size:12px}
+.twin-campus-label:after{content:'';position:absolute;bottom:-7px;left:24px;width:14px;height:14px;background:#7030be;transform:rotate(45deg);z-index:-1}
+.twin-charge-label{background:#fffffff5;color:#2078ab;border:1px solid #d5e9f6}.twin-charge-label small{display:block;font-size:9px;color:#8196a3;font-weight:500}
+.twin-zone-label{display:flex;align-items:center;gap:9px;text-align:left;padding:9px 12px;border:1px solid #e6edf0;box-shadow:0 7px 19px #263d5317}
+.twin-zone-symbol{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#0bb57d;color:white;box-shadow:0 0 0 5px #e5f6ed}
+.twin-zone-label strong{font-size:20px}.twin-slot-label{background:#ffffffc2;padding:1px 4px;border-radius:4px;color:#6c7e91}
+@media(max-width:760px){.twin-campus-label,.twin-charge-label{padding:7px 9px;font-size:8px;border-radius:10px;gap:5px}.twin-campus-label strong{font-size:9px}.twin-campus-label>span{font-size:19px}.twin-charge-label svg{width:16px}.twin-charge-label small{font-size:7px}.twin-zone-label{gap:5px;padding:5px 7px}.twin-zone-symbol{width:23px;height:23px;box-shadow:0 0 0 3px #e5f6ed}.twin-zone-symbol svg{width:16px}.twin-zone-label strong{font-size:13px}}
