@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import { CatmullRomCurve3, Vector3 } from 'three'
 import { SITE, SITE_BICYCLES } from '@/lib/fleetSiteLayout'
+import { CAMPUS_GARDENS, CAMPUS_TABLES } from '@/lib/fleetCampusAmenities'
 
 function Block({ at, size, color, ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size}/><meshStandardMaterial color={color} roughness={.9}/></mesh>
@@ -110,12 +111,43 @@ function Fence({ x, z, length, yaw=0 }) {
   </group>
 }
 
+function GardenIsland({ garden }) {
+  return <group position={[garden.x,0,garden.z]}>
+    <Soft at={[0,.08,0]} size={[garden.width,.16,garden.depth]} color="#d3daca"/>
+    <Soft at={[0,.19,0]} size={[garden.width-.18,.08,garden.depth-.18]} color="#a8c995"/>
+    {[-1.8,1.5].map((x,n)=><group key={x} position={[x,0,n?-.2:.25]}>
+      <mesh position={[0,1,0]} castShadow><cylinderGeometry args={[.11,.16,1.8,6]}/><meshStandardMaterial color="#a48b6f"/></mesh>
+      <mesh position={[0,2.1,0]} scale={[.9,1.15,.85]} castShadow><icosahedronGeometry args={[.95,1]}/><meshStandardMaterial color={['#63b88a','#80c394','#57ac87'][(garden.tone+n)%3]} roughness={1}/></mesh>
+      <mesh position={[.28,2.45,0]} castShadow><icosahedronGeometry args={[.58,1]}/><meshStandardMaterial color="#95cda0" roughness={1}/></mesh>
+    </group>)}
+    {[-.6,0,.6].map((x,n)=><group key={x}>
+      <mesh position={[x,.45,.4]}><icosahedronGeometry args={[.28,1]}/><meshStandardMaterial color="#70a77c"/></mesh>
+      <mesh position={[x,.65,.45]}><sphereGeometry args={[.09,6,5]}/><meshStandardMaterial color={n%2?'#e4c15e':'#d39bc3'}/></mesh>
+    </group>)}
+  </group>
+}
+
+function ShadeTable({ x, z, color }) {
+  return <group position={[x,0,z]}>
+    <mesh position={[0,.025,0]} receiveShadow><cylinderGeometry args={[1.25,1.25,.05,20]}/><meshStandardMaterial color="#e0d8c6"/></mesh>
+    <mesh position={[0,.77,0]} castShadow><cylinderGeometry args={[.62,.62,.1,16]}/><meshStandardMaterial color="#b69976"/></mesh>
+    <Block at={[0,1.22,0]} size={[.065,2.4,.065]} color="#8d9e9a"/>
+    <mesh position={[0,2.49,0]} castShadow><coneGeometry args={[1.17,.35,8]}/><meshStandardMaterial color={color} roughness={.9}/></mesh>
+    {[-1,1].map(sign=><group key={sign}>
+      <Soft at={[sign*.94,.4,0]} size={[.48,.1,.46]} color="#a9b6a2"/>
+      <Block at={[sign*.94,.18,0]} size={[.07,.36,.07]} color="#7b8b84"/>
+    </group>)}
+  </group>
+}
+
 export default memo(function FleetCampusProps({ bounds, reducedMotion }) {
   return <group>
     <mesh position={[-47,-.015,3]} receiveShadow><cylinderGeometry args={[6,6,.025,36]}/><meshStandardMaterial color="#c8debc"/></mesh>
     <Fountain reducedMotion={reducedMotion}/><Pergola/><CoffeeKiosk/><BicycleRack/><UtilityYard/><RecyclingBins/>
     <FlowerBed x={-51.5} z={-3} width={3}/><FlowerBed x={-48.7} z={5.8} width={2}/>
     <FlowerBed x={-31} z={11.2} width={3.4} color="#ddb997"/>
+    {CAMPUS_GARDENS.map(garden=><GardenIsland key={garden.id} garden={garden}/>)}
+    {CAMPUS_TABLES.map(table=><ShadeTable key={table.x+','+table.z} {...table}/>)}
     <Fence x={-56} z={-7} length={30}/><Fence x={(bounds?.maxX||SITE.bounds.maxX)-1.4} z={-10} length={9}/><Fence x={(bounds?.maxX||SITE.bounds.maxX)-1.4} z={9.2} length={7}/>
     {[31.5,32.5,33.5].map(x=><group key={x} position={[x,0,-13.2]}>
       <Block at={[0,.045,0]} size={[.35,.09,.35]} color="#748d94"/>

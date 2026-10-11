@@ -236,7 +236,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
       <div className={`twin-workspace${expandedMap ? ' is-map-expanded' : ''}`}>
         <div className="twin-map-panel">
           <div className="twin-map" aria-label="แผนผังสำนักงานจำลองและช่องจอด">
-            {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} trafficHost={trafficHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} /></SceneBoundary>}
+            {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} trafficHost={trafficHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} ambientTraffic={mode!=='replay'} /></SceneBoundary>}
             {!safeMap && <div className="twin-world-labels" ref={labelsHost} aria-hidden="true">
               {labels && displayedParkingSlots(vehicles).map(slot=><span key={slot.slotNo} className="twin-slot-label" data-world-x={slot.parking.x} data-world-y=".15" data-world-z={slot.parking.z+(slot.parking.yaw===0?2.2:-2.2)}>{slot.slotCode}</span>)}
               {labels && siteLabels(vehicles).map(label=><div key={label.key} className={label.primary ? 'twin-campus-label' : 'twin-gate-label'} data-world-x={label.x} data-world-y={label.y} data-world-z={label.z}>{label.primary ? <><span>◈</span><div>{label.label}<strong>{label.detail}</strong></div></> : label.label}</div>)}
@@ -273,7 +273,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
         </div>
         <aside className="twin-list"><div className="twin-list-heading"><h2>รายการรถยนต์ <span>({vehicles.length})</span></h2><Car size={20}/></div><p className="twin-list-subtitle">แสดง {visible.length} คัน · ดูรายละเอียดเท่านั้น</p><div className="twin-list-scroll">{visible.map(car=><button key={car.id} aria-pressed={car.id===selectedId} onClick={()=>select(car.id)} className="twin-list-car"><span className="twin-list-thumbnail"><FleetVehicleGlyph car={car} size={49}/></span><span className="twin-list-car-info"><strong>{car.plate_number}</strong><small>{car.slotCode} · {vehicleStyle(car).label}</small><small>{car.driver}</small><Status status={car.status}/></span><ArrowUpRight size={15}/></button>)}{!busy && !visible.length && <p className="twin-empty">ไม่พบรถตามเงื่อนไขนี้</p>}</div><div className="twin-list-footer"><span>{counts.unknown ? `${counts.unknown} คันรอตรวจสอบสถานะ` : 'อิงรายการเบิก–คืนรถของระบบ'}</span>{mode==='live' && <small>ข้อมูล ณ {timeText(snapshot.generatedAt)}</small>}</div></aside>
       </div>
-      <footer className="twin-footer"><span>โมเดลอิงประเภทรถ · สีใช้จำแนกในผัง ไม่ใช่สีตัวรถจริง · ผู้คน/พรอพและการเคลื่อนที่เป็นภาพจำลอง ไม่ใช่ GPS</span><label><input type="checkbox" checked={reduced} onChange={event=>setReduced(event.target.checked)}/>ลดการเคลื่อนไหว</label></footer>
+      <footer className="twin-footer"><span>โมเดลอิงประเภทรถ · สีใช้จำแนกในผัง ไม่ใช่สีตัวรถจริง · คน/รถลูกค้าเป็นภาพจำลอง ไม่รวมยอดรถหรือรายงาน · ไม่ใช่ GPS</span><label><input type="checkbox" checked={reduced} onChange={event=>setReduced(event.target.checked)}/>ลดการเคลื่อนไหว</label></footer>
     </div>
   </section>
 }

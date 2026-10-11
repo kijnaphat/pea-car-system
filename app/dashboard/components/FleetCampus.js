@@ -98,7 +98,7 @@ function Carport({ x, z, width, depth = 4.5, customer = false }) {
     <SoftBlock at={[0,.06,0]} size={[width+.5,.12,depth+.5]} color={customer ? '#ece9da' : '#e2e8e8'}/>
     {[-1,1].flatMap(a=>[-1,1].map(b=><Box key={a+'-'+b} at={[a*(width/2-.35),1.45,b*(depth/2-.3)]} size={[.12,2.9,.12]} color="#aab8c2"/>))}
     <group position={[0,3,0]} rotation={[-.08,0,0]}>
-      <SoftBlock at={[0,0,0]} size={[width,.18,depth]} color={customer ? '#d4ba7b' : '#a5afca'}/>
+      <mesh castShadow receiveShadow><boxGeometry args={[width,.18,depth]}/><meshStandardMaterial color={customer ? '#d4ba7b' : '#a5afca'} transparent={customer} opacity={customer?.58:1} depthWrite={!customer} roughness={.7}/></mesh>
       {Array.from({length:Math.floor(width/.5)},(_,n)=><Box key={n} at={[-width/2+.25+n*.5,.12,0]} size={[.04,.04,depth]} color={customer ? '#f2e2b1' : '#d3d9ed'}/>)}
     </group>
   </group>
@@ -249,9 +249,7 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
     <Carport {...SITE_CUSTOMER} customer/>
     <ChargingCanopy bays={chargingBays} vehicles={vehicles}/>
     {/* Pavements, planted beds and furniture stay outside the vehicle corridors. */}
-    <SoftBlock at={[-26,.025,-12.6]} size={[1.2,.05,4.8]} color="#eee8d9"/>
     {[4,16,28,40,52].map((x,i)=><Lamp key={x} x={x} z={-11.1} yaw={i%2?Math.PI:0}/>)}
-    {[5,20,32].map(x=><group key={x}><Planter x={x} z={12.5}/><Tree x={x+1.7} z={12.6} small/></group>)}
     <Bench x={-30} z={10.5} yaw={.25}/><Bench x={-24} z={-17} yaw={Math.PI}/>
     <group position={[-35,.06,-17.55]} rotation={[0,Math.atan2(20,27),0]}>
       {Array.from({length:8},(_,n)=><Box key={n} at={[-3.1+n*.88,0,0]} size={[.43,.014,1.55]} color="#f5f2e5"/>)}

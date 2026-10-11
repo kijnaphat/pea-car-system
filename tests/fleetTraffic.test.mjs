@@ -66,7 +66,7 @@ test('mixed returns and departures reserve crossings, and each car keeps event o
 test('future permanent slots depart towards the same main road, without crossing parked bays',()=>{
   const cars=[19,20,30,31,32,42,43].map(slotNo=>({id:'extra-'+slotNo,parking:siteParkingPosition(slotNo),status:'on_trip'}))
   const path=trafficPath(siteParkingPosition(31),'depart')
-  assert.ok(path.nodes.slice(0,12).every(node=>node.z<=siteParkingPosition(31).z))
+  assert.ok(path.nodes.slice(0,12).every(node=>node.z>=siteParkingPosition(31).z))
   const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(cars))
   verifySeparation(traffic,cars)
 })

@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { Vector3, MOUSE, TOUCH } from 'three'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
+import { createCampusVisitors } from '@/lib/fleetCampusVisitors'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
 import { displayedParkingSlots, siteOverflowAisles } from '@/lib/fleetSiteLayout'
@@ -112,42 +113,63 @@ const Vehicle = memo(function Vehicle({ car, selected, onSelect, register }) {
   </group>
 })
 
-function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, visibleIds, trafficHost }) {
+function VisitorCar({ car, register }) {
+  const connect=useCallback(node=>register(car.id,node),[car.id,register])
+  return <group ref={connect} position={[car.parking.x,0,car.parking.z]} visible={car.status!=='on_trip'}>
+    <Block at={[0,.46,0]} size={[1.4,.4,2.95]} color={car.color}/>
+    <Block at={[0,.87,-.08]} size={[1.21,.51,1.4]} color={car.color}/>
+    <Block at={[0,.94,.63]} size={[1.08,.33,.03]} color="#a3c5d6"/>
+    <Block at={[0,.94,-.8]} size={[1.08,.33,.03]} color="#8daebd"/>
+    {[-1,1].map(sign=><group key={sign}>
+      <Block at={[sign*.619,.93,-.08]} size={[.025,.33,1.16]} color="#93b6c9"/>
+      <Block at={[sign*.47,.51,1.49]} size={[.29,.15,.025]} color="#fff4d4"/>
+      <Block at={[sign*.47,.51,-1.49]} size={[.29,.13,.025]} color="#c77372"/>
+    </group>)}
+    <Wheels axles={[-.99,.99]}/>
+    <Block at={[0,.34,1.5]} size={[.46,.14,.028]} color="#f1eadf"/>
+  </group>
+}
+
+function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, visibleIds, trafficHost, ambientTraffic }) {
   const groups=useRef(new Map()),controller=useRef(null)
+  const visitors=useMemo(()=>createCampusVisitors(),[])
   const {invalidate}=useThree()
   const shown=useMemo(()=>new Set(visibleIds.map(String)),[visibleIds])
   const register=useCallback((id,node)=>{if(node) groups.current.set(String(id),node);else groups.current.delete(String(id))},[])
   useEffect(()=>{invalidate()},[shown,invalidate])
   useEffect(()=>{
     if(!controller.current) controller.current=createFleetTraffic()
-    controller.current.setFleet(vehicles)
+    controller.current.setFleet(ambientTraffic?[...vehicles,...visitors.cars]:vehicles)
     if(reducedMotion) controller.current.clear(moves)
     else controller.current.enqueue(moves)
     invalidate()
-  },[vehicles,moves,reducedMotion,invalidate])
+  },[vehicles,moves,reducedMotion,invalidate,ambientTraffic,visitors])
   useEffect(()=>()=>{if(trafficHost.current) {trafficHost.current.textContent='';trafficHost.current.hidden=true}},[trafficHost])
   useFrame((_,delta)=>{
     const traffic=controller.current
-    if(!traffic) return
+    if(!traffic || document.visibilityState!=='visible') return
     traffic.advance(delta)
+    if(ambientTraffic&&!reducedMotion) visitors.tick(traffic,vehicles)
     let moving=0,waiting=0
     groups.current.forEach((group,id)=>{
       const pose=traffic.pose(id)
       if(!pose) {group.visible=false;return}
       group.position.set(pose.x,0,pose.z);group.rotation.y=pose.yaw
-      group.visible=pose.visible && shown.has(id)
-      if(pose.moving) moving++
-      else if(pose.waiting) waiting++
+      const visitor=id.startsWith('campus-visitor-')
+      group.visible=pose.visible && (visitor?ambientTraffic:shown.has(id))
+      if(!visitor && pose.moving) moving++
+      else if(!visitor && pose.waiting) waiting++
     })
     const pending=traffic.busy()
     if(trafficHost.current) {
-      const message=pending ? `คิวภาพจำลอง · กำลังวิ่ง ${moving} · รอ ${waiting}` : ''
+      const message=moving||waiting ? `คิวภาพจำลอง · กำลังวิ่ง ${moving} · รอ ${waiting}` : ''
       if(trafficHost.current.textContent!==message) trafficHost.current.textContent=message
-      trafficHost.current.hidden=!pending
+      trafficHost.current.hidden=!message
     }
     if(pending) invalidate()
   })
-  return vehicles.map(car=><Vehicle key={car.id} car={car} selected={selectedId===car.id} onSelect={onSelect} register={register}/>)
+  return <>{vehicles.map(car=><Vehicle key={car.id} car={car} selected={selectedId===car.id} onSelect={onSelect} register={register}/>)}
+    {ambientTraffic && visitors.cars.map(car=><VisitorCar key={car.id} car={car} register={register}/>)}</>
 }
 
 function CameraRig({ view, focus, bounds }) {
@@ -221,7 +243,7 @@ function ProjectedLabels({ host, enabled }) {
   return null
 }
 
-export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost }) {
+export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost, ambientTraffic = true }) {
   const bounds = useMemo(()=>campusBounds(vehicles),[vehicles])
   const slots = useMemo(()=>displayedParkingSlots(vehicles),[vehicles])
   const overflowAisles = useMemo(()=>siteOverflowAisles(vehicles),[vehicles])
@@ -236,7 +258,7 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
     <FleetCampusProps bounds={bounds} reducedMotion={reducedMotion}/>
     <FleetCampusLife reducedMotion={reducedMotion} bounds={bounds}/>
     {slots.map(slot => <ParkingSlot key={slot.slotNo} car={slot.car || {id:null,status:'unknown',parking:slot.parking}} selected={!!slot.car && selectedId===slot.car.id} onSelect={onSelect} visible={!!slot.car && visibleIds.includes(slot.car.id)}/>)}
-    <TrafficLayer vehicles={vehicles} moves={moves} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost}/>
+    <TrafficLayer vehicles={vehicles} moves={moves} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost} ambientTraffic={ambientTraffic}/>
     <ProjectedLabels host={labelsHost} enabled={labels} />
     <CameraRig view={view} focus={focus} bounds={bounds} />
   </Canvas>
