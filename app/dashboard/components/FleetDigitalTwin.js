@@ -10,6 +10,7 @@ import { startVisiblePolling } from '@/lib/visiblePolling'
 import { FLEET_STATUSES, dayBounds, demoSnapshot, fleetVehicles, movementEvents, replaySnapshot } from '@/lib/fleetDigitalTwin'
 import { getCarImage } from '@/lib/carImages'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
+import { SITE_LABELS, siteParkingSlots } from '@/lib/fleetSiteLayout'
 import FleetVehicleGlyph from './FleetVehicleGlyph'
 import './fleet-twin.css'
 
@@ -232,8 +233,8 @@ export default function FleetDigitalTwin({ onAnalytics }) {
           <div className="twin-map" aria-label="แผนผังสำนักงานจำลองและช่องจอด">
             {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} trafficHost={trafficHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} /></SceneBoundary>}
             {!safeMap && <div className="twin-world-labels" ref={labelsHost} aria-hidden="true">
-              {labels && vehicles.filter(car=>car.parking).map(car=><span key={car.id} className="twin-slot-label" data-world-x={car.parking.x} data-world-y=".15" data-world-z={car.parking.z+2}>{car.slotCode}</span>)}
-              {labels && <><div className="twin-campus-label" data-world-x="-2" data-world-y="8.5" data-world-z="-13"><span>◈</span><div>อาคารสำนักงาน<strong>กฟภ. กำแพงแสน</strong></div></div><div className="twin-charge-label" data-world-x="14.5" data-world-y="4.5" data-world-z="-17"><Zap size={22}/><div>จุดชาร์จ EV<small>พื้นที่จำลอง</small></div></div><div className="twin-gate-label" data-world-x="5.5" data-world-y="2.3" data-world-z={Math.max(20,...vehicles.map(car=>(car.parking?.z||0)+5))+1}>ทางเข้า–ออก</div></>}
+              {labels && siteParkingSlots(vehicles).map(slot=><span key={slot.slotNo} className="twin-slot-label" data-world-x={slot.parking.x} data-world-y=".15" data-world-z={slot.parking.z+(slot.parking.row==='upper'?2.2:-2.2)}>{slot.slotCode}</span>)}
+              {labels && SITE_LABELS.map(label=><div key={label.key} className={label.primary ? 'twin-campus-label' : 'twin-gate-label'} data-world-x={label.x} data-world-y={label.y} data-world-z={label.z}>{label.primary ? <><span>◈</span><div>{label.label}<strong>{label.detail}</strong></div></> : label.label}</div>)}
             </div>}
           </div>
           <div className="twin-map-toolbar">
@@ -245,7 +246,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
             <button aria-label="ใช้ผัง 2D สำรอง" aria-pressed={safeMap} onClick={toggleSafeMap}>2D</button>
             <button aria-label={expandedMap ? 'คืนขนาดผังและแสดงรายการรถ' : 'ขยายผังเต็มความกว้าง'} aria-pressed={expandedMap} onClick={()=>setExpandedMap(value=>!value)}>{expandedMap ? <Minimize2 size={19}/> : <Maximize2 size={19}/>}</button>
           </div>
-          <span className="twin-map-watermark">ผังสำนักงานจำลอง · ไม่ใช่ GPS</span>
+          <span className="twin-map-watermark"><span className="twin-zoom-hint">ซูมเพื่อดูเลขช่อง · </span>ผังสำนักงานจำลอง · ไม่ใช่ GPS</span>
           <span className="twin-traffic-hint" ref={trafficHost} hidden aria-live="off"/>
           {selected && <article className="twin-detail" aria-label="ข้อมูลรถที่เลือก"><button className="twin-detail-close" aria-label="ปิดข้อมูลรถ" onClick={()=>{setSelectedId(null);setFocus(null)}}><X size={18}/></button><span className="twin-detail-eyebrow">รถ #{selected.id} · ช่องประจำ {selected.slotCode}</span><h3>{selected.plate_number}</h3><Status status={selected.status}/>
             <div className="twin-car-image">{getCarImage(selected) ? <img src={getCarImage(selected)} alt={selected.model || 'รถที่เลือก'} loading="lazy"/> : <Car size={70}/>}</div>

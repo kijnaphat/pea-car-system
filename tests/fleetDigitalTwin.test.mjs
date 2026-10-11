@@ -6,7 +6,7 @@ test('counts and permanent slots come from records; hidden vehicles stay hidden'
   const cars = fleetVehicles({...initial,carsDataRaw:[...initial.carsDataRaw,{id:'hidden',is_visible:false,status:'available'}]})
   assert.equal(cars.length,25)
   assert.equal(new Set(cars.map(car=>car.slotCode)).size,25)
-  assert.deepEqual(parkingPosition(1),{zone:'A',x:-14,z:1})
+  assert.deepEqual(parkingPosition(1),{row:'upper',x:-14,z:-6.9,yaw:0})
   assert.equal(fleetVehicles({...initial,carsDataRaw:initial.carsDataRaw.slice(1)}).find(car=>car.id==='demo-2').slotCode,'P02')
 })
 test('initial load does not animate historical transactions; checkout and return are real pairs', () => {

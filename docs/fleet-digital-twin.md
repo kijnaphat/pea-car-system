@@ -42,24 +42,25 @@
 `node --test tests/*.mjs`, `npm run lint -- --quiet`, `npm run build`
 
 ทดสอบ UI: อ่าน fleet จริง, filter/search/select/link, ย้อนหลังและเลื่อนเวลา, สาธิตหลายคันออก/กลับ, เข้า analytics เดิม และมือถือ โดยไม่สร้างธุรกรรมรถจริงระหว่าง QA
-## Enlarged headquarters campus
+## ผังสำนักงานตามภาพ Eo.jpg
 
-The previous landscaped 3D campus style is restored, with soft daylight, shadow
-maps, solar canopies, perimeter planting and the original map-label treatment.
-The HQ footprint is approximately twice the previous office footprint in the
-fictional scene. Its main wing is 18×10 units, with a 7×11 side wing, a rounded
-glass atrium and entrance canopy, pitched hip roofs and circular garden courts.
-Rounded geometry softens the building and precinct edges. These are illustrative
-proportions, not surveyed dimensions or a model of an actual building.
+ผัง 3D อิงรูปที่ผู้ใช้ส่งและยืนยันให้เรียงช่องตามเลขประจำ: P01–P18 แถวบน,
+P19–P30 แถวล่าง เริ่มตรงกับ P07 และสิ้นสุดตรงกับ P18 ด้านบน ช่องไม่มีรถ
+(เช่น P29 ที่คันเดิมถูกลบ) แสดงว่าง ไม่สร้างรถหรือย้ายเลขของคันอื่น
 
-The precinct extends rearward to z=-25, leaving every original car slot and route
-in place. Camera-space bounds fit the larger compound on desktop and mobile,
-while zoom/pan keep the isometric angle fixed. World-anchored HTML labels remain
-in the existing React-owned layer (no additional Drei roots).
+สำนักงาน 4 ชั้นอยู่ข้างถนนทางเข้าเฉียงฝั่งซ้าย มีอาคาร 2 ชั้นใกล้ทางเข้า,
+อาคาร 1 ชั้นกับโรงรถสองหลังใต้ถนน, โรงรถลูกค้าเหนือถนน, อาคาร 2 ชั้นด้านขวา,
+แนวต้นไม้, ทางออกที่แยกขึ้นด้านขวา และทางตันหลังทางออก รูปร่างพื้นที่ตามผัง
+แทนสี่เหลี่ยมเดิม โดยใช้ geometry แสง เงา และสีโมเดลรถชุดเดิม ไม่ใช้ภาพพื้นหลัง
+หรือ texture ภายนอก สัดส่วนเป็นภาพจำลอง ไม่ใช่การสำรวจสถานที่จริง
 
-Vehicle geometry and classification/paint palettes are unchanged, as are the
-QR-only dashboard actions and all fleet data logic. The motion controller uses
-shared collision-aware display reservations; it does not create transactions.
-A10/B8/C7 and extra registered cars' permanent D slots all remain visible.
-Counts use actual records.
-No textures, location API, telemetry or additional data reads are introduced.
+รถออกจากช่องเข้าถนนกลางแล้วเลี้ยวออกด้านขวา รถคืนเข้าจากทางซ้ายแล้วกลับช่องเดิม
+ตัวจัดคิวสงวนเวลา/พื้นที่บนเส้นทางใหม่ร่วมกัน รถที่รอออกยังอยู่ช่อง และรถที่รอเข้า
+รอนอกสำนักงาน ทดสอบรถออกพร้อมกันทั้ง 30 ช่องและรถเข้า–ออกผสม ไม่เปลี่ยนธุรกรรม
+หรือส่ง Discord จากการขยับโมเดล ช่องประจำใหม่เกิน P30 เพิ่มแถวและทางวิ่งด้านหลัง
+โดยไม่วิ่งผ่านรถแถวหน้า
+
+ตำแหน่งช่อง กล้อง ป้าย ถนน และเส้นทางใช้ module `fleetSiteLayout.js` ร่วมกัน
+เลขช่องในฐานข้อมูลและวิธีอ่าน `/api/fleet` ทุก 60 วินาทีไม่เปลี่ยน ไม่เพิ่ม Realtime,
+GPS, คำขอฐานข้อมูล หรือ Log Ingestion จากฉากนี้ Dashboard ยังคงดูรายละเอียด/
+รายงานอย่างเดียว การเบิก–คืน–ชาร์จใช้ QR Code ที่รถเหมือนเดิม

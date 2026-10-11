@@ -2,6 +2,8 @@
 
 import { memo, useMemo } from 'react'
 import { RoundedBox } from '@react-three/drei'
+import { Shape } from 'three'
+import { SITE } from '@/lib/fleetSiteLayout'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
 function Box({ at, size, color, ...props }) {
@@ -59,57 +61,43 @@ function Window({ x, y, z, side = false }) {
   </group>
 }
 
-const Office = memo(function Office() {
-  return <group>
-    {/* Larger HQ precinct, expanded to the rear without moving a single vehicle slot. */}
-    <SoftBlock at={[-2,.14,-13]} size={[26,.28,18]} radius={.12} color="#e4e9e9"/>
-    <SoftBlock at={[-4,3.3,-13.5]} size={[18,6.3,10]} radius={.32} color="#faf9f4"/>
-    <SoftBlock at={[6.5,2.9,-10.5]} size={[7,5.5,11]} radius={.3} color="#f4f6f5"/>
-    <SoftBlock at={[-4,6.54,-13.5]} size={[18.7,.22,10.7]} color="#d4dfe7"/>
-    <HipRoof at={[-4,6.67,-13.5]} width={18.9} depth={10.8} rise={1.5}/>
-    <SoftBlock at={[6.5,5.73,-10.5]} size={[7.6,.18,11.6]} color="#d4dfe7"/>
-    <group position={[6.5,5.85,-10.5]} rotation={[0,Math.PI/2,0]}><HipRoof at={[0,0,0]} width={11.7} depth={7.7} rise={1.1} color="#a4b9c6"/></group>
-    {/* Glazed rounded atrium breaks up the rectilinear office wings. */}
-    <mesh position={[-2,3.35,-8.5]} castShadow><cylinderGeometry args={[2.2,2.2,6.4,24,1,false,-Math.PI/2,Math.PI]}/><meshStandardMaterial color="#9fc9dc" roughness={.3} transparent opacity={.88}/></mesh>
-    {[.25,2.4,4.6,6.55].map(y=><mesh key={y} position={[-2,y,-8.5]}><cylinderGeometry args={[2.24,2.24,.12,24,1,false,-Math.PI/2,Math.PI]}/><meshStandardMaterial color="#e5edf1"/></mesh>)}
-    {[-.8,0,.8].map(angle=><Box key={angle} at={[-2+Math.sin(angle)*2.23,3.4,-8.5+Math.cos(angle)*2.23]} size={[.07,6.1,.07]} color="#e5edf1"/>)}
-    {[0,1,2].flatMap(row=>[-11.7,-10.1,-8.5,-6.9,-5.3,1.4,3].map(x=><Window key={row+'-'+x} x={x} y={1.1+row*1.9} z={-8.44}/>))}
-    {[0,1,2].flatMap(row=>[-17.3,-15.6,-13.9,-12.2,-10.5].map(z=><Window key={row+'-'+z} x={-13.06} y={1.1+row*1.9} z={z} side/>))}
-    {[0,1].flatMap(row=>[-14.5,-12.7,-10.9,-9.1,-7.3].map(z=><Window key={row+'-'+z} x={10.04} y={1.35+row*2.1} z={z} side/>))}
-    {[4.5,6.2,7.9,9.3].map(x=><Window key={x} x={x} y={3.8} z={-4.94}/>)}
-    <Box at={[-4,2.35,-8.42]} size={[18,.12,.12]} color="#c6d5d7"/>
-    <Box at={[6.5,2.4,-4.93]} size={[7,.12,.12]} color="#c6d5d7"/>
-    <SoftBlock at={[-2,.28,-5.5]} size={[6,.35,4.3]} color="#e8e7df"/>
-    <mesh position={[-2,2.7,-6.2]} castShadow><cylinderGeometry args={[3.1,3.1,.18,32,1,false,-Math.PI/2,Math.PI]}/><meshStandardMaterial color="#d6e6ed"/></mesh>
-    {[-4.5,.5].map(x=><mesh key={x} position={[x,1.45,-5]} castShadow><cylinderGeometry args={[.12,.14,2.5,10]}/><meshStandardMaterial color="#c4d4de"/></mesh>)}
-    {[0,1,2].map(n=><SoftBlock key={n} at={[-2,.08+n*.1,-3.2-n*.35]} size={[5.4,.16+n*.2,.5]} radius={.06} color="#f0eee6"/>)}
-    <Box at={[-2,1.35,-6.23]} size={[1.5,2.3,.07]} color="#659aaf"/>
-    <Box at={[-2,1.35,-6.16]} size={[.045,2.3,.025]} color="#edf6f7"/>
-    <Planter x={-8} z={-7.2} width={3.8}/><Planter x={6.8} z={-4.1} width={3.5}/>
-    <RoundCourt x={-12.8} z={-5.5} radius={2.1}/><Tree x={-12.8} z={-5.5}/>
-    <RoundCourt x={12.5} z={-4.5} radius={1.7}/><Tree x={12.5} z={-4.5} small/>
-    <SoftBlock at={[-14,1.3,-20.5]} size={[4.5,2.6,3.2]} color="#ebe7f3"/>
-    <HipRoof at={[-14,2.66,-20.5]} width={4.9} depth={3.6} rise={.7} color="#b1a0c8"/>
-    <Window x={-14} y={1.25} z={-18.85}/>
-  </group>
-})
-
-function SolarCanopy({ x, z, width = 7, depth = 4.5, charging = false }) {
-  return <group position={[x,0,z]}>
-    {[-1,1].flatMap(a=>[-1,1].map(b=><Box key={`${a}-${b}`} at={[a*(width/2-.5),1.5,b*(depth/2-.4)]} size={[.12,3,.12]} color="#98acb9"/>))}
-    <group position={[0,3.1,0]} rotation={[-.1,0,0]}>
-      <Box at={[0,0,0]} size={[width,.17,depth]} color="#d8e3ee"/>
-      {[0,1].flatMap(row=>Array.from({length:6},(_,col)=><group key={`${row}-${col}`} position={[-width/2+.6+col*(width-.3)/6,.13,-depth/4+row*depth/2]}>
-        <Box at={[0,0,0]} size={[(width-.8)/6,.06,depth/2-.18]} color="#719bce"/>
-        <Box at={[0,.04,0]} size={[.018,.015,depth/2-.22]} color="#b8d4ef"/>
-      </group>))}
-    </group>
-    {charging && [-2,0,2].map(n=><group key={n} position={[n,0,-1.1]}>
-      <Box at={[0,.75,0]} size={[.56,1.5,.4]} color="#f6fbff"/>
-      <Box at={[0,1,.22]} size={[.4,.4,.035]} color="#247bb8"/>
-      <Box at={[0,.45,.22]} size={[.4,.3,.035]} color="#61cdb5"/>
-      <mesh position={[.38,.85,.1]} rotation={[0,0,.25]}><torusGeometry args={[.24,.035,6,12,Math.PI*1.6]}/><meshStandardMaterial color="#304555"/></mesh>
+// Dimensions and landmarks follow the user's supplied site plan.
+function Building({ x, z, width, depth, floors, accent, rotation = 0, office = false }) {
+  const height = floors * 1.65
+  return <group position={[x,0,z]} rotation={[0,rotation,0]}>
+    <SoftBlock at={[0,.08,0]} size={[width+1.3,.16,depth+1.3]} color="#e2e6e4"/>
+    <SoftBlock at={[0,height/2+.18,0]} size={[width,height,depth]} radius={.22} color="#faf9f4"/>
+    <SoftBlock at={[0,.35,0]} size={[width+.12,.45,depth+.12]} color={accent}/>
+    {Array.from({length:floors},(_,row)=><group key={row}>
+      <Box at={[0,1.65*(row+1)+.05,0]} size={[width+.16,.1,depth+.16]} color="#d5e1e6"/>
+      {Array.from({length:Math.floor(depth/1.8)},(_,n)=><Window key={n} x={width/2+.045} y={1+row*1.65} z={-depth/2+1.1+n*1.8} side/>)}
+      {[-1,1].map(sign=><Window key={sign} x={sign*width*.27} y={1+row*1.65} z={depth/2+.05}/>)}
     </group>)}
+    <group position={[0,height+.25,0]} rotation={[0,Math.PI/2,0]}>
+      <HipRoof at={[0,0,0]} width={depth+.7} depth={width+.7} rise={office ? 1.3 : .8} color={accent}/>
+    </group>
+    {office && <group position={[width/2+.02,0,0]}>
+      <mesh position={[0,height/2+.2,0]} castShadow><cylinderGeometry args={[1.6,1.6,height,24,1,false,0,Math.PI]}/><meshStandardMaterial color="#97c5d8" roughness={.3}/></mesh>
+      {[.3,1.95,3.6,5.25,6.85].map(y=><mesh key={y} position={[0,y,0]}><cylinderGeometry args={[1.65,1.65,.12,24,1,false,0,Math.PI]}/><meshStandardMaterial color="#e5edf1"/></mesh>)}
+      <SoftBlock at={[1.1,.2,0]} size={[2.6,.3,4]} color="#eeebe1"/>
+      <SoftBlock at={[1.2,2.5,0]} size={[3.1,.16,4.1]} color="#c9dfeb"/>
+      {[-1,1].map(n=><Box key={n} at={[2.4,1.3,n*1.6]} size={[.13,2.5,.13]} color="#c4d4de"/>)}
+    </group>}
+  </group>
+}
+
+function Office() {
+  return <Building x={-37} z={-9} width={7.6} depth={22} floors={4} accent="#6c99bd" rotation={Math.atan2(20,27)} office/>
+}
+
+function Carport({ x, z, width, depth = 4.5, customer = false }) {
+  return <group position={[x,0,z]}>
+    <SoftBlock at={[0,.06,0]} size={[width+.5,.12,depth+.5]} color={customer ? '#ece9da' : '#e2e8e8'}/>
+    {[-1,1].flatMap(a=>[-1,1].map(b=><Box key={a+'-'+b} at={[a*(width/2-.35),1.45,b*(depth/2-.3)]} size={[.12,2.9,.12]} color="#aab8c2"/>))}
+    <group position={[0,3,0]} rotation={[-.08,0,0]}>
+      <SoftBlock at={[0,0,0]} size={[width,.18,depth]} color={customer ? '#d4ba7b' : '#a5afca'}/>
+      {Array.from({length:Math.floor(width/.5)},(_,n)=><Box key={n} at={[-width/2+.25+n*.5,.12,0]} size={[.04,.04,depth]} color={customer ? '#f2e2b1' : '#d3d9ed'}/>)}
+    </group>
   </group>
 }
 
@@ -121,63 +109,82 @@ function Person({ x, z, color = '#3eaf9b' }) {
   </group>
 }
 
-function Arrow({ x, z, reverse = false }) {
-  return <group position={[x,.085,z]} rotation={[0,reverse ? Math.PI : 0,0]}>
-    <Box at={[0,0,0]} size={[.09,.015,.9]} color="#f9fcff"/>
-    {[-1,1].map(n=><Box key={n} at={[n*.16,0,.28]} size={[.08,.015,.43]} color="#f9fcff" rotation={[0,n*.8,0]}/>)}
+function Arrow({ x, z, yaw }) {
+  return <group position={[x,.09,z]} rotation={[0,yaw,0]}>
+    <Box at={[0,0,0]} size={[.1,.02,1.1]} color="#f9fcff"/>
+    {[-1,1].map(n=><Box key={n} at={[n*.2,0,.35]} size={[.09,.02,.55]} color="#f9fcff" rotation={[0,n*.8,0]}/>)}
   </group>
 }
 
-function Gate({ end }) {
-  return <group position={[2,0,end]}>
-    <Box at={[4,.12,-1.7]} size={[3.6,.24,4]} color="#e6e8dd"/>
-    <Box at={[4,1.1,-1.4]} size={[2.5,2.2,2.7]} color="#fff6d9"/>
-    <Box at={[4,2.3,-1.4]} size={[3.1,.25,3.3]} color="#94b4c9"/>
-    <Box at={[4,1.35,.02]} size={[1.8,.85,.05]} color="#87bbd7"/>
-    <Box at={[2.73,1.35,-1.4]} size={[.05,.85,1.6]} color="#87bbd7"/>
-    <Box at={[-2.15,.7,0]} size={[.5,1.4,.5]} color="#f1c04d"/>
-    <Box at={[.08,1.38,0]} size={[4.5,.14,.2]} color="#fdfcff"/>
-    {[-1.5,-.5,.5,1.5].map(n=><Box key={n} at={[n,1.39,0]} size={[.42,.16,.22]} color="#bd555e"/>)}
-    <Box at={[4,.6,-3.4]} size={[.75,1.2,.08]} color="#7851b4"/>
-    {[0,1,2,3,4,5].map(n=><Box key={n} at={[0,.08,1.2+n*.22]} size={[4.6,.025,.1]} color={n%2 ? '#717f86' : '#e6c365'}/>)}
-    <Tree x={-4} z={-1} small/><Planter x={7} z={-1}/>
+function Road({ from, to, width = 8.8, markings = true }) {
+  const dx=to[0]-from[0],dz=to[1]-from[1],length=Math.hypot(dx,dz)
+  const yaw=Math.atan2(dx,dz)
+  return <group position={[(from[0]+to[0])/2,0,(from[1]+to[1])/2]} rotation={[0,yaw,0]}>
+    <SoftBlock at={[0,-.07,0]} size={[width+.5,.18,length+.2]} color="#dce2e2" radius={.05}/>
+    <Box at={[0,.035,0]} size={[width,.06,length]} color="#a3afb9"/>
+    {[-1,1].map(n=><Box key={n} at={[n*(width/2-.2),.076,0]} size={[.07,.015,length]} color="#f9fcfd"/>)}
+    {markings && Array.from({length:Math.floor(length/3)},(_,n)=><Box key={n} at={[0,.078,-length/2+1.5+n*3]} size={[.09,.02,1.2]} color="#f9fcfd"/>)}
   </group>
 }
 
-export default memo(function FleetCampus({ end }) {
-  const depth = end + 28
-  const center = (end-22)/2
+function Gate({ x, z, yaw = 0 }) {
+  return <group position={[x,0,z]} rotation={[0,yaw,0]}>
+    <Box at={[-3.5,.75,0]} size={[.45,1.5,.45]} color="#edbc52"/>
+    <group position={[-3.5,1.5,0]} rotation={[0,0,Math.PI/3]}>
+      <Box at={[1.75,0,0]} size={[3.5,.12,.18]} color="#fff"/>
+      {[.7,1.7,2.7].map(n=><Box key={n} at={[n,0,0]} size={[.4,.14,.2]} color="#c66b72"/>)}
+    </group>
+    <Box at={[5.1,1.05,0]} size={[2,2.1,2.4]} color="#fff1d8"/>
+    <HipRoof at={[5.1,2.2,0]} width={2.5} depth={2.8} rise={.45} color="#9db7cb"/>
+    <Box at={[5.1,1.25,1.21]} size={[1.45,.7,.03]} color="#8eb9cd"/>
+  </group>
+}
+
+export default memo(function FleetCampus({ bounds, overflowAisles = [] }) {
+  // Irregular precinct silhouette, not a square campus invented around the cars.
+  const outline=useMemo(()=>{
+    const shape=new Shape()
+    const points=[[-51,-31],[-34,-34],[-16,-11],[32,-11],[32,-23],[48,-23],[48,bounds.maxZ],[-27,bounds.maxZ],[-51,-17]]
+    points.forEach(([x,z],i)=>i ? shape.lineTo(x,-z) : shape.moveTo(x,-z))
+    shape.closePath()
+    return shape
+  },[bounds.maxZ])
   return <group>
-    <SoftBlock at={[0,-.42,center]} size={[38,.65,depth]} radius={.21} color="#d8e2e9"/>
-    <SoftBlock at={[0,-.06,center]} size={[37.7,.1,depth-.25]} radius={.03} color="#edf2ef"/>
-    <Box at={[2,.025,(end-2)/2]} size={[4.6,.05,end+7]} color="#acbac4"/>
-    {[3.4,8.4,13.4,18.4].filter(z=>z<end).map(z=><group key={z}>
-      <Box at={[0,.025,z]} size={[35,.05,1.9]} color="#acbac4"/>
-      <Box at={[-8,.06,z-1.02]} size={[16,.07,.12]} color="#f9fbfc"/>
-      <Box at={[11,.06,z-1.02]} size={[13,.07,.12]} color="#f9fbfc"/>
-    </group>)}
-    {Array.from({length:Math.floor((end+4)/2.6)},(_,n)=><Box key={n} at={[2,.068,-2+n*2.6]} size={[.065,.015,1]} color="#f7fafb"/>)}
-    {[7,12,17,end+2].map(z=><group key={z}><Arrow x={.85} z={z}/><Arrow x={3.15} z={z} reverse/></group>)}
-    <Box at={[-4,.06,-2.3]} size={[24,.13,1.2]} color="#faf9ef"/>
-    {Array.from({length:9},(_,n)=><Box key={n} at={[.12+n*.47,.074,-1.5]} size={[.25,.025,1.4]} color="#fbfdff"/>)}
+    <mesh position={[0,-.5,0]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:false}]}/><meshStandardMaterial color="#e4ece7" roughness={1}/>
+    </mesh>
+    <Road from={[SITE.roadStart,0]} to={[SITE.roadEnd,0]}/>
+    <Road from={[SITE.entrance.x,SITE.entrance.z]} to={[SITE.roadStart,0]}/>
+    <Road from={[-48,-22.5]} to={[-36,-33.5]} width={5.6}/>
+    <Road from={[SITE.exit.x,0]} to={[SITE.exit.x,SITE.exit.z]} width={6.4}/>
+    <Road from={[29,SITE.exit.z]} to={[47,SITE.exit.z]} width={5.6}/>
+    {overflowAisles.length>0 && <Road from={[SITE.exit.x,0]} to={[SITE.exit.x,Math.max(...overflowAisles)]} width={5.2}/>}
+    {overflowAisles.map(z=><Road key={z} from={[0,z]} to={[SITE.exit.x,z]} width={5.2}/>)}
+    {/* Intersection surfaces cover overlapping edge stripes at the junctions. */}
+    <Box at={[SITE.roadStart,.081,0]} size={[5.5,.015,7.5]} color="#a3afb9"/>
+    <Box at={[SITE.exit.x,.081,0]} size={[6.3,.015,8.5]} color="#a3afb9"/>
+    <Box at={[SITE.exit.x,.081,SITE.exit.z]} size={[6.3,.015,5.5]} color="#a3afb9"/>
+    {[-17,-5,9,23].map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
+    <Arrow x={-28} z={-8} yaw={Math.atan2(20,27)}/><Arrow x={36} z={-12} yaw={Math.PI}/>
     <Office/>
-    <SoftBlock at={[14.5,.09,-17]} size={[7,.16,8.3]} color="#c4e5dd"/>
-    <Box at={[14.5,.2,-17]} size={[6.6,.05,8]} color="#e7f4ec"/>
-    <SolarCanopy x={14.5} z={-17} width={6.3} charging/>
-    <SolarCanopy x={-10} z={16} width={8.5} depth={3.8}/>
-    <Box at={[-10,.09,end+1.2]} size={[11,.16,2.5]} color="#d4e7bd"/>
-    {[-14,-10,-6].map(x=><Tree key={x} x={x} z={end+1.2} small/>)}
-    <SoftBlock at={[-17.3,.09,center]} size={[1.9,.16,end+26]} color="#d6e8c7"/>
-    <SoftBlock at={[17.3,.09,center]} size={[1.9,.16,end+26]} color="#d6e8c7"/>
-    {[-11,-5,1,7,13,19].filter(z=>z<end).flatMap((z,i)=>[-17.3,17.3].map(x=><Tree key={`${x}-${z}`} x={x} z={z} tone={i}/>))}
-    {[-9,-3,3,9,15].map((x,i)=><Tree key={x} x={x} z={-23.3} small tone={i}/>)}
-    <Planter x={8.2} z={-4.4} width={1.8}/>
-    {[[-2,-2.4],[7,-3],[9,-10],[-15,9.7],[5,end-3],[-6,end+1]].map(([x,z],i)=><Person key={i} x={x} z={z} color={i%3===0 ? '#e5bc53' : '#39a88f'}/>)}
-    {[-1,1].map(sign=><group key={sign}>
-      <Box at={[sign*18.7,.4,center]} size={[.12,.12,end+26]} color="#f7fbff"/>
-      <Box at={[sign*18.7,1.1,center]} size={[.1,.08,end+26]} color="#b9cbd0"/>
-      {Array.from({length:Math.ceil((end+26)/3)},(_,i)=><Box key={i} at={[sign*18.7,.65,-24.5+i*3]} size={[.15,1.3,.15]} color="#e4ecee"/>)}
+    <Building x={-46} z={-23} width={5.2} depth={6} floors={2} accent="#c8797e" rotation={Math.atan2(20,27)}/>
+    <Building x={-20} z={10} width={5} depth={5} floors={1} accent="#aa95c7"/>
+    <Building x={42} z={9.5} width={6} depth={5.2} floors={2} accent="#92bc78"/>
+    <Carport x={-20.2} z={-7.5} width={7.5} customer/>
+    <Carport x={-12} z={10} width={7.5}/><Carport x={-3.5} z={10} width={6.5}/>
+    {/* Entrance hedge follows the diagonal; rear trees flank the dead end. */}
+    {Array.from({length:13},(_,n)=><group key={n}>
+      <SoftBlock at={[-35+n*1.12,.28,-26+n*1.5]} size={[1.8,.5,1.8]} color="#cde0b3"/>
+      <Tree x={-35+n*1.12} z={-26+n*1.5} small tone={n}/>
     </group>)}
-    <Gate end={end}/>
+    {[[41,-8],[44,-8],[46,-8],[-25,12],[-27,9]].map(([x,z],i)=><Tree key={i} x={x} z={z} tone={i}/>)}
+    <RoundCourt x={-29} z={6.5} radius={1.6}/><Tree x={-29} z={6.5} small/>
+    <Planter x={40} z={5.8} width={3.4}/><Planter x={-24} z={6.5}/>
+    {[[-26,4.7],[-22,6.5],[-15,12.5],[-6,12.5],[40,5.2],[-31,-4]].map(([x,z],i)=><Person key={i} x={x} z={z} color={i%2 ? '#e5bc53' : '#39a88f'}/>)}
+    <Gate x={-37} z={-20.2} yaw={Math.atan2(20,27)}/>
+    <Gate x={36} z={-14.5}/>
+    {/* Dead-end barrier is beyond the right-hand exit, never on a traffic route. */}
+    <Box at={[46,.8,0]} size={[.24,1.6,8.8]} color="#eff2ee"/>
+    {[-3,-1,1,3].map(z=><Box key={z} at={[45.85,.9,z]} size={[.08,.28,1]} color="#dfac55"/>)}
   </group>
 })

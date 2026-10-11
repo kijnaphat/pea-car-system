@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createFleetTraffic, trafficPath, trafficPose, trafficOverlaps, TRAFFIC_HEADWAY } from '../lib/fleetTraffic.js'
+import { SITE, siteParkingPosition } from '../lib/fleetSiteLayout.js'
 import { demoSnapshot, fleetVehicles } from '../lib/fleetDigitalTwin.js'
 
 const fleet=()=>fleetVehicles(demoSnapshot())
@@ -20,10 +21,12 @@ function verifySeparation(traffic,cars) {
 
 test('routes use separate entrance/exit lanes, rounded turns and distance-based speed',()=>{
   const car=fleet()[0]
-  const out=trafficPath(car.parking,20,'depart'),back=trafficPath(car.parking,20,'return')
+  const out=trafficPath(car.parking,'depart'),back=trafficPath(car.parking,'return')
   assert.deepEqual(trafficPose(out,0),{x:car.parking.x,z:car.parking.z,yaw:0})
-  assert.equal(trafficPose(out,out.duration).x,3.05)
-  assert.equal(trafficPose(back,0).x,.95)
+  assert.equal(trafficPose(out,out.duration).x,SITE.exit.x+9)
+  assert.equal(trafficPose(out,out.duration).z,SITE.exit.z)
+  assert.equal(trafficPose(back,0).x,SITE.entrance.x-2)
+  assert.equal(trafficPose(back,0).z,SITE.entrance.z-2)
   assert.equal(trafficPose(back,back.duration).x,car.parking.x)
   assert.equal(trafficPose(back,back.duration).z,car.parking.z)
   assert.ok(out.nodes.length>20)
@@ -32,7 +35,7 @@ test('routes use separate entrance/exit lanes, rounded turns and distance-based 
 
 test('a simultaneous departure batch waits and follows without overlapping',()=>{
   const cars=fleet().slice(0,10).map(car=>({...car,status:'on_trip'}))
-  const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(cars),20)
+  const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(cars))
   const reservations=traffic.reservations()
   for(let i=1;i<reservations.length;i++) assert.ok(reservations[i].start-reservations[i-1].start>=TRAFFIC_HEADWAY-1e-8)
   assert.equal(traffic.pose(cars[1].id).waiting,true)
@@ -41,9 +44,9 @@ test('a simultaneous departure batch waits and follows without overlapping',()=>
   assert.ok(cars.every(car=>traffic.pose(car.id).visible===false))
 })
 
-test('all 25 vehicles across rows can exit together without merge collisions',()=>{
-  const cars=fleet().map(car=>({...car,status:'on_trip'}))
-  const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(cars),20)
+test('all 30 vehicles across the two reference rows can exit together without merge collisions',()=>{
+  const cars=Array.from({length:30},(_,n)=>({id:'queue-'+n,slotNo:n+1,parking:siteParkingPosition(n+1),status:'on_trip'}))
+  const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(cars))
   verifySeparation(traffic,cars)
 })
 
@@ -51,8 +54,8 @@ test('mixed returns and departures reserve crossings, and each car keeps event o
   const cars=fleet().slice(0,8)
   const traffic=createFleetTraffic();traffic.setFleet(cars)
   const moves=cars.map((car,i)=>({carId:car.id,direction:i%2?'return':'depart',key:'mixed-'+i}))
-  traffic.enqueue(moves,20)
-  traffic.enqueue([{carId:cars[0].id,direction:'return',key:'same-car-back'}],20)
+  traffic.enqueue(moves)
+  traffic.enqueue([{carId:cars[0].id,direction:'return',key:'same-car-back'}])
   const tasks=traffic.reservations().filter(task=>task.carId===cars[0].id)
   assert.ok(tasks[1].start>tasks[0].end)
   assert.equal(traffic.pose(cars[1].id).visible,false,'waiting return stays outside compound')
@@ -60,13 +63,36 @@ test('mixed returns and departures reserve crossings, and each car keeps event o
   assert.ok(cars.every(car=>traffic.pose(car.id).visible))
 })
 
+test('future permanent slots use a rear aisle without crossing the existing parked row',()=>{
+  const cars=[19,20,30,31,32,42,43].map(slotNo=>({id:'extra-'+slotNo,parking:siteParkingPosition(slotNo),status:'on_trip'}))
+  const path=trafficPath(siteParkingPosition(31),'depart')
+  assert.ok(path.nodes.slice(0,12).every(node=>node.z>=siteParkingPosition(31).z))
+  const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(cars))
+  verifySeparation(traffic,cars)
+})
+
+test('all reference spaces stay separated from waiting and already parked vehicles too',()=>{
+  for(const mode of ['depart','return','mixed']) {
+    const cars=Array.from({length:30},(_,n)=>({id:n,parking:siteParkingPosition(n+1),
+      status:mode==='depart'||mode==='mixed'&&n%2===0?'on_trip':'available'}))
+    const traffic=createFleetTraffic();traffic.setFleet(cars)
+    traffic.enqueue(cars.map((car,n)=>({carId:car.id,direction:mode==='mixed'?(n%2?'return':'depart'):mode,key:mode+n})))
+    while(traffic.busy()) {
+      traffic.advance(.04)
+      const visible=cars.map(car=>traffic.pose(car.id)).filter(p=>p.visible)
+      for(let i=0;i<visible.length;i++) for(let j=i+1;j<visible.length;j++) assert.equal(trafficOverlaps(visible[i],visible[j]),false,mode+' overlaps waiting/parked car at '+traffic.now())
+      assert.ok(traffic.now()<1000)
+    }
+  }
+})
+
 test('repeated snapshots do not replay events; reduced motion clears the visual queue',()=>{
   const cars=fleet().slice(0,3)
   const traffic=createFleetTraffic();traffic.setFleet(cars)
   const moves=events(cars)
-  traffic.enqueue(moves,20);traffic.enqueue(moves,20)
+  traffic.enqueue(moves);traffic.enqueue(moves)
   assert.equal(traffic.reservations().length,3)
-  traffic.clear(moves);traffic.enqueue(moves,20)
+  traffic.clear(moves);traffic.enqueue(moves)
   assert.equal(traffic.busy(),false)
   assert.ok(cars.every(car=>traffic.pose(car.id).visible))
   assert.equal(cars[0].status,'available','visual scheduling must not mutate business records')
@@ -75,11 +101,11 @@ test('repeated snapshots do not replay events; reduced motion clears the visual 
 test('invalid/deleted vehicles are ignored and incremental batches preserve existing reservations',()=>{
   const cars=fleet().slice(0,4)
   const traffic=createFleetTraffic();traffic.setFleet(cars)
-  traffic.enqueue(events(cars.slice(0,2)),20)
+  traffic.enqueue(events(cars.slice(0,2)))
   const first=traffic.reservations()[0]
-  traffic.advance(.1);traffic.enqueue(events(cars.slice(2)),20)
+  traffic.advance(.1);traffic.enqueue(events(cars.slice(2)))
   assert.deepEqual(traffic.reservations()[0],first)
-  traffic.enqueue([{carId:'missing',direction:'depart',key:'missing'}],20)
+  traffic.enqueue([{carId:'missing',direction:'depart',key:'missing'}])
   assert.equal(traffic.reservations().length,4)
   traffic.setFleet(cars.slice(1))
   assert.equal(traffic.reservations().some(task=>task.carId===cars[0].id),false)

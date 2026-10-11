@@ -7,6 +7,7 @@ import { Vector3 } from 'three'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
+import { siteBounds, siteParkingSlots, siteOverflowAisles } from '@/lib/fleetSiteLayout'
 import FleetCampus from './FleetCampus'
 
 function Block({ at = [0, 0, 0], size, color = '#fff', ...props }) {
@@ -99,14 +100,14 @@ export const MiniCar = memo(function MiniCar({ car }) {
 const Vehicle = memo(function Vehicle({ car, selected, onSelect, register }) {
   const connect=useCallback(node=>register(car.id,node),[car.id,register])
   if(!car.parking) return null
-  return <group ref={connect} position={[car.parking.x,0,car.parking.z]} visible={car.status!=='on_trip'}
+  return <group ref={connect} position={[car.parking.x,0,car.parking.z]} rotation={[0,car.parking.yaw,0]} visible={car.status!=='on_trip'}
     onClick={event=>{event.stopPropagation();onSelect(car.id)}}>
     <MiniCar car={car}/>
     {selected && <mesh rotation={[-Math.PI/2,0,0]} position={[0,.13,0]}><ringGeometry args={[1.8,1.9,32]}/><meshBasicMaterial color="#982ee7" transparent opacity={.7}/></mesh>}
   </group>
 })
 
-function TrafficLayer({ vehicles, moves, end, selectedId, onSelect, reducedMotion, visibleIds, trafficHost }) {
+function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, visibleIds, trafficHost }) {
   const groups=useRef(new Map()),controller=useRef(null)
   const {invalidate}=useThree()
   const shown=useMemo(()=>new Set(visibleIds.map(String)),[visibleIds])
@@ -116,9 +117,9 @@ function TrafficLayer({ vehicles, moves, end, selectedId, onSelect, reducedMotio
     if(!controller.current) controller.current=createFleetTraffic()
     controller.current.setFleet(vehicles)
     if(reducedMotion) controller.current.clear(moves)
-    else controller.current.enqueue(moves,end)
+    else controller.current.enqueue(moves)
     invalidate()
-  },[vehicles,moves,end,reducedMotion,invalidate])
+  },[vehicles,moves,reducedMotion,invalidate])
   useEffect(()=>()=>{if(trafficHost.current) {trafficHost.current.textContent='';trafficHost.current.hidden=true}},[trafficHost])
   useFrame((_,delta)=>{
     const traffic=controller.current
@@ -144,16 +145,15 @@ function TrafficLayer({ vehicles, moves, end, selectedId, onSelect, reducedMotio
   return vehicles.map(car=><Vehicle key={car.id} car={car} selected={selectedId===car.id} onSelect={onSelect} register={register}/>)
 }
 
-function CameraRig({ view, focus, end }) {
+function CameraRig({ view, focus, bounds }) {
   const controls = useRef(); const { camera, size, invalidate } = useThree()
   useEffect(() => {
-    const centerZ = (end - 22) / 2
-    const target = focus ? new Vector3(focus.x, 0, focus.z) : new Vector3(0, .6, centerZ)
-    const offset = view.top ? new Vector3(0, 48, .01) : new Vector3(32, 38, 34)
+    const target = focus ? new Vector3(focus.x, 0, focus.z) : new Vector3((bounds.minX+bounds.maxX)/2, .6, (bounds.minZ+bounds.maxZ)/2)
+    const offset = view.top ? new Vector3(0, 60, .01) : new Vector3(4, 58, 40)
     camera.position.copy(target.clone().add(offset)); camera.lookAt(target)
     camera.updateMatrixWorld()
-    // Fit the extended HQ precinct as well as every original parking slot.
-    const corners = [-19,19].flatMap(x => [-25,end+4].flatMap(z => [0,8.5].map(y => new Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse))))
+    // Fit the complete entrance–office–parking–exit plan, including building height.
+    const corners = [bounds.minX,bounds.maxX].flatMap(x => [bounds.minZ,bounds.maxZ].flatMap(z => [0,bounds.maxY].map(y => new Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse))))
     const width = Math.max(...corners.map(p=>p.x)) - Math.min(...corners.map(p=>p.x))
     const height = Math.max(...corners.map(p=>p.y)) - Math.min(...corners.map(p=>p.y))
     // Three.js camera is an external mutable scene object, not React state.
@@ -162,18 +162,18 @@ function CameraRig({ view, focus, end }) {
     camera.updateProjectionMatrix()
     if (controls.current) { controls.current.target.copy(target); controls.current.update() }
     invalidate()
-  }, [camera, size.width, size.height, view, focus, end, invalidate])
+  }, [camera, size.width, size.height, view, focus, bounds, invalidate])
   return <MapControls ref={controls} enableRotate={false} minZoom={1} maxZoom={90} onEnd={() => {
     if (!controls.current) return
-    controls.current.target.x = Math.max(-17, Math.min(17, controls.current.target.x))
-    controls.current.target.z = Math.max(-25, Math.min(end, controls.current.target.z))
+    controls.current.target.x = Math.max(bounds.minX, Math.min(bounds.maxX, controls.current.target.x))
+    controls.current.target.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, controls.current.target.z))
     controls.current.update(); invalidate()
   }} />
 }
 
 function ParkingSlot({ car, selected, onSelect, visible }) {
   const border = selected ? '#8b36d1' : FLEET_STATUSES[car.status].color
-  return <group position={[car.parking.x,0,car.parking.z]} onClick={event=>{event.stopPropagation();if(visible) onSelect(car.id)}}>
+  return <group position={[car.parking.x,0,car.parking.z]} rotation={[0,car.parking.yaw,0]} onClick={event=>{event.stopPropagation();if(visible) onSelect(car.id)}}>
     <mesh position={[0,.035,0]} receiveShadow><boxGeometry args={[2.7,.04,3.8]}/><meshStandardMaterial color={selected ? '#ead9ff' : car.status==='on_trip' ? '#e7edf2' : '#daf0e8'} roughness={1}/></mesh>
     {[-1,1].map(n=><group key={n}>
       <mesh position={[n*1.33,.066,0]}><boxGeometry args={[.04,.015,3.8]}/><meshBasicMaterial color={border}/></mesh>
@@ -191,26 +191,28 @@ function ProjectedLabels({ host, enabled }) {
     host.current?.querySelectorAll('[data-world-x]').forEach(node => {
       point.set(Number(node.dataset.worldX),Number(node.dataset.worldY),Number(node.dataset.worldZ)).project(camera)
       node.style.transform=`translate(${(point.x+1)*size.width/2}px,${(1-point.y)*size.height/2}px) translate(-50%,-50%)`
-      node.style.visibility=point.z>-1 && point.z<1 ? 'visible':'hidden'
+      // At phone-scale, dense labels overlap. Reveal them as the user zooms in.
+      const readable=camera.zoom>=6 || node.classList.contains('twin-campus-label')
+      node.style.visibility=point.z>-1 && point.z<1 && readable ? 'visible':'hidden'
     })
   })
   return null
 }
 
 export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost }) {
-  const end = Math.max(20, ...vehicles.map(car => (car.parking?.z || 0) + 5))
-  return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [32, 38, 34], near: .1, far: 200 }}
+  const bounds = useMemo(()=>siteBounds(vehicles),[vehicles])
+  const slots = useMemo(()=>siteParkingSlots(vehicles),[vehicles])
+  const overflowAisles = useMemo(()=>siteOverflowAisles(vehicles),[vehicles])
+  return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 200 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
     gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
     <color attach="background" args={['#f2f7fa']} />
     <ambientLight intensity={.7}/><hemisphereLight args={['#fff7ea','#c0d5db',.65]}/>
-    <directionalLight castShadow position={[-12,30,12]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-26} shadow-camera-right={26} shadow-camera-top={32} shadow-camera-bottom={-32} shadow-bias={-.001}/>
-    <FleetCampus end={end}/>
-    {vehicles.map(car => car.parking && <group key={car.id}>
-      <ParkingSlot car={car} selected={selectedId===car.id} onSelect={onSelect} visible={visibleIds.includes(car.id)}/>
-    </group>)}
-    <TrafficLayer vehicles={vehicles} moves={moves} end={end} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost}/>
+    <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={65} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
+    <FleetCampus bounds={bounds} overflowAisles={overflowAisles}/>
+    {slots.map(slot => <ParkingSlot key={slot.slotNo} car={slot.car || {id:null,status:'unknown',parking:slot.parking}} selected={!!slot.car && selectedId===slot.car.id} onSelect={onSelect} visible={!!slot.car && visibleIds.includes(slot.car.id)}/>)}
+    <TrafficLayer vehicles={vehicles} moves={moves} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost}/>
     <ProjectedLabels host={labelsHost} enabled={labels} />
-    <CameraRig view={view} focus={focus} end={end} />
+    <CameraRig view={view} focus={focus} bounds={bounds} />
   </Canvas>
 })
