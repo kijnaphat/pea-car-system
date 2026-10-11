@@ -15,7 +15,9 @@
 
 ## การเคลื่อนไหว
 
-เมื่อ snapshot เปลี่ยนจากพร้อมใช้เป็นเที่ยวขับ ให้รถจำลองวิ่งออกตามทาง 8 วินาที เมื่อเที่ยวขับจบวิ่งกลับช่องเดิม คิวการเคลื่อนที่แยกรายคันและไม่แก้สถานะธุรกิจ
+เมื่อ snapshot เปลี่ยนจากพร้อมใช้เป็นเที่ยวขับ รถจำลองรอคิวถนนร่วมแล้ววิ่งออก เมื่อเที่ยวขับจบวิ่งกลับช่องเดิม ตัวจัดคิวภาพจำลองสงวนเวลา/พื้นที่ให้แต่ละเส้นทาง ตรวจกรอบตัวรถที่หมุนตามทาง และเลื่อนเวลาเริ่มเมื่อมีรถตัดกัน ปล่อยรถห่างอย่างน้อย 2.5 วินาที ใช้ความเร็วตามระยะทาง 2.3 หน่วยฉาก/วินาที (ไม่ใช่ความเร็วจริง) แยกเลนออก/เข้าและโค้งเลี้ยว คิวของรถคันเดียวรักษาลำดับเบิก–คืน ไม่มีการแก้สถานะธุรกิจเพราะแอนิเมชันรอคิว
+
+รถรอออกยังอยู่ช่องเดิม รถรอคืนรอนอกทางเข้า มีข้อความ “คิวภาพจำลอง” บอกจำนวนที่วิ่ง/รอในฉากเท่านั้น การลดการเคลื่อนไหวและการเลื่อนย้อนหลังข้ามคิวได้ ป้ายลานจอดโซนถูกนำออก แต่ช่องประจำ Pxx, ข้อมูลรถ, อาคาร และจำนวนรถจริงยังเหมือนเดิม
 
 โหลดหน้าใหม่ใช้สถานะฐานข้อมูลเป็นจุดตั้งต้น ไม่เล่นเหตุการณ์เก่า รถที่ออกไปแล้วไม่ปรากฏในช่องเดิม การชาร์จระหว่างเที่ยวขับไม่สร้างการเบิกรถครั้งใหม่
 
@@ -56,7 +58,8 @@ while zoom/pan keep the isometric angle fixed. World-anchored HTML labels remain
 in the existing React-owned layer (no additional Drei roots).
 
 Vehicle geometry and classification/paint palettes are unchanged, as are the
-movement controller, QR-only dashboard actions and all fleet data logic.
+QR-only dashboard actions and all fleet data logic. The motion controller uses
+shared collision-aware display reservations; it does not create transactions.
 A10/B8/C7 and extra registered cars' permanent D slots all remain visible.
 Counts use actual records.
 No textures, location API, telemetry or additional data reads are introduced.

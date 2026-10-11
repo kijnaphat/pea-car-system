@@ -59,6 +59,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
   const replayRequest = useRef(0)
   const previousScene = useRef(null)
   const labelsHost = useRef(null)
+  const trafficHost = useRef(null)
 
   const accept = useCallback((next, animate = true) => {
     const vehicles = fleetVehicles(next)
@@ -167,7 +168,6 @@ export default function FleetDigitalTwin({ onAnalytics }) {
   const selectedStyle = selected ? vehicleStyle(selected) : null
   const select = useCallback(id => { setSelectedId(id); setFocus(null) }, [])
   const visibleIds = useMemo(() => visible.map(car=>car.id), [visible])
-  const zones = useMemo(() => [...new Set(vehicles.map(car=>car.parking?.zone).filter(Boolean))].map(zone=>({zone,cars:vehicles.filter(car=>car.parking?.zone===zone),x:zone==='A'||zone==='C'?-8:10.5,z:zone==='A'||zone==='B'?-1.5:9})),[vehicles])
   const seekReplay = value => {
     setPlaying(false); setSeconds(value); seenEvents.current.clear(); setSceneEpoch(n=>n+1)
     accept(replaySnapshot(snapshot,replayLogs,dayBounds(day).start+value*1000),false)
@@ -230,11 +230,10 @@ export default function FleetDigitalTwin({ onAnalytics }) {
       <div className={`twin-workspace${expandedMap ? ' is-map-expanded' : ''}`}>
         <div className="twin-map-panel">
           <div className="twin-map" aria-label="แผนผังสำนักงานจำลองและช่องจอด">
-            {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} /></SceneBoundary>}
+            {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} trafficHost={trafficHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} /></SceneBoundary>}
             {!safeMap && <div className="twin-world-labels" ref={labelsHost} aria-hidden="true">
               {labels && vehicles.filter(car=>car.parking).map(car=><span key={car.id} className="twin-slot-label" data-world-x={car.parking.x} data-world-y=".15" data-world-z={car.parking.z+2}>{car.slotCode}</span>)}
               {labels && <><div className="twin-campus-label" data-world-x="-2" data-world-y="8.5" data-world-z="-13"><span>◈</span><div>อาคารสำนักงาน<strong>กฟภ. กำแพงแสน</strong></div></div><div className="twin-charge-label" data-world-x="14.5" data-world-y="4.5" data-world-z="-17"><Zap size={22}/><div>จุดชาร์จ EV<small>พื้นที่จำลอง</small></div></div><div className="twin-gate-label" data-world-x="5.5" data-world-y="2.3" data-world-z={Math.max(20,...vehicles.map(car=>(car.parking?.z||0)+5))+1}>ทางเข้า–ออก</div></>}
-              {labels && zones.map(zone=><div key={zone.zone} className="twin-zone-label" data-world-x={zone.x} data-world-y="2.7" data-world-z={zone.z}><span className="twin-zone-symbol"><Car size={21}/></span><div>ลานจอดโซน {zone.zone}<br/><strong>{zone.cars.filter(car=>car.status!=='on_trip').length}/{zone.cars.length}</strong> คัน</div></div>)}
             </div>}
           </div>
           <div className="twin-map-toolbar">
@@ -247,6 +246,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
             <button aria-label={expandedMap ? 'คืนขนาดผังและแสดงรายการรถ' : 'ขยายผังเต็มความกว้าง'} aria-pressed={expandedMap} onClick={()=>setExpandedMap(value=>!value)}>{expandedMap ? <Minimize2 size={19}/> : <Maximize2 size={19}/>}</button>
           </div>
           <span className="twin-map-watermark">ผังสำนักงานจำลอง · ไม่ใช่ GPS</span>
+          <span className="twin-traffic-hint" ref={trafficHost} hidden aria-live="off"/>
           {selected && <article className="twin-detail" aria-label="ข้อมูลรถที่เลือก"><button className="twin-detail-close" aria-label="ปิดข้อมูลรถ" onClick={()=>{setSelectedId(null);setFocus(null)}}><X size={18}/></button><span className="twin-detail-eyebrow">รถ #{selected.id} · ช่องประจำ {selected.slotCode}</span><h3>{selected.plate_number}</h3><Status status={selected.status}/>
             <div className="twin-car-image">{getCarImage(selected) ? <img src={getCarImage(selected)} alt={selected.model || 'รถที่เลือก'} loading="lazy"/> : <Car size={70}/>}</div>
             <dl><div><dt>รุ่น / ประเภท</dt><dd>{selected.model || '—'} · {selected.car_type || selected.fuel_type}</dd></div><div><dt>{selected.trip?'ผู้ขับปัจจุบัน':'ผู้ใช้งานล่าสุด'}</dt><dd>{selected.driver}</dd></div><div><dt>แผนก</dt><dd>{selected.departments?.name || 'ไม่ระบุ'}</dd></div>{selected.trip && <><div><dt>เวลาออก</dt><dd>{timeText(selected.trip.start_time)}</dd></div><div><dt>งาน / สถานที่บันทึก</dt><dd>{selected.location || 'ไม่ระบุ'}</dd></div></>}{selected.battery!==null && <div><dt>แบตที่บันทึกล่าสุด</dt><dd>{selected.battery}% <small>{timeText(selected.batteryAt)} · ไม่ใช่ค่าปัจจุบันจากเซนเซอร์</small></dd></div>}</dl>

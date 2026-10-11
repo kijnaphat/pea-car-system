@@ -1,9 +1,10 @@
 'use client'
 
-import { memo, useEffect, useMemo, useRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { MapControls } from '@react-three/drei'
-import { CatmullRomCurve3, Vector3 } from 'three'
+import { Vector3 } from 'three'
+import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
 import FleetCampus from './FleetCampus'
@@ -95,58 +96,53 @@ export const MiniCar = memo(function MiniCar({ car }) {
   </group>
 })
 
-function route(parking, end, direction) {
-  const p = [new Vector3(parking.x, 0, parking.z), new Vector3(parking.x, 0, parking.z + 2.3),
-    new Vector3(2, 0, parking.z + 2.3), new Vector3(2, 0, end + 3)]
-  return new CatmullRomCurve3(direction === 'return' ? p.reverse() : p, false, 'centripetal', .3)
-}
-
-const Vehicle = memo(function Vehicle({ car, moves, end, selected, onSelect, reducedMotion, shown }) {
-  const group = useRef(); const queue = useRef([]); const seen = useRef(new Set()); const animation = useRef(null)
-  const { invalidate } = useThree()
-  const parking = car.parking
-  const baseVisible = car.status !== 'on_trip' && shown
-  useEffect(() => {
-    if (!parking || !group.current) return
-    moves.forEach(move => {
-      if (seen.current.has(move.key)) return
-      seen.current.add(move.key); if (!reducedMotion) queue.current.push(move)
-    })
-    if (reducedMotion) { queue.current = []; animation.current = null }
-    if (!animation.current && queue.current.length === 0) {
-      group.current.position.set(parking.x, 0, parking.z); group.current.rotation.y = 0; group.current.visible = baseVisible
-    }
-    invalidate()
-  }, [moves, parking, baseVisible, reducedMotion, invalidate])
-  useFrame((_, delta) => {
-    if (!group.current || !parking) return
-    if (!animation.current && queue.current.length) {
-      const next = queue.current.shift()
-      animation.current = { ...next, elapsed: 0, curve: route(parking, end, next.direction) }
-    }
-    const current = animation.current
-    if (!current) return
-    current.elapsed += Math.min(delta, .1)
-    const progress = Math.min(1, current.elapsed / 8)
-    const curve = current.curve
-    const t = progress * progress * (3 - 2 * progress)
-    group.current.position.copy(curve.getPoint(t))
-    const tangent = curve.getTangent(t)
-    group.current.rotation.y = Math.atan2(tangent.x, tangent.z)
-    group.current.visible = shown
-    if (progress >= 1) {
-      animation.current = null
-      if (!queue.current.length) { group.current.position.set(parking.x, 0, parking.z); group.current.rotation.y = 0; group.current.visible = baseVisible }
-    }
-    invalidate()
-  })
-  if (!parking) return null
-  return <group ref={group} position={[parking.x, 0, parking.z]} visible={baseVisible}
-    onClick={event => { event.stopPropagation(); onSelect(car.id) }}>
-    <MiniCar car={car} />
+const Vehicle = memo(function Vehicle({ car, selected, onSelect, register }) {
+  const connect=useCallback(node=>register(car.id,node),[car.id,register])
+  if(!car.parking) return null
+  return <group ref={connect} position={[car.parking.x,0,car.parking.z]} visible={car.status!=='on_trip'}
+    onClick={event=>{event.stopPropagation();onSelect(car.id)}}>
+    <MiniCar car={car}/>
     {selected && <mesh rotation={[-Math.PI/2,0,0]} position={[0,.13,0]}><ringGeometry args={[1.8,1.9,32]}/><meshBasicMaterial color="#982ee7" transparent opacity={.7}/></mesh>}
   </group>
 })
+
+function TrafficLayer({ vehicles, moves, end, selectedId, onSelect, reducedMotion, visibleIds, trafficHost }) {
+  const groups=useRef(new Map()),controller=useRef(null)
+  const {invalidate}=useThree()
+  const shown=useMemo(()=>new Set(visibleIds.map(String)),[visibleIds])
+  const register=useCallback((id,node)=>{if(node) groups.current.set(String(id),node);else groups.current.delete(String(id))},[])
+  useEffect(()=>{invalidate()},[shown,invalidate])
+  useEffect(()=>{
+    if(!controller.current) controller.current=createFleetTraffic()
+    controller.current.setFleet(vehicles)
+    if(reducedMotion) controller.current.clear(moves)
+    else controller.current.enqueue(moves,end)
+    invalidate()
+  },[vehicles,moves,end,reducedMotion,invalidate])
+  useEffect(()=>()=>{if(trafficHost.current) {trafficHost.current.textContent='';trafficHost.current.hidden=true}},[trafficHost])
+  useFrame((_,delta)=>{
+    const traffic=controller.current
+    if(!traffic) return
+    traffic.advance(delta)
+    let moving=0,waiting=0
+    groups.current.forEach((group,id)=>{
+      const pose=traffic.pose(id)
+      if(!pose) {group.visible=false;return}
+      group.position.set(pose.x,0,pose.z);group.rotation.y=pose.yaw
+      group.visible=pose.visible && shown.has(id)
+      if(pose.moving) moving++
+      else if(pose.waiting) waiting++
+    })
+    const pending=traffic.busy()
+    if(trafficHost.current) {
+      const message=pending ? `คิวภาพจำลอง · กำลังวิ่ง ${moving} · รอ ${waiting}` : ''
+      if(trafficHost.current.textContent!==message) trafficHost.current.textContent=message
+      trafficHost.current.hidden=!pending
+    }
+    if(pending) invalidate()
+  })
+  return vehicles.map(car=><Vehicle key={car.id} car={car} selected={selectedId===car.id} onSelect={onSelect} register={register}/>)
+}
 
 function CameraRig({ view, focus, end }) {
   const controls = useRef(); const { camera, size, invalidate } = useThree()
@@ -201,13 +197,8 @@ function ProjectedLabels({ host, enabled }) {
   return null
 }
 
-export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels }) {
+export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost }) {
   const end = Math.max(20, ...vehicles.map(car => (car.parking?.z || 0) + 5))
-  const movesByCar = useMemo(() => {
-    const map = new Map()
-    moves.forEach(move => map.set(String(move.carId), [...(map.get(String(move.carId)) || []), move]))
-    return map
-  }, [moves])
   return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [32, 38, 34], near: .1, far: 200 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
     gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
@@ -217,11 +208,9 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
     <FleetCampus end={end}/>
     {vehicles.map(car => car.parking && <group key={car.id}>
       <ParkingSlot car={car} selected={selectedId===car.id} onSelect={onSelect} visible={visibleIds.includes(car.id)}/>
-      <Vehicle car={car} end={end} moves={movesByCar.get(String(car.id)) || NO_MOVES} shown={visibleIds.includes(car.id)} selected={selectedId===car.id} onSelect={onSelect} reducedMotion={reducedMotion} />
     </group>)}
+    <TrafficLayer vehicles={vehicles} moves={moves} end={end} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost}/>
     <ProjectedLabels host={labelsHost} enabled={labels} />
     <CameraRig view={view} focus={focus} end={end} />
   </Canvas>
 })
-
-const NO_MOVES = []
