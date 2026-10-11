@@ -2,17 +2,19 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { SITE_BUILDINGS } from '../lib/fleetSiteLayout.js'
 
 test('decorative campus is offline geometry and does not add telemetry or database polling', () => {
   const campus = readFileSync(new URL('../app/dashboard/components/FleetCampus.js', import.meta.url), 'utf8')
   assert.doesNotMatch(campus, /fetch\(|supabase|useFrame|useTexture|https:\/\//)
   for (const landmark of ['Office', 'Carport', 'Building', 'Road', 'Gate', 'Tree', 'Planter', 'HipRoof', 'RoundCourt', 'SoftBlock']) assert.ok(campus.includes(`function ${landmark}(`))
   assert.ok(campus.includes('RoundedBox'))
-  assert.ok(campus.includes('floors={4}'))
-  assert.equal((campus.match(/floors=\{2\}/g)||[]).length,2)
-  assert.ok(campus.includes('floors={1}'))
+  assert.equal(SITE_BUILDINGS.office.floors,4)
+  assert.equal(Object.values(SITE_BUILDINGS).filter(b=>b.floors===2).length,2)
+  assert.equal(SITE_BUILDINGS.lower.floors,1)
+  for(const name of ['office','entry','lower','rear']) assert.ok(campus.includes('SITE_BUILDINGS.'+name))
   assert.ok(campus.includes('extrudeGeometry args={[outline'))
-  assert.ok(campus.includes('SITE.entrance.x'))
+  assert.ok(campus.includes('SITE_ROADS.map'))
   assert.ok(campus.includes('SITE.exit.x'))
   const scene = readFileSync(new URL('../app/dashboard/components/FleetScene.js', import.meta.url), 'utf8')
   assert.ok(scene.includes('<FleetCampus bounds={bounds} overflowAisles={overflowAisles}/>'))

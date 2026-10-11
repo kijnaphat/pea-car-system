@@ -3,7 +3,7 @@
 import { memo, useMemo } from 'react'
 import { RoundedBox } from '@react-three/drei'
 import { Shape } from 'three'
-import { SITE } from '@/lib/fleetSiteLayout'
+import { SITE, SITE_BUILDINGS, SITE_ROADS } from '@/lib/fleetSiteLayout'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
 function Box({ at, size, color, ...props }) {
@@ -87,7 +87,7 @@ function Building({ x, z, width, depth, floors, accent, rotation = 0, office = f
 }
 
 function Office() {
-  return <Building x={-37} z={-9} width={7.6} depth={22} floors={4} accent="#6c99bd" rotation={Math.atan2(20,27)} office/>
+  return <Building {...SITE_BUILDINGS.office}/>
 }
 
 function Carport({ x, z, width, depth = 4.5, customer = false }) {
@@ -144,7 +144,7 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [] }) {
   // Irregular precinct silhouette, not a square campus invented around the cars.
   const outline=useMemo(()=>{
     const shape=new Shape()
-    const points=[[-51,-31],[-34,-34],[-16,-11],[32,-11],[32,-23],[48,-23],[48,bounds.maxZ],[-27,bounds.maxZ],[-51,-17]]
+    const points=[[-57,-31],[-42,-42],[-16,-11],[32,-11],[32,-23],[48,-23],[48,bounds.maxZ],[-30,bounds.maxZ],[-53,6],[-57,-18]]
     points.forEach(([x,z],i)=>i ? shape.lineTo(x,-z) : shape.moveTo(x,-z))
     shape.closePath()
     return shape
@@ -153,12 +153,8 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [] }) {
     <mesh position={[0,-.5,0]} rotation={[-Math.PI/2,0,0]} receiveShadow>
       <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:false}]}/><meshStandardMaterial color="#e4ece7" roughness={1}/>
     </mesh>
-    <Road from={[SITE.roadStart,0]} to={[SITE.roadEnd,0]}/>
-    <Road from={[SITE.entrance.x,SITE.entrance.z]} to={[SITE.roadStart,0]}/>
-    <Road from={[-48,-22.5]} to={[-36,-33.5]} width={5.6}/>
-    <Road from={[SITE.exit.x,0]} to={[SITE.exit.x,SITE.exit.z]} width={6.4}/>
-    <Road from={[29,SITE.exit.z]} to={[47,SITE.exit.z]} width={5.6}/>
-    {overflowAisles.length>0 && <Road from={[SITE.exit.x,0]} to={[SITE.exit.x,Math.max(...overflowAisles)]} width={5.2}/>}
+    {SITE_ROADS.map(road=><Road key={road.key} {...road}/>)}
+    {overflowAisles.length>0 && <Road from={[SITE.exit.x,0]} to={[SITE.exit.x,Math.max(...overflowAisles)]} width={3.8}/>}
     {overflowAisles.map(z=><Road key={z} from={[0,z]} to={[SITE.exit.x,z]} width={5.2}/>)}
     {/* Intersection surfaces cover overlapping edge stripes at the junctions. */}
     <Box at={[SITE.roadStart,.081,0]} size={[5.5,.015,7.5]} color="#a3afb9"/>
@@ -167,9 +163,9 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [] }) {
     {[-17,-5,9,23].map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
     <Arrow x={-28} z={-8} yaw={Math.atan2(20,27)}/><Arrow x={36} z={-12} yaw={Math.PI}/>
     <Office/>
-    <Building x={-46} z={-23} width={5.2} depth={6} floors={2} accent="#c8797e" rotation={Math.atan2(20,27)}/>
-    <Building x={-20} z={10} width={5} depth={5} floors={1} accent="#aa95c7"/>
-    <Building x={42} z={9.5} width={6} depth={5.2} floors={2} accent="#92bc78"/>
+    <Building {...SITE_BUILDINGS.entry}/>
+    <Building {...SITE_BUILDINGS.lower}/>
+    <Building {...SITE_BUILDINGS.rear}/>
     <Carport x={-20.2} z={-7.5} width={7.5} customer/>
     <Carport x={-12} z={10} width={7.5}/><Carport x={-3.5} z={10} width={6.5}/>
     {/* Entrance hedge follows the diagonal; rear trees flank the dead end. */}

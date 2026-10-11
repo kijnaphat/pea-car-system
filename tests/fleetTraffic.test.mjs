@@ -98,6 +98,23 @@ test('repeated snapshots do not replay events; reduced motion clears the visual 
   assert.equal(cars[0].status,'available','visual scheduling must not mutate business records')
 })
 
+test('extra rows have clear turning space around stationary cars during departures and returns',()=>{
+  for(const direction of ['depart','return']) {
+    const cars=Array.from({length:66},(_,n)=>({id:'expand-'+n,slotNo:n+1,parking:siteParkingPosition(n+1),status:'available'}))
+    const moving=cars.filter(car=>[31,32,42,43,54,55,66].includes(car.slotNo))
+    if(direction==='depart') for(const car of moving) car.status='on_trip'
+    const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(moving,direction,'expanded'))
+    while(traffic.busy()) {
+      traffic.advance(.04)
+      const visible=cars.map(car=>traffic.pose(car.id)).filter(p=>p.visible)
+      for(let i=0;i<visible.length;i++) for(let j=i+1;j<visible.length;j++) {
+        if(visible[i].moving || visible[j].moving) assert.equal(trafficOverlaps(visible[i],visible[j]),false,direction+' hits parked extra-row car at '+traffic.now())
+      }
+      assert.ok(traffic.now()<1000)
+    }
+  }
+})
+
 test('invalid/deleted vehicles are ignored and incremental batches preserve existing reservations',()=>{
   const cars=fleet().slice(0,4)
   const traffic=createFleetTraffic();traffic.setFleet(cars)

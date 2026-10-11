@@ -233,7 +233,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
           <div className="twin-map" aria-label="แผนผังสำนักงานจำลองและช่องจอด">
             {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} trafficHost={trafficHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} /></SceneBoundary>}
             {!safeMap && <div className="twin-world-labels" ref={labelsHost} aria-hidden="true">
-              {labels && siteParkingSlots(vehicles).map(slot=><span key={slot.slotNo} className="twin-slot-label" data-world-x={slot.parking.x} data-world-y=".15" data-world-z={slot.parking.z+(slot.parking.row==='upper'?2.2:-2.2)}>{slot.slotCode}</span>)}
+              {labels && siteParkingSlots(vehicles).map(slot=><span key={slot.slotNo} className="twin-slot-label" data-world-x={slot.parking.x} data-world-y=".15" data-world-z={slot.parking.z+(slot.parking.yaw===0?2.2:-2.2)}>{slot.slotCode}</span>)}
               {labels && SITE_LABELS.map(label=><div key={label.key} className={label.primary ? 'twin-campus-label' : 'twin-gate-label'} data-world-x={label.x} data-world-y={label.y} data-world-z={label.z}>{label.primary ? <><span>◈</span><div>{label.label}<strong>{label.detail}</strong></div></> : label.label}</div>)}
             </div>}
           </div>
