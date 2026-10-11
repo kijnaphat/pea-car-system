@@ -2,14 +2,17 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { MapControls } from '@react-three/drei'
-import { Vector3 } from 'three'
+import { OrbitControls } from '@react-three/drei'
+import { Vector3, MOUSE, TOUCH } from 'three'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
 import { siteParkingSlots, siteOverflowAisles } from '@/lib/fleetSiteLayout'
 import { restingPose, siteChargingBays, campusBounds } from '@/lib/fleetCharging'
 import FleetCampus from './FleetCampus'
+import FleetCampusProps from './FleetCampusProps'
+import FleetCampusLife from './FleetCampusLife'
+import { DEFAULT_ORBIT, MIN_ELEVATION, MAX_ELEVATION, cameraView, cameraOffset, captureOrbit } from '@/lib/fleetCamera'
 
 function Block({ at = [0, 0, 0], size, color = '#fff', ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size} /><meshStandardMaterial color={color} roughness={.9} flatShading /></mesh>
@@ -149,27 +152,43 @@ function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, vi
 
 function CameraRig({ view, focus, bounds }) {
   const controls = useRef(); const { camera, size, invalidate } = useThree()
+  const memory=useRef({...DEFAULT_ORBIT,target:null}),previous=useRef(null),fit=useRef(1)
+  const {minX,maxX,minZ,maxZ,maxY}=bounds
+  const {zoom,top,reset,turn=0,tilt=0,drag='rotate'}=view
+  const focusX=focus?.x,focusZ=focus?.z
+  const mouseButtons=useMemo(()=>({LEFT:drag==='pan'||top?MOUSE.PAN:MOUSE.ROTATE,MIDDLE:MOUSE.DOLLY,RIGHT:drag==='pan'||top?MOUSE.ROTATE:MOUSE.PAN}),[drag,top])
+  const touches=useMemo(()=>({ONE:drag==='pan'||top?TOUCH.PAN:TOUCH.ROTATE,TWO:TOUCH.DOLLY_PAN}),[drag,top])
   useEffect(() => {
-    const target = focus ? new Vector3(focus.x, 0, focus.z) : new Vector3((bounds.minX+bounds.maxX)/2, .6, (bounds.minZ+bounds.maxZ)/2)
-    const offset = view.top ? new Vector3(0, 60, .01) : new Vector3(4, 58, 40)
-    camera.position.copy(target.clone().add(offset)); camera.lookAt(target)
+    const next={zoom,top,reset,turn,tilt}
+    memory.current=cameraView(memory.current,previous.current,next)
+    const target=focusX!==undefined ? new Vector3(focusX,0,focusZ)
+      : memory.current.target ? new Vector3(...memory.current.target) : new Vector3((minX+maxX)/2,.6,(minZ+maxZ)/2)
+    const orbit=cameraOffset(memory.current,top),offset=new Vector3(orbit.x,orbit.y,orbit.z)
+    camera.position.copy(target.clone().add(offset));camera.lookAt(target)
     camera.updateMatrixWorld()
-    // Fit the complete entrance–office–parking–exit plan, including building height.
-    const corners = [bounds.minX,bounds.maxX].flatMap(x => [bounds.minZ,bounds.maxZ].flatMap(z => [0,bounds.maxY].map(y => new Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse))))
+    const corners = [minX,maxX].flatMap(x => [minZ,maxZ].flatMap(z => [0,maxY].map(y => new Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse))))
     const width = Math.max(...corners.map(p=>p.x)) - Math.min(...corners.map(p=>p.x))
     const height = Math.max(...corners.map(p=>p.y)) - Math.min(...corners.map(p=>p.y))
     // Three.js camera is an external mutable scene object, not React state.
     // eslint-disable-next-line react-hooks/immutability
-    camera.zoom = Math.min(size.width / (width+4), size.height / (height+4)) * view.zoom / 1.08
+    camera.zoom = Math.min(size.width / (width+4), size.height / (height+4)) * memory.current.zoomFactor
+    fit.current=Math.min(size.width/(width+4),size.height/(height+4))
     camera.updateProjectionMatrix()
     if (controls.current) { controls.current.target.copy(target); controls.current.update() }
+    previous.current=next
     invalidate()
-  }, [camera, size.width, size.height, view, focus, bounds, invalidate])
-  return <MapControls ref={controls} enableRotate={false} minZoom={1} maxZoom={90} onEnd={() => {
+    // Scalar dependencies deliberately keep polling snapshots from resetting the camera.
+  }, [camera,size.width,size.height,zoom,top,reset,turn,tilt,focusX,focusZ,minX,maxX,minZ,maxZ,maxY,invalidate])
+  return <OrbitControls ref={controls} enableRotate={!top} enableDamping={false} minZoom={.7} maxZoom={90}
+    minPolarAngle={top ? .00001 : Math.PI/2-MAX_ELEVATION} maxPolarAngle={top ? .00002 : Math.PI/2-MIN_ELEVATION}
+    mouseButtons={mouseButtons} touches={touches} screenSpacePanning={false} rotateSpeed={.65} onEnd={() => {
     if (!controls.current) return
-    controls.current.target.x = Math.max(bounds.minX, Math.min(bounds.maxX, controls.current.target.x))
-    controls.current.target.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, controls.current.target.z))
-    controls.current.update(); invalidate()
+    const control=controls.current,old=control.target.clone()
+    control.target.x = Math.max(minX, Math.min(maxX, control.target.x))
+    control.target.z = Math.max(minZ, Math.min(maxZ, control.target.z))
+    camera.position.add(control.target.clone().sub(old));control.update()
+    memory.current=captureOrbit(memory.current,{azimuth:control.getAzimuthalAngle(),polar:control.getPolarAngle(),zoomFactor:camera.zoom/fit.current,target:control.target.toArray()},top)
+    invalidate()
   }} />
 }
 
@@ -213,6 +232,8 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
     <ambientLight intensity={.7}/><hemisphereLight args={['#fff7ea','#c0d5db',.65]}/>
     <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={65} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
     <FleetCampus bounds={bounds} overflowAisles={overflowAisles} chargingBays={chargingBays} vehicles={vehicles}/>
+    <FleetCampusProps/>
+    <FleetCampusLife reducedMotion={reducedMotion}/>
     {slots.map(slot => <ParkingSlot key={slot.slotNo} car={slot.car || {id:null,status:'unknown',parking:slot.parking}} selected={!!slot.car && selectedId===slot.car.id} onSelect={onSelect} visible={!!slot.car && visibleIds.includes(slot.car.id)}/>)}
     <TrafficLayer vehicles={vehicles} moves={moves} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost}/>
     <ProjectedLabels host={labelsHost} enabled={labels} />

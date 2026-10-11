@@ -1,0 +1,57 @@
+'use client'
+
+import { memo, useCallback, useEffect, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { WALKERS, STATIC_PEOPLE, walkingPose, startCampusLife } from '@/lib/fleetCampusLife'
+
+function Part({ position, size, color, ...props }) {
+  return <mesh position={position} castShadow {...props}><boxGeometry args={size}/><meshStandardMaterial color={color} roughness={.95}/></mesh>
+}
+
+const Worker = memo(function Worker({ person, register }) {
+  const pose=person.path ? walkingPose(person) : person
+  const root=useRef(),leftLeg=useRef(),rightLeg=useRef(),leftArm=useRef(),rightArm=useRef()
+  useEffect(()=>{
+    if(!person.path) return
+    register(person.id,{root:root.current,leftLeg:leftLeg.current,rightLeg:rightLeg.current,leftArm:leftArm.current,rightArm:rightArm.current})
+    return ()=>register(person.id,null)
+  },[person,register])
+  return <group ref={root} position={[pose.x,0,pose.z]} rotation={[0,pose.yaw||0,0]}>
+    <Part position={[0,.83,0]} size={[.35,.51,.24]} color={person.color}/>
+    <Part position={[0,.59,0]} size={[.35,.08,.25]} color="#40536b"/>
+    <mesh position={[0,1.22,0]} castShadow><sphereGeometry args={[.18,10,8]}/><meshStandardMaterial color="#dfb590"/></mesh>
+    {person.helmet ? <><mesh position={[0,1.36,0]} castShadow><sphereGeometry args={[.195,10,6,0,Math.PI*2,0,Math.PI/2]}/><meshStandardMaterial color="#f3d263"/></mesh><Part position={[0,1.36,.04]} size={[.43,.025,.37]} color="#f3d263"/></>
+      : <mesh position={[0,1.31,-.035]} scale={[1,.65,1]}><sphereGeometry args={[.18,10,6]}/><meshStandardMaterial color="#495263"/></mesh>}
+    {[[-1,leftLeg],[1,rightLeg]].map(([sign,ref])=><group key={sign} ref={ref} position={[sign*.105,.56,0]} rotation={[person.seated?-Math.PI/2:0,0,0]}>
+      <Part position={[0,-.21,0]} size={[.13,.4,.16]} color="#42566a"/>
+      {!person.seated && <Part position={[0,-.47,.05]} size={[.17,.1,.25]} color="#3d4658"/>}
+    </group>)}
+    {person.seated && [-1,1].map(sign=><group key={sign}><Part position={[sign*.105,.28,.39]} size={[.13,.47,.16]} color="#42566a"/><Part position={[sign*.105,.05,.45]} size={[.17,.1,.25]} color="#3d4658"/></group>)}
+    {[[-1,leftArm],[1,rightArm]].map(([sign,ref])=><group key={sign} ref={ref} position={[sign*.23,1.01,0]} rotation={[0,0,person.wave&&sign===1?-1.1:sign*.12]}>
+      <Part position={[0,-.15,0]} size={[.12,.27,.14]} color={person.color}/><Part position={[0,-.34,0]} size={[.09,.17,.11]} color="#dfb590"/>
+    </group>)}
+    {person.helmet && <Part position={[0,.87,.135]} size={[.25,.06,.01]} color="#e5e995"/>}
+  </group>
+})
+
+export default memo(function FleetCampusLife({ reducedMotion }) {
+  const {invalidate}=useThree(),actors=useRef(new Map())
+  const register=useCallback((id,actor)=>{if(actor) actors.current.set(id,actor);else actors.current.delete(id)},[])
+  useEffect(()=>{
+    invalidate()
+    if(reducedMotion) return
+    return startCampusLife(invalidate)
+  },[reducedMotion,invalidate])
+  useFrame(({clock})=>{
+    WALKERS.forEach(person=>{
+      const actor=actors.current.get(person.id)
+      if(!actor?.root) return
+      const pose=walkingPose(person,reducedMotion?0:clock.elapsedTime)
+      actor.root.position.set(pose.x,0,pose.z);actor.root.rotation.y=pose.yaw
+      const step=reducedMotion?0:pose.gait
+      actor.leftLeg.rotation.x=step;actor.rightLeg.rotation.x=-step
+      actor.leftArm.rotation.x=-step*.65;actor.rightArm.rotation.x=step*.65
+    })
+  })
+  return <group>{WALKERS.map(person=><Worker key={person.id} person={person} register={register}/>)}{STATIC_PEOPLE.map(person=><Worker key={person.id} person={person}/>)}</group>
+})

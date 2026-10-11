@@ -24,10 +24,13 @@ test('decorative campus is offline geometry and does not add telemetry or databa
   assert.ok(scene.includes('frameloop="demand"'))
   assert.ok(scene.includes('<TrafficLayer vehicles={vehicles}'))
   assert.ok(scene.includes('<Canvas orthographic '))
-  assert.ok(scene.includes('enableRotate={false}'))
+  assert.ok(scene.includes('enableRotate={!top}'))
+  assert.ok(scene.includes('<OrbitControls'))
+  assert.ok(scene.includes('<FleetCampusLife reducedMotion={reducedMotion}/>'))
+  assert.ok(scene.includes('<FleetCampusProps/>'))
   assert.ok(scene.includes('camera.matrixWorldInverse'))
   assert.ok(scene.includes('<Canvas orthographic shadows'))
-  assert.ok(scene.includes('[bounds.minZ,bounds.maxZ]'))
+  assert.ok(scene.includes('[minZ,maxZ]'))
 })
 
 test('traffic queue update preserves the approved vehicle meshes', () => {

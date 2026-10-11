@@ -3,7 +3,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Car, LayoutGrid, Route, Zap, Wrench, Search, ZoomIn, ZoomOut, RotateCcw, Tag, Maximize2, Minimize2, QrCode, Play, Pause, ArrowUpRight, X, CalendarDays, Clock, Layers } from 'lucide-react'
+import { Car, LayoutGrid, Route, Zap, Wrench, Search, ZoomIn, ZoomOut, RotateCcw, Tag, Maximize2, Minimize2, QrCode, Play, Pause, ArrowUpRight, X, CalendarDays, Clock, Layers, Move, Rotate3D, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { loadFleetSnapshot } from '@/lib/fleetSnapshot'
 import { startVisiblePolling } from '@/lib/visiblePolling'
@@ -46,7 +46,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
   const [safeMap, setSafeMap] = useState(false)
   const [expandedMap, setExpandedMap] = useState(false)
   const [reduced, setReduced] = useState(false)
-  const [view, setView] = useState({ zoom: 1.08, top: false, reset: 0 })
+  const [view, setView] = useState({ zoom: 1.08, top: false, reset: 0, turn:0, tilt:0, drag:'rotate' })
   const [focus, setFocus] = useState(null)
   const [day, setDay] = useState(todayThai)
   const [replayLogs, setReplayLogs] = useState([])
@@ -246,12 +246,20 @@ export default function FleetDigitalTwin({ onAnalytics }) {
           <div className="twin-map-toolbar">
             <button aria-label="ขยายผัง" onClick={()=>setView(value=>({...value,zoom:Math.min(2.5,value.zoom+.2)}))}><ZoomIn size={20}/></button>
             <button aria-label="ย่อผัง" onClick={()=>setView(value=>({...value,zoom:Math.max(.55,value.zoom-.2)}))}><ZoomOut size={20}/></button>
-            <button aria-label="คืนมุมมองสำนักงาน" onClick={()=>{setFocus(null);setView({zoom:1.08,top:false,reset:Date.now()})}}><RotateCcw size={19}/></button>
+            <button aria-label="คืนมุมมองสำนักงาน" onClick={()=>{setFocus(null);setView({zoom:1.08,top:false,reset:Date.now(),turn:0,tilt:0,drag:'rotate'})}}><RotateCcw size={19}/></button>
+            <button aria-label="โหมดลากเพื่อเลื่อนแผนที่" aria-pressed={view.drag==='pan'} onClick={()=>setView(value=>({...value,drag:value.drag==='pan'?'rotate':'pan'}))}>{view.drag==='pan'?<Move size={19}/>:<Rotate3D size={19}/>}</button>
             <button aria-label="แสดงชื่อช่องจอด" aria-pressed={labels} onClick={()=>setLabels(value=>!value)}><Tag size={19}/></button>
             <button aria-label="สลับมุมมองบน 2D และ isometric 3D" aria-pressed={view.top} onClick={()=>setView(value=>({...value,top:!value.top}))}><Layers size={19}/></button>
             <button aria-label="ใช้ผัง 2D สำรอง" aria-pressed={safeMap} onClick={toggleSafeMap}>2D</button>
             <button aria-label={expandedMap ? 'คืนขนาดผังและแสดงรายการรถ' : 'ขยายผังเต็มความกว้าง'} aria-pressed={expandedMap} onClick={()=>setExpandedMap(value=>!value)}>{expandedMap ? <Minimize2 size={19}/> : <Maximize2 size={19}/>}</button>
           </div>
+          {!safeMap && <div className="twin-camera-pad" aria-label="ควบคุมมุมกล้อง"><span>มุมกล้อง 360°</span>
+            <button aria-label="หมุนกล้องซ้าย" disabled={view.top} onClick={()=>setView(value=>({...value,turn:value.turn-1}))}><ChevronLeft size={18}/></button>
+            <button aria-label="หมุนกล้องขวา" disabled={view.top} onClick={()=>setView(value=>({...value,turn:value.turn+1}))}><ChevronRight size={18}/></button>
+            <button aria-label="ยกมุมกล้องขึ้น" disabled={view.top} onClick={()=>setView(value=>({...value,tilt:value.tilt+1}))}><ChevronUp size={18}/></button>
+            <button aria-label="ลดมุมกล้องลง" disabled={view.top} onClick={()=>setView(value=>({...value,tilt:value.tilt-1}))}><ChevronDown size={18}/></button>
+          </div>}
+          {!safeMap && <span className="twin-camera-help">{view.top?'มุมบน · ลากเพื่อเลื่อน':view.drag==='pan'?'ลากเพื่อเลื่อน · สลับปุ่มเพื่อหมุน':'ลากเพื่อหมุนรอบลาน · 2 นิ้วเลื่อน/ซูม'}</span>}
           <span className="twin-map-watermark"><span className="twin-zoom-hint">ซูมเพื่อดูเลขช่อง · </span>ผังสำนักงานจำลอง · ไม่ใช่ GPS</span>
           <span className="twin-traffic-hint" ref={trafficHost} hidden aria-live="off"/>
           {selected && <article className="twin-detail" aria-label="ข้อมูลรถที่เลือก"><button className="twin-detail-close" aria-label="ปิดข้อมูลรถ" onClick={()=>{setSelectedId(null);setFocus(null)}}><X size={18}/></button><span className="twin-detail-eyebrow">รถ #{selected.id} · ช่องประจำ {selected.slotCode}</span><h3>{selected.plate_number}</h3><Status status={selected.status}/>
@@ -265,7 +273,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
         </div>
         <aside className="twin-list"><div className="twin-list-heading"><h2>รายการรถยนต์ <span>({vehicles.length})</span></h2><Car size={20}/></div><p className="twin-list-subtitle">แสดง {visible.length} คัน · ดูรายละเอียดเท่านั้น</p><div className="twin-list-scroll">{visible.map(car=><button key={car.id} aria-pressed={car.id===selectedId} onClick={()=>select(car.id)} className="twin-list-car"><span className="twin-list-thumbnail"><FleetVehicleGlyph car={car} size={49}/></span><span className="twin-list-car-info"><strong>{car.plate_number}</strong><small>{car.slotCode} · {vehicleStyle(car).label}</small><small>{car.driver}</small><Status status={car.status}/></span><ArrowUpRight size={15}/></button>)}{!busy && !visible.length && <p className="twin-empty">ไม่พบรถตามเงื่อนไขนี้</p>}</div><div className="twin-list-footer"><span>{counts.unknown ? `${counts.unknown} คันรอตรวจสอบสถานะ` : 'อิงรายการเบิก–คืนรถของระบบ'}</span>{mode==='live' && <small>ข้อมูล ณ {timeText(snapshot.generatedAt)}</small>}</div></aside>
       </div>
-      <footer className="twin-footer"><span>โมเดลอิงประเภทรถ · สีใช้จำแนกในผัง ไม่ใช่สีตัวรถจริง · ตำแหน่ง/การเคลื่อนที่เป็นภาพจำลอง ไม่ใช่ GPS</span><label><input type="checkbox" checked={reduced} onChange={event=>setReduced(event.target.checked)}/>ลดการเคลื่อนไหว</label></footer>
+      <footer className="twin-footer"><span>โมเดลอิงประเภทรถ · สีใช้จำแนกในผัง ไม่ใช่สีตัวรถจริง · ผู้คน/พรอพและการเคลื่อนที่เป็นภาพจำลอง ไม่ใช่ GPS</span><label><input type="checkbox" checked={reduced} onChange={event=>setReduced(event.target.checked)}/>ลดการเคลื่อนไหว</label></footer>
     </div>
   </section>
 }

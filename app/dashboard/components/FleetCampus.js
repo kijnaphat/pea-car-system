@@ -71,8 +71,10 @@ function Building({ x, z, width, depth, floors, accent, rotation = 0, office = f
     <SoftBlock at={[0,.35,0]} size={[width+.12,.45,depth+.12]} color={accent}/>
     {Array.from({length:floors},(_,row)=><group key={row}>
       <Box at={[0,1.65*(row+1)+.05,0]} size={[width+.16,.1,depth+.16]} color="#d5e1e6"/>
-      {Array.from({length:Math.floor(depth/1.8)},(_,n)=><Window key={n} x={width/2+.045} y={1+row*1.65} z={-depth/2+1.1+n*1.8} side/>)}
-      {[-1,1].map(sign=><Window key={sign} x={sign*width*.27} y={1+row*1.65} z={depth/2+.05}/>)}
+      {[-1,1].map(face=><group key={face} rotation={[0,face<0?Math.PI:0,0]}>
+        {Array.from({length:Math.floor(depth/1.8)},(_,n)=><Window key={n} x={width/2+.045} y={1+row*1.65} z={-depth/2+1.1+n*1.8} side/>)}
+        {[-1,1].map(sign=><Window key={sign} x={sign*width*.27} y={1+row*1.65} z={depth/2+.05}/>)}
+      </group>)}
     </group>)}
     <group position={[0,height+.25,0]} rotation={[0,Math.PI/2,0]}>
       <HipRoof at={[0,0,0]} width={depth+.7} depth={width+.7} rise={office ? 1.3 : .8} color={accent}/>
@@ -227,7 +229,7 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
   // Irregular precinct silhouette, not a square campus invented around the cars.
   const outline=useMemo(()=>{
     const shape=new Shape()
-    const points=[[-57,-31],[-42,-42],[-16,-17],[32,-17],[32,-23],[51,-23],[51,bounds.maxZ],[-30,bounds.maxZ],[-53,6],[-57,-18]]
+    const points=[[-57,-31],[-42,-42],[-16,-17],[32,-17],[32,-23],[51,-23],[51,bounds.maxZ],[-35,bounds.maxZ],[-55,9],[-57,-18]]
     points.forEach(([x,z],i)=>i ? shape.lineTo(x,-z) : shape.moveTo(x,-z))
     shape.closePath()
     return shape
