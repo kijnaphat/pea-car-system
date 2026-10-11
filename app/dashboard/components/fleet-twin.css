@@ -31,3 +31,5 @@
 @media(max-width:760px){.twin-gate-label{font-size:7px;padding:4px 6px}}
 .twin-zoom-hint{display:none}
 @media(max-width:760px){.twin-zoom-hint{display:inline}}
+.twin-slot-label.twin-ev-label { color: #197a88; border-color: #a8dce0; background: #edfbfc; }
+.twin-charge-note { display: flex; align-items: flex-start; gap: 8px; color: #197a88; background: #eaf8f8; border-radius: 10px; padding: 10px; font-size: 12px; line-height: 1.6; }

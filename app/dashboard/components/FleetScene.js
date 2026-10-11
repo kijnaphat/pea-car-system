@@ -7,7 +7,8 @@ import { Vector3 } from 'three'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
-import { siteBounds, siteParkingSlots, siteOverflowAisles } from '@/lib/fleetSiteLayout'
+import { siteParkingSlots, siteOverflowAisles } from '@/lib/fleetSiteLayout'
+import { restingPose, siteChargingBays, campusBounds } from '@/lib/fleetCharging'
 import FleetCampus from './FleetCampus'
 
 function Block({ at = [0, 0, 0], size, color = '#fff', ...props }) {
@@ -100,7 +101,8 @@ export const MiniCar = memo(function MiniCar({ car }) {
 const Vehicle = memo(function Vehicle({ car, selected, onSelect, register }) {
   const connect=useCallback(node=>register(car.id,node),[car.id,register])
   if(!car.parking) return null
-  return <group ref={connect} position={[car.parking.x,0,car.parking.z]} rotation={[0,car.parking.yaw,0]} visible={car.status!=='on_trip'}
+  const position=restingPose(car)
+  return <group ref={connect} position={[position.x,0,position.z]} rotation={[0,position.yaw,0]} visible={car.status!=='on_trip'}
     onClick={event=>{event.stopPropagation();onSelect(car.id)}}>
     <MiniCar car={car}/>
     {selected && <mesh rotation={[-Math.PI/2,0,0]} position={[0,.13,0]}><ringGeometry args={[1.8,1.9,32]}/><meshBasicMaterial color="#982ee7" transparent opacity={.7}/></mesh>}
@@ -200,16 +202,17 @@ function ProjectedLabels({ host, enabled }) {
 }
 
 export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost }) {
-  const bounds = useMemo(()=>siteBounds(vehicles),[vehicles])
+  const bounds = useMemo(()=>campusBounds(vehicles),[vehicles])
   const slots = useMemo(()=>siteParkingSlots(vehicles),[vehicles])
   const overflowAisles = useMemo(()=>siteOverflowAisles(vehicles),[vehicles])
+  const chargingBays = useMemo(()=>siteChargingBays(vehicles),[vehicles])
   return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 200 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
     gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
     <color attach="background" args={['#f2f7fa']} />
     <ambientLight intensity={.7}/><hemisphereLight args={['#fff7ea','#c0d5db',.65]}/>
     <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={65} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
-    <FleetCampus bounds={bounds} overflowAisles={overflowAisles}/>
+    <FleetCampus bounds={bounds} overflowAisles={overflowAisles} chargingBays={chargingBays} vehicles={vehicles}/>
     {slots.map(slot => <ParkingSlot key={slot.slotNo} car={slot.car || {id:null,status:'unknown',parking:slot.parking}} selected={!!slot.car && selectedId===slot.car.id} onSelect={onSelect} visible={!!slot.car && visibleIds.includes(slot.car.id)}/>)}
     <TrafficLayer vehicles={vehicles} moves={moves} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost}/>
     <ProjectedLabels host={labelsHost} enabled={labels} />
