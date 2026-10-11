@@ -164,6 +164,7 @@ function CameraRig({ view, focus, bounds }) {
     const target=focusX!==undefined ? new Vector3(focusX,0,focusZ)
       : memory.current.target ? new Vector3(...memory.current.target) : new Vector3((minX+maxX)/2,.6,(minZ+maxZ)/2)
     const orbit=cameraOffset(memory.current,top),offset=new Vector3(orbit.x,orbit.y,orbit.z)
+    offset.multiplyScalar(Math.max(1,(Math.hypot(maxX-minX,maxZ-minZ,maxY)/2+20)/offset.length()))
     camera.position.copy(target.clone().add(offset));camera.lookAt(target)
     camera.updateMatrixWorld()
     const corners = [minX,maxX].flatMap(x => [minZ,maxZ].flatMap(z => [0,maxY].map(y => new Vector3(x,y,z).applyMatrix4(camera.matrixWorldInverse))))
@@ -225,15 +226,15 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
   const slots = useMemo(()=>displayedParkingSlots(vehicles),[vehicles])
   const overflowAisles = useMemo(()=>siteOverflowAisles(vehicles),[vehicles])
   const chargingBays = useMemo(()=>siteChargingBays(vehicles),[vehicles])
-  return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 200 }}
+  return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 1000 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
     gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
     <color attach="background" args={['#f2f7fa']} />
     <ambientLight intensity={.7}/><hemisphereLight args={['#fff7ea','#c0d5db',.65]}/>
-    <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={85} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
+    <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={Math.max(85,bounds.maxX+15)} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
     <FleetCampus bounds={bounds} overflowAisles={overflowAisles} chargingBays={chargingBays} vehicles={vehicles}/>
-    <FleetCampusProps/>
-    <FleetCampusLife reducedMotion={reducedMotion}/>
+    <FleetCampusProps bounds={bounds} reducedMotion={reducedMotion}/>
+    <FleetCampusLife reducedMotion={reducedMotion} bounds={bounds}/>
     {slots.map(slot => <ParkingSlot key={slot.slotNo} car={slot.car || {id:null,status:'unknown',parking:slot.parking}} selected={!!slot.car && selectedId===slot.car.id} onSelect={onSelect} visible={!!slot.car && visibleIds.includes(slot.car.id)}/>)}
     <TrafficLayer vehicles={vehicles} moves={moves} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion} visibleIds={visibleIds} trafficHost={trafficHost}/>
     <ProjectedLabels host={labelsHost} enabled={labels} />

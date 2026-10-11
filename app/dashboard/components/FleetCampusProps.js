@@ -1,9 +1,10 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import { CatmullRomCurve3, Vector3 } from 'three'
-import { SITE } from '@/lib/fleetSiteLayout'
+import { SITE, SITE_BICYCLES } from '@/lib/fleetSiteLayout'
 
 function Block({ at, size, color, ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size}/><meshStandardMaterial color={color} roughness={.9}/></mesh>
@@ -18,7 +19,14 @@ function FlowerBed({ x, z, width=2.4, color='#ddb67a' }) {
     {[-.7,-.35,0,.35,.7].map((a,i)=><mesh key={i} position={[a,.4,Math.sin(i)*.22]}><sphereGeometry args={[.13,7,5]}/><meshStandardMaterial color={i%2?color:'#d7a5c6'}/></mesh>)}
   </group>
 }
-function Fountain() {
+function Fountain({ reducedMotion }) {
+  const ripple=useRef()
+  useFrame(({clock})=>{
+    if(!ripple.current) return
+    const wave=reducedMotion?0:Math.sin(clock.elapsedTime*1.8)
+    ripple.current.scale.set(1+wave*.06,1,1+wave*.06)
+    ripple.current.rotation.y=reducedMotion?0:clock.elapsedTime*.2
+  })
   const jets=useMemo(()=>[0,1,2,3].map(n=>{
     const angle=n*Math.PI/2
     return new CatmullRomCurve3([new Vector3(0,1.02,0),new Vector3(Math.cos(angle)*.35,1.45,Math.sin(angle)*.35),new Vector3(Math.cos(angle)*.85,.26,Math.sin(angle)*.85)])
@@ -30,6 +38,10 @@ function Fountain() {
     <mesh position={[0,.3,0]}><cylinderGeometry args={[1.53,1.53,.015,36]}/><meshStandardMaterial color="#86c7d3" metalness={.15} roughness={.35}/></mesh>
     <mesh position={[0,.63,0]} castShadow><cylinderGeometry args={[.13,.25,.68,10]}/><meshStandardMaterial color="#afc2c6"/></mesh>
     {jets.map((jet,n)=><mesh key={n}><tubeGeometry args={[jet,16,.025,4,false]}/><meshBasicMaterial color="#c4f1f8" transparent opacity={.8}/></mesh>)}
+    <group ref={ripple} position={[0,.315,0]}>
+      {[.6,1.1].map(radius=><mesh key={radius} rotation={[Math.PI/2,0,0]}><torusGeometry args={[radius,.015,4,30]}/><meshBasicMaterial color="#d4f4f7" transparent opacity={.55}/></mesh>)}
+      {[0,2,4].map(angle=><mesh key={angle} position={[Math.cos(angle)*1.25,.005,Math.sin(angle)*1.25]} rotation={[-Math.PI/2,0,angle]}><circleGeometry args={[.09,3]}/><meshBasicMaterial color="#e3fafb"/></mesh>)}
+    </group>
   </group>
 }
 function Pergola() {
@@ -45,7 +57,7 @@ function Pergola() {
   </group>
 }
 function CoffeeKiosk() {
-  return <group position={[-6,0,-14.4]}>
+  return <group position={[-6,0,-14.9]}>
     <Soft at={[0,.055,0]} size={[4.2,.11,3.4]} color="#e7dfcf"/>
     <Soft at={[0,.54,0]} size={[3,.98,1.8]} color="#c4af8e"/>
     <Block at={[0,1.06,0]} size={[3.3,.12,2]} color="#f2ead8"/>
@@ -67,7 +79,7 @@ function Bicycle({ x }) {
   </group>
 }
 function BicycleRack() {
-  return <group position={[-26,0,-14.7]}>
+  return <group position={[SITE_BICYCLES.x,0,SITE_BICYCLES.z]}>
     <Soft at={[0,.03,0]} size={[3.8,.06,2]} color="#d9e2dc"/>
     {[-1.2,0,1.2].map(x=><group key={x}><Bicycle x={x}/><Block at={[x,.3,.55]} size={[.07,.6,.07]} color="#9fafb5"/></group>)}
   </group>
@@ -98,13 +110,13 @@ function Fence({ x, z, length, yaw=0 }) {
   </group>
 }
 
-export default memo(function FleetCampusProps() {
+export default memo(function FleetCampusProps({ bounds, reducedMotion }) {
   return <group>
     <mesh position={[-47,-.015,3]} receiveShadow><cylinderGeometry args={[6,6,.025,36]}/><meshStandardMaterial color="#c8debc"/></mesh>
-    <Fountain/><Pergola/><CoffeeKiosk/><BicycleRack/><UtilityYard/><RecyclingBins/>
+    <Fountain reducedMotion={reducedMotion}/><Pergola/><CoffeeKiosk/><BicycleRack/><UtilityYard/><RecyclingBins/>
     <FlowerBed x={-51.5} z={-3} width={3}/><FlowerBed x={-48.7} z={5.8} width={2}/>
     <FlowerBed x={-31} z={11.2} width={3.4} color="#ddb997"/>
-    <Fence x={-56} z={-7} length={30}/><Fence x={SITE.bounds.maxX-1.4} z={-10} length={9}/><Fence x={SITE.bounds.maxX-1.4} z={9.2} length={7}/>
+    <Fence x={-56} z={-7} length={30}/><Fence x={(bounds?.maxX||SITE.bounds.maxX)-1.4} z={-10} length={9}/><Fence x={(bounds?.maxX||SITE.bounds.maxX)-1.4} z={9.2} length={7}/>
     {[31.5,32.5,33.5].map(x=><group key={x} position={[x,0,-13.2]}>
       <Block at={[0,.045,0]} size={[.35,.09,.35]} color="#748d94"/>
       <mesh position={[0,.3,0]} castShadow><coneGeometry args={[.16,.5,8]}/><meshStandardMaterial color="#ddad61"/></mesh>

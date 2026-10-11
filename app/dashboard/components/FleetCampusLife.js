@@ -12,7 +12,6 @@ const Worker = memo(function Worker({ person, register }) {
   const pose=person.path ? walkingPose(person) : person
   const root=useRef(),leftLeg=useRef(),rightLeg=useRef(),leftArm=useRef(),rightArm=useRef()
   useEffect(()=>{
-    if(!person.path) return
     register(person.id,{root:root.current,leftLeg:leftLeg.current,rightLeg:rightLeg.current,leftArm:leftArm.current,rightArm:rightArm.current})
     return ()=>register(person.id,null)
   },[person,register])
@@ -31,10 +30,14 @@ const Worker = memo(function Worker({ person, register }) {
       <Part position={[0,-.15,0]} size={[.12,.27,.14]} color={person.color}/><Part position={[0,-.34,0]} size={[.09,.17,.11]} color="#dfb590"/>
     </group>)}
     {person.helmet && <Part position={[0,.87,.135]} size={[.25,.06,.01]} color="#e5e995"/>}
+    {person.tool==='watering' && <group position={[.35,.51,.22]}>
+      <mesh><cylinderGeometry args={[.15,.15,.25,8]}/><meshStandardMaterial color="#8abcc0"/></mesh>
+      <Part position={[.19,.03,.1]} size={[.24,.06,.06]} color="#8abcc0" rotation={[0,-.4,0]}/>
+    </group>}
   </group>
 })
 
-export default memo(function FleetCampusLife({ reducedMotion }) {
+export default memo(function FleetCampusLife({ reducedMotion, bounds }) {
   const {invalidate}=useThree(),actors=useRef(new Map())
   const register=useCallback((id,actor)=>{if(actor) actors.current.set(id,actor);else actors.current.delete(id)},[])
   useEffect(()=>{
@@ -52,6 +55,10 @@ export default memo(function FleetCampusLife({ reducedMotion }) {
       actor.leftLeg.rotation.x=step;actor.rightLeg.rotation.x=-step
       actor.leftArm.rotation.x=-step*.65;actor.rightArm.rotation.x=step*.65
     })
+    STATIC_PEOPLE.filter(person=>person.wave).forEach(person=>{
+      const arm=actors.current.get(person.id)?.rightArm
+      if(arm) arm.rotation.z=-1.1+(reducedMotion?0:Math.sin(clock.elapsedTime*1.3)*.12)
+    })
   })
-  return <group>{WALKERS.map(person=><Worker key={person.id} person={person} register={register}/>)}{STATIC_PEOPLE.map(person=><Worker key={person.id} person={person}/>)}</group>
+  return <group>{WALKERS.map(person=><Worker key={person.id} person={person} register={register}/>)}{STATIC_PEOPLE.map(person=><Worker key={person.id} person={person.id==='gate-guard'&&bounds?{...person,x:bounds.maxX-8}:person} register={register}/>)}</group>
 })

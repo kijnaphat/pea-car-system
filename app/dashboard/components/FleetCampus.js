@@ -3,7 +3,7 @@
 import { memo, useMemo } from 'react'
 import { RoundedBox } from '@react-three/drei'
 import { Shape, Path, Vector3, CatmullRomCurve3 } from 'three'
-import { SITE, SITE_BUILDINGS, SITE_CUSTOMER, SITE_CHARGING } from '@/lib/fleetSiteLayout'
+import { SITE, SITE_BUILDINGS, SITE_CUSTOMER, SITE_CHARGING, SITE_HEDGE, siteLayout } from '@/lib/fleetSiteLayout'
 import { roadNetwork, roadDashes } from '@/lib/fleetRoadGeometry'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
@@ -34,11 +34,11 @@ function RoundCourt({ x, z, radius = 2, color = '#d1e4be' }) {
   </group>
 }
 
-function Tree({ x, z, small = false, tone = 0 }) {
+function Tree({ x, z, small = false, tone = 0, planted = false }) {
   const height = small ? 1.6 : 2.3
   return <group position={[x,0,z]}>
-    <Box at={[0,.08,0]} size={[1.6,.16,1.6]} color="#f8faf2"/>
-    <Box at={[0,.18,0]} size={[1.4,.08,1.4]} color="#c4dda3"/>
+    {!planted && <><Box at={[0,.08,0]} size={[1.6,.16,1.6]} color="#f8faf2"/>
+    <Box at={[0,.18,0]} size={[1.4,.08,1.4]} color="#c4dda3"/></>}
     <mesh position={[0,.85,0]} castShadow><cylinderGeometry args={[.1,.15,1.6,7]}/><meshStandardMaterial color="#b79775"/></mesh>
     <mesh position={[0,height,0]} scale={[.9,1.15,.9]} castShadow><sphereGeometry args={[small ? .62 : .9,12,10]}/><meshStandardMaterial color={['#63c98c','#7bd394','#4bb97e'][tone%3]} roughness={1}/></mesh>
     <mesh position={[-.24,height+.25,.05]} scale={[.8,1,.8]}><sphereGeometry args={[small ? .42 : .6,10,8]}/><meshStandardMaterial color="#8ddd9d" roughness={1}/></mesh>
@@ -137,13 +137,13 @@ function RoadEdge({ ring }) {
   return <mesh><tubeGeometry args={[curve,Math.max(64,ring.length*3),.04,4,true]}/><meshBasicMaterial color="#f4f1df"/></mesh>
 }
 
-function Road({ overflowAisles, chargingRows }) {
-  const net=useMemo(()=>roadNetwork(overflowAisles,chargingRows),[overflowAisles,chargingRows])
+function Road({ overflowAisles, chargingRows, site }) {
+  const net=useMemo(()=>roadNetwork(overflowAisles,chargingRows,site),[overflowAisles,chargingRows,site])
   return <group>
     <RoadSurface polygons={net.pavement} y={-.015} color="#cbd4d5"/>
     <RoadSurface polygons={net.surface} y={.025} color="#82919c"/>
     {net.surface.flatMap(poly=>poly).map((ring,i)=><RoadEdge key={i} ring={ring}/>)}
-    {net.routes.flatMap(route=>roadDashes(route)).map((p,i)=><Box key={i} at={[p.x,.05,p.z]} size={[.09,.015,1.2]} color="#fff5d8" rotation={[0,p.yaw,0]}/>)}
+    {net.routes.flatMap(route=>roadDashes(route,site)).map((p,i)=><Box key={i} at={[p.x,.05,p.z]} size={[.09,.015,1.2]} color="#fff5d8" rotation={[0,p.yaw,0]}/>)}
   </group>
 }
 
@@ -226,48 +226,50 @@ function Gate({ x, z, yaw = 0 }) {
 }
 
 export default memo(function FleetCampus({ bounds, overflowAisles = [], chargingBays = [], vehicles = [] }) {
+  const site=useMemo(()=>siteLayout(vehicles),[vehicles])
   // Irregular precinct silhouette, not a square campus invented around the cars.
   const outline=useMemo(()=>{
     const shape=new Shape()
-    const points=[[-57,-31],[-42,-42],[-16,-17],[SITE.exit.x-6.5,-17],[SITE.exit.x-6.5,-23],[bounds.maxX-1,-23],[bounds.maxX-1,bounds.maxZ],[-35,bounds.maxZ],[-55,9],[-57,-18]]
+    const points=[[-57,-31],[-42,-42],[-16,-17],[site.exit.x-6.5,-17],[site.exit.x-6.5,-23],[bounds.maxX-1,-23],[bounds.maxX-1,bounds.maxZ],[-35,bounds.maxZ],[-55,9],[-57,-18]]
     points.forEach(([x,z],i)=>i ? shape.lineTo(x,-z) : shape.moveTo(x,-z))
     shape.closePath()
     return shape
-  },[bounds.maxX,bounds.maxZ])
+  },[bounds.maxX,bounds.maxZ,site.exit.x])
   return <group>
     <mesh position={[0,-.5,0]} rotation={[-Math.PI/2,0,0]} receiveShadow>
       <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:false}]}/><meshStandardMaterial color="#e4ece7" roughness={1}/>
     </mesh>
-    <Road overflowAisles={overflowAisles} chargingRows={Math.max(1,Math.ceil(chargingBays.length/4))}/>
-    {[-17,-5,9,23,37,51].map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
-    <Arrow x={-28} z={-8} yaw={Math.atan2(20,27)}/><Arrow x={SITE.exit.x} z={-12} yaw={Math.PI}/>
+    <Road overflowAisles={overflowAisles} chargingRows={Math.max(1,Math.ceil(chargingBays.length/4))} site={site}/>
+    {Array.from({length:Math.ceil((site.exit.x+17)/14)},(_,n)=>-17+n*14).map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
+    <Arrow x={-28} z={-8} yaw={Math.atan2(20,27)}/><Arrow x={site.exit.x} z={-12} yaw={Math.PI}/>
     <Office/>
     <Building {...SITE_BUILDINGS.entry}/>
     <Building {...SITE_BUILDINGS.lower}/>
-    <Building {...SITE_BUILDINGS.rear}/>
+    <Building {...SITE_BUILDINGS.rear} x={site.roadEnd-3}/>
     <Carport {...SITE_CUSTOMER} customer/>
     <ChargingCanopy bays={chargingBays} vehicles={vehicles}/>
     {/* Pavements, planted beds and furniture stay outside the vehicle corridors. */}
     <SoftBlock at={[-26,.025,-12.6]} size={[1.2,.05,4.8]} color="#eee8d9"/>
     {[4,16,28,40,52].map((x,i)=><Lamp key={x} x={x} z={-11.1} yaw={i%2?Math.PI:0}/>)}
     {[5,20,32].map(x=><group key={x}><Planter x={x} z={12.5}/><Tree x={x+1.7} z={12.6} small/></group>)}
-    <Bench x={-28} z={10.5} yaw={.25}/><Bench x={-24} z={-17} yaw={Math.PI}/>
+    <Bench x={-30} z={10.5} yaw={.25}/><Bench x={-24} z={-17} yaw={Math.PI}/>
     <group position={[-35,.06,-17.55]} rotation={[0,Math.atan2(20,27),0]}>
       {Array.from({length:8},(_,n)=><Box key={n} at={[-3.1+n*.88,0,0]} size={[.43,.014,1.55]} color="#f5f2e5"/>)}
     </group>
     {/* Entrance hedge follows the diagonal; rear trees flank the dead end. */}
-    {Array.from({length:13},(_,n)=><group key={n}>
-      <SoftBlock at={[-35+n*1.12,.28,-26+n*1.5]} size={[1.8,.5,1.8]} color="#cde0b3"/>
-      <Tree x={-35+n*1.12} z={-26+n*1.5} small tone={n}/>
-    </group>)}
-    {[[63,-8],[66,-8],[68,-8],[-25,12],[-27,9]].map(([x,z],i)=><Tree key={i} x={x} z={z} tone={i}/>)}
+    <group position={[SITE_HEDGE.x+6*SITE_HEDGE.stepX,0,SITE_HEDGE.z+6*SITE_HEDGE.stepZ]} rotation={[0,Math.atan2(SITE_HEDGE.stepX,SITE_HEDGE.stepZ),0]}>
+      <SoftBlock at={[0,.13,0]} size={[SITE_HEDGE.width+.15,.26,Math.hypot(SITE_HEDGE.stepX,SITE_HEDGE.stepZ)*12+1.8]} color="#e3e1d0"/>
+      <SoftBlock at={[0,.28,0]} size={[SITE_HEDGE.width,.06,Math.hypot(SITE_HEDGE.stepX,SITE_HEDGE.stepZ)*12+1.65]} color="#accf9c"/>
+    </group>
+    {Array.from({length:SITE_HEDGE.count},(_,n)=><Tree key={n} x={SITE_HEDGE.x+n*SITE_HEDGE.stepX} z={SITE_HEDGE.z+n*SITE_HEDGE.stepZ} small tone={n} planted/>)}
+    {[[site.roadEnd-3.5,-8],[site.roadEnd-.5,-8],[site.roadEnd+1.5,-8],[-29.5,12],[-30,9]].map(([x,z],i)=><Tree key={i} x={x} z={z} tone={i}/>)}
     <RoundCourt x={-29} z={6.5} radius={1.6}/><Tree x={-29} z={6.5} small/>
-    <Planter x={SITE_BUILDINGS.rear.x} z={5.8} width={3.4}/><Planter x={-24} z={6.5}/>
-    {[[-26,4.7],[-22,6.5],[-16,13.7],[-2,13.7],[62,5.2],[-31,-4]].map(([x,z],i)=><Person key={i} x={x} z={z} color={i%2 ? '#e5bc53' : '#39a88f'}/>)}
+    <Planter x={site.roadEnd-3} z={5.8} width={3.4}/><Planter x={-25.5} z={5.6}/>
+    {[[-26,4.7],[-22,6.5],[-16,13.7],[-2,13.7],[site.roadEnd-4.5,5.2],[-31,-4]].map(([x,z],i)=><Person key={i} x={x} z={z} color={i%2 ? '#e5bc53' : '#39a88f'}/>)}
     <Gate x={-37} z={-20.2} yaw={Math.atan2(20,27)}/>
-    <Gate x={SITE.exit.x} z={-14.5}/>
+    <Gate x={site.exit.x} z={-14.5}/>
     {/* Dead-end barrier is beyond the right-hand exit, never on a traffic route. */}
-    <Box at={[SITE.roadEnd,.8,0]} size={[.24,1.6,8.8]} color="#eff2ee"/>
-    {[-3,-1,1,3].map(z=><Box key={z} at={[SITE.roadEnd-.15,.9,z]} size={[.08,.28,1]} color="#dfac55"/>)}
+    <Box at={[site.roadEnd,.8,0]} size={[.24,1.6,8.8]} color="#eff2ee"/>
+    {[-3,-1,1,3].map(z=><Box key={z} at={[site.roadEnd-.15,.9,z]} size={[.08,.28,1]} color="#dfac55"/>)}
   </group>
 })

@@ -63,10 +63,10 @@ test('mixed returns and departures reserve crossings, and each car keeps event o
   assert.ok(cars.every(car=>traffic.pose(car.id).visible))
 })
 
-test('future permanent slots use a rear aisle without crossing the existing parked row',()=>{
+test('future permanent slots depart towards the same main road, without crossing parked bays',()=>{
   const cars=[19,20,30,31,32,42,43].map(slotNo=>({id:'extra-'+slotNo,parking:siteParkingPosition(slotNo),status:'on_trip'}))
   const path=trafficPath(siteParkingPosition(31),'depart')
-  assert.ok(path.nodes.slice(0,12).every(node=>node.z>=siteParkingPosition(31).z))
+  assert.ok(path.nodes.slice(0,12).every(node=>node.z<=siteParkingPosition(31).z))
   const traffic=createFleetTraffic();traffic.setFleet(cars);traffic.enqueue(events(cars))
   verifySeparation(traffic,cars)
 })
@@ -98,7 +98,7 @@ test('repeated snapshots do not replay events; reduced motion clears the visual 
   assert.equal(cars[0].status,'available','visual scheduling must not mutate business records')
 })
 
-test('extra rows have clear turning space around stationary cars during departures and returns',()=>{
+test('an extended lower row has clear turning space around stationary cars during departures and returns',()=>{
   for(const direction of ['depart','return']) {
     const cars=Array.from({length:66},(_,n)=>({id:'expand-'+n,slotNo:n+1,parking:siteParkingPosition(n+1),status:'available'}))
     const moving=cars.filter(car=>[31,32,42,43,54,55,66].includes(car.slotNo))
@@ -113,6 +113,16 @@ test('extra rows have clear turning space around stationary cars during departur
       assert.ok(traffic.now()<1000)
     }
   }
+})
+
+test('a parking reflow cancels stale visual paths, but never replays or writes a trip',()=>{
+  const cars=fleet().slice(18),traffic=createFleetTraffic(),moves=events(cars)
+  traffic.setFleet(cars);traffic.enqueue(moves);traffic.advance(.1)
+  const changed=cars.slice(1).map(car=>({...car,parking:{...car.parking,x:car.parking.x-2.75}}))
+  const records=JSON.stringify(changed)
+  traffic.setFleet(changed);traffic.enqueue(moves)
+  assert.equal(traffic.busy(),false)
+  assert.equal(JSON.stringify(changed),records)
 })
 
 test('invalid/deleted vehicles are ignored and incremental batches preserve existing reservations',()=>{

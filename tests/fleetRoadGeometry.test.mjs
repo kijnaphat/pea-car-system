@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { SITE, SITE_CUSTOMER } from '../lib/fleetSiteLayout.js'
+import { SITE, SITE_CUSTOMER, SITE_HEDGE, SITE_BICYCLES, siteLayout, siteParkingPosition } from '../lib/fleetSiteLayout.js'
 import { roadNetwork, roadDashes, pointInRoad, roundedPolyline } from '../lib/fleetRoadGeometry.js'
 
 test('all roads, both T junctions and EV forecourt form one seam-free surface',()=>{
@@ -15,6 +15,30 @@ test('all roads, both T junctions and EV forecourt form one seam-free surface',(
     }
     for(const route of network.routes) for(const dash of roadDashes(route)) assert.ok(pointInRoad(dash,network.surface),'dash painted outside road')
   }
+})
+
+test('bicycle rack and the continuous hedge planter remain off roads and away from each other',()=>{
+  const {surface}=roadNetwork()
+  const length=Math.hypot(SITE_HEDGE.stepX,SITE_HEDGE.stepZ)*12+1.8
+  const yaw=Math.atan2(SITE_HEDGE.stepX,SITE_HEDGE.stepZ),c=Math.cos(yaw),s=Math.sin(yaw)
+  const center={x:SITE_HEDGE.x+6*SITE_HEDGE.stepX,z:SITE_HEDGE.z+6*SITE_HEDGE.stepZ}
+  for(let dx=-.925;dx<=.925;dx+=.15) for(let dz=-length/2;dz<=length/2;dz+=.15) {
+    const p={x:center.x+dx*c+dz*s,z:center.z-dx*s+dz*c}
+    assert.equal(pointInRoad(p,surface),false,'hedge base must not step into the road')
+    assert.ok(Math.abs(p.x-SITE_BICYCLES.x)>SITE_BICYCLES.width/2+.1 || Math.abs(p.z-SITE_BICYCLES.z)>SITE_BICYCLES.depth/2+.1,'bicycle pad overlaps hedge')
+  }
+  for(let dx=-SITE_BICYCLES.width/2;dx<=SITE_BICYCLES.width/2;dx+=.1) for(let dz=-1;dz<=1;dz+=.1)
+    assert.equal(pointInRoad({x:SITE_BICYCLES.x+dx,z:SITE_BICYCLES.z+dz},surface),false)
+})
+
+test('a long appended row extends roads and moves the exit without breaking the joined surface',()=>{
+  const cars=Array.from({length:90},(_,n)=>({slotNo:n+1,parking:siteParkingPosition(n+1)})),site=siteLayout(cars)
+  const network=roadNetwork([],1,site)
+  assert.equal(network.surface.length,1)
+  assert.ok(site.exit.x>cars.at(-1).parking.x+4)
+  assert.ok(pointInRoad({x:site.exit.x,z:0},network.surface))
+  assert.deepEqual(network.routes[0].points.at(-1),{x:site.roadEnd,z:0})
+  for(const route of network.routes) for(const dash of roadDashes(route,site)) assert.ok(pointInRoad(dash,network.surface))
 })
 
 test('customer carport including paved base stays clear of the whole curved road',()=>{

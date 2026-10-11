@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { SITE, SITE_LABELS, SITE_BUILDINGS, SITE_ROADS, SITE_CUSTOMER, SITE_CHARGING, displayedParkingSlots, siteParkingPosition, siteParkingSlots, siteBounds, siteOverflowAisles, OVERFLOW_AISLE_OFFSET } from '../lib/fleetSiteLayout.js'
+import { SITE, SITE_LABELS, SITE_BUILDINGS, SITE_ROADS, SITE_CUSTOMER, SITE_CHARGING, displayedParkingSlots, siteParkingPosition, siteParkingSlots, siteBounds, siteOverflowAisles, siteLayout, arrangeFleetParking } from '../lib/fleetSiteLayout.js'
 import { demoSnapshot, fleetVehicles } from '../lib/fleetDigitalTwin.js'
 
 test('reference plan has 18 upper and 12 lower permanent spaces facing the main road',()=>{
@@ -8,8 +8,8 @@ test('reference plan has 18 upper and 12 lower permanent spaces facing the main 
   assert.equal(slots.length,30)
   assert.equal(slots.filter(s=>s.parking.row==='upper').length,18)
   assert.equal(slots.filter(s=>s.parking.row==='lower').length,12)
-  assert.equal(slots[18].parking.x,slots[6].parking.x)
-  assert.equal(slots.at(-1).parking.x,slots[17].parking.x)
+  assert.ok(Math.abs(slots[18].parking.x-1.35-(SITE_CHARGING.x+(SITE_CHARGING.width+.5)/2))<1e-8)
+  assert.equal(slots.at(-1).parking.x-slots[18].parking.x,11*2.75)
   assert.equal(new Set(slots.map(s=>s.parking.x+','+s.parking.z)).size,30)
   assert.equal(slots[18].parking.yaw,Math.PI)
   assert.ok(slots.every(s=>Math.abs(s.parking.z)>SITE.roadHalfWidth+1.9))
@@ -24,7 +24,7 @@ test('empty/deleted spaces remain empty and filtering never renumbers parked veh
   assert.equal(slots.filter(s=>s.car).length,24)
   assert.deepEqual(siteParkingSlots(cars.slice().reverse()),slots)
   const extra={...cars[0],slotNo:31,slotCode:'P31',parking:siteParkingPosition(31)}
-  assert.equal(siteParkingSlots([...cars,extra]).at(-1).slotCode,'P42')
+  assert.equal(siteParkingSlots([...cars,extra]).at(-1).slotCode,'P31')
   assert.equal(siteParkingSlots([...cars,extra])[30].car,extra)
   assert.ok(siteBounds([extra]).maxZ>=extra.parking.z+4)
 })
@@ -69,19 +69,18 @@ test('entrance buildings including office canopy have a walkway clear of every r
   }
 })
 
-test('new cars expand complete rows and bounds without renumbering P01–P30',()=>{
+test('new cars extend the same lower row and right boundary without renumbering P01–P30',()=>{
   const base=siteParkingSlots()
-  for(const [highest,capacity] of [[31,42],[42,42],[43,54],[55,66],[120,126]]) {
+  for(const highest of [31,42,43,55,120]) {
     const car={slotNo:highest,parking:siteParkingPosition(highest)}
     const slots=siteParkingSlots([car]),aisles=siteOverflowAisles([car]),bounds=siteBounds([car])
-    assert.equal(slots.length,capacity)
+    assert.equal(slots.length,highest)
     assert.deepEqual(slots.slice(0,30).map(s=>s.parking),base.map(s=>s.parking))
     assert.equal(slots[highest-1].car,car)
-    assert.equal(slots[highest-1].parking.yaw,0,'extra row faces its own aisle')
-    assert.equal(aisles.length,(capacity-30)/12)
-    assert.equal(aisles.at(-1),car.parking.z+OVERFLOW_AISLE_OFFSET)
-    assert.ok(aisles.at(-1)-2.85>car.parking.z+1.9,'road and parking paint must not overlap')
-    assert.ok(bounds.maxZ>aisles.at(-1)+2.85)
+    assert.equal(slots[highest-1].parking.yaw,Math.PI)
+    assert.equal(car.parking.z,siteParkingPosition(19).z)
+    assert.deepEqual(aisles,[])
+    assert.ok(bounds.maxX>car.parking.x+12)
     assert.ok(slots.every(s=>s.parking.z+1.9<bounds.maxZ))
   }
   assert.deepEqual(siteOverflowAisles([{slotNo:31}]),[])
@@ -101,9 +100,24 @@ test('customer and EV carports face each other, with all permanent rows outside 
   assert.equal(SITE_CUSTOMER.depth,SITE_CHARGING.depth)
   const right=SITE_CUSTOMER.x+(SITE_CUSTOMER.width+.5)/2
   assert.ok(siteParkingPosition(1).x-1.35>right+1)
-  assert.ok(siteParkingPosition(19).x-1.35>right+1)
+  assert.ok(Math.abs(siteParkingPosition(19).x-1.35-right)<1e-8)
   assert.ok(SITE.exit.x>siteParkingPosition(18).x+4)
   assert.equal(SITE.roadEnd-SITE.roadStart,88.5)
+})
+
+test('visible lower bays are contiguous and a newly assigned P31 follows the last visible car',()=>{
+  const raw=demoSnapshot(),before=fleetVehicles(raw)
+  const newCar={...raw.carsDataRaw[0],id:'new-31',fuel_type:'diesel',car_type:'รถกระบะ'}
+  const after=fleetVehicles({...raw,carsDataRaw:[...raw.carsDataRaw,newCar],parkingSlots:[...raw.parkingSlots,{car_id:newCar.id,slot_no:31}]})
+  assert.equal(after.at(-1).slotCode,'P31')
+  assert.equal(after.at(-1).parking.x-before.at(-1).parking.x,2.75)
+  assert.equal(after.at(-1).parking.z,before.at(-1).parking.z)
+  assert.deepEqual(after.slice(0,-1).map(car=>car.parking),before.map(car=>car.parking))
+  const hidden=fleetVehicles({...raw,carsDataRaw:raw.carsDataRaw.map(car=>car.id==='demo-20'?{...car,is_visible:false}:car)})
+  const lower=hidden.filter(car=>car.slotNo>=19)
+  lower.slice(1).forEach((car,i)=>assert.equal(car.parking.x-lower[i].parking.x,2.75))
+  assert.ok(!lower.some(car=>car.slotNo===20))
+  assert.equal(siteLayout(arrangeFleetParking(Array.from({length:90},(_,n)=>({id:n,slotNo:n+1})))).exit.x>100,true)
 })
 
 test('admin-hidden and absent cars have no painted slots or labels; returning visibility restores the same ID',()=>{

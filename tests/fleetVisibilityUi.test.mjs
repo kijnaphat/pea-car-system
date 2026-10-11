@@ -17,8 +17,8 @@ test('3D slot meshes and projected labels share the displayed-only slot selector
 
 test('bottom dock uses translucent glass with readable icons and keeps QR-only hiding',()=>{
   const css=read('app/globals.css'),dock=css.slice(css.indexOf('.kpn-dock {'),css.indexOf('.kpn-dock-active {'))
-  assert.match(dock,/linear-gradient\(135deg, rgba\(255,255,255,\.32\), rgba\(242,249,255,\.12\)\)/)
-  assert.match(dock,/-webkit-backdrop-filter: blur\(18px\)/)
+  assert.match(dock,/linear-gradient\(135deg, rgba\(178,205,220,\.10\), rgba\(255,255,255,\.025\)\)/)
+  assert.match(dock,/-webkit-backdrop-filter: blur\(8px\)/)
   assert.ok(dock.indexOf('-webkit-backdrop-filter:')<dock.indexOf('\n  backdrop-filter:'),'standard property must follow Safari prefix so the minifier retains both')
   assert.match(dock,/@supports not/)
   const nav=read('app/components/GlobalBottomNav.js')
