@@ -113,8 +113,20 @@ const Vehicle = memo(function Vehicle({ car, selected, onSelect, register }) {
   </group>
 })
 
+function VisitorMotorcycle({ color }) {
+  return <group>
+    <Block at={[0,.58,0]} size={[.38,.33,.96]} color={color}/>
+    <Block at={[0,.84,-.2]} size={[.4,.12,.6]} color="#344456"/>
+    <Block at={[0,1,.53]} size={[.7,.065,.09]} color="#607180"/>
+    <Block at={[0,.79,.59]} size={[.32,.4,.13]} color={color}/>
+    <Block at={[0,.97,.668]} size={[.22,.14,.02]} color="#fff0c9"/>
+    {[-.65,.65].map(z=><mesh key={z} position={[0,.3,z]} rotation={[0,0,Math.PI/2]} castShadow><cylinderGeometry args={[.3,.3,.16,12]}/><meshStandardMaterial color="#263442"/></mesh>)}
+  </group>
+}
+
 function VisitorCar({ car, register }) {
   const connect=useCallback(node=>register(car.id,node),[car.id,register])
+  if(car.kind==='motorcycle') return <group ref={connect} position={[car.parking.x,0,car.parking.z]} visible={car.status!=='on_trip'}><VisitorMotorcycle color={car.color}/></group>
   return <group ref={connect} position={[car.parking.x,0,car.parking.z]} visible={car.status!=='on_trip'}>
     <Block at={[0,.46,0]} size={[1.4,.4,2.95]} color={car.color}/>
     <Block at={[0,.87,-.08]} size={[1.21,.51,1.4]} color={car.color}/>

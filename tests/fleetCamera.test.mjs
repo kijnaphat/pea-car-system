@@ -3,6 +3,14 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { DEFAULT_ORBIT, MIN_ELEVATION, MAX_ELEVATION, cameraView, cameraOffset, captureOrbit } from '../lib/fleetCamera.js'
 
+test('opening/reset view matches the reference side, with office on the right and a full-width map',()=>{
+  const offset=cameraOffset(DEFAULT_ORBIT)
+  assert.ok(offset.x>0&&offset.z<0)
+  assert.ok(DEFAULT_ORBIT.elevation>Math.PI/4&&DEFAULT_ORBIT.elevation<Math.PI/3)
+  const ui=readFileSync(new URL('../app/dashboard/components/FleetDigitalTwin.js',import.meta.url),'utf8')
+  assert.ok(ui.includes('[expandedMap, setExpandedMap] = useState(true)'))
+})
+
 test('camera can turn around the full campus with no azimuth clamp',()=>{
   let previous={reset:1,zoom:1.08,turn:0,tilt:0},memory={...DEFAULT_ORBIT}
   for(let n=1;n<=24;n++) {

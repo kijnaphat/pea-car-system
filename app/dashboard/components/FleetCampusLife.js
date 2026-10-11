@@ -2,20 +2,21 @@
 
 import { memo, useCallback, useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { WALKERS, STATIC_PEOPLE, walkingPose, startCampusLife } from '@/lib/fleetCampusLife'
+import { WALKERS, OFFICE_WALKERS, STATIC_PEOPLE, walkingPose, officeWalkingPose, startCampusLife } from '@/lib/fleetCampusLife'
+const movingPeople=[...WALKERS,...OFFICE_WALKERS]
 
 function Part({ position, size, color, ...props }) {
   return <mesh position={position} castShadow {...props}><boxGeometry args={size}/><meshStandardMaterial color={color} roughness={.95}/></mesh>
 }
 
 const Worker = memo(function Worker({ person, register }) {
-  const pose=person.path ? walkingPose(person) : person
+  const pose=person.path ? person.officeVisitor?officeWalkingPose(person):walkingPose(person) : person
   const root=useRef(),leftLeg=useRef(),rightLeg=useRef(),leftArm=useRef(),rightArm=useRef()
   useEffect(()=>{
     register(person.id,{root:root.current,leftLeg:leftLeg.current,rightLeg:rightLeg.current,leftArm:leftArm.current,rightArm:rightArm.current})
     return ()=>register(person.id,null)
   },[person,register])
-  return <group ref={root} position={[pose.x,0,pose.z]} rotation={[0,pose.yaw||0,0]}>
+  return <group ref={root} position={[pose.x,pose.y||0,pose.z]} rotation={[0,pose.yaw||0,0]} visible={pose.visible!==false}>
     <Part position={[0,.83,0]} size={[.35,.51,.24]} color={person.color}/>
     <Part position={[0,.59,0]} size={[.35,.08,.25]} color="#40536b"/>
     <mesh position={[0,1.22,0]} castShadow><sphereGeometry args={[.18,10,8]}/><meshStandardMaterial color="#dfb590"/></mesh>
@@ -46,11 +47,11 @@ export default memo(function FleetCampusLife({ reducedMotion, bounds }) {
     return startCampusLife(invalidate)
   },[reducedMotion,invalidate])
   useFrame(({clock})=>{
-    WALKERS.forEach(person=>{
+    movingPeople.forEach(person=>{
       const actor=actors.current.get(person.id)
       if(!actor?.root) return
-      const pose=walkingPose(person,reducedMotion?0:clock.elapsedTime)
-      actor.root.position.set(pose.x,0,pose.z);actor.root.rotation.y=pose.yaw
+      const pose=person.officeVisitor?officeWalkingPose(person,reducedMotion?0:clock.elapsedTime):walkingPose(person,reducedMotion?0:clock.elapsedTime)
+      actor.root.position.set(pose.x,pose.y||0,pose.z);actor.root.rotation.y=pose.yaw;actor.root.visible=pose.visible!==false
       const step=reducedMotion?0:pose.gait
       actor.leftLeg.rotation.x=step;actor.rightLeg.rotation.x=-step
       actor.leftArm.rotation.x=-step*.65;actor.rightArm.rotation.x=step*.65
@@ -60,5 +61,5 @@ export default memo(function FleetCampusLife({ reducedMotion, bounds }) {
       if(arm) arm.rotation.z=-1.1+(reducedMotion?0:Math.sin(clock.elapsedTime*1.3)*.12)
     })
   })
-  return <group>{WALKERS.map(person=><Worker key={person.id} person={person} register={register}/>)}{STATIC_PEOPLE.map(person=><Worker key={person.id} person={person.id==='gate-guard'&&bounds?{...person,x:bounds.maxX-8}:person} register={register}/>)}</group>
+  return <group>{movingPeople.map(person=><Worker key={person.id} person={person} register={register}/>)}{STATIC_PEOPLE.map(person=><Worker key={person.id} person={person.id==='gate-guard'&&bounds?{...person,x:bounds.maxX-8}:person} register={register}/>)}</group>
 })

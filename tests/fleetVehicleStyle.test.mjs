@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { vehicleStyle } from '../lib/fleetVehicleStyle.js'
+import { vehicleStyle, FLEET_PAINTS } from '../lib/fleetVehicleStyle.js'
 import { demoSnapshot } from '../lib/fleetDigitalTwin.js'
 
 test('actual fleet types use distinct, explicit models, with crane precedence over truck', () => {
@@ -22,11 +22,16 @@ test('actual fleet types use distinct, explicit models, with crane precedence ov
   assert.equal(vehicleStyle({fuel_type:'EV'}).kind,'ev')
   assert.equal(vehicleStyle({car_type:'ประเภทใหม่ที่ยังไม่รู้จัก'}).kind,'generic')
 })
-test('paint is stable for a car across status changes and selection; categories have different paint',()=>{
-  const car={id:10,car_type:'รถกระบะ 4 ประตู',status:'available'}
+test('paint follows ownership/EV rather than model type, and stays stable across status changes',()=>{
+  const car={id:10,car_type:'รถกระบะ 4 ประตู',status:'available',ownership_type:'รถของการไฟฟ้า'}
   assert.deepEqual(vehicleStyle(car),vehicleStyle({...car,status:'busy',selected:true}))
   const types=['รถกระเช้า','รถเครน','รถบรรทุกขุดเจาะ','รถบรรทุก 6 ล้อ','รถบรรทุก 2 ตัน','รถตู้','รถ EV']
-  assert.equal(new Set(types.map(car_type=>vehicleStyle({id:1,car_type}).color)).size,types.length)
+  const typesWithoutEv=types.slice(0,-1)
+  assert.ok(typesWithoutEv.every(car_type=>vehicleStyle({...car,car_type}).color===FLEET_PAINTS.owned.color))
+  assert.equal(vehicleStyle({...car,ownership_type:'รถเช่า'}).color,FLEET_PAINTS.rental.color)
+  assert.equal(vehicleStyle({...car,ownership_type:'รถเช่า',fuel_type:'EV'}).color,FLEET_PAINTS.electric.color)
+  assert.equal(vehicleStyle({...car,ownership_type:''}).paintCategory,'unknown')
+  assert.equal(vehicleStyle({...car,ambient:true,color:'#a4567c'}).color,'#a4567c')
 })
 test('demo includes every operational vehicle silhouette and remains isolated',()=>{
   const kinds=new Set(demoSnapshot().carsDataRaw.map(car=>vehicleStyle(car).kind))

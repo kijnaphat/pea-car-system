@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { VISITOR_CARS, createCampusVisitors } from '../lib/fleetCampusVisitors.js'
 import { CAMPUS_GARDENS, CAMPUS_TABLES } from '../lib/fleetCampusAmenities.js'
-import { arrangeFleetParking, SITE_CUSTOMER, SITE_BUILDINGS, SITE_HEDGE } from '../lib/fleetSiteLayout.js'
+import { arrangeFleetParking, SITE_CUSTOMER, SITE_BUILDINGS, SITE_HEDGE_BED, SITE_MOTORCYCLES } from '../lib/fleetSiteLayout.js'
 import { createFleetTraffic, trafficOverlaps } from '../lib/fleetTraffic.js'
 import { roadNetwork, pointInRoad } from '../lib/fleetRoadGeometry.js'
 import { WALKERS, walkingPose } from '../lib/fleetCampusLife.js'
@@ -32,10 +32,11 @@ test('decorative visitors repeatedly enter/leave via shared reservations without
   fleet[2].status='available'
   assert.equal(JSON.stringify(fleet),original)
   assert.ok(visitors.cars.every(car=>car.ambient&&!car.slotNo))
-  assert.deepEqual(VISITOR_CARS.map(car=>car.status),['available','available','on_trip','on_trip'])
+  assert.deepEqual(VISITOR_CARS.map(car=>car.status),['available','available','on_trip','on_trip','available','on_trip'])
   for(const car of visitors.cars) {
-    assert.ok(Math.abs(car.parking.x-SITE_CUSTOMER.x)<SITE_CUSTOMER.width/2-1)
-    assert.equal(car.parking.z,SITE_CUSTOMER.z)
+    const area=car.kind==='motorcycle'?SITE_MOTORCYCLES:SITE_CUSTOMER
+    assert.ok(Math.abs(car.parking.x-area.x)<area.width/2-.4)
+    assert.equal(car.parking.z,area.z)
   }
 })
 
@@ -56,8 +57,8 @@ test('new gardens and shade tables stay behind current/future bays, outside road
   for(const walker of WALKERS) for(let t=0;t<300;t+=1) {
     const p=walkingPose(walker,t)
     for(const b of boxes) assert.ok(Math.abs(p.x-b.x)>b.width/2+.15||Math.abs(p.z-b.z)>b.depth/2+.15,walker.id+' walks through furniture')
-    const yaw=Math.atan2(SITE_HEDGE.stepX,SITE_HEDGE.stepZ),dx=p.x-SITE_HEDGE.x-6*SITE_HEDGE.stepX,dz=p.z-SITE_HEDGE.z-6*SITE_HEDGE.stepZ
-    assert.ok(Math.abs(dx*Math.cos(yaw)-dz*Math.sin(yaw))>SITE_HEDGE.width/2+.3||Math.abs(dx*Math.sin(yaw)+dz*Math.cos(yaw))>12*1.87/2+1.2,walker.id+' walks through hedge')
+    const yaw=SITE_HEDGE_BED.rotation,dx=p.x-SITE_HEDGE_BED.x,dz=p.z-SITE_HEDGE_BED.z
+    assert.ok(Math.abs(dx*Math.cos(yaw)-dz*Math.sin(yaw))>SITE_HEDGE_BED.width/2+.2||Math.abs(dx*Math.sin(yaw)+dz*Math.cos(yaw))>SITE_HEDGE_BED.depth/2+.2,walker.id+' walks through hedge')
   }
 })
 
@@ -74,4 +75,15 @@ test('no street slab, visitor telemetry, counts, interactions or independent pol
   const twin=readFileSync(new URL('../app/dashboard/components/FleetDigitalTwin.js',import.meta.url),'utf8')
   assert.ok(twin.includes("ambientTraffic={mode!=='replay'}"))
   assert.ok(twin.includes('รถลูกค้าเป็นภาพจำลอง ไม่รวมยอดรถหรือรายงาน'))
+})
+
+test('customer motorcycles have dedicated corner bays outside the road, bicycle rack and relocated trees',()=>{
+  const area=SITE_MOTORCYCLES,{surface}=roadNetwork()
+  const bikes=VISITOR_CARS.filter(car=>car.kind==='motorcycle')
+  assert.equal(bikes.length,2)
+  assert.ok(bikes.every(car=>car.footprint.width<1&&car.footprint.length<2))
+  for(let x=area.x-area.width/2;x<=area.x+area.width/2;x+=.1) for(let z=area.z-area.depth/2;z<=area.z+area.depth/2;z+=.1)
+    assert.equal(pointInRoad({x,z},surface),false)
+  assert.ok(SITE_HEDGE_BED.z<-24,'tree line begins near entrance rather than filling the parking corner')
+  assert.ok(bikes.every(car=>Math.abs(car.parking.x-area.x)+car.footprint.width/2<=area.width/2&&Math.abs(car.parking.z-area.z)+car.footprint.length/2<=area.depth/2))
 })

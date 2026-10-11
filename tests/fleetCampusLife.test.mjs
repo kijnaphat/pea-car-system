@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { WALKERS, STATIC_PEOPLE, walkingPose, startCampusLife } from '../lib/fleetCampusLife.js'
+import { WALKERS, OFFICE_WALKERS, STATIC_PEOPLE, walkingPose, officeWalkingPose, startCampusLife } from '../lib/fleetCampusLife.js'
 import { roadNetwork, pointInRoad } from '../lib/fleetRoadGeometry.js'
 import { SITE_BUILDINGS, SITE_CUSTOMER, siteParkingSlots } from '../lib/fleetSiteLayout.js'
 import { siteChargingBays } from '../lib/fleetCharging.js'
@@ -49,4 +49,22 @@ test('ambient props/people use local geometry only, with reduced motion and no t
   assert.ok(life.includes('reducedMotion?0:pose.gait'))
   const props=readFileSync(new URL('../app/dashboard/components/FleetCampusProps.js',import.meta.url),'utf8')
   for(const name of ['Fountain','Pergola','CoffeeKiosk','BicycleRack','UtilityYard','RecyclingBins','Fence','FlowerBed']) assert.ok(props.includes('function '+name+'('))
+})
+
+test('office visitors walk along the front and cross only the entrance doorway, disappearing inside',()=>{
+  const b=SITE_BUILDINGS.office,road=roadNetwork().surface
+  for(const person of OFFICE_WALKERS) {
+    let shown=0,hidden=0,stepped=false
+    for(let t=0;t<300;t+=.1) {
+      const p=officeWalkingPose(person,t),dx=p.x-b.x,dz=p.z-b.z
+      const x=dx*Math.cos(b.rotation)-dz*Math.sin(b.rotation),z=dx*Math.sin(b.rotation)+dz*Math.cos(b.rotation)
+      assert.equal(pointInRoad(p,road),false,person.id+' crosses road')
+      assert.ok(p.y>=0&&p.y<=.35)
+      if(p.visible) {shown++;assert.ok(x>5.38)} else {hidden++;assert.ok(person.enterBuilding);assert.ok(Math.abs(z)<.001)}
+      if(x<6.25) assert.ok(Math.abs(z)<.001,'entry must align with the door, not a window or wall')
+      if(p.y>.3) stepped=true
+    }
+    assert.ok(shown>0)
+    if(person.enterBuilding) {assert.ok(hidden>0);assert.ok(stepped)} else assert.equal(hidden,0)
+  }
 })

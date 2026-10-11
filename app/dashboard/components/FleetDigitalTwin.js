@@ -9,7 +9,7 @@ import { loadFleetSnapshot } from '@/lib/fleetSnapshot'
 import { startVisiblePolling } from '@/lib/visiblePolling'
 import { FLEET_STATUSES, dayBounds, demoSnapshot, fleetVehicles, movementEvents, replaySnapshot } from '@/lib/fleetDigitalTwin'
 import { getCarImage } from '@/lib/carImages'
-import { vehicleStyle } from '@/lib/fleetVehicleStyle'
+import { vehicleStyle, FLEET_PAINTS } from '@/lib/fleetVehicleStyle'
 import { siteLabels, displayedParkingSlots } from '@/lib/fleetSiteLayout'
 import { restingPose, siteChargingBays } from '@/lib/fleetCharging'
 import FleetVehicleGlyph from './FleetVehicleGlyph'
@@ -44,7 +44,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
   const [filter, setFilter] = useState('all')
   const [labels, setLabels] = useState(true)
   const [safeMap, setSafeMap] = useState(false)
-  const [expandedMap, setExpandedMap] = useState(false)
+  const [expandedMap, setExpandedMap] = useState(true)
   const [reduced, setReduced] = useState(false)
   const [view, setView] = useState({ zoom: 1.08, top: false, reset: 0, turn:0, tilt:0, drag:'rotate' })
   const [focus, setFocus] = useState(null)
@@ -223,6 +223,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
         <span className="twin-clock"><CalendarDays size={15} />{clock?.toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}) || '—'}<Clock size={15}/>{clock?.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'}) || '—'}</span>
       </div>
       <div className="twin-status-cards">{[['all','ทั้งหมด',LayoutGrid,'#6b21a8',vehicles.length],...Object.entries(FLEET_STATUSES).filter(([key])=>key!=='unknown').map(([key,info])=>[key,info.label,icons[key],info.color,counts[key]])].map(([key,label,Icon,color,count])=> <button key={key} aria-pressed={filter===key} onClick={()=>{setFilter(key);setSelectedId(null)}} style={{'--status-color':color}}><Icon size={23}/><span>{label}</span><strong>{count}</strong></button>)}</div>
+      <div className="twin-paint-legend" aria-label="สีโมเดลรถตามกรรมสิทธิ์"><span>สีตัวรถในผัง:</span>{['owned','rental','electric'].map(key=><span key={key}><i style={{background:FLEET_PAINTS[key].color}}/>{FLEET_PAINTS[key].label}</span>)}<small>รถลูกค้า / มอเตอร์ไซค์ = สีอื่น · ภาพจำลอง</small></div>
       {error && <div className="twin-error" role="alert">{error} · {scene ? 'คงข้อมูลครั้งล่าสุดไว้ ไม่ใช่สถานะสด' : 'ยังไม่สามารถโหลดข้อมูลได้'} <button onClick={()=>switchMode(mode)}>ลองอีกครั้ง</button></div>}
       {mode==='demo' && <div className="twin-demo-controls"><strong>ข้อมูลสาธิต 25 คัน</strong><button disabled={!selected || selected.status!=='available'} onClick={()=>demoAction('out')}>สาธิตเบิกรถ</button><button disabled={!selected || selected.status!=='on_trip'} onClick={()=>demoAction('back')}>สาธิตคืนรถ</button><button disabled={!selected?.chargingBay || selected.status!=='available'} onClick={()=>demoAction('charge')}>สาธิตเริ่มชาร์จ</button><button disabled={!selected || selected.status!=='charging'} onClick={()=>demoAction('uncharge')}>สาธิตจบชาร์จ</button><button onClick={()=>demoAction('random')}>ส่งรถออก 3 คัน</button><button onClick={()=>demoAction('all')}>คืนรถทั้งหมด</button><button onClick={()=>demoAction('reset')}>รีเซ็ตสาธิต</button><span>การสาธิตไม่ส่ง Discord และไม่แก้ฐานข้อมูล</span></div>}
       {mode==='replay' && <div className="twin-replay">
@@ -265,7 +266,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
           {selected && <article className="twin-detail" aria-label="ข้อมูลรถที่เลือก"><button className="twin-detail-close" aria-label="ปิดข้อมูลรถ" onClick={()=>{setSelectedId(null);setFocus(null)}}><X size={18}/></button><span className="twin-detail-eyebrow">รถ #{selected.id} · ช่องประจำ {selected.slotCode}</span><h3>{selected.plate_number}</h3><Status status={selected.status}/>
             <div className="twin-car-image">{getCarImage(selected) ? <img src={getCarImage(selected)} alt={selected.model || 'รถที่เลือก'} loading="lazy"/> : <Car size={70}/>}</div>
             <dl><div><dt>รุ่น / ประเภท</dt><dd>{selected.model || '—'} · {selected.car_type || selected.fuel_type}</dd></div><div><dt>{selected.trip?'ผู้ขับปัจจุบัน':'ผู้ใช้งานล่าสุด'}</dt><dd>{selected.driver}</dd></div><div><dt>แผนก</dt><dd>{selected.departments?.name || 'ไม่ระบุ'}</dd></div>{selected.trip && <><div><dt>เวลาออก</dt><dd>{timeText(selected.trip.start_time)}</dd></div><div><dt>งาน / สถานที่บันทึก</dt><dd>{selected.location || 'ไม่ระบุ'}</dd></div></>}{selected.battery!==null && <div><dt>แบตที่บันทึกล่าสุด</dt><dd>{selected.battery}% <small>{timeText(selected.batteryAt)} · ไม่ใช่ค่าปัจจุบันจากเซนเซอร์</small></dd></div>}</dl>
-            <div className="twin-model-key"><i style={{background:selectedStyle.color}}/>{selectedStyle.label} · สีจำแนกในผังจำลอง</div>
+            <div className="twin-model-key"><i style={{background:selectedStyle.color}}/>{selectedStyle.label} · {selectedStyle.paintLabel} · สีในผังจำลอง</div>
             {selected.status==='charging' && selected.chargingBay && <p className="twin-charge-note"><Zap size={17}/>จุดชาร์จจำลอง {selected.chargingBay.code} · ช่องประจำ {selected.slotCode} ยังเป็นช่องเดิม</p>}
             {mode==='live' && <p className="twin-qr-only"><QrCode size={19}/><span>เบิก–คืน / บันทึกชาร์จ<br/><strong>สแกน QR Code ที่รถเท่านั้น</strong></span></p>}
             <div className="twin-detail-actions"><button onClick={()=>{setFocus(restingPose(selected));setView(value=>({...value,zoom:1.35}))}}><Maximize2 size={16}/>{selected.status==='charging'?'โฟกัสจุดชาร์จ':'โฟกัสช่องจอด'}</button>{mode==='live' && <Link className="twin-report-link" href={`/report?car_id=${selected.id}`}>รายงานประจำเดือน</Link>}</div>

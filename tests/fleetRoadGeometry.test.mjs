@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { SITE, SITE_CUSTOMER, SITE_HEDGE, SITE_BICYCLES, siteLayout, siteParkingPosition } from '../lib/fleetSiteLayout.js'
+import { SITE, SITE_CUSTOMER, SITE_HEDGE_BED, SITE_BICYCLES, SITE_MOTORCYCLES, siteLayout, siteParkingPosition } from '../lib/fleetSiteLayout.js'
 import { roadNetwork, roadDashes, pointInRoad, roundedPolyline } from '../lib/fleetRoadGeometry.js'
 
 test('all roads, both T junctions and EV forecourt form one seam-free surface',()=>{
@@ -19,13 +19,14 @@ test('all roads, both T junctions and EV forecourt form one seam-free surface',(
 
 test('bicycle rack and the continuous hedge planter remain off roads and away from each other',()=>{
   const {surface}=roadNetwork()
-  const length=Math.hypot(SITE_HEDGE.stepX,SITE_HEDGE.stepZ)*12+1.8
-  const yaw=Math.atan2(SITE_HEDGE.stepX,SITE_HEDGE.stepZ),c=Math.cos(yaw),s=Math.sin(yaw)
-  const center={x:SITE_HEDGE.x+6*SITE_HEDGE.stepX,z:SITE_HEDGE.z+6*SITE_HEDGE.stepZ}
+  const length=SITE_HEDGE_BED.depth
+  const yaw=SITE_HEDGE_BED.rotation,c=Math.cos(yaw),s=Math.sin(yaw)
+  const center=SITE_HEDGE_BED
   for(let dx=-.925;dx<=.925;dx+=.15) for(let dz=-length/2;dz<=length/2;dz+=.15) {
     const p={x:center.x+dx*c+dz*s,z:center.z-dx*s+dz*c}
     assert.equal(pointInRoad(p,surface),false,'hedge base must not step into the road')
     assert.ok(Math.abs(p.x-SITE_BICYCLES.x)>SITE_BICYCLES.width/2+.1 || Math.abs(p.z-SITE_BICYCLES.z)>SITE_BICYCLES.depth/2+.1,'bicycle pad overlaps hedge')
+    assert.ok(Math.abs(p.x-SITE_MOTORCYCLES.x)>SITE_MOTORCYCLES.width/2+.1 || Math.abs(p.z-SITE_MOTORCYCLES.z)>SITE_MOTORCYCLES.depth/2+.1,'motorcycle pad overlaps hedge')
   }
   for(let dx=-SITE_BICYCLES.width/2;dx<=SITE_BICYCLES.width/2;dx+=.1) for(let dz=-1;dz<=1;dz+=.1)
     assert.equal(pointInRoad({x:SITE_BICYCLES.x+dx,z:SITE_BICYCLES.z+dz},surface),false)

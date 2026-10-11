@@ -3,7 +3,7 @@
 import { memo, useMemo } from 'react'
 import { RoundedBox } from '@react-three/drei'
 import { Shape, Path, Vector3, CatmullRomCurve3 } from 'three'
-import { SITE, SITE_BUILDINGS, SITE_CUSTOMER, SITE_CHARGING, SITE_HEDGE, siteLayout } from '@/lib/fleetSiteLayout'
+import { SITE, SITE_BUILDINGS, SITE_CUSTOMER, SITE_CHARGING, SITE_HEDGE, SITE_HEDGE_BED, SITE_MOTORCYCLES, siteLayout } from '@/lib/fleetSiteLayout'
 import { roadNetwork, roadDashes } from '@/lib/fleetRoadGeometry'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
@@ -85,7 +85,15 @@ function Building({ x, z, width, depth, floors, accent, rotation = 0, office = f
       <SoftBlock at={[1.1,.2,0]} size={[2.6,.3,4]} color="#eeebe1"/>
       <SoftBlock at={[1.2,2.5,0]} size={[3.1,.16,4.1]} color="#c9dfeb"/>
       {[-1,1].map(n=><Box key={n} at={[2.4,1.3,n*1.6]} size={[.13,2.5,.13]} color="#c4d4de"/>)}
+      <group position={[1.63,1.26,0]}>
+        <Box at={[0,0,0]} size={[.055,2.05,1.23]} color="#3e798c"/>
+        {[-.57,.57].map(z=><Box key={z} at={[.04,0,z]} size={[.08,2.2,.08]} color="#d7e9ec"/>)}
+        <Box at={[.04,1.07,0]} size={[.08,.08,1.25]} color="#d7e9ec"/>
+        <Box at={[.045,0,0]} size={[.03,1.96,.035]} color="#b7d7de"/>
+        <Box at={[.085,-.08,.1]} size={[.05,.36,.035]} color="#e7d4a0"/>
+      </group>
     </group>}
+    {office && <SoftBlock at={[6.95,.025,0]} size={[.7,.05,18]} color="#dddcd1"/>}
   </group>
 }
 
@@ -247,6 +255,11 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
     <Building {...SITE_BUILDINGS.lower}/>
     <Building {...SITE_BUILDINGS.rear} x={site.roadEnd-3}/>
     <Carport {...SITE_CUSTOMER} customer/>
+    <group position={[SITE_MOTORCYCLES.x,0,SITE_MOTORCYCLES.z]}>
+      <SoftBlock at={[0,.025,0]} size={[SITE_MOTORCYCLES.width,.05,SITE_MOTORCYCLES.depth]} color="#d7e6df"/>
+      {[-1.52,0,1.52].map(x=><Box key={x} at={[x,.055,0]} size={[.04,.015,2.75]} color="#f3eedb"/>)}
+      <Box at={[0,.055,-1.36]} size={[3.15,.015,.04]} color="#f3eedb"/>
+    </group>
     <ChargingCanopy bays={chargingBays} vehicles={vehicles}/>
     {/* Pavements, planted beds and furniture stay outside the vehicle corridors. */}
     {[4,16,28,40,52].map((x,i)=><Lamp key={x} x={x} z={-11.1} yaw={i%2?Math.PI:0}/>)}
@@ -255,9 +268,9 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
       {Array.from({length:8},(_,n)=><Box key={n} at={[-3.1+n*.88,0,0]} size={[.43,.014,1.55]} color="#f5f2e5"/>)}
     </group>
     {/* Entrance hedge follows the diagonal; rear trees flank the dead end. */}
-    <group position={[SITE_HEDGE.x+6*SITE_HEDGE.stepX,0,SITE_HEDGE.z+6*SITE_HEDGE.stepZ]} rotation={[0,Math.atan2(SITE_HEDGE.stepX,SITE_HEDGE.stepZ),0]}>
-      <SoftBlock at={[0,.13,0]} size={[SITE_HEDGE.width+.15,.26,Math.hypot(SITE_HEDGE.stepX,SITE_HEDGE.stepZ)*12+1.8]} color="#e3e1d0"/>
-      <SoftBlock at={[0,.28,0]} size={[SITE_HEDGE.width,.06,Math.hypot(SITE_HEDGE.stepX,SITE_HEDGE.stepZ)*12+1.65]} color="#accf9c"/>
+    <group position={[SITE_HEDGE_BED.x,0,SITE_HEDGE_BED.z]} rotation={[0,SITE_HEDGE_BED.rotation,0]}>
+      <SoftBlock at={[0,.13,0]} size={[SITE_HEDGE_BED.width,.26,SITE_HEDGE_BED.depth]} color="#e3e1d0"/>
+      <SoftBlock at={[0,.28,0]} size={[SITE_HEDGE.width,.06,SITE_HEDGE_BED.depth-.15]} color="#accf9c"/>
     </group>
     {Array.from({length:SITE_HEDGE.count},(_,n)=><Tree key={n} x={SITE_HEDGE.x+n*SITE_HEDGE.stepX} z={SITE_HEDGE.z+n*SITE_HEDGE.stepZ} small tone={n} planted/>)}
     {[[site.roadEnd-3.5,-8],[site.roadEnd-.5,-8],[site.roadEnd+1.5,-8],[-29.5,12],[-30,9]].map(([x,z],i)=><Tree key={i} x={x} z={z} tone={i}/>)}
