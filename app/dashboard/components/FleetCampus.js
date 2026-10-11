@@ -229,17 +229,17 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
   // Irregular precinct silhouette, not a square campus invented around the cars.
   const outline=useMemo(()=>{
     const shape=new Shape()
-    const points=[[-57,-31],[-42,-42],[-16,-17],[32,-17],[32,-23],[51,-23],[51,bounds.maxZ],[-35,bounds.maxZ],[-55,9],[-57,-18]]
+    const points=[[-57,-31],[-42,-42],[-16,-17],[SITE.exit.x-6.5,-17],[SITE.exit.x-6.5,-23],[bounds.maxX-1,-23],[bounds.maxX-1,bounds.maxZ],[-35,bounds.maxZ],[-55,9],[-57,-18]]
     points.forEach(([x,z],i)=>i ? shape.lineTo(x,-z) : shape.moveTo(x,-z))
     shape.closePath()
     return shape
-  },[bounds.maxZ])
+  },[bounds.maxX,bounds.maxZ])
   return <group>
     <mesh position={[0,-.5,0]} rotation={[-Math.PI/2,0,0]} receiveShadow>
       <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:false}]}/><meshStandardMaterial color="#e4ece7" roughness={1}/>
     </mesh>
     <Road overflowAisles={overflowAisles} chargingRows={Math.max(1,Math.ceil(chargingBays.length/4))}/>
-    {[-17,-5,9,23].map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
+    {[-17,-5,9,23,37,51].map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
     <Arrow x={-28} z={-8} yaw={Math.atan2(20,27)}/><Arrow x={SITE.exit.x} z={-12} yaw={Math.PI}/>
     <Office/>
     <Building {...SITE_BUILDINGS.entry}/>
@@ -249,7 +249,7 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
     <ChargingCanopy bays={chargingBays} vehicles={vehicles}/>
     {/* Pavements, planted beds and furniture stay outside the vehicle corridors. */}
     <SoftBlock at={[-26,.025,-12.6]} size={[1.2,.05,4.8]} color="#eee8d9"/>
-    {[-12,-4,7,18,29].map((x,i)=><Lamp key={x} x={x} z={-11.1} yaw={i%2?Math.PI:0}/>)}
+    {[4,16,28,40,52].map((x,i)=><Lamp key={x} x={x} z={-11.1} yaw={i%2?Math.PI:0}/>)}
     {[5,20,32].map(x=><group key={x}><Planter x={x} z={12.5}/><Tree x={x+1.7} z={12.6} small/></group>)}
     <Bench x={-28} z={10.5} yaw={.25}/><Bench x={-24} z={-17} yaw={Math.PI}/>
     <group position={[-35,.06,-17.55]} rotation={[0,Math.atan2(20,27),0]}>
@@ -260,10 +260,10 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
       <SoftBlock at={[-35+n*1.12,.28,-26+n*1.5]} size={[1.8,.5,1.8]} color="#cde0b3"/>
       <Tree x={-35+n*1.12} z={-26+n*1.5} small tone={n}/>
     </group>)}
-    {[[45,-8],[48,-8],[50,-8],[-25,12],[-27,9]].map(([x,z],i)=><Tree key={i} x={x} z={z} tone={i}/>)}
+    {[[63,-8],[66,-8],[68,-8],[-25,12],[-27,9]].map(([x,z],i)=><Tree key={i} x={x} z={z} tone={i}/>)}
     <RoundCourt x={-29} z={6.5} radius={1.6}/><Tree x={-29} z={6.5} small/>
-    <Planter x={45.5} z={5.8} width={3.4}/><Planter x={-24} z={6.5}/>
-    {[[-26,4.7],[-22,6.5],[-16,13.7],[-2,13.7],[44,5.2],[-31,-4]].map(([x,z],i)=><Person key={i} x={x} z={z} color={i%2 ? '#e5bc53' : '#39a88f'}/>)}
+    <Planter x={SITE_BUILDINGS.rear.x} z={5.8} width={3.4}/><Planter x={-24} z={6.5}/>
+    {[[-26,4.7],[-22,6.5],[-16,13.7],[-2,13.7],[62,5.2],[-31,-4]].map(([x,z],i)=><Person key={i} x={x} z={z} color={i%2 ? '#e5bc53' : '#39a88f'}/>)}
     <Gate x={-37} z={-20.2} yaw={Math.atan2(20,27)}/>
     <Gate x={SITE.exit.x} z={-14.5}/>
     {/* Dead-end barrier is beyond the right-hand exit, never on a traffic route. */}

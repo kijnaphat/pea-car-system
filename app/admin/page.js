@@ -10,6 +10,7 @@ import DiscordAuditPanel from '@/app/admin/components/DiscordAuditPanel'
 import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
 import { countPendingAnomalies } from '@/lib/tripAnomalies'
 import { startVisiblePolling } from '@/lib/visiblePolling'
+import { markFleetChanged } from '@/lib/fleetSnapshot'
 
 // เพิ่ม is_visible เข้าไปใน initial data (ค่าเริ่มต้นให้แสดงผล)
 const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'ดีเซล', status: 'available', budget: '', department_id: '', usage_type: '', ownership_type: '', is_visible: true, image_path: '' }
@@ -279,6 +280,7 @@ export default function AdminDashboard() {
     try {
       const { error } = await supabase.from('cars').update({ is_visible: newStatus }).eq('id', carId)
       if (error) throw error;
+      markFleetChanged()
     } catch (error) {
       alert('เกิดข้อผิดพลาดในการอัปเดตสถานะ: ' + error.message)
       setCarsList(prev => prev.map(car => car.id === carId ? { ...car, is_visible: isCurrentlyVisible } : car))
@@ -333,6 +335,7 @@ export default function AdminDashboard() {
         if (error) throw error
       }
       alert('บันทึกข้อมูลเข้าสู่ระบบสำเร็จ')
+      if (table === 'cars') markFleetChanged()
       cancelEdit(); fetchData(); if(table === 'departments') fetchDepartmentsOptions()
     } catch (error) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message) } finally { setIsSubmitting(false) }
   }
@@ -358,6 +361,7 @@ export default function AdminDashboard() {
         if (removeError) console.error('Remove replaced car image:', removeError.message)
       }
       alert('อัปเดตข้อมูลสำเร็จ')
+      if (table === 'cars') markFleetChanged()
       setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })
       cancelEdit(); fetchData(); if(table === 'departments') fetchDepartmentsOptions()
     } catch (error) { alert('เกิดข้อผิดพลาดในการอัปเดต: ' + error.message) } finally { setIsSubmitting(false) }
@@ -377,6 +381,7 @@ export default function AdminDashboard() {
         if (removeError) console.error('Remove car image:', removeError.message)
       }
       alert('ลบข้อมูลออกจากระบบเรียบร้อยแล้ว')
+      if (table === 'cars') markFleetChanged()
       setDeleteModal({ isOpen: false, table: '', data: null })
       fetchData(); if(table === 'departments') fetchDepartmentsOptions()
     } catch (error) { alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + getDeleteErrorMessage(table, error)) } finally { setIsSubmitting(false) }

@@ -315,12 +315,16 @@ body:has(.kpn-detail-overlay) .global-nav-spacer {
 }
 
 .kpn-dock {
-  color: var(--kpn-muted);
-  border-color: rgba(224,228,236,.92);
-  background: rgba(255,255,255,.96);
-  box-shadow: none;
-  backdrop-filter: blur(24px) saturate(165%);
-  -webkit-backdrop-filter: blur(24px) saturate(165%);
+  color: #566277;
+  border-color: rgba(255,255,255,.64);
+  background: linear-gradient(135deg, rgba(255,255,255,.32), rgba(242,249,255,.12));
+  box-shadow: 0 10px 30px rgba(37,55,76,.12), inset 0 1px 0 rgba(255,255,255,.72);
+  -webkit-backdrop-filter: blur(18px) saturate(165%);
+  backdrop-filter: blur(18px) saturate(165%);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .kpn-dock { background: rgba(245,250,255,.86); }
 }
 
 .kpn-dock-active {
@@ -340,7 +344,7 @@ body:has(.kpn-detail-overlay) .global-nav-spacer {
 }
 
 .kpn-dock-icon-inactive {
-  color: #858c9c;
+  color: #59667b;
   background: transparent;
 }
 

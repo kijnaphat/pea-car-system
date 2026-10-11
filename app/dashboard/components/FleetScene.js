@@ -7,7 +7,7 @@ import { Vector3, MOUSE, TOUCH } from 'three'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
-import { siteParkingSlots, siteOverflowAisles } from '@/lib/fleetSiteLayout'
+import { displayedParkingSlots, siteOverflowAisles } from '@/lib/fleetSiteLayout'
 import { restingPose, siteChargingBays, campusBounds } from '@/lib/fleetCharging'
 import FleetCampus from './FleetCampus'
 import FleetCampusProps from './FleetCampusProps'
@@ -222,7 +222,7 @@ function ProjectedLabels({ host, enabled }) {
 
 export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost }) {
   const bounds = useMemo(()=>campusBounds(vehicles),[vehicles])
-  const slots = useMemo(()=>siteParkingSlots(vehicles),[vehicles])
+  const slots = useMemo(()=>displayedParkingSlots(vehicles),[vehicles])
   const overflowAisles = useMemo(()=>siteOverflowAisles(vehicles),[vehicles])
   const chargingBays = useMemo(()=>siteChargingBays(vehicles),[vehicles])
   return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 200 }}
@@ -230,7 +230,7 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
     gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
     <color attach="background" args={['#f2f7fa']} />
     <ambientLight intensity={.7}/><hemisphereLight args={['#fff7ea','#c0d5db',.65]}/>
-    <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={65} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
+    <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={85} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
     <FleetCampus bounds={bounds} overflowAisles={overflowAisles} chargingBays={chargingBays} vehicles={vehicles}/>
     <FleetCampusProps/>
     <FleetCampusLife reducedMotion={reducedMotion}/>

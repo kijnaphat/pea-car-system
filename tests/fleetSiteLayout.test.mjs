@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { SITE, SITE_LABELS, SITE_BUILDINGS, SITE_ROADS, siteParkingPosition, siteParkingSlots, siteBounds, siteOverflowAisles, OVERFLOW_AISLE_OFFSET } from '../lib/fleetSiteLayout.js'
+import { SITE, SITE_LABELS, SITE_BUILDINGS, SITE_ROADS, SITE_CUSTOMER, SITE_CHARGING, displayedParkingSlots, siteParkingPosition, siteParkingSlots, siteBounds, siteOverflowAisles, OVERFLOW_AISLE_OFFSET } from '../lib/fleetSiteLayout.js'
 import { demoSnapshot, fleetVehicles } from '../lib/fleetDigitalTwin.js'
 
 test('reference plan has 18 upper and 12 lower permanent spaces facing the main road',()=>{
@@ -92,4 +92,31 @@ test('entrance is left of slots, exit is right, with a dead end beyond the exit'
   assert.ok(SITE.exit.x>siteParkingPosition(18).x)
   assert.ok(SITE.roadEnd>SITE.exit.x)
   for(const key of ['office','entry-building','one-storey','customer','carport','rear-building','entrance','exit','dead-end']) assert.ok(SITE_LABELS.some(l=>l.key===key))
+})
+
+test('customer and EV carports face each other, with all permanent rows outside the roofs',()=>{
+  assert.equal(SITE_CUSTOMER.x,SITE_CHARGING.x)
+  assert.equal(SITE_CUSTOMER.z,-SITE_CHARGING.z)
+  assert.equal(SITE_CUSTOMER.width,SITE_CHARGING.width)
+  assert.equal(SITE_CUSTOMER.depth,SITE_CHARGING.depth)
+  const right=SITE_CUSTOMER.x+(SITE_CUSTOMER.width+.5)/2
+  assert.ok(siteParkingPosition(1).x-1.35>right+1)
+  assert.ok(siteParkingPosition(19).x-1.35>right+1)
+  assert.ok(SITE.exit.x>siteParkingPosition(18).x+4)
+  assert.equal(SITE.roadEnd-SITE.roadStart,88.5)
+})
+
+test('admin-hidden and absent cars have no painted slots or labels; returning visibility restores the same ID',()=>{
+  const raw=demoSnapshot(),hidden={...raw,carsDataRaw:raw.carsDataRaw.map(car=>car.id==='demo-2'?{...car,is_visible:false}:car)}
+  const cars=fleetVehicles(hidden),slots=displayedParkingSlots(cars)
+  assert.equal(slots.length,24)
+  assert.ok(!slots.some(slot=>slot.slotCode==='P02'))
+  assert.ok(!slots.some(slot=>slot.slotCode==='P29'||slot.slotCode==='P30'))
+  assert.equal(slots.find(slot=>slot.slotCode==='P03').car.id,'demo-3')
+  const onTrip={...cars[0],status:'on_trip'}
+  assert.ok(displayedParkingSlots([onTrip]).some(slot=>slot.slotCode==='P01'))
+  assert.deepEqual(displayedParkingSlots([{...onTrip,is_visible:false}]),[])
+  const restored=displayedParkingSlots(fleetVehicles(raw)).find(slot=>slot.slotCode==='P02')
+  assert.equal(restored.car.id,'demo-2')
+  assert.deepEqual(restored.parking,siteParkingPosition(2))
 })

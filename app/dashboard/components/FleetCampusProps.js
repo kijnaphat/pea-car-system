@@ -3,6 +3,7 @@
 import { memo, useMemo } from 'react'
 import { RoundedBox } from '@react-three/drei'
 import { CatmullRomCurve3, Vector3 } from 'three'
+import { SITE } from '@/lib/fleetSiteLayout'
 
 function Block({ at, size, color, ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size}/><meshStandardMaterial color={color} roughness={.9}/></mesh>
@@ -103,7 +104,7 @@ export default memo(function FleetCampusProps() {
     <Fountain/><Pergola/><CoffeeKiosk/><BicycleRack/><UtilityYard/><RecyclingBins/>
     <FlowerBed x={-51.5} z={-3} width={3}/><FlowerBed x={-48.7} z={5.8} width={2}/>
     <FlowerBed x={-31} z={11.2} width={3.4} color="#ddb997"/>
-    <Fence x={-56} z={-7} length={30}/><Fence x={50.6} z={-10} length={9}/><Fence x={50.6} z={9.2} length={7}/>
+    <Fence x={-56} z={-7} length={30}/><Fence x={SITE.bounds.maxX-1.4} z={-10} length={9}/><Fence x={SITE.bounds.maxX-1.4} z={9.2} length={7}/>
     {[31.5,32.5,33.5].map(x=><group key={x} position={[x,0,-13.2]}>
       <Block at={[0,.045,0]} size={[.35,.09,.35]} color="#748d94"/>
       <mesh position={[0,.3,0]} castShadow><coneGeometry args={[.16,.5,8]}/><meshStandardMaterial color="#ddad61"/></mesh>
