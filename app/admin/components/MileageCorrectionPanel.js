@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
+import { loadMileageReviewData } from '@/lib/mileageReviewData'
 import {
   buildAnomalyReviewSet,
   buildTripSequence,
@@ -32,6 +33,7 @@ const mileage = value => value === null || value === undefined
   : Number(value).toLocaleString('th-TH')
 
 const getCar = getTripCar
+const DISPLAY_PAGE_SIZE = 40
 
 function MileageBox({ label, value, tone, onEdit, disabled }) {
   return (
@@ -67,65 +69,48 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('issues')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [modal, setModal] = useState(null)
   const [newValue, setNewValue] = useState('')
   const [reason, setReason] = useState('')
   const [syncAdjacent, setSyncAdjacent] = useState(false)
+  const [page, setPage] = useState(1)
+  const [loadedAt, setLoadedAt] = useState(null)
+  const loadRequest = useRef(0)
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (forceRefresh = true) => {
+    const requestId = ++loadRequest.current
     setLoading(true)
     setError('')
-
-    const [logsResult, correctionsResult, reviewsResult] = await Promise.all([
-      supabase
-        .from('trip_logs')
-        .select('id, created_at, car_id, activity_type, parent_trip_log_id, driver_name, start_time, end_time, start_mileage, end_mileage, battery_before, battery_after, is_completed, cars(id, plate_number, model, fuel_type)')
-        .order('start_time', { ascending: false })
-        .limit(500),
-      supabase
-        .from('mileage_corrections')
-        .select('id, batch_id, trip_log_id, field_name, old_value, new_value, reason, corrected_at')
-        .order('corrected_at', { ascending: false })
-        .limit(50),
-      supabase
-        .from('trip_anomaly_reviews')
-        .select('trip_log_id, issue_fingerprint, note, reviewed_at')
-        .order('reviewed_at', { ascending: false }),
-    ])
-
-    if (logsResult.error) {
-      setError(`โหลดรายการเดินทางไม่สำเร็จ: ${logsResult.error.message}`)
-      setLoading(false)
-      return
+    try {
+      const [history, correctionsResult] = await Promise.all([
+        loadMileageReviewData(supabase, { forceRefresh }),
+        supabase.from('mileage_corrections')
+          .select('id, batch_id, trip_log_id, field_name, old_value, new_value, reason, corrected_at')
+          .order('corrected_at', { ascending: false }).limit(50),
+      ])
+      if (requestId !== loadRequest.current) return
+      if (correctionsResult.error) throw new Error(`โหลดประวัติการแก้ไขไม่สำเร็จ: ${correctionsResult.error.message}`)
+      setLogs(history.logs)
+      setReviews(history.reviews)
+      setLoadedAt(history.loadedAt)
+      setCorrections(correctionsResult.data || [])
+      onAnomalyCountChange?.(countPendingAnomalies(history.logs, history.reviews))
+    } catch (loadError) {
+      if (requestId === loadRequest.current) setError(loadError.message)
+    } finally {
+      if (requestId === loadRequest.current) setLoading(false)
     }
-
-    if (correctionsResult.error) {
-      setError(`โหลดประวัติการแก้ไขไม่สำเร็จ: ${correctionsResult.error.message}`)
-      setLoading(false)
-      return
-    }
-
-    if (reviewsResult.error) {
-      setError(`โหลดรายการที่ตรวจสอบแล้วไม่สำเร็จ: ${reviewsResult.error.message}`)
-      setLoading(false)
-      return
-    }
-
-    const nextLogs = logsResult.data || []
-    const nextReviews = reviewsResult.data || []
-    setLogs(nextLogs)
-    setCorrections(correctionsResult.data || [])
-    setReviews(nextReviews)
-    onAnomalyCountChange?.(countPendingAnomalies(nextLogs, nextReviews))
-    setLoading(false)
   }, [onAnomalyCountChange])
 
   useEffect(() => {
-    const timer = window.setTimeout(loadData, 0)
-    return () => window.clearTimeout(timer)
+    const timer = window.setTimeout(() => loadData(false), 0)
+    return () => {
+      window.clearTimeout(timer)
+      loadRequest.current += 1
+    }
   }, [loadData])
 
   const sequencedLogs = useMemo(() => buildTripSequence(logs), [logs])
@@ -158,6 +143,17 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
         && (to === null || time <= to)
     })
   }, [sequencedLogs, reviewSet, search, statusFilter, dateFrom, dateTo])
+
+  const pageCount = Math.max(1, Math.ceil(filteredLogs.length / DISPLAY_PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const displayedLogs = filteredLogs.slice((currentPage - 1) * DISPLAY_PAGE_SIZE, currentPage * DISPLAY_PAGE_SIZE)
+  const showAllIssues = () => {
+    setSearch('')
+    setDateFrom('')
+    setDateTo('')
+    setStatusFilter('issues')
+    setPage(1)
+  }
 
   const openCorrection = (trip, fieldName) => {
     const oldValue = trip[fieldName]
@@ -360,9 +356,9 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
               <div className="flex items-center gap-2"><Icon icon="ph:speedometer-duotone" width="24" height="24" className="text-[#702082]" /><h2 className="text-[17px] font-bold text-[#4b1560]">ค้นหารายการที่ต้องแก้</h2></div>
-              <p className="mt-1 text-[11px] text-[#846c89]">รถทั่วไปตรวจเลขไมล์ต่อเนื่อง ส่วนรถ EV ตรวจเปอร์เซ็นต์แบตเป็นหลัก และเก็บประวัติทุกการแก้ไข</p>
+              <p className="mt-1 text-[11px] text-[#846c89]">ตรวจประวัติย้อนหลังทั้งหมด รวมเลขไมล์ EV ที่กระโดดหรือขัดกับรายการก่อน–หลัง และเก็บประวัติทุกการแก้ไข</p>
             </div>
-            <button type="button" onClick={loadData} className="flex h-10 items-center justify-center gap-2 rounded-[12px] border border-[#dfcfe4] bg-[#f8f3fa] px-4 text-[11px] font-bold text-[#702082]"><Icon icon="ph:arrows-clockwise-bold" width="16" height="16" />รีเฟรชข้อมูล</button>
+            <button type="button" disabled={loading} onClick={() => loadData()} className="flex h-10 items-center justify-center gap-2 rounded-[12px] border border-[#dfcfe4] bg-[#f8f3fa] px-4 text-[11px] font-bold text-[#702082] disabled:opacity-50"><Icon icon="ph:arrows-clockwise-bold" width="16" height="16" />รีเฟรชข้อมูล</button>
           </div>
 
           {error && <div className="mt-4 flex items-start gap-2 rounded-[13px] border border-[#ffd1ce] bg-[#fff0ef] p-3 text-[12px] font-semibold text-[#c83c35]"><Icon icon="ph:x-circle-fill" width="18" height="18" className="shrink-0" />{error}</div>}
@@ -371,10 +367,10 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
           <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_160px_160px]">
             <label className="relative">
               <Icon icon="ph:magnifying-glass" width="18" height="18" className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9e86a4]" />
-              <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="ค้นหาทะเบียนรถ ชื่อผู้ขับ หรือเลขรายการ" className="h-12 w-full rounded-[13px] border border-[#dfcfe4] bg-white pl-11 pr-4 text-[13px] text-[#35133f] outline-none focus:border-[#702082]" />
+              <input type="search" value={search} onChange={event => { setSearch(event.target.value); setPage(1) }} placeholder="ค้นหาทะเบียนรถ ชื่อผู้ขับ หรือเลขรายการ" className="h-12 w-full rounded-[13px] border border-[#dfcfe4] bg-white pl-11 pr-4 text-[13px] text-[#35133f] outline-none focus:border-[#702082]" />
             </label>
-            <input type="date" value={dateFrom} onChange={event => setDateFrom(event.target.value)} aria-label="วันที่เริ่มต้น" className="h-12 rounded-[13px] border border-[#dfcfe4] bg-white px-3 text-[12px] text-[#4b1560] outline-none focus:border-[#702082]" />
-            <input type="date" value={dateTo} onChange={event => setDateTo(event.target.value)} aria-label="วันที่สิ้นสุด" className="h-12 rounded-[13px] border border-[#dfcfe4] bg-white px-3 text-[12px] text-[#4b1560] outline-none focus:border-[#702082]" />
+            <input type="date" value={dateFrom} onChange={event => { setDateFrom(event.target.value); setPage(1) }} aria-label="วันที่เริ่มต้น" className="h-12 rounded-[13px] border border-[#dfcfe4] bg-white px-3 text-[12px] text-[#4b1560] outline-none focus:border-[#702082]" />
+            <input type="date" value={dateTo} onChange={event => { setDateTo(event.target.value); setPage(1) }} aria-label="วันที่สิ้นสุด" className="h-12 rounded-[13px] border border-[#dfcfe4] bg-white px-3 text-[12px] text-[#4b1560] outline-none focus:border-[#702082]" />
           </div>
 
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -384,7 +380,7 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
               ['active', 'กำลังใช้งาน'],
               ['completed', 'คืนรถแล้ว'],
             ].map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setStatusFilter(value)} className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold transition-all ${statusFilter === value ? 'border-[#702082] bg-[#702082] text-white' : 'border-[#dfcfe4] bg-white text-[#765c7c]'}`}>
+              <button key={value} type="button" onClick={() => { if (value === 'issues') showAllIssues(); else { setStatusFilter(value); setPage(1) } }} className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold transition-all ${statusFilter === value ? 'border-[#702082] bg-[#702082] text-white' : 'border-[#dfcfe4] bg-white text-[#765c7c]'}`}>
                 <span>{label}</span>
                 {value === 'issues' && (
                   <span className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none ${pendingAnomalyCount > 0 ? 'bg-[#ff453a] text-white' : statusFilter === value ? 'bg-white/20 text-white' : 'bg-[#eee5f0] text-[#846c89]'}`}>
@@ -394,10 +390,14 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
               </button>
             ))}
           </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[12px] bg-[#f8f3fa] px-3 py-3 text-[11px] text-[#765c7c]">
+            <p>พบ {filteredLogs.length.toLocaleString('th-TH')} รายการ · ตรวจจากประวัติทั้งหมด {logs.length.toLocaleString('th-TH')} รายการ{loadedAt && <span className="block mt-1 text-[10px]">ข้อมูล ณ {THAI_DATE.format(new Date(loadedAt))} · ใช้ข้อมูลร่วมกัน 5 นาทีเพื่อประหยัดการโหลด กดรีเฟรชเพื่ออ่านใหม่ทันที</span>}</p>
+            <button type="button" onClick={showAllIssues} className="rounded-full border border-[#dfcfe4] bg-white px-3 py-2 font-bold text-[#702082]">ล้างตัวกรองและแสดงผิดปกติทั้งหมด</button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {filteredLogs.map(trip => {
+          {displayedLogs.map(trip => {
             const car = getCar(trip)
             const issues = getTripIssues(trip)
             const reviewed = isTripAnomalyReviewed(trip, reviewSet, issues)
@@ -452,7 +452,10 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
                 </div>
 
                 {ev ? (
-                  <p className="mt-3 rounded-[12px] bg-[#f7f1f8] px-3 py-2.5 text-center text-[10px] font-semibold text-[#765c7c]">รถ EV ใช้เปอร์เซ็นต์แบตเป็นหลัก · เลขไมล์ก่อนและหลังชาร์จควรเท่ากัน</p>
+                  <div className="mt-3 rounded-[12px] bg-[#f7f1f8] px-3 py-2.5 text-center text-[10px] font-semibold text-[#765c7c]">
+                    <p>เลขไมล์ก่อนและหลังชาร์จควรเท่ากัน และไม่ขัดกับประวัติการใช้รถ</p>
+                    <p className="mt-1">{trip.parent_trip_log_id ? `ภารกิจ #${trip.parent_trip_log_id}: ${mileage(trip.parentTrip?.start_mileage)} – ${trip.parentTrip?.is_completed ? mileage(trip.parentTrip?.end_mileage) : 'ยังไม่คืนรถ'} กม.` : `รายการก่อน: ${mileage(trip.previousTrip?.end_mileage)} กม. · รายการถัดไป: ${mileage(trip.nextTrip?.start_mileage)} กม.`}</p>
+                  </div>
                 ) : (
                   <div className="mt-3 grid grid-cols-3 divide-x divide-[#eadfed] rounded-[13px] border border-[#eadfed] bg-[#faf7fb] px-2 py-3 text-center">
                     <div className="px-2"><p className="text-[9px] font-bold text-[#9a83a0]">เที่ยวก่อน</p><p className="mt-1 text-[11px] font-bold text-[#5a3b62]">{mileage(trip.previousTrip?.end_mileage)} กม.</p></div>
@@ -465,7 +468,12 @@ export default function MileageCorrectionPanel({ onAnomalyCountChange }) {
           })}
         </div>
 
-        {filteredLogs.length === 0 && <div className="rounded-[22px] border border-dashed border-[#d9c8de] bg-white p-10 text-center"><Icon icon="ph:magnifying-glass-duotone" width="36" height="36" className="mx-auto text-[#b29bb8]" /><p className="mt-3 text-[13px] font-bold text-[#765c7c]">ไม่พบรายการตามเงื่อนไขที่เลือก</p></div>}
+        {filteredLogs.length === 0 && <div className="rounded-[22px] border border-dashed border-[#d9c8de] bg-white p-10 text-center"><Icon icon="ph:magnifying-glass-duotone" width="36" height="36" className="mx-auto text-[#b29bb8]" /><p className="mt-3 text-[13px] font-bold text-[#765c7c]">{error ? 'ยังตรวจข้อมูลไม่ครบ กรุณารีเฟรชอีกครั้ง' : 'ไม่พบรายการตามเงื่อนไขที่เลือก'}</p></div>}
+        {pageCount > 1 && <div className="flex items-center justify-center gap-4 text-[12px] text-[#765c7c]">
+          <button type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)} className="rounded-[12px] border border-[#dfcfe4] bg-white px-4 py-2 font-bold disabled:opacity-40">หน้าก่อน</button>
+          <span>หน้า {currentPage} / {pageCount}</span>
+          <button type="button" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)} className="rounded-[12px] border border-[#dfcfe4] bg-white px-4 py-2 font-bold disabled:opacity-40">หน้าถัดไป</button>
+        </div>}
 
         <div className="overflow-hidden rounded-[22px] border border-[#eadfed] bg-white shadow-[0_12px_36px_rgba(75,21,96,.07)]">
           <div className="border-b border-[#eadfed] px-5 py-4 sm:px-6"><h2 className="flex items-center gap-2 text-[14px] font-bold text-[#4b1560]"><Icon icon="ph:clock-counter-clockwise-duotone" width="20" height="20" />ประวัติการแก้ไขล่าสุด</h2><p className="mt-1 text-[10px] text-[#846c89]">ประวัตินี้ไม่สามารถลบหรือแก้ไขย้อนหลังได้</p></div>

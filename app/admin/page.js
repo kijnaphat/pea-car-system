@@ -9,6 +9,7 @@ import DataManagementPanel from '@/app/admin/components/DataManagementPanel'
 import DiscordAuditPanel from '@/app/admin/components/DiscordAuditPanel'
 import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
 import { countPendingAnomalies } from '@/lib/tripAnomalies'
+import { clearMileageReviewCache, loadMileageReviewData } from '@/lib/mileageReviewData'
 import { startVisiblePolling } from '@/lib/visiblePolling'
 import { markFleetChanged } from '@/lib/fleetSnapshot'
 
@@ -104,19 +105,12 @@ export default function AdminDashboard() {
   }
 
   const fetchMileageAnomalyCount = useCallback(async () => {
-    const [logsResult, reviewsResult] = await Promise.all([
-      supabase
-        .from('trip_logs')
-        .select('id, created_at, car_id, start_time, start_mileage, end_mileage, battery_before, battery_after, is_completed, cars(id, fuel_type)')
-        .order('start_time', { ascending: false })
-        .limit(500),
-      supabase
-        .from('trip_anomaly_reviews')
-        .select('trip_log_id, issue_fingerprint'),
-    ])
-
-    if (!logsResult.error && !reviewsResult.error) {
-      setMileageAnomalyCount(countPendingAnomalies(logsResult.data || [], reviewsResult.data || []))
+    try {
+      const { logs, reviews } = await loadMileageReviewData(supabase)
+      setMileageAnomalyCount(countPendingAnomalies(logs, reviews))
+    } catch {
+      // The correction panel shows the actionable load error. Do not replace
+      // an existing warning count with a misleading zero when a request fails.
     }
   }, [])
 
@@ -166,6 +160,7 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     if(confirm('ยืนยันการออกจากระบบ PEA Smart Fleet?')) {
         await supabase.rpc('log_admin_session_event', { p_event_type: 'logout' })
+        clearMileageReviewCache(supabase)
         await supabase.auth.signOut()
         router.replace('/') 
     }
