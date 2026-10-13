@@ -667,7 +667,7 @@ export default function UltimateDashboard() {
           <header className="flex items-center justify-between rounded-[22px] border border-white/90 bg-white/85 px-3.5 py-3 backdrop-blur-xl md:px-5">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[#e7eaf1] bg-white p-1.5"><img src="/pea_logo.png" className="h-full w-full object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/></div>
-              <div className="min-w-0"><p className="text-[9px] font-bold tracking-[.15em] text-[#5547f7]">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</p><h1 className="truncate text-[18px] font-black tracking-[-.5px] text-[#101522] md:text-[21px]">KPN SMART CAR</h1></div>
+              <div className="min-w-0"><p className="text-[9px] font-bold tracking-[.15em] text-[#5547f7]">การไฟฟ้าส่วนภูมิภาค · ท่ามะกา</p><h1 className="truncate text-[18px] font-black tracking-[-.5px] text-[#101522] md:text-[21px]">THAMAKA SMART CAR</h1></div>
             </div>
             <div className="flex gap-2"><button type="button" onClick={() => setDashboardView('fleet')} className="rounded-xl bg-purple-100 px-4 text-sm font-bold text-purple-800">ลานรถ 3D</button><button type="button" onClick={() => router.push('/')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="กลับหน้าหลัก"><Icon icon="ph:house-duotone" width="21" height="21" /></button></div>
           </header>
@@ -707,7 +707,7 @@ export default function UltimateDashboard() {
             ))}
           </div>
 
-          <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-semibold text-[#8c94a7]"><Icon icon="ph:shield-check-duotone" width="16" height="16" className="text-[#5547f7]" />ข้อมูลอัปเดตจากระบบ KPN Smart Car</div>
+          <div className="mt-4 flex items-center justify-center gap-2 text-[10px] font-semibold text-[#8c94a7]"><Icon icon="ph:shield-check-duotone" width="16" height="16" className="text-[#5547f7]" />ข้อมูลอัปเดตจากระบบ Thamaka Smart Car</div>
         </div>
       </div>
     )
@@ -804,7 +804,7 @@ export default function UltimateDashboard() {
               <tr>
                 <th colSpan="14" className="no-border-print" style={{ paddingBottom: '20px' }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, fontFamily: 'Sarabun, sans-serif' }}>
-                    บัญชี{activeCategory.title}การไฟฟ้าส่วนภูมิภาคเขต ก.3 สาขากำแพงแสน ประจำเดือน {getReportTitleDate()}
+                    บัญชี{activeCategory.title}การไฟฟ้าส่วนภูมิภาคท่ามะกา ประจำเดือน {getReportTitleDate()}
                   </h2>
                 </th>
               </tr>

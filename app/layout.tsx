@@ -4,9 +4,9 @@ import { Suspense } from "react"; // ✅ 1. เพิ่มบรรทัดน
 import GlobalBottomNav from "./components/GlobalBottomNav";
 
 export const metadata: Metadata = {
-  title: "KPN SMART CAR",
+  title: "THAMAKA SMART CAR",
   description: "ระบบจัดการยานพาหนะ PEA",
-  applicationName: "KPN SMART CAR",
+  applicationName: "THAMAKA SMART CAR",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "KPN SMART CAR",
+    title: "THAMAKA SMART CAR",
     statusBarStyle: "default",
   },
   formatDetection: {

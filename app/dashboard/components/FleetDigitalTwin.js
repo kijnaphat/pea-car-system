@@ -207,7 +207,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
     demo.current = next; accept(next)
   }
 
-  const flatMap = <div className="twin-flat-map" role="region" aria-label="ผังลานรถ 2D สำรอง"><div className="twin-flat-office">อาคารสำนักงาน กฟภ. กำแพงแสน</div>
+  const flatMap = <div className="twin-flat-map" role="region" aria-label="ผังลานรถ 2D สำรอง"><div className="twin-flat-office">อาคารสำนักงาน กฟภ. ท่ามะกา</div>
     <div className="twin-flat-grid">{visible.map(car => <button key={car.id} onClick={() => select(car.id)} aria-label={`เลือก ${car.plate_number} ช่อง ${car.slotCode}`} style={{ borderColor: selectedId === car.id ? '#6b21a8' : FLEET_STATUSES[car.status].color }}>
       <FleetVehicleGlyph car={car} size={52} style={{ opacity: car.status === 'on_trip' ? .18 : 1 }} /><strong>{car.slotCode}</strong><span>{car.plate_number}</span><span>{vehicleStyle(car).label}</span>
     </button>)}</div><p>มุมมอง 2D สำรอง · รถที่ออกภารกิจแสดงช่องจอดว่าง</p></div>

@@ -96,7 +96,7 @@ function CarSelector() {
       <div className="kpn-dark-card px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
         <div className="flex justify-between items-start">
           <div>
-             <h1 className="text-2xl font-black tracking-tight">KPN SMART CAR</h1>
+             <h1 className="text-2xl font-black tracking-tight">THAMAKA SMART CAR</h1>
              <p className="text-white/65 text-sm">รายงานและเอกสารยานพาหนะ</p>
           </div>
           <button 
@@ -1239,7 +1239,7 @@ function ReportPage() {
                                         <span>พ.ศ.</span>
                                         <div className="border-b border-dotted border-black px-2 min-w-[50px] text-center mx-1">{formatThaiYear(reportDate)}</div>
                                         <span>หน่วยงาน</span>
-                                        <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">กฟส.กพส.</div>
+                                        <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">กฟส.ท่ามะกา</div>
                                         <span>หมายเลขทะเบียน</span>
                                         <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">{car?.plate_number}</div>
                                     </div>
@@ -1285,7 +1285,7 @@ function ReportPage() {
                                             return (
                                                 <tr key={i} className="h-[28px] text-center font-normal align-middle">
                                                     <td className="border border-black">{formatDate(log.start_time)}</td>
-                                                    <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.กพส.</td>
+                                                    <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.ท่ามะกา</td>
                                                     <td className="border border-black text-right px-1">{log.end_mileage.toLocaleString()}</td>
                                                     <td className="border border-black">{log.battery_before ?? '-'}</td>
                                                     <td className="border border-black">{log.battery_after ?? '-'}</td>

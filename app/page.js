@@ -465,7 +465,7 @@ function CarSelector({ adminReportCarId }) {
     ? signaturePeriod
     : `ประกาศรอบต่อไป ${signatureStartDate}`
   const bannerSlides = [
-    { eyebrow:'KPN SMART CAR', title:'ระบบรถพร้อมใช้งาน', accent:'จัดการง่ายในหน้าเดียว', button:'ดูคู่มือระบบ', icon:'ph:car-profile-duotone', background:'linear-gradient(120deg,#080d1b 0%,#111a32 62%,#3746a0 100%)', iconBg:'#c9ff48', iconColor:'#080d1b', guideType:'overview' },
+    { eyebrow:'THAMAKA SMART CAR', title:'ระบบรถพร้อมใช้งาน', accent:'จัดการง่ายในหน้าเดียว', button:'ดูคู่มือระบบ', icon:'ph:car-profile-duotone', background:'linear-gradient(120deg,#080d1b 0%,#111a32 62%,#3746a0 100%)', iconBg:'#c9ff48', iconColor:'#080d1b', guideType:'overview' },
     { eyebrow:'SCAN & GO', title:'สแกนก่อนใช้รถ', accent:'บันทึกได้ในไม่กี่ขั้นตอน', button:'ดูวิธีสแกน', icon:'ph:qr-code-duotone', background:'linear-gradient(120deg,#3529d6 0%,#5a50f6 58%,#7898ff 100%)', iconBg:'#c9ff48', iconColor:'#17124f', detailIndex:1 },
     { eyebrow:'MONTHLY SIGN', title:isSignaturePeriod ? 'ลงชื่อประจำเดือน' : 'ประกาศรอบต่อไป', accent:signatureAnnouncement, button:'ดูรายละเอียด', icon:'ph:pencil-line-duotone', background:'linear-gradient(120deg,#10182e 0%,#273a76 58%,#607ef5 100%)', iconBg:'#c9ff48', iconColor:'#10182e', detailIndex:0 },
     { eyebrow:'PEA SAFETY', title:'ตรวจรถก่อนออกงาน', accent:'ปลอดภัยทุกเส้นทาง', button:'รายการตรวจรถ', icon:'ph:shield-check-duotone', background:'linear-gradient(120deg,#0b1222 0%,#17294a 58%,#325b82 100%)', iconBg:'#c9ff48', iconColor:'#0b1222', detailIndex:2 }
@@ -592,7 +592,7 @@ function CarSelector({ adminReportCarId }) {
         <div className="max-w-[620px] lg:max-w-[1280px] mx-auto px-5 lg:px-8 pt-3 pb-2 sm:pt-5 sm:pb-3 lg:py-5 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[12px] sm:rounded-[14px] bg-white border border-[#eadfed] p-1 sm:p-1.5 flex items-center justify-center shadow-sm overflow-hidden"><img src="/pea_logo.png" alt="ตราสัญลักษณ์การไฟฟ้าส่วนภูมิภาค PEA" className="w-full h-full object-contain" /></div>
-            <div className="min-w-0"><p className="text-[8px] sm:text-[9px] font-bold text-[#702082] tracking-[.15em]">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</p><h1 className="text-[17px] sm:text-[21px] font-black tracking-[-.7px] truncate">KPN SMART CAR</h1></div>
+            <div className="min-w-0"><p className="text-[8px] sm:text-[9px] font-bold text-[#702082] tracking-[.15em]">การไฟฟ้าส่วนภูมิภาค · ท่ามะกา</p><h1 className="text-[17px] sm:text-[21px] font-black tracking-[-.7px] truncate">THAMAKA SMART CAR</h1></div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => router.push('/dashboard')} className="hidden lg:inline-flex items-center gap-2 rounded-full bg-[#f3eaf5] px-4 py-2.5 text-[13px] font-bold text-[#702082] transition-transform hover:-translate-y-0.5" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="19" height="19" />Dashboard</button>
@@ -657,7 +657,7 @@ function CarSelector({ adminReportCarId }) {
         <section className="relative pt-3 sm:pt-4 pb-8 sm:pb-9 overflow-hidden" style={{background:'linear-gradient(145deg,#f5f6ff 0%,#eef1ff 58%,#f7ffd9 135%)'}}>
           <div className="absolute -right-24 bottom-0 w-80 h-80 rounded-full border border-white/35"/>
           <div className="relative px-5 flex items-center justify-between mb-3 sm:mb-4">
-            <div className="flex items-center gap-2.5 sm:gap-3"><span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#080d1b] text-[#c9ff48] flex items-center justify-center shadow-[0_9px_22px_rgba(8,13,27,.18)]"><Icon icon="ph:newspaper-clipping-duotone" width="22" height="22" /></span><div><h2 className="text-[20px] sm:text-[20px] font-bold leading-tight text-[#4b1560]">ประกาศและข่าวสาร</h2><p className="text-[9px] sm:text-[10px] text-[#765c7c]">ข้อมูลสำคัญจากระบบ KPN Smart Car</p></div></div>
+            <div className="flex items-center gap-2.5 sm:gap-3"><span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#080d1b] text-[#c9ff48] flex items-center justify-center shadow-[0_9px_22px_rgba(8,13,27,.18)]"><Icon icon="ph:newspaper-clipping-duotone" width="22" height="22" /></span><div><h2 className="text-[20px] sm:text-[20px] font-bold leading-tight text-[#4b1560]">ประกาศและข่าวสาร</h2><p className="text-[9px] sm:text-[10px] text-[#765c7c]">ข้อมูลสำคัญจากระบบ Thamaka Smart Car</p></div></div>
             <button onClick={() => setNewsExpanded(value => !value)} className="flex items-center gap-1.5 text-[11px] font-bold active:scale-95 transition-transform" aria-expanded={newsExpanded} aria-controls="pea-news-content">
               <span className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center shadow-sm">4</span>
               <Icon icon={newsExpanded ? 'ph:caret-up-bold' : 'ph:caret-down-bold'} width="20" height="20" />
@@ -745,7 +745,7 @@ function CarSelector({ adminReportCarId }) {
               <div className="relative flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[12px] border border-white/20 bg-white p-1.5"><img src="/pea_logo.png" alt="PEA" className="h-full w-full object-contain" /></span>
-                  <div className="min-w-0"><p className="text-[8px] font-bold tracking-[.15em] text-[#c9ff48]">WELCOME TO</p><p className="truncate text-[14px] font-black tracking-[-.3px]">KPN SMART CAR</p></div>
+                  <div className="min-w-0"><p className="text-[8px] font-bold tracking-[.15em] text-[#c9ff48]">WELCOME TO</p><p className="truncate text-[14px] font-black tracking-[-.3px]">THAMAKA SMART CAR</p></div>
                 </div>
                 <button type="button" onClick={dismissWelcomeAnnouncement} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-transform active:scale-90" aria-label="ปิดประกาศ"><Icon icon="ph:x-bold" width="14" height="14" /></button>
               </div>
@@ -899,7 +899,7 @@ function CarSelector({ adminReportCarId }) {
                       <Icon icon={isMaintenance ? 'ph:wrench-duotone' : isBusy ? 'ph:steering-wheel-duotone' : 'ph:car-profile-duotone'} width="27" height="27" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] font-bold tracking-[.12em] text-[#c9ff48]">KPN SMART CAR</p>
+                      <p className="text-[9px] font-bold tracking-[.12em] text-[#c9ff48]">THAMAKA SMART CAR</p>
                       <h2 className="truncate text-[17px] font-bold leading-tight">{isMaintenance ? 'ข้อมูลการแจ้งซ่อม' : isBusy ? 'ข้อมูลการใช้งาน' : 'รายละเอียดรถยนต์'}</h2>
                     </div>
                   </div>
@@ -1699,7 +1699,7 @@ function ReportPage() {
                                         <span>พ.ศ.</span>
                                         <div className="border-b border-dotted border-black px-2 min-w-[50px] text-center mx-1">{formatThaiYear(reportDate)}</div>
                                         <span>หน่วยงาน</span>
-                                        <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">กฟส.กพส.</div>
+                                        <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">กฟส.ท่ามะกา</div>
                                         <span>หมายเลขทะเบียน</span>
                                         <div className="border-b border-dotted border-black px-2 min-w-[100px] text-center mx-1">{car?.plate_number}</div>
                                     </div>
@@ -1744,7 +1744,7 @@ function ReportPage() {
                                             return (
                                                 <tr key={i} className="h-[28px] text-center font-normal align-middle">
                                                     <td className="border border-black">{formatDate(log.start_time)}</td>
-                                                    <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.กพส.</td>
+                                                    <td className="border border-black text-center px-1 truncate max-w-[150px]">กฟส.ท่ามะกา</td>
                                                     <td className="border border-black text-right px-1">{log.end_mileage.toLocaleString()}</td>
                                                     <td className="border border-black">{log.battery_before ?? '-'}</td>
                                                     <td className="border border-black">{log.battery_after ?? '-'}</td>

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "KPN SMART CAR",
-    short_name: "KPN SMART CAR",
+    name: "THAMAKA SMART CAR",
+    short_name: "THAMAKA SMART CAR",
     description: "ระบบจัดการยานพาหนะ PEA",
     start_url: "/",
     scope: "/",
