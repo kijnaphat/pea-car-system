@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { Vector3, MOUSE, TOUCH } from 'three'
+import { Vector3, MOUSE, TOUCH, ACESFilmicToneMapping, SRGBColorSpace, PCFShadowMap } from 'three'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { createCampusVisitors } from '@/lib/fleetCampusVisitors'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
@@ -14,6 +14,7 @@ import FleetCampus from './FleetCampus'
 import FleetCampusProps from './FleetCampusProps'
 import FleetCampusLife from './FleetCampusLife'
 import { DEFAULT_ORBIT, MIN_ELEVATION, MAX_ELEVATION, cameraView, cameraOffset, captureOrbit } from '@/lib/fleetCamera'
+import { ARCHITECTURE } from '@/lib/fleetArchitecture'
 
 function Block({ at = [0, 0, 0], size, color = '#fff', ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size} /><meshStandardMaterial color={color} roughness={.9} flatShading /></mesh>
@@ -255,17 +256,30 @@ function ProjectedLabels({ host, enabled }) {
   return null
 }
 
+function ArchitecturalLight({ bounds }) {
+  const { size } = useThree()
+  const shadowSize = size.width >= 900 ? 2048 : 1024
+  return <>
+    <ambientLight intensity={.38}/>
+    <hemisphereLight args={['#fff3dc', '#788e8a', 1.15]}/>
+    <directionalLight castShadow position={[-36, 48, 26]} intensity={2.1}
+      shadow-mapSize={[shadowSize, shadowSize]} shadow-camera-left={-72}
+      shadow-camera-right={Math.max(90, bounds.maxX + 18)} shadow-camera-top={65}
+      shadow-camera-bottom={-65} shadow-camera-near={.5} shadow-camera-far={250}
+      shadow-normalBias={.025} shadow-bias={-.0003} shadow-radius={3}/>
+  </>
+}
+
 export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost, ambientTraffic = true }) {
   const bounds = useMemo(()=>campusBounds(vehicles),[vehicles])
   const slots = useMemo(()=>displayedParkingSlots(vehicles),[vehicles])
   const overflowAisles = useMemo(()=>siteOverflowAisles(vehicles),[vehicles])
   const chargingBays = useMemo(()=>siteChargingBays(vehicles),[vehicles])
-  return <Canvas orthographic shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 1000 }}
+  return <Canvas orthographic shadows={{ type: PCFShadowMap }} dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 1000 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
-    gl={{ antialias: true, alpha: false }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
-    <color attach="background" args={['#f2f7fa']} />
-    <ambientLight intensity={.7}/><hemisphereLight args={['#fff7ea','#c0d5db',.65]}/>
-    <directionalLight castShadow position={[-30,55,20]} intensity={1.4} shadow-mapSize={[1024,1024]} shadow-camera-left={-65} shadow-camera-right={Math.max(85,bounds.maxX+15)} shadow-camera-top={55} shadow-camera-bottom={-55} shadow-bias={-.001}/>
+    gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: .95, outputColorSpace: SRGBColorSpace }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
+    <color attach="background" args={[ARCHITECTURE.sky]} />
+    <ArchitecturalLight bounds={bounds}/>
     <FleetCampus bounds={bounds} overflowAisles={overflowAisles} chargingBays={chargingBays} vehicles={vehicles}/>
     <FleetCampusProps bounds={bounds} reducedMotion={reducedMotion}/>
     <FleetCampusLife reducedMotion={reducedMotion} bounds={bounds}/>

@@ -6,6 +6,8 @@ import { RoundedBox } from '@react-three/drei'
 import { CatmullRomCurve3, Vector3 } from 'three'
 import { SITE, SITE_BICYCLES } from '@/lib/fleetSiteLayout'
 import { CAMPUS_GARDENS, CAMPUS_TABLES } from '@/lib/fleetCampusAmenities'
+import { ARCHITECTURE, treeCrown } from '@/lib/fleetArchitecture'
+import { StaticParts } from './FleetArchitecture'
 
 function Block({ at, size, color, ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size}/><meshStandardMaterial color={color} roughness={.9}/></mesh>
@@ -112,14 +114,14 @@ function Fence({ x, z, length, yaw=0 }) {
 }
 
 function GardenIsland({ garden }) {
+  const canopy = useMemo(() => [-1.8,1.5].flatMap((x,n) => treeCrown(false, (garden.tone+n)%5).map(part=>({ ...part, at: [part.at[0]+x, part.at[1], part.at[2]+(n?-.2:.25)] }))), [garden.tone])
   return <group position={[garden.x,0,garden.z]}>
-    <Soft at={[0,.08,0]} size={[garden.width,.16,garden.depth]} color="#d3daca"/>
-    <Soft at={[0,.19,0]} size={[garden.width-.18,.08,garden.depth-.18]} color="#a8c995"/>
+    <Soft at={[0,.08,0]} size={[garden.width,.16,garden.depth]} color={ARCHITECTURE.stone}/>
+    <Soft at={[0,.19,0]} size={[garden.width-.18,.08,garden.depth-.18]} color={ARCHITECTURE.grass}/>
     {[-1.8,1.5].map((x,n)=><group key={x} position={[x,0,n?-.2:.25]}>
       <mesh position={[0,1,0]} castShadow><cylinderGeometry args={[.11,.16,1.8,6]}/><meshStandardMaterial color="#a48b6f"/></mesh>
-      <mesh position={[0,2.1,0]} scale={[.9,1.15,.85]} castShadow><icosahedronGeometry args={[.95,1]}/><meshStandardMaterial color={['#63b88a','#80c394','#57ac87'][(garden.tone+n)%3]} roughness={1}/></mesh>
-      <mesh position={[.28,2.45,0]} castShadow><icosahedronGeometry args={[.58,1]}/><meshStandardMaterial color="#95cda0" roughness={1}/></mesh>
     </group>)}
+    <StaticParts parts={canopy} foliage/>
     {[-.6,0,.6].map((x,n)=><group key={x}>
       <mesh position={[x,.45,.4]}><icosahedronGeometry args={[.28,1]}/><meshStandardMaterial color="#70a77c"/></mesh>
       <mesh position={[x,.65,.45]}><sphereGeometry args={[.09,6,5]}/><meshStandardMaterial color={n%2?'#e4c15e':'#d39bc3'}/></mesh>
@@ -142,7 +144,7 @@ function ShadeTable({ x, z, color }) {
 
 export default memo(function FleetCampusProps({ bounds, reducedMotion }) {
   return <group>
-    <mesh position={[-47,-.015,3]} receiveShadow><cylinderGeometry args={[6,6,.025,36]}/><meshStandardMaterial color="#c8debc"/></mesh>
+    <mesh position={[-47,-.015,3]} receiveShadow><cylinderGeometry args={[6,6,.025,36]}/><meshStandardMaterial color={ARCHITECTURE.grass}/></mesh>
     <Fountain reducedMotion={reducedMotion}/><Pergola/><CoffeeKiosk/><BicycleRack/><UtilityYard/><RecyclingBins/>
     <FlowerBed x={-51.5} z={-3} width={3}/><FlowerBed x={-48.7} z={5.8} width={2}/>
     <FlowerBed x={-31} z={11.2} width={3.4} color="#ddb997"/>

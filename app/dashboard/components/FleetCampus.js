@@ -5,6 +5,8 @@ import { RoundedBox } from '@react-three/drei'
 import { Shape, Path, Vector3, CatmullRomCurve3 } from 'three'
 import { SITE, SITE_BUILDINGS, SITE_CUSTOMER, SITE_CHARGING, SITE_HEDGE, SITE_HEDGE_BED, SITE_MOTORCYCLES, siteLayout } from '@/lib/fleetSiteLayout'
 import { roadNetwork, roadDashes } from '@/lib/fleetRoadGeometry'
+import { ARCHITECTURE, facadeParts, treeCrown } from '@/lib/fleetArchitecture'
+import { ArchitecturalCanopy, StaticParts } from './FleetArchitecture'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
 function Box({ at, size, color, ...props }) {
@@ -35,13 +37,13 @@ function RoundCourt({ x, z, radius = 2, color = '#d1e4be' }) {
 }
 
 function Tree({ x, z, small = false, tone = 0, planted = false }) {
-  const height = small ? 1.6 : 2.3
+  const crown = useMemo(() => treeCrown(small, tone), [small, tone])
+  const trunk = small ? 1.35 : 1.9
   return <group position={[x,0,z]}>
-    {!planted && <><Box at={[0,.08,0]} size={[1.6,.16,1.6]} color="#f8faf2"/>
-    <Box at={[0,.18,0]} size={[1.4,.08,1.4]} color="#c4dda3"/></>}
-    <mesh position={[0,.85,0]} castShadow><cylinderGeometry args={[.1,.15,1.6,7]}/><meshStandardMaterial color="#b79775"/></mesh>
-    <mesh position={[0,height,0]} scale={[.9,1.15,.9]} castShadow><sphereGeometry args={[small ? .62 : .9,12,10]}/><meshStandardMaterial color={['#63c98c','#7bd394','#4bb97e'][tone%3]} roughness={1}/></mesh>
-    <mesh position={[-.24,height+.25,.05]} scale={[.8,1,.8]}><sphereGeometry args={[small ? .42 : .6,10,8]}/><meshStandardMaterial color="#8ddd9d" roughness={1}/></mesh>
+    {!planted && <><Box at={[0,.08,0]} size={[1.6,.16,1.6]} color={ARCHITECTURE.stone}/>
+    <Box at={[0,.18,0]} size={[1.4,.08,1.4]} color={ARCHITECTURE.grass}/></>}
+    <mesh position={[0,trunk/2+.18,0]} castShadow><cylinderGeometry args={[.085,.14,trunk,7]}/><meshStandardMaterial color="#8e7a61" roughness={1}/></mesh>
+    <StaticParts parts={crown} foliage/>
   </group>
 }
 
@@ -53,37 +55,41 @@ function Planter({ x, z, width = 2.6 }) {
   </group>
 }
 
-function Window({ x, y, z, side = false }) {
-  return <group position={[x,y,z]} rotation={[0,side ? Math.PI/2 : 0,0]}>
-    <Box at={[0,0,0]} size={[.91,1.06,.12]} color="#d2e1eb"/>
-    <Box at={[0,0,.075]} size={[.72,.87,.04]} color="#85bbd5"/>
-    <Box at={[-.18,0,.1]} size={[.035,.88,.02]} color="#c2e8f2"/>
-    <Box at={[0,-.57,.13]} size={[1,.09,.25]} color="#f8fcff"/>
-  </group>
-}
-
 // Dimensions and landmarks follow the user's supplied site plan.
 function Building({ x, z, width, depth, floors, accent, rotation = 0, office = false }) {
   const height = floors * 1.65
+  const facade = useMemo(() => facadeParts({ width, depth, floors }), [width, depth, floors])
+  const paving = useMemo(() => Array.from({ length: Math.ceil(depth / .85) }, (_, n) => ({ at: [0, .17, -depth / 2 + n * .85], size: [width + 1.15, .005, .017], color: '#babdb3' })), [width, depth])
   return <group position={[x,0,z]} rotation={[0,rotation,0]}>
-    <SoftBlock at={[0,.08,0]} size={[width+1.3,.16,depth+1.3]} color="#e2e6e4"/>
-    <SoftBlock at={[0,height/2+.18,0]} size={[width,height,depth]} radius={.22} color="#faf9f4"/>
-    <SoftBlock at={[0,.35,0]} size={[width+.12,.45,depth+.12]} color={accent}/>
+    <SoftBlock at={[0,.08,0]} size={[width+1.3,.16,depth+1.3]} color={ARCHITECTURE.paving}/>
+    <StaticParts parts={paving}/>
+    <SoftBlock at={[0,height/2+.18,0]} size={[width,height,depth]} radius={.05} color={ARCHITECTURE.wall}/>
+    <SoftBlock at={[0,.35,0]} size={[width+.12,.45,depth+.12]} color={ARCHITECTURE.steel}/>
     {Array.from({length:floors},(_,row)=><group key={row}>
-      <Box at={[0,1.65*(row+1)+.05,0]} size={[width+.16,.1,depth+.16]} color="#d5e1e6"/>
-      {[-1,1].map(face=><group key={face} rotation={[0,face<0?Math.PI:0,0]}>
-        {Array.from({length:Math.floor(depth/1.8)},(_,n)=><Window key={n} x={width/2+.045} y={1+row*1.65} z={-depth/2+1.1+n*1.8} side/>)}
-        {[-1,1].map(sign=><Window key={sign} x={sign*width*.27} y={1+row*1.65} z={depth/2+.05}/>)}
-      </group>)}
+      <Box at={[0,1.65*(row+1)+.05,0]} size={[width+.32,.12,depth+.32]} color={ARCHITECTURE.frame}/>
     </group>)}
-    <group position={[0,height+.25,0]} rotation={[0,Math.PI/2,0]}>
-      <HipRoof at={[0,0,0]} width={depth+.7} depth={width+.7} rise={office ? 1.3 : .8} color={accent}/>
-    </group>
+    <StaticParts parts={facade.frames}/><StaticParts parts={facade.glass} glass/><StaticParts parts={facade.trim}/>
+    {office ? <group position={[0,height+.22,0]}>
+      <Box at={[0,0,0]} size={[width+.35,.22,depth+.35]} color={ARCHITECTURE.roof}/>
+      {[-1,1].map(sign=><group key={sign}>
+        <Box at={[sign*width/2,.17,0]} size={[.12,.35,depth+.35]} color={ARCHITECTURE.frame}/>
+        <Box at={[0,.17,sign*depth/2]} size={[width+.35,.35,.12]} color={ARCHITECTURE.frame}/>
+      </group>)}
+      {[-5,4].map(z=><group key={z} position={[0,.25,z]}>
+        <Box at={[0,0,0]} size={[1.55,.5,1.9]} color="#c6ceca"/>
+        {[-.6,-.3,0,.3,.6].map(x=><Box key={x} at={[x,.28,0]} size={[.045,.05,1.7]} color={ARCHITECTURE.steel}/>)}
+      </group>)}
+      <Box at={[1.9,.32,-1]} size={[1.25,.64,1.6]} color={ARCHITECTURE.wall}/>
+      {[-8,-2,7].map(z=><Box key={z} at={[-1.6,.13,z]} size={[1.5,.025,2]} color="#b4ced1"/>)}
+    </group> : <group position={[0,height+.25,0]} rotation={[0,Math.PI/2,0]}>
+      <HipRoof at={[0,0,0]} width={depth+.7} depth={width+.7} rise={.65} color={accent}/>
+    </group>}
     {office && <group position={[width/2+.02,0,0]}>
-      <mesh position={[0,height/2+.2,0]} castShadow><cylinderGeometry args={[1.6,1.6,height,24,1,false,0,Math.PI]}/><meshStandardMaterial color="#97c5d8" roughness={.3}/></mesh>
+      <mesh position={[0,height/2+.2,0]} castShadow><cylinderGeometry args={[1.6,1.6,height,32,1,false,0,Math.PI]}/><meshPhysicalMaterial color={ARCHITECTURE.glass} roughness={.24} metalness={.28} clearcoat={.8}/></mesh>
+      {Array.from({length:11},(_,n)=>n*Math.PI/10).map(angle=><Box key={angle} at={[Math.sin(angle)*1.62,height/2+.2,Math.cos(angle)*1.62]} size={[.055,height,.055]} color={ARCHITECTURE.frame}/>)}
       {[.3,1.95,3.6,5.25,6.85].map(y=><mesh key={y} position={[0,y,0]}><cylinderGeometry args={[1.65,1.65,.12,24,1,false,0,Math.PI]}/><meshStandardMaterial color="#e5edf1"/></mesh>)}
       <SoftBlock at={[1.1,.2,0]} size={[2.6,.3,4]} color="#eeebe1"/>
-      <SoftBlock at={[1.2,2.5,0]} size={[3.1,.16,4.1]} color="#c9dfeb"/>
+      <SoftBlock at={[1.2,2.5,0]} size={[3.1,.16,4.1]} color={ARCHITECTURE.frame}/>
       {[-1,1].map(n=><Box key={n} at={[2.4,1.3,n*1.6]} size={[.13,2.5,.13]} color="#c4d4de"/>)}
       <group position={[1.63,1.26,0]}>
         <Box at={[0,0,0]} size={[.055,2.05,1.23]} color="#3e798c"/>
@@ -103,12 +109,12 @@ function Office() {
 
 function Carport({ x, z, width, depth = 4.5, customer = false }) {
   return <group position={[x,0,z]}>
-    <SoftBlock at={[0,.06,0]} size={[width+.5,.12,depth+.5]} color={customer ? '#ece9da' : '#e2e8e8'}/>
-    {[-1,1].flatMap(a=>[-1,1].map(b=><Box key={a+'-'+b} at={[a*(width/2-.35),1.45,b*(depth/2-.3)]} size={[.12,2.9,.12]} color="#aab8c2"/>))}
-    <group position={[0,3,0]} rotation={[-.08,0,0]}>
-      <mesh castShadow receiveShadow><boxGeometry args={[width,.18,depth]}/><meshStandardMaterial color={customer ? '#d4ba7b' : '#a5afca'} transparent={customer} opacity={customer?.58:1} depthWrite={!customer} roughness={.7}/></mesh>
-      {Array.from({length:Math.floor(width/.5)},(_,n)=><Box key={n} at={[-width/2+.25+n*.5,.12,0]} size={[.04,.04,depth]} color={customer ? '#f2e2b1' : '#d3d9ed'}/>)}
-    </group>
+    <SoftBlock at={[0,.06,0]} size={[width+.5,.12,depth+.5]} color={customer ? '#cccbbd' : '#c6d5cf'}/>
+    <ArchitecturalCanopy width={width} depth={depth}/>
+    {customer && [-5.2,-1.75,1.75,5.2].map(x=><group key={x}>
+      <Box at={[x,.13,0]} size={[.06,.012,depth-.25]} color="#ecebda"/>
+      <Box at={[x,.23,-depth/2+.75]} size={[1.2,.2,.15]} color={ARCHITECTURE.stone}/>
+    </group>)}
   </group>
 }
 
@@ -148,8 +154,8 @@ function RoadEdge({ ring }) {
 function Road({ overflowAisles, chargingRows, site }) {
   const net=useMemo(()=>roadNetwork(overflowAisles,chargingRows,site),[overflowAisles,chargingRows,site])
   return <group>
-    <RoadSurface polygons={net.pavement} y={-.015} color="#cbd4d5"/>
-    <RoadSurface polygons={net.surface} y={.025} color="#82919c"/>
+    <RoadSurface polygons={net.pavement} y={-.015} color="#babeb5"/>
+    <RoadSurface polygons={net.surface} y={.025} color={ARCHITECTURE.road}/>
     {net.surface.flatMap(poly=>poly).map((ring,i)=><RoadEdge key={i} ring={ring}/>)}
     {net.routes.flatMap(route=>roadDashes(route,site)).map((p,i)=><Box key={i} at={[p.x,.05,p.z]} size={[.09,.015,1.2]} color="#fff5d8" rotation={[0,p.yaw,0]}/>)}
   </group>
@@ -196,12 +202,9 @@ function ChargingCanopy({ bays, vehicles }) {
     return <group key={row}>
       <SoftBlock at={[SITE_CHARGING.x,.04,z]} size={[SITE_CHARGING.width+.5,.08,SITE_CHARGING.depth+.5]} color="#d3e9e5"/>
       <group position={[SITE_CHARGING.x,0,z]}>
-        {[-7.03,6.75].flatMap(x=>[-1,1].map(b=><Box key={x+'-'+b} at={[x,1.8,b*2.8]} size={[.12,3.6,.12]} color="#8cabb5"/>))}
-        <Box at={[0,3.6,-2.95]} size={[14.8,.16,.18]} color="#9dbbc8"/>
-        <Box at={[0,3.6,2.95]} size={[14.8,.16,.18]} color="#9dbbc8"/>
-        <mesh position={[0,3.62,0]} receiveShadow><boxGeometry args={[14.8,.06,6.4]}/><meshStandardMaterial color="#b6d8ed" transparent opacity={.3} depthWrite={false} roughness={.35}/></mesh>
-        {[-5.2,-1.75,1.75,5.2].map(x=><group key={x} position={[x,3.74,1.45]} rotation={[-.12,0,0]}>
-          <SoftBlock at={[0,0,0]} size={[2.9,.08,2.2]} color="#426885"/>
+        <ArchitecturalCanopy width={SITE_CHARGING.width} depth={SITE_CHARGING.depth} height={3.6}/>
+        {[-5.2,-1.75,1.75,5.2].map(x=><group key={x} position={[x,4.13,1.45]} rotation={[-.12,0,0]}>
+          <SoftBlock at={[0,0,0]} size={[2.9,.08,2.2]} color="#344d5b"/>
           {[-.95,0,.95].map(a=><Box key={a} at={[a,.05,0]} size={[.025,.012,2.1]} color="#90b6d0"/>)}
           {[-.7,0,.7].map(a=><Box key={a} at={[0,.05,a]} size={[2.8,.012,.025]} color="#90b6d0"/>)}
         </group>)}
@@ -245,7 +248,7 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
   },[bounds.maxX,bounds.maxZ,site.exit.x])
   return <group>
     <mesh position={[0,-.5,0]} rotation={[-Math.PI/2,0,0]} receiveShadow>
-      <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:false}]}/><meshStandardMaterial color="#e4ece7" roughness={1}/>
+      <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:false}]}/><meshStandardMaterial color={ARCHITECTURE.paving} roughness={1}/>
     </mesh>
     <Road overflowAisles={overflowAisles} chargingRows={Math.max(1,Math.ceil(chargingBays.length/4))} site={site}/>
     {Array.from({length:Math.ceil((site.exit.x+17)/14)},(_,n)=>-17+n*14).map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
@@ -270,7 +273,7 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
     {/* Entrance hedge follows the diagonal; rear trees flank the dead end. */}
     <group position={[SITE_HEDGE_BED.x,0,SITE_HEDGE_BED.z]} rotation={[0,SITE_HEDGE_BED.rotation,0]}>
       <SoftBlock at={[0,.13,0]} size={[SITE_HEDGE_BED.width,.26,SITE_HEDGE_BED.depth]} color="#e3e1d0"/>
-      <SoftBlock at={[0,.28,0]} size={[SITE_HEDGE.width,.06,SITE_HEDGE_BED.depth-.15]} color="#accf9c"/>
+      <SoftBlock at={[0,.28,0]} size={[SITE_HEDGE.width,.06,SITE_HEDGE_BED.depth-.15]} color={ARCHITECTURE.grass}/>
     </group>
     {Array.from({length:SITE_HEDGE.count},(_,n)=><Tree key={n} x={SITE_HEDGE.x+n*SITE_HEDGE.stepX} z={SITE_HEDGE.z+n*SITE_HEDGE.stepZ} small tone={n} planted/>)}
     {[[site.roadEnd-3.5,-8],[site.roadEnd-.5,-8],[site.roadEnd+1.5,-8],[-29.5,12],[-30,9]].map(([x,z],i)=><Tree key={i} x={x} z={z} tone={i}/>)}
