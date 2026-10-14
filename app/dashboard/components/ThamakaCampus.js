@@ -2,11 +2,10 @@
 
 import { memo, useMemo } from 'react'
 import { DoubleSide, Shape } from 'three'
-import { THAMAKA_BUILDINGS, THAMAKA_CANOPIES, THAMAKA_YARD, thamakaOutline, thamakaLayout, thamakaRoadNetwork } from '@/lib/thamakaSiteLayout'
-import { roadDashes } from '@/lib/fleetRoadGeometry'
+import { THAMAKA_BUILDINGS, THAMAKA_CANOPIES, THAMAKA_YARD, thamakaOutline, thamakaLayout, thamakaRoadNetwork, thamakaRoadMarkings } from '@/lib/thamakaSiteLayout'
 import { facadeParts, treeCrown, canopyStructure } from '@/lib/fleetArchitecture'
 import { StaticParts } from './FleetArchitecture'
-import { RoadSurface, RoadEdge } from './FleetCampus'
+import { RoadSurface } from './FleetCampus'
 
 const part=(at,size,color,rotation)=>({at,size,color,...(rotation?{rotation}:{})})
 function Block({at,size,color,...props}) {
@@ -100,10 +99,10 @@ function Landscape({vehicles}) {
     const fixtures=[],leaves=[]
     const trees=[...Array.from({length:24},(_,n)=>[-39+Math.sin(n)*.55,s.landMinZ+1+n*(s.landMaxZ-s.landMinZ-4)/24]),
       ...Array.from({length:27},(_,n)=>[-36+n*2.7,s.landMinZ-1.7+Math.sin(n)*.7]),
-      ...Array.from({length:23},(_,n)=>[-37+n*2.8,s.landMaxZ-.9+Math.sin(n)*.6]),
+      ...Array.from({length:23},(_,n)=>[-37+n*2.8,s.landMaxZ-.3+Math.sin(n)*.6]),
       ...Array.from({length:25},(_,n)=>[-49+n*3.15,35]),...Array.from({length:25},(_,n)=>[-49+n*3.15,42.7]),
       [30,0],[31,-8],[29,-12],[43,-22],[43,-17],[42,-11],[43,-5],[19,12],[7,23],[-22,9],[-22,2],[-22,-5]]
-    trees.filter(([x,z])=>!THAMAKA_BUILDINGS.some(b=>{
+    trees.filter(([x,z])=>!(z>33&&Math.abs(x+44)<4.8)&&!THAMAKA_BUILDINGS.some(b=>{
       if(b.atrium&&Math.abs(x-b.x)<b.width/2-4.2&&Math.abs(z-b.z)<b.depth/2-4.2)return false
       return Math.abs(x-b.x)<b.width/2+1.3&&Math.abs(z-b.z)<b.depth/2+1.3
     })).forEach(([x,z],n)=>{
@@ -112,7 +111,7 @@ function Landscape({vehicles}) {
       treeCrown(false,n).forEach(p=>leaves.push({...p,color:['#598c55','#7aa35b','#417b50','#8da862'][n%4],at:[x+p.at[0]*scale,p.at[1]*scale,z+p.at[2]*scale],size:p.size.map(v=>v*scale)}))
       fixtures.push(part([x,.09,z],[1.5,.18,1.5],'#aeb798'))
     })
-    for(const [x,z] of [[-22,-20],[10,-29],[30,-30],[-24,25],[10,25],[43,20]]) {
+    for(const [x,z] of [[-22,-20],[10,-29],[30,-30],[-24,25],[10,28],[43,20]]) {
       fixtures.push(part([x,2.1,z],[.1,4.2,.1],'#76868a'),part([x+.45,4.2,z],[1,.08,.1],'#76868a'),part([x+.9,4.15,z],[.35,.09,.3],'#f9eacf'))
     }
     const outline=thamakaOutline(vehicles)
@@ -126,15 +125,15 @@ function Landscape({vehicles}) {
     })
     // Stored materials remain behind the parking row, clear of vehicle routes.
     for(let n=0;n<16;n++) {
-      const x=-35+(n%8)*3.3,z=25+Math.floor(n/8)*1.5
+      const x=-35+(n%4)*3,z=24.3+Math.floor(n/4)*.95
       fixtures.push(part([x,.4,z],[2.6,.8,.95],n%3?'#b1b5ad':'#a99a81'))
       for(let m=0;m<3;m++)fixtures.push(part([x-1+m*.8,.91,z],[.6,.22,.8],'#d1cdbc'))
     }
-    for(const x of [11,27]) {
-      fixtures.push(part([x,.55,24],[2.2,.14,.6],'#af936e'),part([x,.93,24.27],[2.2,.5,.075],'#af936e'))
-      for(const sign of [-1,1])fixtures.push(part([x+sign*.8,.28,24],[.12,.55,.5],'#52676b'))
+    for(const [x,z] of [[18,10],[22,15]]) {
+      fixtures.push(part([x,.55,z],[2.2,.14,.6],'#af936e'),part([x,.93,z+.27],[2.2,.5,.075],'#af936e'))
+      for(const sign of [-1,1])fixtures.push(part([x+sign*.8,.28,z],[.12,.55,.5],'#52676b'))
     }
-    fixtures.push(part([29,2.2,24],[.08,4.4,.08],'#a9b0ab'),part([29.3,3.85,24],[.6,.7,.03],'#8b51b2'))
+    fixtures.push(part([30,2.2,2],[.08,4.4,.08],'#a9b0ab'),part([30.3,3.85,2],[.6,.7,.03],'#8b51b2'))
     return {fixtures,leaves}
   },[s.landMinZ,s.landMaxZ,vehicles])
   return <><StaticParts parts={landscape.fixtures}/><StaticParts parts={landscape.leaves} foliage/></>
@@ -146,7 +145,7 @@ export default memo(function ThamakaCampus({vehicles=[],chargingBays=[]}) {
   },[vehicles])
   const net=useMemo(()=>thamakaRoadNetwork(vehicles),[vehicles])
   const yard=useMemo(()=>{const shape=new Shape();THAMAKA_YARD.forEach(([x,z],i)=>i?shape.lineTo(x,-z):shape.moveTo(x,-z));shape.closePath();return shape},[])
-  const markings=useMemo(()=>net.routes.flatMap(route=>roadDashes(route,site)).map(p=>part([p.x,.06,p.z],[.085,.018,1.2],'#eee9d2',[0,p.yaw,0])),[net,site])
+  const markings=useMemo(()=>thamakaRoadMarkings(net).map(p=>part([p.x,.06,p.z],[.085,.018,1.2],'#eee9d2',[0,p.yaw,0])),[net])
   return <group>
     <Block at={[(site.bounds.minX+site.bounds.maxX)/2,-.65,(site.bounds.minZ+site.bounds.maxZ)/2]} size={[site.bounds.maxX-site.bounds.minX,.45,site.bounds.maxZ-site.bounds.minZ]} color="#aeaa85"/>
     <mesh position={[0,-.27,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><extrudeGeometry args={[outline,{depth:.28,bevelEnabled:false}]}/><meshStandardMaterial color="#d2cfbf" roughness={1}/></mesh>
@@ -157,8 +156,9 @@ export default memo(function ThamakaCampus({vehicles=[],chargingBays=[]}) {
     <mesh position={[0,.008,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><shapeGeometry args={[yard]}/><meshStandardMaterial color="#bfc0b6" roughness={1}/></mesh>
     <RoadSurface polygons={net.pavement} y={-.015} color="#b8b9ab"/>
     <RoadSurface polygons={net.surface} y={.025} color="#728080"/>
-    {net.surface.flatMap(poly=>poly).map((ring,n)=><RoadEdge key={n} ring={ring}/>)}
+    {net.surface.flatMap(poly=>poly).map((ring,n)=><ThamakaRoadEdge key={n} ring={ring}/>)}
     <StaticParts parts={markings}/>
+    <RoadBridge/>
     {Array.from({length:12},(_,n)=><Block key={n} at={[-50+n*.4,-.2,-9]} size={[.025,.025,55]} color="#958e70"/>)}
     {THAMAKA_BUILDINGS.map(building=><Building key={building.key} building={building}/>)}
     <Canopy site={THAMAKA_CANOPIES.rear}/><Canopy site={THAMAKA_CANOPIES.customer}/>
@@ -168,6 +168,19 @@ export default memo(function ThamakaCampus({vehicles=[],chargingBays=[]}) {
     <Landscape vehicles={vehicles}/>
   </group>
 })
+function ThamakaRoadEdge({ring}) {
+  const positions=useMemo(()=>new Float32Array(ring.slice(1).flatMap(([x,z],n)=>[ring[n][0],.065,ring[n][1],x,.065,z])),[ring])
+  // Use the actual union boundary, without spline overshoot at T junctions.
+  return <lineSegments><bufferGeometry><bufferAttribute attach="attributes-position" args={[positions,3]}/></bufferGeometry><lineBasicMaterial color="#f3efdf"/></lineSegments>
+}
+function RoadBridge() {
+  return <group><Block at={[-44,-.03,39]} size={[6.1,.09,8.2]} color="#737e7c"/>
+    {[-1,1].map(sign=><group key={sign}>
+      <Block at={[-44+sign*3.2,.15,39]} size={[.3,.3,8.2]} color="#d6d4c7"/>
+      <Block at={[-44+sign*3.2,.62,39]} size={[.09,.08,8]} color="#aeb6ad"/>
+      {[36,38,40,42].map(z=><Block key={z} at={[-44+sign*3.2,.4,z]} size={[.09,.6,.09]} color="#c2c5b8"/>)}
+    </group>)}</group>
+}
 function GateArrows() {
   return <group>{[{x:45,z:5,yaw:-2.3,color:'#2eac82'},{x:46,z:11,yaw:.85,color:'#d65a5d'}].map(a=><group key={a.z} position={[a.x,.07,a.z]} rotation={[0,a.yaw,0]}>
     <Block at={[0,0,0]} size={[.18,.015,3]} color={a.color}/>

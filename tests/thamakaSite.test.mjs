@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { demoSnapshot, fleetVehicles } from '../lib/fleetDigitalTwin.js'
-import { THAMAKA_BUILDINGS, THAMAKA_WALKERS, thamakaVehicles, thamakaOutline, thamakaLayout, thamakaSlots, thamakaTrafficPath, thamakaRoadNetwork, createThamakaTraffic, createThamakaVisitors } from '../lib/thamakaSiteLayout.js'
+import { THAMAKA_BUILDINGS, THAMAKA_WALKERS, thamakaVehicles, thamakaOutline, thamakaLayout, thamakaSlots, thamakaTrafficPath, thamakaRoadNetwork, thamakaRoadMarkings, pointInRoad, createThamakaTraffic, createThamakaVisitors } from '../lib/thamakaSiteLayout.js'
 import { trafficPose, trafficOverlaps } from '../lib/fleetTraffic.js'
 import { walkingPose } from '../lib/fleetCampusLife.js'
 
@@ -95,4 +95,34 @@ test('Thamaka fictional visitor cars and motorcycles use their own right-side pa
       assert.ok(Math.abs(p.x-b.x)>=b.width/2+1.05||Math.abs(p.z-b.z)>=b.depth/2+1.85,`${car.id} hits ${b.key}`)
     }
   }
+})
+
+test('west street bridges the canal and joins both public roads at full width',()=>{
+  const {surface}=thamakaRoadNetwork()
+  for(let z=-38;z<48;z+=.2)for(const x of [-45.5,-44,-42.5])assert.ok(pointInRoad({x,z},surface),`west road gap at ${x},${z}`)
+  for(let x=-44;x<28;x+=.2)for(const z of [45.5,47,48.5])assert.ok(pointInRoad({x,z},surface),'main-road junction is pinched')
+})
+test('both gate lanes carry the complete vehicle footprint to the public road',()=>{
+  const cars=thamakaVehicles(demoSnapshot()),{surface}=thamakaRoadNetwork(cars)
+  for(const car of cars.slice(0,3))for(const direction of ['depart','return']) {
+    const route=thamakaTrafficPath(car.parking,direction,car.chargingBay)
+    for(let t=0;t<route.duration;t+=.08) {
+      const p=trafficPose(route,t)
+      if(p.x<31)continue
+      for(const w of [-1.025,1.025])for(const l of [-1.825,1.825]) {
+        const x=p.x+w*Math.cos(p.yaw)+l*Math.sin(p.yaw),z=p.z-w*Math.sin(p.yaw)+l*Math.cos(p.yaw)
+        assert.ok(pointInRoad({x,z},surface),`${direction} footprint leaves the gate asphalt at ${x},${z}`)
+      }
+    }
+  }
+})
+test('junction paint stays clear and the front loop does not cover building footprints',()=>{
+  const net=thamakaRoadNetwork(),marks=thamakaRoadMarkings(net)
+  assert.ok(net.routes.some(r=>r.key==='front-drive'))
+  for(const p of marks)for(const [x,z] of [[-16.5,-19.3],[-16.5,22],[33,24.7],[40,1],[52,11],[-44,31],[-44,47]])assert.ok(Math.hypot(p.x-x,p.z-z)>=4.5)
+  for(const b of THAMAKA_BUILDINGS)for(let x=b.x-b.width/2+.1;x<b.x+b.width/2;x+=.5)for(let z=b.z-b.depth/2+.1;z<b.z+b.depth/2;z+=.5)assert.equal(pointInRoad({x,z},net.surface),false,`asphalt covers ${b.key}`)
+  const campus=readFileSync(new URL('../app/dashboard/components/ThamakaCampus.js',import.meta.url),'utf8')
+  assert.ok(campus.includes('ThamakaRoadEdge'))
+  assert.ok(campus.includes('RoadBridge'))
+  assert.ok(!campus.includes('roadDashes('),'must not inherit Kamphaeng Saen junction coordinates')
 })
