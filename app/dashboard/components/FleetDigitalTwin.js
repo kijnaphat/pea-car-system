@@ -10,8 +10,8 @@ import { startVisiblePolling } from '@/lib/visiblePolling'
 import { FLEET_STATUSES, dayBounds, demoSnapshot, movementEvents, replaySnapshot } from '@/lib/fleetDigitalTwin'
 import { getCarImage } from '@/lib/carImages'
 import { vehicleStyle, FLEET_PAINTS } from '@/lib/fleetVehicleStyle'
-import { thamakaVehicles, thamakaLabels as siteLabels, thamakaSlots as displayedParkingSlots } from '@/lib/thamakaSiteLayout'
-import { restingPose, siteChargingBays } from '@/lib/fleetCharging'
+import { thamakaVehicles, thamakaLabels as siteLabels, thamakaSlots as displayedParkingSlots, siteChargingBays } from '@/lib/thamakaSiteLayout'
+import { restingPose } from '@/lib/fleetCharging'
 import FleetVehicleGlyph from './FleetVehicleGlyph'
 import ThamakaFlatMap from './ThamakaFlatMap'
 import './fleet-twin.css'
@@ -237,8 +237,8 @@ export default function FleetDigitalTwin({ onAnalytics }) {
           <div className="twin-map" aria-label="แผนผังสำนักงานจำลองและช่องจอด">
             {busy && !scene ? <div className="twin-loading">กำลังโหลดข้อมูล…</div> : safeMap ? flatMap : <SceneBoundary fallback={flatMap}><Scene key={sceneEpoch} vehicles={vehicles} selectedId={selectedId} onSelect={select} moves={scene?.moves || []} visibleIds={visibleIds} labelsHost={labelsHost} trafficHost={trafficHost} labels={labels} view={view} focus={focus} reducedMotion={reduced} ambientTraffic={mode!=='replay'} /></SceneBoundary>}
             {!safeMap && <div className="twin-world-labels" ref={labelsHost} aria-hidden="true">
-              {labels && displayedParkingSlots(vehicles).map(slot=><span key={slot.slotNo} className="twin-slot-label" data-world-x={slot.parking.x} data-world-y=".15" data-world-z={slot.parking.z+(slot.parking.yaw===0?2.2:-2.2)}>{slot.slotCode}</span>)}
-              {labels && siteLabels(vehicles).map(label=><div key={label.key} className={label.primary ? 'twin-campus-label' : 'twin-gate-label'} data-world-x={label.x} data-world-y={label.y} data-world-z={label.z}>{label.primary ? <><span>◈</span><div>{label.label}<strong>{label.detail}</strong></div></> : label.label}</div>)}
+              {labels && displayedParkingSlots(vehicles).map(slot=><span key={slot.slotNo} className="twin-slot-label" data-world-x={slot.parking.x+Math.sin(slot.parking.yaw)*2.2} data-world-y=".15" data-world-z={slot.parking.z+Math.cos(slot.parking.yaw)*2.2}>{slot.slotCode}</span>)}
+              {labels && siteLabels(vehicles).map(label=><div key={label.key} data-site-key={label.key} className={label.primary ? 'twin-campus-label' : 'twin-gate-label'} data-world-x={label.x} data-world-y={label.y} data-world-z={label.z}>{label.primary ? <><span>◈</span><div>{label.label}<strong>{label.detail}</strong></div></> : label.label}</div>)}
               {labels && chargingBays.map(bay=><span key={bay.code} className="twin-slot-label twin-ev-label" data-world-x={bay.x} data-world-y=".2" data-world-z={bay.z-2.7}>{bay.code}</span>)}
             </div>}
           </div>

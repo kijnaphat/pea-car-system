@@ -143,9 +143,9 @@ function VisitorCar({ car, register }) {
   </group>
 }
 
-function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, visibleIds, trafficHost, ambientTraffic, controllerFactory = createFleetTraffic }) {
+function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, visibleIds, trafficHost, ambientTraffic, controllerFactory = createFleetTraffic, visitorFactory = createCampusVisitors }) {
   const groups=useRef(new Map()),controller=useRef(null)
-  const visitors=useMemo(()=>createCampusVisitors(),[])
+  const visitors=useMemo(()=>visitorFactory(),[visitorFactory])
   const {invalidate}=useThree()
   const shown=useMemo(()=>new Set(visibleIds.map(String)),[visibleIds])
   const register=useCallback((id,node)=>{if(node) groups.current.set(String(id),node);else groups.current.delete(String(id))},[])

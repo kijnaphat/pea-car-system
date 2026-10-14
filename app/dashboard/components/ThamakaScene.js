@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ACESFilmicToneMapping, SRGBColorSpace, PCFShadowMap } from 'three'
-import { THAMAKA_ORBIT, THAMAKA_WALKERS, thamakaLayout, thamakaSlots, createThamakaTraffic, siteChargingBays } from '@/lib/thamakaSiteLayout'
+import { THAMAKA_ORBIT, THAMAKA_WALKERS, thamakaLayout, thamakaSlots, createThamakaTraffic, createThamakaVisitors, siteChargingBays } from '@/lib/thamakaSiteLayout'
 import { walkingPose, startCampusLife } from '@/lib/fleetCampusLife'
 import { TrafficLayer, CameraRig, ParkingSlot, ProjectedLabels, ArchitecturalLight } from './FleetScene'
 import { Worker } from './FleetCampusLife'
@@ -38,7 +38,7 @@ export default memo(function ThamakaScene(props) {
     <ThamakaPeople reducedMotion={reducedMotion}/>
     {slots.map(slot=><ParkingSlot key={slot.slotNo} car={slot.car} selected={selectedId===slot.car.id} onSelect={onSelect} visible={visibleIds.includes(slot.car.id)}/>)}
     <TrafficLayer vehicles={vehicles} moves={moves} selectedId={selectedId} onSelect={onSelect} reducedMotion={reducedMotion}
-      visibleIds={visibleIds} trafficHost={trafficHost} ambientTraffic={ambientTraffic} controllerFactory={createThamakaTraffic}/>
+      visibleIds={visibleIds} trafficHost={trafficHost} ambientTraffic={ambientTraffic} controllerFactory={createThamakaTraffic} visitorFactory={createThamakaVisitors}/>
     <ProjectedLabels host={labelsHost} enabled={labels}/>
     <CameraRig view={view} focus={focus} bounds={bounds} initialOrbit={THAMAKA_ORBIT}/>
   </Canvas>

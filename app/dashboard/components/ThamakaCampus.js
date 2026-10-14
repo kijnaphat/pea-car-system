@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from 'react'
 import { DoubleSide, Shape } from 'three'
-import { THAMAKA_BUILDINGS, THAMAKA_CANOPIES, thamakaOutline, thamakaLayout, thamakaRoadNetwork } from '@/lib/thamakaSiteLayout'
+import { THAMAKA_BUILDINGS, THAMAKA_CANOPIES, THAMAKA_YARD, thamakaOutline, thamakaLayout, thamakaRoadNetwork } from '@/lib/thamakaSiteLayout'
 import { roadDashes } from '@/lib/fleetRoadGeometry'
 import { facadeParts, treeCrown, canopyStructure } from '@/lib/fleetArchitecture'
 import { StaticParts } from './FleetArchitecture'
@@ -22,7 +22,7 @@ function Gable({width,depth,color,rise=.9,y=0}) {
   </bufferGeometry><meshStandardMaterial color={color} roughness={.9} side={DoubleSide}/></mesh>
 }
 function Building({building}) {
-  const {x,z,width:w,depth:d,floors,roof,atrium}=building,h=floors*1.65
+  const {x,z,width:w,depth:d,floors,roof,atrium,industrial,solar}=building,h=industrial?3.2:floors*1.65
   const facade=useMemo(()=>facadeParts({width:w,depth:d,floors}),[w,d,floors])
   const detailing=useMemo(()=>{
     const a=[]
@@ -51,8 +51,22 @@ function Building({building}) {
       <StaticParts parts={detailing}/>
       <Gable width={w+.9} depth={d+.9} y={h+.27} color={roof}/>
     </>}
-    <StaticParts parts={facade.frames}/><StaticParts parts={facade.glass} glass/><StaticParts parts={facade.trim}/>
+    {industrial?<>{[-1,1].map(sign=><Block key={sign} at={[w/2+.03,1.35,sign*d*.25]} size={[.07,2.3,3.7]} color="#80908c"/>)}
+      <Block at={[0,h+.38,0]} size={[.13,.15,d+.9]} color="#8d9997"/></>:<><StaticParts parts={facade.frames}/><StaticParts parts={facade.glass} glass/><StaticParts parts={facade.trim}/></>}
+    {solar&&<SolarPanels width={w} depth={d} y={h+.8} atrium={atrium}/>}
   </group>
+}
+function SolarPanels({width,depth,y,atrium}) {
+  const parts=useMemo(()=>{
+    const out=[],rows=atrium?[-depth/2+1.8,depth/2-1.8]:[-depth*.22,depth*.22]
+    for(const z of rows)for(let x=-width/2+2.1;x<width/2-1;x+=2.5) {
+      out.push(part([x,y,z],[2.25,.07,2.1],'#385a70'))
+      for(const offset of [-.7,0,.7])out.push(part([x+offset,y+.05,z],[.025,.012,2.06],'#9bb8c3'))
+      out.push(part([x,y+.05,z],[2.22,.012,.025],'#9bb8c3'))
+    }
+    return out
+  },[width,depth,y,atrium])
+  return <StaticParts parts={parts}/>
 }
 function Canopy({site,charging=false,bays=[],vehicles=[]}) {
   const structure=useMemo(()=>canopyStructure(site.width,site.depth,3.4),[site.width,site.depth])
@@ -84,62 +98,78 @@ function Landscape({vehicles}) {
   const s=thamakaLayout(vehicles)
   const landscape=useMemo(()=>{
     const fixtures=[],leaves=[]
-    const trees=[...Array.from({length:22},(_,n)=>[-51+(n%3)*.9,-25+n*2.25]),
-      ...Array.from({length:Math.floor((s.exit.x+52)/3.5)},(_,n)=>[-48+n*3.5, -29+Math.sin(n)*1.3]),
-      ...Array.from({length:Math.floor((s.exit.x+8)/5)},(_,n)=>[-11+n*5,23]),
-      [-32,22],[-43,24],[-38,14],[-29,-26],[-17,-20],[-4,-20],[9,-20],[25,-21]]
-    trees.forEach(([x,z],n)=>{
-      const scale=.95+(n%5)*.13
+    const trees=[...Array.from({length:24},(_,n)=>[-39+Math.sin(n)*.55,s.landMinZ+1+n*(s.landMaxZ-s.landMinZ-4)/24]),
+      ...Array.from({length:27},(_,n)=>[-36+n*2.7,s.landMinZ-1.7+Math.sin(n)*.7]),
+      ...Array.from({length:23},(_,n)=>[-37+n*2.8,s.landMaxZ-.9+Math.sin(n)*.6]),
+      ...Array.from({length:25},(_,n)=>[-49+n*3.15,35]),...Array.from({length:25},(_,n)=>[-49+n*3.15,42.7]),
+      [30,0],[31,-8],[29,-12],[43,-22],[43,-17],[42,-11],[43,-5],[19,12],[7,23],[-22,9],[-22,2],[-22,-5]]
+    trees.filter(([x,z])=>!THAMAKA_BUILDINGS.some(b=>{
+      if(b.atrium&&Math.abs(x-b.x)<b.width/2-4.2&&Math.abs(z-b.z)<b.depth/2-4.2)return false
+      return Math.abs(x-b.x)<b.width/2+1.3&&Math.abs(z-b.z)<b.depth/2+1.3
+    })).forEach(([x,z],n)=>{
+      const scale=z>33?.6:.95+(n%5)*.13
       fixtures.push(part([x,.8,z],[.16,1.6,.16],'#8f7959'))
-      treeCrown(false,n).forEach(p=>leaves.push({...p,at:[x+p.at[0]*scale,p.at[1]*scale,z+p.at[2]*scale],size:p.size.map(v=>v*scale)}))
+      treeCrown(false,n).forEach(p=>leaves.push({...p,color:['#598c55','#7aa35b','#417b50','#8da862'][n%4],at:[x+p.at[0]*scale,p.at[1]*scale,z+p.at[2]*scale],size:p.size.map(v=>v*scale)}))
       fixtures.push(part([x,.09,z],[1.5,.18,1.5],'#aeb798'))
     })
-    for(const x of [-29,-13,12,32,s.exit.x+4]) {
-      fixtures.push(part([x,2.1,-16],[.1,4.2,.1],'#76868a'),part([x+.45,4.2,-16],[1,.08,.1],'#76868a'),part([x+.9,4.15,-16],[.35,.09,.3],'#f9eacf'))
+    for(const [x,z] of [[-22,-20],[10,-29],[30,-30],[-24,25],[10,25],[43,20]]) {
+      fixtures.push(part([x,2.1,z],[.1,4.2,.1],'#76868a'),part([x+.45,4.2,z],[1,.08,.1],'#76868a'),part([x+.9,4.15,z],[.35,.09,.3],'#f9eacf'))
     }
-    for(const z of [-26,-22,-18,-14,-10,-6,-2,2,6,10,14,18,22]) {
-      fixtures.push(part([-53,.8,z],[.1,1.6,.1],'#b5b8ac'),part([-53,.9,z+1.8],[.075,.8,3.55],'#a9b5a9'))
+    const outline=thamakaOutline(vehicles)
+    outline.forEach((a,i)=>{
+      const b=outline[(i+1)%outline.length],length=Math.hypot(b[0]-a[0],b[1]-a[1]),yaw=Math.atan2(b[0]-a[0],b[1]-a[1])
+      for(let d=0;d<length;d+=2) {
+        const t=d/length,x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t
+        if(x>40&&z>-1&&z<15)continue
+        fixtures.push(part([x,.8,z],[.1,1.6,.1],'#c4c5b5'),part([x+Math.sin(yaw)*.9,.9,z+Math.cos(yaw)*.9],[.055,.8,1.8],'#a4b0a0',[0,yaw,0]),part([x,.06,z],[.085,.018,1.25],'#c46063',[0,yaw,0]))
+      }
+    })
+    // Stored materials remain behind the parking row, clear of vehicle routes.
+    for(let n=0;n<16;n++) {
+      const x=-35+(n%8)*3.3,z=25+Math.floor(n/8)*1.5
+      fixtures.push(part([x,.4,z],[2.6,.8,.95],n%3?'#b1b5ad':'#a99a81'))
+      for(let m=0;m<3;m++)fixtures.push(part([x-1+m*.8,.91,z],[.6,.22,.8],'#d1cdbc'))
     }
-    // Front fence: explicit gate openings line up with both animation routes.
-    for(let x=-50;x<s.exit.x+7;x+=1.6) {
-      if(Math.abs(x-s.entrance.x)<5.3||Math.abs(x-s.exit.x)<4.1)continue
-      fixtures.push(part([x,.8,28],[.12,1.6,.12],'#bebcaf'),part([x+.7,.8,28],[1.4,.9,.055],'#9aa99c'))
-    }
-    for(const x of [-41,-33]) {
+    for(const x of [11,27]) {
       fixtures.push(part([x,.55,24],[2.2,.14,.6],'#af936e'),part([x,.93,24.27],[2.2,.5,.075],'#af936e'))
       for(const sign of [-1,1])fixtures.push(part([x+sign*.8,.28,24],[.12,.55,.5],'#52676b'))
     }
-    for(const x of [s.entrance.x-4.5,s.entrance.x+4.5,s.exit.x-3.2,s.exit.x+3.2])fixtures.push(part([x,.9,28],[.45,1.8,.45],'#d7d1be'))
-    fixtures.push(part([-28.5,2.2,26.2],[.08,4.4,.08],'#a9b0ab'),part([-28.2,3.85,26.2],[.6,.7,.03],'#8b51b2'))
+    fixtures.push(part([29,2.2,24],[.08,4.4,.08],'#a9b0ab'),part([29.3,3.85,24],[.6,.7,.03],'#8b51b2'))
     return {fixtures,leaves}
-  },[s.exit.x,s.entrance.x])
+  },[s.landMinZ,s.landMaxZ,vehicles])
   return <><StaticParts parts={landscape.fixtures}/><StaticParts parts={landscape.leaves} foliage/></>
 }
 export default memo(function ThamakaCampus({vehicles=[],chargingBays=[]}) {
   const site=useMemo(()=>thamakaLayout(vehicles),[vehicles])
-  const frontageCenter=(site.bounds.minX+site.bounds.maxX)/2,frontageWidth=site.bounds.maxX-site.bounds.minX
   const outline=useMemo(()=>{
     const shape=new Shape();thamakaOutline(vehicles).forEach(([x,z],i)=>i?shape.lineTo(x,-z):shape.moveTo(x,-z));shape.closePath();return shape
   },[vehicles])
   const net=useMemo(()=>thamakaRoadNetwork(vehicles),[vehicles])
+  const yard=useMemo(()=>{const shape=new Shape();THAMAKA_YARD.forEach(([x,z],i)=>i?shape.lineTo(x,-z):shape.moveTo(x,-z));shape.closePath();return shape},[])
   const markings=useMemo(()=>net.routes.flatMap(route=>roadDashes(route,site)).map(p=>part([p.x,.06,p.z],[.085,.018,1.2],'#eee9d2',[0,p.yaw,0])),[net,site])
   return <group>
-    <Block at={[(site.bounds.minX+site.bounds.maxX)/2,-.65,7]} size={[site.bounds.maxX-site.bounds.minX+8,.45,94]} color="#b1b798"/>
+    <Block at={[(site.bounds.minX+site.bounds.maxX)/2,-.65,(site.bounds.minZ+site.bounds.maxZ)/2]} size={[site.bounds.maxX-site.bounds.minX,.45,site.bounds.maxZ-site.bounds.minZ]} color="#aeaa85"/>
     <mesh position={[0,-.27,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><extrudeGeometry args={[outline,{depth:.28,bevelEnabled:false}]}/><meshStandardMaterial color="#d2cfbf" roughness={1}/></mesh>
-    <Block at={[frontageCenter,-.25,43]} size={[frontageWidth,.45,7.5]} color="#899c78"/>
-    <Block at={[frontageCenter,-.14,43]} size={[frontageWidth,.08,4.7]} color="#3f7779"/>
-    <Block at={[frontageCenter,-.07,43]} size={[frontageWidth,.012,4.1]} color="#608f89"/>
-    {[-1,1].map(sign=><Block key={sign} at={[frontageCenter,-.12,43+sign*3.3]} size={[frontageWidth,.25,.5]} color="#adae86"/>)}
-    <Block at={[frontageCenter,-.31,49]} size={[frontageWidth,.1,3]} color="#c1b694"/>
+    <Block at={[-11,-.4,39]} size={[80,.35,8]} color="#81966d"/>
+    <Block at={[-11,-.14,39]} size={[80,.08,5.3]} color="#315c6b"/>
+    <Block at={[-11,-.07,39]} size={[80,.012,4.8]} color="#3b7783"/>
+    {[-1,1].map(sign=><Block key={sign} at={[-11,-.12,39+sign*3.4]} size={[80,.25,.5]} color="#92a079"/>)}
+    <mesh position={[0,.008,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><shapeGeometry args={[yard]}/><meshStandardMaterial color="#bfc0b6" roughness={1}/></mesh>
     <RoadSurface polygons={net.pavement} y={-.015} color="#b8b9ab"/>
     <RoadSurface polygons={net.surface} y={.025} color="#728080"/>
     {net.surface.flatMap(poly=>poly).map((ring,n)=><RoadEdge key={n} ring={ring}/>)}
     <StaticParts parts={markings}/>
-    {Array.from({length:12},(_,n)=><Block key={n} at={[-59+n*.62,-.2,-9]} size={[.025,.025,41]} color="#999777"/>)}
+    {Array.from({length:12},(_,n)=><Block key={n} at={[-50+n*.4,-.2,-9]} size={[.025,.025,55]} color="#958e70"/>)}
     {THAMAKA_BUILDINGS.map(building=><Building key={building.key} building={building}/>)}
-    <Canopy site={THAMAKA_CANOPIES.customer}/>
-    {Array.from({length:Math.ceil(chargingBays.length/4)},(_,row)=><Canopy key={row} site={{...THAMAKA_CANOPIES.charging,z:9.5+row*10}}
-      charging bays={chargingBays.slice(row*4,row*4+4)} vehicles={vehicles}/>)}
+    <Canopy site={THAMAKA_CANOPIES.rear}/><Canopy site={THAMAKA_CANOPIES.customer}/>
+    <Canopy site={{...THAMAKA_CANOPIES.charging,z:-5.5+Math.max(0,Math.ceil(chargingBays.length/4)-1)*5,depth:17.5+Math.max(0,Math.ceil(chargingBays.length/4)-1)*10}}
+      charging bays={chargingBays} vehicles={vehicles}/>
+    <GateArrows/>
     <Landscape vehicles={vehicles}/>
   </group>
 })
+function GateArrows() {
+  return <group>{[{x:45,z:5,yaw:-2.3,color:'#2eac82'},{x:46,z:11,yaw:.85,color:'#d65a5d'}].map(a=><group key={a.z} position={[a.x,.07,a.z]} rotation={[0,a.yaw,0]}>
+    <Block at={[0,0,0]} size={[.18,.015,3]} color={a.color}/>
+    {[-1,1].map(sign=><Block key={sign} at={[sign*.33,0,1.3]} size={[.14,.015,1.2]} rotation={[0,sign*.6,0]} color={a.color}/>)}</group>)}</group>
+}
