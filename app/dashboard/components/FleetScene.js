@@ -143,7 +143,7 @@ function VisitorCar({ car, register }) {
   </group>
 }
 
-function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, visibleIds, trafficHost, ambientTraffic }) {
+function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, visibleIds, trafficHost, ambientTraffic, controllerFactory = createFleetTraffic }) {
   const groups=useRef(new Map()),controller=useRef(null)
   const visitors=useMemo(()=>createCampusVisitors(),[])
   const {invalidate}=useThree()
@@ -151,12 +151,12 @@ function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, vi
   const register=useCallback((id,node)=>{if(node) groups.current.set(String(id),node);else groups.current.delete(String(id))},[])
   useEffect(()=>{invalidate()},[shown,invalidate])
   useEffect(()=>{
-    if(!controller.current) controller.current=createFleetTraffic()
+    if(!controller.current) controller.current=controllerFactory()
     controller.current.setFleet(ambientTraffic?[...vehicles,...visitors.cars]:vehicles)
     if(reducedMotion) controller.current.clear(moves)
     else controller.current.enqueue(moves)
     invalidate()
-  },[vehicles,moves,reducedMotion,invalidate,ambientTraffic,visitors])
+  },[vehicles,moves,reducedMotion,invalidate,ambientTraffic,visitors,controllerFactory])
   useEffect(()=>()=>{if(trafficHost.current) {trafficHost.current.textContent='';trafficHost.current.hidden=true}},[trafficHost])
   useFrame((_,delta)=>{
     const traffic=controller.current
@@ -185,17 +185,18 @@ function TrafficLayer({ vehicles, moves, selectedId, onSelect, reducedMotion, vi
     {ambientTraffic && visitors.cars.map(car=><VisitorCar key={car.id} car={car} register={register}/>)}</>
 }
 
-function CameraRig({ view, focus, bounds }) {
+function CameraRig({ view, focus, bounds, initialOrbit = DEFAULT_ORBIT }) {
   const controls = useRef(); const { camera, size, invalidate } = useThree()
   const memory=useRef({...DEFAULT_ORBIT,target:null}),previous=useRef(null),fit=useRef(1)
   const {minX,maxX,minZ,maxZ,maxY}=bounds
   const {zoom,top,reset,turn=0,tilt=0,drag='rotate'}=view
+  const {azimuth:initialAzimuth,elevation:initialElevation,zoomFactor:initialZoom}=initialOrbit
   const focusX=focus?.x,focusZ=focus?.z
   const mouseButtons=useMemo(()=>({LEFT:drag==='pan'||top?MOUSE.PAN:MOUSE.ROTATE,MIDDLE:MOUSE.DOLLY,RIGHT:drag==='pan'||top?MOUSE.ROTATE:MOUSE.PAN}),[drag,top])
   const touches=useMemo(()=>({ONE:drag==='pan'||top?TOUCH.PAN:TOUCH.ROTATE,TWO:TOUCH.DOLLY_PAN}),[drag,top])
   useEffect(() => {
     const next={zoom,top,reset,turn,tilt}
-    memory.current=cameraView(memory.current,previous.current,next)
+    memory.current=!previous.current || reset!==previous.current.reset ? {azimuth:initialAzimuth,elevation:initialElevation,zoomFactor:initialZoom,target:null} : cameraView(memory.current,previous.current,next)
     const target=focusX!==undefined ? new Vector3(focusX,0,focusZ)
       : memory.current.target ? new Vector3(...memory.current.target) : new Vector3((minX+maxX)/2,.6,(minZ+maxZ)/2)
     const orbit=cameraOffset(memory.current,top),offset=new Vector3(orbit.x,orbit.y,orbit.z)
@@ -214,7 +215,7 @@ function CameraRig({ view, focus, bounds }) {
     previous.current=next
     invalidate()
     // Scalar dependencies deliberately keep polling snapshots from resetting the camera.
-  }, [camera,size.width,size.height,zoom,top,reset,turn,tilt,focusX,focusZ,minX,maxX,minZ,maxZ,maxY,invalidate])
+  }, [camera,size.width,size.height,zoom,top,reset,turn,tilt,focusX,focusZ,minX,maxX,minZ,maxZ,maxY,invalidate,initialAzimuth,initialElevation,initialZoom])
   return <OrbitControls ref={controls} enableRotate={!top} enableDamping={false} minZoom={.7} maxZoom={90}
     minPolarAngle={top ? .00001 : Math.PI/2-MAX_ELEVATION} maxPolarAngle={top ? .00002 : Math.PI/2-MIN_ELEVATION}
     mouseButtons={mouseButtons} touches={touches} screenSpacePanning={false} rotateSpeed={.65} onEnd={() => {
@@ -269,6 +270,8 @@ function ArchitecturalLight({ bounds }) {
       shadow-normalBias={.025} shadow-bias={-.0003} shadow-radius={3}/>
   </>
 }
+
+export { TrafficLayer, CameraRig, ParkingSlot, ProjectedLabels, ArchitecturalLight }
 
 export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves, view, focus, reducedMotion, visibleIds, labelsHost, labels, trafficHost, ambientTraffic = true }) {
   const bounds = useMemo(()=>campusBounds(vehicles),[vehicles])

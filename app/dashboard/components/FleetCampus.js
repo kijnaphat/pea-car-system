@@ -236,6 +236,8 @@ function Gate({ x, z, yaw = 0 }) {
   </group>
 }
 
+export { RoadSurface, RoadEdge }
+
 export default memo(function FleetCampus({ bounds, overflowAisles = [], chargingBays = [], vehicles = [] }) {
   const site=useMemo(()=>siteLayout(vehicles),[vehicles])
   // Irregular precinct silhouette, not a square campus invented around the cars.

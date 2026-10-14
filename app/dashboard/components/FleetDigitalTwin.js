@@ -7,15 +7,16 @@ import { Car, LayoutGrid, Route, Zap, Wrench, Search, ZoomIn, ZoomOut, RotateCcw
 import { supabase } from '@/lib/supabaseClient'
 import { loadFleetSnapshot } from '@/lib/fleetSnapshot'
 import { startVisiblePolling } from '@/lib/visiblePolling'
-import { FLEET_STATUSES, dayBounds, demoSnapshot, fleetVehicles, movementEvents, replaySnapshot } from '@/lib/fleetDigitalTwin'
+import { FLEET_STATUSES, dayBounds, demoSnapshot, movementEvents, replaySnapshot } from '@/lib/fleetDigitalTwin'
 import { getCarImage } from '@/lib/carImages'
 import { vehicleStyle, FLEET_PAINTS } from '@/lib/fleetVehicleStyle'
-import { siteLabels, displayedParkingSlots } from '@/lib/fleetSiteLayout'
+import { thamakaVehicles, thamakaLabels as siteLabels, thamakaSlots as displayedParkingSlots } from '@/lib/thamakaSiteLayout'
 import { restingPose, siteChargingBays } from '@/lib/fleetCharging'
 import FleetVehicleGlyph from './FleetVehicleGlyph'
+import ThamakaFlatMap from './ThamakaFlatMap'
 import './fleet-twin.css'
 
-const Scene = dynamic(() => import('./FleetScene'), { ssr: false, loading: () => <div className="twin-loading">กำลังจัดลานรถ 3D…</div> })
+const Scene = dynamic(() => import('./ThamakaScene'), { ssr: false, loading: () => <div className="twin-loading">กำลังจัดผังท่ามะกา 3D…</div> })
 const empty = { carsDataRaw: [], activeLogs: [], latestLogs: [], latestCharges: [], parkingSlots: [], maintenanceRecords: [] }
 const icons = { available: Car, on_trip: Route, charging: Zap, maintenance: Wrench, unknown: Clock }
 const todayThai = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' })
@@ -64,7 +65,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
   const trafficHost = useRef(null)
 
   const accept = useCallback((next, animate = true) => {
-    const vehicles = fleetVehicles(next)
+    const vehicles = thamakaVehicles(next)
     const moves = animate ? movementEvents(previousScene.current?.vehicles, vehicles).filter(event => {
         if (seenEvents.current.has(event.key)) return false
         seenEvents.current.add(event.key); return true
@@ -207,13 +208,10 @@ export default function FleetDigitalTwin({ onAnalytics }) {
     demo.current = next; accept(next)
   }
 
-  const flatMap = <div className="twin-flat-map" role="region" aria-label="ผังลานรถ 2D สำรอง"><div className="twin-flat-office">อาคารสำนักงาน กฟภ. ท่ามะกา</div>
-    <div className="twin-flat-grid">{visible.map(car => <button key={car.id} onClick={() => select(car.id)} aria-label={`เลือก ${car.plate_number} ช่อง ${car.slotCode}`} style={{ borderColor: selectedId === car.id ? '#6b21a8' : FLEET_STATUSES[car.status].color }}>
-      <FleetVehicleGlyph car={car} size={52} style={{ opacity: car.status === 'on_trip' ? .18 : 1 }} /><strong>{car.slotCode}</strong><span>{car.plate_number}</span><span>{vehicleStyle(car).label}</span>
-    </button>)}</div><p>มุมมอง 2D สำรอง · รถที่ออกภารกิจแสดงช่องจอดว่าง</p></div>
+  const flatMap = <ThamakaFlatMap vehicles={vehicles} visible={visible} selectedId={selectedId} onSelect={select}/>
 
   return <section className="fleet-twin" aria-label="ลานรถดิจิทัล">
-    <header className="twin-header"><div className="twin-brand"><img src="/pea_logo.png" alt="PEA" /><div><span>PEA SMART CAR</span><strong>Fleet Digital Twin</strong></div></div>
+    <header className="twin-header"><div className="twin-brand"><img src="/pea_logo.png" alt="PEA" /><div><span>PEA THAMAKA SMART CAR</span><strong>Thamaka Digital Twin</strong></div></div>
       <label className="twin-search"><Search size={19} /><input aria-label="ค้นหารถในลาน" placeholder="ค้นหาทะเบียนรถ, ผู้ขับ, สถานที่..." value={query} onChange={event => { setQuery(event.target.value); setSelectedId(null) }} /></label>
       <button onClick={onAnalytics} className="twin-analytics"><LayoutGrid size={17} />สถิติและรายงานเดิม<ArrowUpRight size={16} /></button>
     </header>
@@ -261,7 +259,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
             <button aria-label="ลดมุมกล้องลง" disabled={view.top} onClick={()=>setView(value=>({...value,tilt:value.tilt-1}))}><ChevronDown size={18}/></button>
           </div>}
           {!safeMap && <span className="twin-camera-help">{view.top?'มุมบน · ลากเพื่อเลื่อน':view.drag==='pan'?'ลากเพื่อเลื่อน · สลับปุ่มเพื่อหมุน':'ลากเพื่อหมุนรอบลาน · 2 นิ้วเลื่อน/ซูม'}</span>}
-          <span className="twin-map-watermark"><span className="twin-zoom-hint">ซูมเพื่อดูเลขช่อง · </span>ผังสำนักงานจำลอง · ไม่ใช่ GPS</span>
+          <span className="twin-map-watermark"><span className="twin-zoom-hint">ซูมเพื่อดูเลขช่อง · </span>ท่ามะกา · ผังอิงภาพ ไม่ใช่แบบสำรวจ / GPS</span>
           <span className="twin-traffic-hint" ref={trafficHost} hidden aria-live="off"/>
           {selected && <article className="twin-detail" aria-label="ข้อมูลรถที่เลือก"><button className="twin-detail-close" aria-label="ปิดข้อมูลรถ" onClick={()=>{setSelectedId(null);setFocus(null)}}><X size={18}/></button><span className="twin-detail-eyebrow">รถ #{selected.id} · ช่องประจำ {selected.slotCode}</span><h3>{selected.plate_number}</h3><Status status={selected.status}/>
             <div className="twin-car-image">{getCarImage(selected) ? <img src={getCarImage(selected)} alt={selected.model || 'รถที่เลือก'} loading="lazy"/> : <Car size={70}/>}</div>

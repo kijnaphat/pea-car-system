@@ -38,6 +38,8 @@ const Worker = memo(function Worker({ person, register }) {
   </group>
 })
 
+export { Worker }
+
 export default memo(function FleetCampusLife({ reducedMotion, bounds }) {
   const {invalidate}=useThree(),actors=useRef(new Map())
   const register=useCallback((id,actor)=>{if(actor) actors.current.set(id,actor);else actors.current.delete(id)},[])
