@@ -5,7 +5,7 @@ import { RoundedBox } from '@react-three/drei'
 import { Shape, Path, Vector3, CatmullRomCurve3 } from 'three'
 import { SITE, SITE_BUILDINGS, SITE_CUSTOMER, SITE_CHARGING, SITE_HEDGE, SITE_HEDGE_BED, SITE_MOTORCYCLES, siteLayout } from '@/lib/fleetSiteLayout'
 import { roadNetwork, roadDashes } from '@/lib/fleetRoadGeometry'
-import { ARCHITECTURE, facadeParts, treeCrown } from '@/lib/fleetArchitecture'
+import { ARCHITECTURE, facadeParts, officeRoofParts, pitchedRoofParts, ancillaryEntranceParts, treeCrown } from '@/lib/fleetArchitecture'
 import { ArchitecturalCanopy, StaticParts } from './FleetArchitecture'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
@@ -57,48 +57,75 @@ function Planter({ x, z, width = 2.6 }) {
 
 // Dimensions and landmarks follow the user's supplied site plan.
 function Building({ x, z, width, depth, floors, accent, rotation = 0, office = false }) {
-  const height = floors * 1.65
+  const height = floors * ARCHITECTURE.floorHeight
   const facade = useMemo(() => facadeParts({ width, depth, floors }), [width, depth, floors])
-  const paving = useMemo(() => Array.from({ length: Math.ceil(depth / .85) }, (_, n) => ({ at: [0, .17, -depth / 2 + n * .85], size: [width + 1.15, .005, .017], color: '#babdb3' })), [width, depth])
+  const roof = useMemo(() => officeRoofParts({ width, depth }), [width, depth])
+  const roofSeams = useMemo(() => pitchedRoofParts(depth + .7, width + .7), [width, depth])
+  const paving = useMemo(() => {
+    const parts = []
+    for (let z = -depth / 2; z <= depth / 2; z += .85) parts.push({ at: [0, .17, z], size: [width + 1.15, .005, .012], color: '#bab7aa' })
+    for (const x of [-width / 2 - .4, width / 2 + .4]) parts.push({ at: [x, .173, 0], size: [.012, .005, depth + 1.15], color: '#bab7aa' })
+    return parts
+  }, [width, depth])
+  const floorEdges = useMemo(() => {
+    const parts = []
+    for (let row = 0; row < floors; row++) {
+      const y = ARCHITECTURE.floorHeight * (row + 1)
+      for (const sign of [-1, 1]) {
+        parts.push({ at: [sign * (width / 2 + .12), y, 0], size: [.13, .13, depth + .32], color: ARCHITECTURE.frame })
+        parts.push({ at: [0, y, sign * (depth / 2 + .12)], size: [width + .32, .13, .13], color: ARCHITECTURE.frame })
+        parts.push({ at: [sign * (width / 2 + .125), y - .09, 0], size: [.06, .035, depth + .28], color: ARCHITECTURE.steel })
+        parts.push({ at: [0, y - .09, sign * (depth / 2 + .125)], size: [width + .28, .035, .06], color: ARCHITECTURE.steel })
+      }
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) parts.push({ at: [sx * (width / 2 - .08), height / 2 + .18, sz * (depth / 2 + .08)], size: [.2, height, .12], color: ARCHITECTURE.frame })
+    return parts
+  }, [width, depth, floors, height])
+  const facadeDetails = useMemo(() => [...floorEdges, ...facade.frames, ...facade.trim, ...facade.shading], [floorEdges, facade])
+  const entrance = useMemo(() => {
+    const parts = []
+    if (office) {
+      for (let n = 0; n <= 10; n++) {
+        const angle = n * Math.PI / 10
+        parts.push({ at: [Math.sin(angle) * 1.65, height / 2 + .2, Math.cos(angle) * 1.65], size: [.055, height, .09], color: ARCHITECTURE.frame, rotation: [0, angle, 0] })
+      }
+      for (const sign of [-1, 1]) parts.push({ at: [2.4, 1.3, sign * 1.6], size: [.1, 2.5, .1], color: ARCHITECTURE.bronze })
+      for (let n = 0; n < 9; n++) parts.push({ at: [1.2, 2.6, -1.7 + n * .425], size: [3, .06, .045], color: ARCHITECTURE.bronze })
+      parts.push({ at: [1.63, 1.26, -.57], size: [.08, 2.2, .08], color: ARCHITECTURE.frame })
+      parts.push({ at: [1.63, 1.26, .57], size: [.08, 2.2, .08], color: ARCHITECTURE.frame })
+      parts.push({ at: [1.67, 2.33, 0], size: [.08, .08, 1.25], color: ARCHITECTURE.frame })
+      parts.push({ at: [1.675, 1.26, 0], size: [.03, 1.96, .035], color: ARCHITECTURE.frame })
+      parts.push({ at: [1.715, 1.18, .1], size: [.05, .36, .035], color: ARCHITECTURE.bronze })
+    } else {
+      // A small recessed glazed lobby and stone steps fit inside the same apron.
+      parts.push(...ancillaryEntranceParts({ depth, floors }))
+    }
+    return parts
+  }, [office, height, depth, floors])
   return <group position={[x,0,z]} rotation={[0,rotation,0]}>
     <SoftBlock at={[0,.08,0]} size={[width+1.3,.16,depth+1.3]} color={ARCHITECTURE.paving}/>
     <StaticParts parts={paving}/>
     <SoftBlock at={[0,height/2+.18,0]} size={[width,height,depth]} radius={.05} color={ARCHITECTURE.wall}/>
-    <SoftBlock at={[0,.35,0]} size={[width+.12,.45,depth+.12]} color={ARCHITECTURE.steel}/>
-    {Array.from({length:floors},(_,row)=><group key={row}>
-      <Box at={[0,1.65*(row+1)+.05,0]} size={[width+.32,.12,depth+.32]} color={ARCHITECTURE.frame}/>
-    </group>)}
-    <StaticParts parts={facade.frames}/><StaticParts parts={facade.glass} glass/><StaticParts parts={facade.trim}/>
+    <SoftBlock at={[0,.35,0]} size={[width+.12,.34,depth+.12]} color={ARCHITECTURE.stone}/>
+    <StaticParts parts={facadeDetails}/><StaticParts parts={facade.glass} glass/>
+    <StaticParts parts={facade.reflections} glass/>
     {office ? <group position={[0,height+.22,0]}>
       <Box at={[0,0,0]} size={[width+.35,.22,depth+.35]} color={ARCHITECTURE.roof}/>
-      {[-1,1].map(sign=><group key={sign}>
-        <Box at={[sign*width/2,.17,0]} size={[.12,.35,depth+.35]} color={ARCHITECTURE.frame}/>
-        <Box at={[0,.17,sign*depth/2]} size={[width+.35,.35,.12]} color={ARCHITECTURE.frame}/>
-      </group>)}
-      {[-5,4].map(z=><group key={z} position={[0,.25,z]}>
-        <Box at={[0,0,0]} size={[1.55,.5,1.9]} color="#c6ceca"/>
-        {[-.6,-.3,0,.3,.6].map(x=><Box key={x} at={[x,.28,0]} size={[.045,.05,1.7]} color={ARCHITECTURE.steel}/>)}
-      </group>)}
-      <Box at={[1.9,.32,-1]} size={[1.25,.64,1.6]} color={ARCHITECTURE.wall}/>
-      {[-8,-2,7].map(z=><Box key={z} at={[-1.6,.13,z]} size={[1.5,.025,2]} color="#b4ced1"/>)}
+      <StaticParts parts={roof.stone}/><StaticParts parts={roof.metal} metal/>
+      <StaticParts parts={roof.solar} glass/><StaticParts parts={roof.glass} metal/>
     </group> : <group position={[0,height+.25,0]} rotation={[0,Math.PI/2,0]}>
       <HipRoof at={[0,0,0]} width={depth+.7} depth={width+.7} rise={.65} color={accent}/>
+      <StaticParts parts={roofSeams} metal/>
     </group>}
     {office && <group position={[width/2+.02,0,0]}>
-      <mesh position={[0,height/2+.2,0]} castShadow><cylinderGeometry args={[1.6,1.6,height,32,1,false,0,Math.PI]}/><meshPhysicalMaterial color={ARCHITECTURE.glass} roughness={.24} metalness={.28} clearcoat={.8}/></mesh>
-      {Array.from({length:11},(_,n)=>n*Math.PI/10).map(angle=><Box key={angle} at={[Math.sin(angle)*1.62,height/2+.2,Math.cos(angle)*1.62]} size={[.055,height,.055]} color={ARCHITECTURE.frame}/>)}
-      {[.3,1.95,3.6,5.25,6.85].map(y=><mesh key={y} position={[0,y,0]}><cylinderGeometry args={[1.65,1.65,.12,24,1,false,0,Math.PI]}/><meshStandardMaterial color="#e5edf1"/></mesh>)}
+      <mesh position={[0,height/2+.2,0]}><cylinderGeometry args={[1.6,1.6,height,32,1,false,0,Math.PI]}/><meshPhysicalMaterial color={ARCHITECTURE.glass} roughness={.18} metalness={.16} clearcoat={.85}/></mesh>
+      {[.3,1.95,3.6,5.25,6.85].map(y=><mesh key={y} position={[0,y,0]} castShadow><cylinderGeometry args={[1.75,1.75,.1,32,1,false,0,Math.PI]}/><meshStandardMaterial color={ARCHITECTURE.frame}/></mesh>)}
       <SoftBlock at={[1.1,.2,0]} size={[2.6,.3,4]} color="#eeebe1"/>
       <SoftBlock at={[1.2,2.5,0]} size={[3.1,.16,4.1]} color={ARCHITECTURE.frame}/>
-      {[-1,1].map(n=><Box key={n} at={[2.4,1.3,n*1.6]} size={[.13,2.5,.13]} color="#c4d4de"/>)}
-      <group position={[1.63,1.26,0]}>
-        <Box at={[0,0,0]} size={[.055,2.05,1.23]} color="#3e798c"/>
-        {[-.57,.57].map(z=><Box key={z} at={[.04,0,z]} size={[.08,2.2,.08]} color="#d7e9ec"/>)}
-        <Box at={[.04,1.07,0]} size={[.08,.08,1.25]} color="#d7e9ec"/>
-        <Box at={[.045,0,0]} size={[.03,1.96,.035]} color="#b7d7de"/>
-        <Box at={[.085,-.08,.1]} size={[.05,.36,.035]} color="#e7d4a0"/>
-      </group>
+      <StaticParts parts={entrance} metal/>
+      <Box at={[1.63,1.26,0]} size={[.055,2.05,1.23]} color="#426975"/>
     </group>}
+    {!office && <StaticParts parts={entrance}/>}
     {office && <SoftBlock at={[6.95,.025,0]} size={[.7,.05,18]} color="#dddcd1"/>}
   </group>
 }

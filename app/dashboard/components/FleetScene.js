@@ -3,7 +3,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { Vector3, MOUSE, TOUCH, ACESFilmicToneMapping, SRGBColorSpace, PCFShadowMap } from 'three'
+import { Vector3, Object3D, PMREMGenerator, MOUSE, TOUCH, ACESFilmicToneMapping, SRGBColorSpace, PCFShadowMap } from 'three'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { createCampusVisitors } from '@/lib/fleetCampusVisitors'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
@@ -15,6 +16,7 @@ import FleetCampusProps from './FleetCampusProps'
 import FleetCampusLife from './FleetCampusLife'
 import { DEFAULT_ORBIT, MIN_ELEVATION, MAX_ELEVATION, cameraView, cameraOffset, captureOrbit } from '@/lib/fleetCamera'
 import { ARCHITECTURE } from '@/lib/fleetArchitecture'
+import { architecturalSun } from '@/lib/fleetPresentation'
 
 function Block({ at = [0, 0, 0], size, color = '#fff', ...props }) {
   return <mesh position={at} castShadow receiveShadow {...props}><boxGeometry args={size} /><meshStandardMaterial color={color} roughness={.9} flatShading /></mesh>
@@ -231,7 +233,7 @@ function CameraRig({ view, focus, bounds }) {
 function ParkingSlot({ car, selected, onSelect, visible }) {
   const border = selected ? '#8b36d1' : FLEET_STATUSES[car.status].color
   return <group position={[car.parking.x,0,car.parking.z]} rotation={[0,car.parking.yaw,0]} onClick={event=>{event.stopPropagation();if(visible) onSelect(car.id)}}>
-    <mesh position={[0,.035,0]} receiveShadow><boxGeometry args={[2.7,.04,3.8]}/><meshStandardMaterial color={selected ? '#ead9ff' : car.status==='on_trip' ? '#e7edf2' : '#daf0e8'} roughness={1}/></mesh>
+    <mesh position={[0,.035,0]} receiveShadow><boxGeometry args={[2.7,.04,3.8]}/><meshStandardMaterial color={selected ? '#d9cce7' : car.status==='on_trip' ? '#c6cbc8' : '#b5c2b5'} roughness={.95}/></mesh>
     {[-1,1].map(n=><group key={n}>
       <mesh position={[n*1.33,.066,0]}><boxGeometry args={[.04,.015,3.8]}/><meshBasicMaterial color={border}/></mesh>
       <mesh position={[0,.066,n*1.88]}><boxGeometry args={[2.7,.015,.04]}/><meshBasicMaterial color={border}/></mesh>
@@ -256,17 +258,49 @@ function ProjectedLabels({ host, enabled }) {
   return null
 }
 
+function ArchitecturalEnvironment() {
+  const { gl, scene, invalidate } = useThree()
+  useEffect(() => {
+    // A local procedural studio gives glass/metal reflections without HDR downloads.
+    const room = new RoomEnvironment(), generator = new PMREMGenerator(gl)
+    const environment = generator.fromScene(room, .04, .1, 100)
+    const previous = scene.environment, previousIntensity = scene.environmentIntensity
+    // Three's scene is an external mutable object, not React state.
+    // eslint-disable-next-line react-hooks/immutability
+    scene.environment = environment.texture
+    scene.environmentIntensity = .32
+    room.dispose(); generator.dispose(); invalidate()
+    return () => {
+      if (scene.environment === environment.texture) {
+        scene.environment = previous; scene.environmentIntensity = previousIntensity
+      }
+      environment.dispose()
+    }
+  }, [gl, scene, invalidate])
+  return null
+}
+
 function ArchitecturalLight({ bounds }) {
   const { size } = useThree()
   const shadowSize = size.width >= 900 ? 2048 : 1024
+  const { minX, maxX, minZ, maxZ, maxY } = bounds
+  const sun = useMemo(() => architecturalSun({ minX, maxX, minZ, maxZ, maxY }), [minX, maxX, minZ, maxZ, maxY])
+  const target = useMemo(() => {
+    const object = new Object3D()
+    object.position.set(...sun.center)
+    return object
+  }, [sun])
   return <>
-    <ambientLight intensity={.38}/>
-    <hemisphereLight args={['#fff3dc', '#788e8a', 1.15]}/>
-    <directionalLight castShadow position={[-36, 48, 26]} intensity={2.1}
-      shadow-mapSize={[shadowSize, shadowSize]} shadow-camera-left={-72}
-      shadow-camera-right={Math.max(90, bounds.maxX + 18)} shadow-camera-top={65}
-      shadow-camera-bottom={-65} shadow-camera-near={.5} shadow-camera-far={250}
-      shadow-normalBias={.025} shadow-bias={-.0003} shadow-radius={3}/>
+    <ArchitecturalEnvironment/>
+    <ambientLight intensity={.2}/>
+    <hemisphereLight args={['#f6f5e9', '#7c8a79', .85]}/>
+    <directionalLight color="#c9e1ef" position={[30, 24, -40]} intensity={.4}/>
+    <primitive object={target}/>
+    <directionalLight castShadow target={target} position={sun.position} color="#fff0d8" intensity={2.65}
+      shadow-mapSize={[shadowSize, shadowSize]} shadow-camera-left={sun.left}
+      shadow-camera-right={sun.right} shadow-camera-top={sun.top}
+      shadow-camera-bottom={sun.bottom} shadow-camera-near={sun.near} shadow-camera-far={sun.far}
+      shadow-normalBias={.025} shadow-bias={-.00012} shadow-radius={2}/>
   </>
 }
 
@@ -277,7 +311,7 @@ export default memo(function FleetScene({ vehicles, selectedId, onSelect, moves,
   const chargingBays = useMemo(()=>siteChargingBays(vehicles),[vehicles])
   return <Canvas orthographic shadows={{ type: PCFShadowMap }} dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4, 58, 40], near: .1, far: 1000 }}
     role="img" aria-label="ฉากสำนักงานและรถในช่องจอดแบบ 3D"
-    gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: .95, outputColorSpace: SRGBColorSpace }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
+    gl={{ antialias: true, alpha: false, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1, outputColorSpace: SRGBColorSpace }} fallback={<p>ผังลานรถจำลอง เลือกรถจากรายการด้านข้างได้</p>}>
     <color attach="background" args={[ARCHITECTURE.sky]} />
     <ArchitecturalLight bounds={bounds}/>
     <FleetCampus bounds={bounds} overflowAisles={overflowAisles} chargingBays={chargingBays} vehicles={vehicles}/>

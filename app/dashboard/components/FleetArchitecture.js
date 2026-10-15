@@ -5,7 +5,7 @@ import { Color, Object3D, DoubleSide } from 'three'
 import { ARCHITECTURE, canopyStructure } from '@/lib/fleetArchitecture'
 
 // One draw call for all repeated pieces in a batch; no per-frame matrix work.
-export const StaticParts = memo(function StaticParts({ parts, foliage = false, glass = false }) {
+export const StaticParts = memo(function StaticParts({ parts, foliage = false, glass = false, metal = false }) {
   const mesh = useRef(null)
   useLayoutEffect(() => {
     if (!mesh.current) return
@@ -22,9 +22,10 @@ export const StaticParts = memo(function StaticParts({ parts, foliage = false, g
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
     mesh.current.computeBoundingSphere()
   }, [parts])
-  return <instancedMesh ref={mesh} args={[null, null, parts.length]} castShadow={!glass} receiveShadow>
+  return <instancedMesh ref={mesh} args={[null, null, parts.length]} castShadow={!glass} receiveShadow={!glass}>
     {foliage ? <icosahedronGeometry args={[1, 1]}/> : <boxGeometry args={[1, 1, 1]}/>}
-    <meshStandardMaterial color="#ffffff" roughness={glass ? .24 : foliage ? 1 : .76} metalness={glass ? .3 : .04} flatShading={foliage}/>
+    {glass ? <meshPhysicalMaterial color="#ffffff" roughness={.19} metalness={.14} clearcoat={.7} clearcoatRoughness={.18}/>
+      : <meshStandardMaterial color="#ffffff" roughness={foliage ? 1 : metal ? .48 : .72} metalness={metal ? .42 : .025} flatShading={foliage}/>}
   </instancedMesh>
 })
 
@@ -32,11 +33,12 @@ export function ArchitecturalCanopy({ width, depth, height = 3.5 }) {
   const structure = useMemo(() => canopyStructure(width, depth, height), [width, depth, height])
   const ribs = useMemo(() => {
     const parts = []
-    for (let n = 0; n <= 12; n++) {
-      const z = -depth / 2 + depth * n / 12
-      const y = height + .07 + .36 * Math.sin(Math.PI * n / 12)
-      parts.push({ at: [0, y, z], size: [width, .045, .04], color: ARCHITECTURE.frame })
+    for (let n = 0; n <= 14; n++) {
+      const z = -depth / 2 + depth * n / 14
+      const y = height + .07 + .36 * Math.sin(Math.PI * n / 14)
+      parts.push({ at: [0, y, z], size: [width, .045, .035], color: ARCHITECTURE.frame })
     }
+    for (let n = 0; n <= Math.ceil(width / 2.5); n++) parts.push({ at: [-width / 2 + width * n / Math.ceil(width / 2.5), height - .02, 0], size: [.065, .1, depth], color: ARCHITECTURE.steel })
     return parts
   }, [width, depth, height])
   const surface = useMemo(() => {
@@ -49,13 +51,13 @@ export function ArchitecturalCanopy({ width, depth, height = 3.5 }) {
     return { points: new Float32Array(points), indices: new Uint16Array(indices) }
   }, [width, depth])
   return <group>
-    <StaticParts parts={structure}/><StaticParts parts={ribs}/>
+    <StaticParts parts={structure} metal/><StaticParts parts={ribs} metal/>
     <mesh position={[0, height + .05, 0]} receiveShadow>
       <bufferGeometry onUpdate={geometry => geometry.computeVertexNormals()}>
         <bufferAttribute attach="attributes-position" args={[surface.points, 3]}/>
         <bufferAttribute attach="index" args={[surface.indices, 1]}/>
       </bufferGeometry>
-      <meshStandardMaterial color="#d6e0df" roughness={.4} metalness={.15} side={DoubleSide} transparent opacity={.42} depthWrite={false}/>
+      <meshPhysicalMaterial color="#a4bcc0" roughness={.24} metalness={.15} clearcoat={.8} side={DoubleSide} transparent opacity={.48} depthWrite={false}/>
     </mesh>
   </group>
 }

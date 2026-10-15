@@ -35,7 +35,10 @@
 .twin-paint-legend{display:flex;align-items:center;flex-wrap:wrap;gap:9px 18px;font-size:10px;color:#64748b;margin:-6px 0 15px}.twin-paint-legend>span{display:flex;align-items:center;gap:6px}.twin-paint-legend i{width:13px;height:9px;border-radius:3px;border:1px solid #0000000a}.twin-paint-legend small{font-size:9px;color:#8994a6}
 .twin-charge-note { display: flex; align-items: flex-start; gap: 8px; color: #197a88; background: #eaf8f8; border-radius: 10px; padding: 10px; font-size: 12px; line-height: 1.6; }
 /* Architectural model presentation. Existing fleet/navigation colors stay intact. */
-.twin-map-panel{background:#d5e5ec;border-color:#bdced4;box-shadow:0 18px 48px #243c4714}
+.twin-map-panel{background:#e8eef0;border-color:#bfcac9;box-shadow:0 18px 48px #243c4714}
+.twin-architecture-caption{position:absolute;top:25px;left:50%;transform:translateX(-50%);z-index:3;text-align:center;pointer-events:none;color:#526365;white-space:nowrap}
+.twin-architecture-caption>span{display:block;font-size:10px;font-weight:700;letter-spacing:.24em}
+.twin-architecture-caption>strong{display:block;font-size:11px;font-weight:500;letter-spacing:.02em;margin-top:5px;color:#7b8887}
 .twin-campus-label{background:linear-gradient(125deg,#314f5a,#203943);border-color:#68818a;box-shadow:0 8px 20px #172f4230}
 .twin-campus-label:after{background:#294550}
 .twin-map-toolbar{background:#263e49ed;border-color:#6b818733;box-shadow:0 10px 24px #18323e24;backdrop-filter:blur(14px)}
@@ -44,4 +47,4 @@
 .twin-gate-label{color:#4c626a;background:#f5f6f1ec;border-color:#c8d3cf}
 .twin-camera-help,.twin-map-watermark{color:#546b70;background:#eaf1eedd;border:1px solid #c5d4d333}
 .twin-camera-pad{position:absolute;top:18px;left:18px;z-index:4;display:grid;grid-template-columns:repeat(2,44px);gap:4px;padding:8px;background:#ffffffed;border:1px solid #e1e7ed;border-radius:15px;box-shadow:0 8px 22px #40597812}.twin-camera-pad>span{grid-column:1/-1;font-size:9px;text-align:center;color:#79869b;margin-bottom:3px}.twin-camera-pad button{display:flex;align-items:center;justify-content:center;height:44px;border-radius:9px;color:#63778d;background:#f3f7fb}.twin-camera-pad button:hover{color:#7431af;background:#eee2fa}.twin-camera-pad button:disabled{opacity:.3}.twin-camera-help{position:absolute;bottom:15px;left:17px;z-index:3;color:#688291;font-size:9px;background:#ffffffdc;padding:6px 9px;border-radius:8px;pointer-events:none}.twin-map canvas{touch-action:none}
-@media(max-width:760px){.twin-camera-pad{left:9px;top:12px;padding:5px;gap:3px}.twin-camera-pad>span{font-size:8px}.twin-camera-help{font-size:7px;bottom:33px;left:9px;max-width:230px}}
+@media(max-width:760px){.twin-camera-pad{left:9px;top:12px;padding:5px;gap:3px}.twin-camera-pad>span{font-size:8px}.twin-camera-help{font-size:7px;bottom:33px;left:9px;max-width:230px}.twin-architecture-caption{top:23px;left:calc(50% + 16px)}.twin-architecture-caption>span{font-size:8px;letter-spacing:.12em}.twin-architecture-caption>strong{font-size:8px}}

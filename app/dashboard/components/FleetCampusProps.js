@@ -5,8 +5,8 @@ import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import { CatmullRomCurve3, Vector3 } from 'three'
 import { SITE, SITE_BICYCLES } from '@/lib/fleetSiteLayout'
-import { CAMPUS_GARDENS, CAMPUS_TABLES } from '@/lib/fleetCampusAmenities'
-import { ARCHITECTURE, treeCrown } from '@/lib/fleetArchitecture'
+import { CAMPUS_TABLES, LANDSCAPE, gardenDetails, fenceDetails } from '@/lib/fleetCampusAmenities'
+import { ARCHITECTURE } from '@/lib/fleetArchitecture'
 import { StaticParts } from './FleetArchitecture'
 
 function Block({ at, size, color, ...props }) {
@@ -16,14 +16,28 @@ function Soft({ at, size, color, ...props }) {
   return <RoundedBox position={at} args={size} radius={Math.min(.12,...size.map(n=>n/3))} smoothness={2} bevelSegments={1} castShadow receiveShadow {...props}><meshStandardMaterial color={color} roughness={.85}/></RoundedBox>
 }
 function FlowerBed({ x, z, width=2.4, color='#ddb67a' }) {
+  const flowers=useMemo(()=>Array.from({length:7},(_,n)=>({at:[-width*.37+n*width*.74/6,.42,Math.sin(n*2)*.16],size:[.12,.09,.12],color:n%3?color:'#ced1ad'})),[width,color])
   return <group position={[x,0,z]}>
-    <Soft at={[0,.12,0]} size={[width,.24,1]} color="#eee6d7"/>
-    <Soft at={[0,.28,0]} size={[width-.18,.12,.8]} color="#9bcc9d"/>
-    {[-.7,-.35,0,.35,.7].map((a,i)=><mesh key={i} position={[a,.4,Math.sin(i)*.22]}><sphereGeometry args={[.13,7,5]}/><meshStandardMaterial color={i%2?color:'#d7a5c6'}/></mesh>)}
+    <Soft at={[0,.12,0]} size={[width,.24,.9]} color={LANDSCAPE.limestone}/>
+    <Soft at={[0,.28,0]} size={[width-.18,.12,.7]} color={LANDSCAPE.leaf[1]}/>
+    <StaticParts parts={flowers} foliage/>
   </group>
 }
 function Fountain({ reducedMotion }) {
   const ripple=useRef()
+  const paving=useMemo(()=>{
+    const parts=[]
+    for(let n=0;n<24;n++) {
+      const angle=n*Math.PI/12
+      parts.push({at:[Math.sin(angle)*2.5,.087,Math.cos(angle)*2.5],size:[.012,.008,1.25],color:LANDSCAPE.joint,rotation:[0,angle,0]})
+    }
+    for(let n=0;n<4;n++) {
+      const angle=Math.PI/4+n*Math.PI/2,x=Math.sin(angle)*2.86,z=Math.cos(angle)*2.86
+      parts.push({at:[x,.34,z],size:[.13,.58,.13],color:LANDSCAPE.bronze})
+      parts.push({at:[x,.62,z],size:[.14,.06,.14],color:LANDSCAPE.light})
+    }
+    return parts
+  },[])
   useFrame(({clock})=>{
     if(!ripple.current) return
     const wave=reducedMotion?0:Math.sin(clock.elapsedTime*1.8)
@@ -35,11 +49,12 @@ function Fountain({ reducedMotion }) {
     return new CatmullRomCurve3([new Vector3(0,1.02,0),new Vector3(Math.cos(angle)*.35,1.45,Math.sin(angle)*.35),new Vector3(Math.cos(angle)*.85,.26,Math.sin(angle)*.85)])
   }),[])
   return <group position={[-47,0,1.2]}>
-    <mesh position={[0,.04,0]} receiveShadow><cylinderGeometry args={[3.2,3.2,.08,40]}/><meshStandardMaterial color="#ede6d9"/></mesh>
-    <mesh position={[0,.16,0]} castShadow receiveShadow><cylinderGeometry args={[1.8,1.8,.25,36]}/><meshStandardMaterial color="#becdd2"/></mesh>
-    <mesh position={[0,.29,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[1.67,.12,6,36]}/><meshStandardMaterial color="#e8f1ed"/></mesh>
-    <mesh position={[0,.3,0]}><cylinderGeometry args={[1.53,1.53,.015,36]}/><meshStandardMaterial color="#86c7d3" metalness={.15} roughness={.35}/></mesh>
-    <mesh position={[0,.63,0]} castShadow><cylinderGeometry args={[.13,.25,.68,10]}/><meshStandardMaterial color="#afc2c6"/></mesh>
+    <mesh position={[0,.04,0]} receiveShadow><cylinderGeometry args={[3.2,3.2,.08,40]}/><meshStandardMaterial color={LANDSCAPE.limestone} roughness={.95}/></mesh>
+    <StaticParts parts={paving}/>
+    <mesh position={[0,.16,0]} castShadow receiveShadow><cylinderGeometry args={[1.8,1.8,.25,36]}/><meshStandardMaterial color="#929c91" roughness={.72}/></mesh>
+    <mesh position={[0,.29,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[1.67,.12,6,36]}/><meshStandardMaterial color="#e1dac8" roughness={.6}/></mesh>
+    <mesh position={[0,.3,0]}><cylinderGeometry args={[1.53,1.53,.015,36]}/><meshStandardMaterial color="#4c9299" metalness={.28} roughness={.22}/></mesh>
+    <mesh position={[0,.63,0]} castShadow><cylinderGeometry args={[.13,.25,.68,10]}/><meshStandardMaterial color={LANDSCAPE.bronze} metalness={.4} roughness={.45}/></mesh>
     {jets.map((jet,n)=><mesh key={n}><tubeGeometry args={[jet,16,.025,4,false]}/><meshBasicMaterial color="#c4f1f8" transparent opacity={.8}/></mesh>)}
     <group ref={ripple} position={[0,.315,0]}>
       {[.6,1.1].map(radius=><mesh key={radius} rotation={[Math.PI/2,0,0]}><torusGeometry args={[radius,.015,4,30]}/><meshBasicMaterial color="#d4f4f7" transparent opacity={.55}/></mesh>)}
@@ -48,25 +63,36 @@ function Fountain({ reducedMotion }) {
   </group>
 }
 function Pergola() {
+  const detail=useMemo(()=>{
+    const parts=[],add=(at,size,color)=>parts.push({at,size,color})
+    for(const x of [-2.1,2.1]) for(const z of [-1.5,1.5]) {
+      add([x,1.4,z],[.12,2.8,.12],LANDSCAPE.bronze)
+      add([x,.12,z],[.32,.24,.32],LANDSCAPE.limestone)
+    }
+    for(const z of [-1.5,1.5]) add([0,2.77,z],[4.8,.2,.15],LANDSCAPE.timber)
+    for(let n=0;n<13;n++) add([-2.2+n*.366,2.92,0],[.12,.16,3.8],LANDSCAPE.timber)
+    for(let n=0;n<6;n++) add([0,.53,-.8+n*.12],[3.8,.095,.08],LANDSCAPE.timber)
+    for(let n=0;n<4;n++) add([0,.69+n*.14,-.89],[3.8,.09,.07],LANDSCAPE.timber)
+    for(const x of [-1.5,1.5]) add([x,.25,-.5],[.12,.5,.65],LANDSCAPE.bronze)
+    for(let n=0;n<5;n++) add([-2+n,.113,0],[.012,.008,3.9],LANDSCAPE.joint)
+    return parts
+  },[])
   return <group position={[-44,0,8]}>
-    <Soft at={[0,.05,0]} size={[5.2,.1,4.1]} color="#e0d7c7"/>
-    {[-1,1].flatMap(a=>[-1,1].map(b=><Block key={a+'-'+b} at={[a*2.1,1.4,b*1.5]} size={[.16,2.8,.16]} color="#aa8c68"/>))}
-    {[-1.5,1.5].map(z=><Block key={z} at={[0,2.77,z]} size={[4.8,.2,.18]} color="#ba9872"/>)}
-    {Array.from({length:9},(_,n)=><Block key={n} at={[-2.15+n*.54,2.92,0]} size={[.17,.16,3.8]} color="#c8af8b"/>)}
-    <Block at={[0,.53,-.5]} size={[3.8,.13,.72]} color="#b69a75"/>
-    <Block at={[0,.89,-.85]} size={[3.8,.58,.11]} color="#b69a75"/>
-    {[-1.5,1.5].map(x=><Block key={x} at={[x,.25,-.5]} size={[.12,.5,.65]} color="#7f8e90"/>)}
+    <Soft at={[0,.05,0]} size={[5.2,.1,4.1]} color={LANDSCAPE.limestone}/>
+    <StaticParts parts={detail}/>
     <FlowerBed x={-2.55} z={.55} width={1.4}/><FlowerBed x={2.55} z={.55} width={1.4}/>
   </group>
 }
 function CoffeeKiosk() {
+  const slats=useMemo(()=>Array.from({length:15},(_,n)=>({at:[-1.4+n*.2,.57,.913],size:[.055,.76,.025],color:LANDSCAPE.timber})),[])
   return <group position={[-6,0,-14.9]}>
-    <Soft at={[0,.055,0]} size={[4.2,.11,3.4]} color="#e7dfcf"/>
-    <Soft at={[0,.54,0]} size={[3,.98,1.8]} color="#c4af8e"/>
-    <Block at={[0,1.06,0]} size={[3.3,.12,2]} color="#f2ead8"/>
-    {[-1.5,1.5].map(x=><Block key={x} at={[x,1.4,.66]} size={[.1,2.8,.1]} color="#ad9172"/>)}
-    <Soft at={[0,2.73,0]} size={[3.7,.16,2.8]} color="#978aae"/>
-    {[-1.4,-.7,0,.7,1.4].map(x=><Block key={x} at={[x,2.6,1.32]} size={[.42,.26,.04]} color="#d1bbdf"/>)}
+    <Soft at={[0,.055,0]} size={[4.2,.11,3.4]} color={LANDSCAPE.limestone}/>
+    <Soft at={[0,.54,0]} size={[3,.98,1.8]} color="#766b55"/>
+    <StaticParts parts={slats}/>
+    <Block at={[0,1.06,0]} size={[3.3,.12,2]} color="#e9e3d3"/>
+    {[-1.5,1.5].map(x=><Block key={x} at={[x,1.4,.66]} size={[.075,2.8,.075]} color={LANDSCAPE.bronze}/>)}
+    <Soft at={[0,2.73,0]} size={[3.7,.16,2.8]} color={LANDSCAPE.bronze}/>
+    {[-1.4,-.7,0,.7,1.4].map(x=><Block key={x} at={[x,2.6,1.32]} size={[.42,.26,.04]} color="#b9baa2"/>)}
     <Soft at={[.77,1.47,.26]} size={[.52,.69,.48]} color="#607d88"/>
     {[-.9,-.45,0].map(x=><mesh key={x} position={[x,1.17,.7]}><cylinderGeometry args={[.085,.065,.14,8]}/><meshStandardMaterial color="#fcf7e9"/></mesh>)}
   </group>
@@ -107,38 +133,33 @@ function RecyclingBins() {
   </group>)}</group>
 }
 function Fence({ x, z, length, yaw=0 }) {
-  return <group position={[x,0,z]} rotation={[0,yaw,0]}>
-    {[.45,.95].map(y=><Block key={y} at={[0,y,0]} size={[.06,.08,length]} color="#cad6d3"/>)}
-    {Array.from({length:Math.ceil(length/2)+1},(_,n)=><Block key={n} at={[0,.65,-length/2+n*length/Math.ceil(length/2)]} size={[.11,1.3,.11]} color="#b8cbc5"/>)}
-  </group>
+  const detail=useMemo(()=>fenceDetails(length),[length])
+  return <group position={[x,0,z]} rotation={[0,yaw,0]}><StaticParts parts={detail}/></group>
 }
 
-function GardenIsland({ garden }) {
-  const canopy = useMemo(() => [-1.8,1.5].flatMap((x,n) => treeCrown(false, (garden.tone+n)%5).map(part=>({ ...part, at: [part.at[0]+x, part.at[1], part.at[2]+(n?-.2:.25)] }))), [garden.tone])
-  return <group position={[garden.x,0,garden.z]}>
-    <Soft at={[0,.08,0]} size={[garden.width,.16,garden.depth]} color={ARCHITECTURE.stone}/>
-    <Soft at={[0,.19,0]} size={[garden.width-.18,.08,garden.depth-.18]} color={ARCHITECTURE.grass}/>
-    {[-1.8,1.5].map((x,n)=><group key={x} position={[x,0,n?-.2:.25]}>
-      <mesh position={[0,1,0]} castShadow><cylinderGeometry args={[.11,.16,1.8,6]}/><meshStandardMaterial color="#a48b6f"/></mesh>
-    </group>)}
-    <StaticParts parts={canopy} foliage/>
-    {[-.6,0,.6].map((x,n)=><group key={x}>
-      <mesh position={[x,.45,.4]}><icosahedronGeometry args={[.28,1]}/><meshStandardMaterial color="#70a77c"/></mesh>
-      <mesh position={[x,.65,.45]}><sphereGeometry args={[.09,6,5]}/><meshStandardMaterial color={n%2?'#e4c15e':'#d39bc3'}/></mesh>
-    </group>)}
-  </group>
+function GardenIslands() {
+  const detail=useMemo(()=>gardenDetails(),[])
+  return <group><StaticParts parts={detail.hardscape}/><StaticParts parts={detail.planting} foliage/></group>
 }
 
 function ShadeTable({ x, z, color }) {
+  const detail=useMemo(()=>{
+    const parts=[]
+    for(const sign of [-1,1]) for(let n=0;n<4;n++) parts.push({at:[sign*.94,.42,-.18+n*.12],size:[.48,.06,.08],color:LANDSCAPE.timber})
+    for(const sign of [-1,1]) {
+      parts.push({at:[sign*.94,.2,0],size:[.08,.4,.32],color:LANDSCAPE.bronze})
+      parts.push({at:[sign*1.16,.63,0],size:[.055,.4,.46],color:LANDSCAPE.bronze})
+    }
+    parts.push({at:[0,1.22,0],size:[.055,2.4,.055],color:LANDSCAPE.bronze})
+    return parts
+  },[])
   return <group position={[x,0,z]}>
-    <mesh position={[0,.025,0]} receiveShadow><cylinderGeometry args={[1.25,1.25,.05,20]}/><meshStandardMaterial color="#e0d8c6"/></mesh>
-    <mesh position={[0,.77,0]} castShadow><cylinderGeometry args={[.62,.62,.1,16]}/><meshStandardMaterial color="#b69976"/></mesh>
-    <Block at={[0,1.22,0]} size={[.065,2.4,.065]} color="#8d9e9a"/>
+    <mesh position={[0,.025,0]} receiveShadow><cylinderGeometry args={[1.25,1.25,.05,20]}/><meshStandardMaterial color={LANDSCAPE.limestone} roughness={.9}/></mesh>
+    <mesh position={[0,.77,0]} castShadow><cylinderGeometry args={[.62,.62,.1,16]}/><meshStandardMaterial color={LANDSCAPE.timber}/></mesh>
+    <mesh position={[0,.82,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[.57,.015,4,20]}/><meshStandardMaterial color={LANDSCAPE.bronze}/></mesh>
+    <StaticParts parts={detail}/>
     <mesh position={[0,2.49,0]} castShadow><coneGeometry args={[1.17,.35,8]}/><meshStandardMaterial color={color} roughness={.9}/></mesh>
-    {[-1,1].map(sign=><group key={sign}>
-      <Soft at={[sign*.94,.4,0]} size={[.48,.1,.46]} color="#a9b6a2"/>
-      <Block at={[sign*.94,.18,0]} size={[.07,.36,.07]} color="#7b8b84"/>
-    </group>)}
+    <mesh position={[0,2.71,0]}><sphereGeometry args={[.065,6,4]}/><meshStandardMaterial color={LANDSCAPE.bronze}/></mesh>
   </group>
 }
 
@@ -148,7 +169,7 @@ export default memo(function FleetCampusProps({ bounds, reducedMotion }) {
     <Fountain reducedMotion={reducedMotion}/><Pergola/><CoffeeKiosk/><BicycleRack/><UtilityYard/><RecyclingBins/>
     <FlowerBed x={-51.5} z={-3} width={3}/><FlowerBed x={-48.7} z={5.8} width={2}/>
     <FlowerBed x={-31} z={11.2} width={3.4} color="#ddb997"/>
-    {CAMPUS_GARDENS.map(garden=><GardenIsland key={garden.id} garden={garden}/>)}
+    <GardenIslands/>
     {CAMPUS_TABLES.map(table=><ShadeTable key={table.x+','+table.z} {...table}/>)}
     <Fence x={-56} z={-7} length={30}/><Fence x={(bounds?.maxX||SITE.bounds.maxX)-1.4} z={-10} length={9}/><Fence x={(bounds?.maxX||SITE.bounds.maxX)-1.4} z={9.2} length={7}/>
     {[31.5,32.5,33.5].map(x=><group key={x} position={[x,0,-13.2]}>

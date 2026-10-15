@@ -244,6 +244,7 @@ export default function FleetDigitalTwin({ onAnalytics }) {
               {labels && chargingBays.map(bay=><span key={bay.code} className="twin-slot-label twin-ev-label" data-world-x={bay.x} data-world-y=".2" data-world-z={bay.z-2.7}>{bay.code}</span>)}
             </div>}
           </div>
+          {!safeMap && <div className="twin-architecture-caption" aria-hidden="true"><span>KAMPHAENG SAEN</span><strong>โมเดลสถาปัตยกรรม · ลานรถดิจิทัล</strong></div>}
           <div className="twin-map-toolbar">
             <button aria-label="ขยายผัง" onClick={()=>setView(value=>({...value,zoom:Math.min(2.5,value.zoom+.2)}))}><ZoomIn size={20}/></button>
             <button aria-label="ย่อผัง" onClick={()=>setView(value=>({...value,zoom:Math.max(.55,value.zoom-.2)}))}><ZoomOut size={20}/></button>
