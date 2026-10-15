@@ -10,6 +10,7 @@ import { ArchitecturalCanopy, StaticParts } from './FleetArchitecture'
 import FleetSurfaceMaterial from './FleetSurfaceMaterial'
 import { curbJoints, raisedCurbRuns } from '@/lib/fleetSurfaceMaterials'
 import { LandscapeInstances } from './FleetCampusProps'
+import { hipRoofMesh } from '@/lib/fleetRoofGeometry'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
 function Box({ at, size, color, ...props }) {
@@ -21,11 +22,7 @@ function SoftBlock({ at, size, color, radius = .16, ...props }) {
 }
 
 function HipRoof({ at, width, depth, rise = 1.1, color = '#91a7ba' }) {
-  const points = useMemo(()=>new Float32Array([
-    -width/2,0,-depth/2, width/2,0,-depth/2, width/2,0,depth/2, -width/2,0,depth/2,
-    -width/2+depth*.45,rise,0, width/2-depth*.45,rise,0,
-  ]),[width,depth,rise])
-  const indices = useMemo(()=>new Uint16Array([0,4,1,1,4,5,3,2,4,2,5,4,0,3,4,1,5,2]),[])
+  const { points, indices } = useMemo(()=>hipRoofMesh(width,depth,rise),[width,depth,rise])
   return <mesh position={at} castShadow receiveShadow>
     <bufferGeometry onUpdate={geometry=>geometry.computeVertexNormals()}><bufferAttribute attach="attributes-position" args={[points,3]}/><bufferAttribute attach="index" args={[indices,1]}/></bufferGeometry>
     <meshStandardMaterial color={color} roughness={.9} flatShading/>

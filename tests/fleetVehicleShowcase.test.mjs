@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createVehicleModel } from '../lib/fleetVehicleModel.js'
 import { VISITOR_CARS } from '../lib/fleetCampusVisitors.js'
 
-test('the selected car alone gets a demand-rendered model viewer with keyboard controls and an SVG fallback', () => {
+test('the selected car photo is primary and the optional demand-rendered 3D viewer mounts only after expansion', () => {
   const viewer = readFileSync(new URL('../app/dashboard/components/FleetVehicleShowcase.js', import.meta.url), 'utf8')
   const twin = readFileSync(new URL('../app/dashboard/components/FleetDigitalTwin.js', import.meta.url), 'utf8')
   assert.ok(viewer.includes('frameloop="demand"'))
@@ -14,8 +14,14 @@ test('the selected car alone gets a demand-rendered model viewer with keyboard c
   assert.ok(viewer.includes('aria-label="หมุนโมเดลรถขวา"'))
   assert.doesNotMatch(viewer, /autoRotate|useFrame|fetch\(|supabase|setInterval/)
   assert.equal((twin.match(/<VehicleShowcase /g) || []).length, 1)
-  assert.ok(twin.includes('!safeMap && <SceneBoundary key={`preview-${selected.id}`}'))
-  assert.ok(twin.includes('<FleetVehicleGlyph car={selected} size={150}/>'))
+  assert.ok(twin.includes("const [open, setOpen] = useState(false)"))
+  assert.ok(twin.includes('if (safeMap) return null'))
+  assert.ok(twin.includes('{open && <SceneBoundary key={`preview-${car.id}`}'))
+  assert.ok(twin.includes('<FleetVehicleGlyph car={car} size={150}/>'))
+  assert.ok(twin.includes('<summary>ดูโมเดล 3D เพิ่มเติม</summary>'))
+  assert.ok(twin.includes('<FleetVehiclePhoto key={selected.id} car={selected}/>'))
+  assert.ok(twin.includes('<OptionalVehicleModel key={selected.id} car={selected} safeMap={safeMap}/>'))
+  assert.ok(twin.indexOf('<FleetVehiclePhoto key={selected.id}')<twin.indexOf('<OptionalVehicleModel key={selected.id}'))
   assert.ok(twin.includes('สแกน QR Code ที่รถเท่านั้น'))
 })
 

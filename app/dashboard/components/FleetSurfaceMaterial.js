@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
-import { DataTexture, RGBAFormat, RepeatWrapping, SRGBColorSpace, LinearFilter, LinearMipmapLinearFilter } from 'three'
+import { DataTexture, RGBAFormat, RepeatWrapping, SRGBColorSpace, NoColorSpace, LinearFilter, LinearMipmapLinearFilter } from 'three'
 import { surfaceSwatch } from '@/lib/fleetSurfaceMaterials'
 
 export default function FleetSurfaceMaterial({ kind = 'stone', color }) {
-  const map = useMemo(() => {
+  const maps = useMemo(() => {
     const texture = new DataTexture(surfaceSwatch(kind), 128, 128, RGBAFormat)
     texture.wrapS = texture.wrapT = RepeatWrapping
     texture.repeat.set(kind === 'asphalt' ? .75 : .18, kind === 'asphalt' ? .75 : .18)
@@ -15,8 +15,11 @@ export default function FleetSurfaceMaterial({ kind = 'stone', color }) {
     texture.generateMipmaps = true
     texture.anisotropy = 4
     texture.needsUpdate = true
-    return texture
+    const relief = texture.clone()
+    relief.colorSpace = NoColorSpace
+    relief.needsUpdate = true
+    return { albedo: texture, relief }
   }, [kind])
-  useEffect(() => () => map.dispose(), [map])
-  return <meshStandardMaterial color={color} map={map} roughness={kind === 'asphalt' ? .96 : .88}/>
+  useEffect(() => () => { maps.albedo.dispose(); maps.relief.dispose() }, [maps])
+  return <meshStandardMaterial color={color} map={maps.albedo} bumpMap={maps.relief} bumpScale={kind === 'asphalt' ? .012 : .018} roughnessMap={maps.relief} roughness={kind === 'asphalt' ? .97 : .9}/>
 }

@@ -2,8 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { Color } from 'three'
-import { createVehicleModel, createVehicleModelCache, vehicleModelIdentity, VEHICLE_MODEL_KINDS, VEHICLE_MODEL_ENVELOPE } from '../lib/fleetVehicleModel.js'
+import { Color, DoubleSide, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three'
+import { createVehicleModel, createVehicleModelCache, vehicleModelIdentity, createVehicleBodyGeometry, createPassengerCabGeometry, VEHICLE_MODEL_KINDS, VEHICLE_MODEL_ENVELOPE } from '../lib/fleetVehicleModel.js'
 import { vehicleStyle, FLEET_PAINTS } from '../lib/fleetVehicleStyle.js'
 
 const digest = model => {
@@ -27,12 +27,29 @@ test('all eleven detailed models fit the existing traffic, parking and canopy cl
       assert.ok(model.bounds.min.y >= 0 && model.bounds.min.y <= .03, `${kind}: tire contact`)
       assert.ok(model.bounds.max.y < VEHICLE_MODEL_ENVELOPE.height, `${kind}: folded gear below canopy`)
       assert.ok(model.metrics.drawCalls >= 5 && model.metrics.drawCalls <= 8, `${kind}: material batch budget`)
-      assert.ok(model.metrics.triangles >= 1200 && model.metrics.triangles <= 8500, `${kind}: geometry budget`)
+      assert.ok(model.metrics.triangles >= 1200 && model.metrics.triangles <= 14000, `${kind}: rounded geometry budget`)
       const six = ['bucket', 'crane', 'drill', 'heavy_truck'].includes(kind)
       assert.equal(model.metrics.wheelCount, kind === 'motorcycle' ? 2 : six ? 6 : 4)
       assert.equal(model.metrics.axles.length, six ? 3 : 2)
     } finally { model.dispose() }
   }
+})
+
+test('sculpted bodies have actual wheel-arch openings and curved roof sections', () => {
+  for (const kind of ['ev','pickup','van','light_truck']) {
+    const geometry=createVehicleBodyGeometry(kind), material=new MeshBasicMaterial({side:DoubleSide}), mesh=new Mesh(geometry,material)
+    const truck=kind==='light_truck', axle=truck?1.08:1.02
+    const ray=new Raycaster(new Vector3(2,.5,axle),new Vector3(-1,0,0),0,4)
+    assert.equal(ray.intersectObject(mesh).length,0,kind+' tyre sits inside a real opening')
+    ray.set(new Vector3(2,truck?1.05:.72,axle),new Vector3(-1,0,0))
+    assert.ok(ray.intersectObject(mesh).length>0,kind+' body remains above arch')
+    geometry.dispose();material.dispose()
+  }
+  const roof=createPassengerCabGeometry('ev'), positions=roof.getAttribute('position')
+  const roofHeights=new Set()
+  for(let n=0;n<positions.count;n++) if(positions.getY(n)>1.32) roofHeights.add(positions.getY(n).toFixed(4))
+  assert.ok(roofHeights.size>6,'domed roof has curved sections rather than one flat box')
+  roof.dispose()
 })
 
 test('merged geometry has finite positions, normalized normals and linear vertex colors', () => {

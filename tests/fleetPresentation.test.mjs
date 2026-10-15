@@ -21,11 +21,12 @@ test('architectural sun covers the complete site, including future parking expan
 })
 
 test('studio reflections allocate once per renderer and release their GPU resources', () => {
-  const scene = readFileSync(new URL('../app/dashboard/components/FleetScene.js', import.meta.url), 'utf8')
+  const scene = readFileSync(new URL('../app/dashboard/components/FleetEnvironment.js', import.meta.url), 'utf8')
   assert.ok(scene.includes("from 'three/addons/environments/RoomEnvironment.js'"))
   assert.ok(scene.includes('generator.fromScene(room'))
   assert.ok(scene.includes('room.dispose(); generator.dispose()'))
   assert.ok(scene.includes('environment.dispose()'))
-  assert.ok(scene.includes('[gl, scene, invalidate]'))
+  assert.ok(scene.includes('[gl, scene, invalidate, intensity]'))
+  assert.ok(scene.includes('{ size: 128 }'))
   assert.doesNotMatch(scene, /https:\/\/|useTexture|\.hdr/)
 })

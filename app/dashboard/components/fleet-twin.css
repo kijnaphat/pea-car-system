@@ -42,9 +42,20 @@
 .twin-vehicle-showcase-controls{display:flex;align-items:center;justify-content:center;gap:12px;padding:0 8px 8px;color:#6d7f7c;font-size:9px}
 .twin-vehicle-showcase-controls button{display:flex;padding:5px;border-radius:7px;background:#ffffffb8;border:1px solid #d9e3df;color:#476266}
 .twin-vehicle-showcase-controls button:hover{background:#e5eeea}
-.twin-real-car-photo{font-size:10px;color:#6b7d7a;border-bottom:1px solid #e4ece8;padding:0 0 8px;margin:0 0 6px}
-.twin-real-car-photo summary{cursor:pointer;padding:5px 0}
-.twin-real-car-photo .twin-car-image{height:105px;margin-top:5px}
+.twin-vehicle-photo{margin:14px 0 9px;border:1px solid #dfe5e6;border-radius:14px;background:#fff;overflow:hidden}
+.twin-vehicle-photo figcaption{display:flex;flex-direction:column;gap:3px;padding:11px 12px 8px;border-bottom:1px solid #edf0f0}
+.twin-vehicle-photo figcaption strong{font-size:12px;font-weight:750;color:#324953}
+.twin-vehicle-photo figcaption span{font-size:9px;color:#7c8b91;line-height:1.5}
+.twin-vehicle-photo-frame{height:220px;padding:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#f7f9f8)}
+.twin-vehicle-photo-frame>img{display:block;width:100%;height:100%;object-fit:contain}
+.twin-vehicle-photo>p{margin:0;padding:8px 11px 10px;border-top:1px solid #edf0f0;font-size:8px;color:#8b969a;line-height:1.6}
+.twin-vehicle-photo-empty{display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;color:#b0b9bc}
+.twin-vehicle-photo-empty strong{font-size:11px;font-weight:600;color:#7a898f}
+.twin-vehicle-photo-empty span{max-width:170px;font-size:9px;line-height:1.7;color:#9aa5aa}
+.twin-optional-model{margin:0 0 10px;border-bottom:1px solid #e4e9ea;font-size:10px;color:#5a707b}
+.twin-optional-model>summary{cursor:pointer;padding:9px 2px;font-weight:600}
+.twin-optional-model>summary:focus-visible{outline:3px solid #a777e5;outline-offset:3px;border-radius:4px}
+.twin-optional-model .twin-vehicle-showcase{margin:4px 0 10px}
 .twin-map-panel{background:#e8eef0;border-color:#bfcac9;box-shadow:0 18px 48px #243c4714}
 .twin-architecture-caption{position:absolute;top:25px;left:50%;transform:translateX(-50%);z-index:3;text-align:center;pointer-events:none;color:#526365;white-space:nowrap}
 .twin-architecture-caption>span{display:block;font-size:10px;font-weight:700;letter-spacing:.24em}

@@ -7,6 +7,7 @@ import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import FleetVehicleModel from './FleetVehicleModel'
 import { vehicleStyle } from '@/lib/fleetVehicleStyle'
+import FleetEnvironment from './FleetEnvironment'
 
 // A single on-demand viewer for the selected car, never a Canvas per list row.
 export default memo(function FleetVehicleShowcase({ car }) {
@@ -18,6 +19,7 @@ export default memo(function FleetVehicleShowcase({ car }) {
       <Canvas orthographic frameloop="demand" dpr={[1, 1.25]} camera={{ position: [4.8, 3.3, 5.8], zoom: 49, near: .1, far: 50 }}
         gl={{ antialias: true, alpha: true, toneMapping: ACESFilmicToneMapping, outputColorSpace: SRGBColorSpace }}
         role="img" aria-label={`โมเดล 3D ${style.label} หมุนดูรายละเอียดได้`}>
+        <FleetEnvironment intensity={.65}/>
         <ambientLight intensity={.6}/><hemisphereLight args={['#fff8ee', '#77908b', 1.8]}/>
         <directionalLight position={[4, 6, 4]} color="#ffedce" intensity={3}/>
         <directionalLight position={[-3, 3, -5]} color="#d8edff" intensity={1.4}/>

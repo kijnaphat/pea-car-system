@@ -3,8 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { Vector3, Object3D, PMREMGenerator, MOUSE, TOUCH, ACESFilmicToneMapping, SRGBColorSpace, PCFShadowMap } from 'three'
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+import { Vector3, Object3D, MOUSE, TOUCH, ACESFilmicToneMapping, SRGBColorSpace, PCFShadowMap } from 'three'
 import { createFleetTraffic } from '@/lib/fleetTraffic'
 import { createCampusVisitors } from '@/lib/fleetCampusVisitors'
 import { FLEET_STATUSES } from '@/lib/fleetDigitalTwin'
@@ -17,6 +16,7 @@ import FleetCampusLife from './FleetCampusLife'
 import { DEFAULT_ORBIT, MIN_ELEVATION, MAX_ELEVATION, cameraView, cameraOffset, captureOrbit } from '@/lib/fleetCamera'
 import { ARCHITECTURE } from '@/lib/fleetArchitecture'
 import { architecturalSun } from '@/lib/fleetPresentation'
+import FleetEnvironment from './FleetEnvironment'
 
 export const MiniCar = FleetVehicleModel
 
@@ -151,28 +151,6 @@ function ProjectedLabels({ host, enabled }) {
   return null
 }
 
-function ArchitecturalEnvironment() {
-  const { gl, scene, invalidate } = useThree()
-  useEffect(() => {
-    // A local procedural studio gives glass/metal reflections without HDR downloads.
-    const room = new RoomEnvironment(), generator = new PMREMGenerator(gl)
-    const environment = generator.fromScene(room, .04, .1, 100)
-    const previous = scene.environment, previousIntensity = scene.environmentIntensity
-    // Three's scene is an external mutable object, not React state.
-    // eslint-disable-next-line react-hooks/immutability
-    scene.environment = environment.texture
-    scene.environmentIntensity = .32
-    room.dispose(); generator.dispose(); invalidate()
-    return () => {
-      if (scene.environment === environment.texture) {
-        scene.environment = previous; scene.environmentIntensity = previousIntensity
-      }
-      environment.dispose()
-    }
-  }, [gl, scene, invalidate])
-  return null
-}
-
 function ArchitecturalLight({ bounds }) {
   const { size } = useThree()
   const shadowSize = size.width >= 900 ? 2048 : 1024
@@ -184,12 +162,12 @@ function ArchitecturalLight({ bounds }) {
     return object
   }, [sun])
   return <>
-    <ArchitecturalEnvironment/>
-    <ambientLight intensity={.2}/>
-    <hemisphereLight args={['#f6f5e9', '#7c8a79', .85]}/>
-    <directionalLight color="#c9e1ef" position={[30, 24, -40]} intensity={.4}/>
+    <FleetEnvironment/>
+    <ambientLight intensity={.08}/>
+    <hemisphereLight args={['#e9f3ff', '#647257', .65]}/>
+    <directionalLight color="#dceafa" position={[30, 24, -40]} intensity={.22}/>
     <primitive object={target}/>
-    <directionalLight castShadow target={target} position={sun.position} color="#fff0d8" intensity={2.65}
+    <directionalLight castShadow target={target} position={sun.position} color="#fff9f0" intensity={3.1}
       shadow-mapSize={[shadowSize, shadowSize]} shadow-camera-left={sun.left}
       shadow-camera-right={sun.right} shadow-camera-top={sun.top}
       shadow-camera-bottom={sun.bottom} shadow-camera-near={sun.near} shadow-camera-far={sun.far}
