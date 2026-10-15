@@ -1,11 +1,11 @@
 'use client'
 
-import { memo, useMemo, useRef } from 'react'
+import { memo, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
-import { CatmullRomCurve3, Vector3 } from 'three'
+import { CatmullRomCurve3, Color, Object3D, SphereGeometry, Vector3 } from 'three'
 import { SITE, SITE_BICYCLES } from '@/lib/fleetSiteLayout'
-import { CAMPUS_TABLES, LANDSCAPE, gardenDetails, fenceDetails } from '@/lib/fleetCampusAmenities'
+import { CAMPUS_TABLES, LANDSCAPE, gardenDetails, fenceDetails, landscapeCrownPoint } from '@/lib/fleetCampusAmenities'
 import { ARCHITECTURE } from '@/lib/fleetArchitecture'
 import { StaticParts } from './FleetArchitecture'
 
@@ -15,12 +15,49 @@ function Block({ at, size, color, ...props }) {
 function Soft({ at, size, color, ...props }) {
   return <RoundedBox position={at} args={size} radius={Math.min(.12,...size.map(n=>n/3))} smoothness={2} bevelSegments={1} castShadow receiveShadow {...props}><meshStandardMaterial color={color} roughness={.85}/></RoundedBox>
 }
+
+// Smooth, lightly lobed foliage silhouettes with inset leaf-like dimples. The
+// shape is made once locally, reused by every tree and shrub in a single draw.
+// A tapered cylinder batch provides actual round stems instead of square sticks.
+export function LandscapeInstances({ parts, branches=false }) {
+  const mesh=useRef(null)
+  const crown=useMemo(()=>{
+    if(branches) return null
+    const geometry=new SphereGeometry(1,11,8),positions=geometry.attributes.position
+    for(let n=0;n<positions.count;n++) {
+      const x=positions.getX(n),y=positions.getY(n),z=positions.getZ(n)
+      positions.setXYZ(n,...landscapeCrownPoint(x,y,z))
+    }
+    geometry.computeVertexNormals()
+    return geometry
+  },[branches])
+  useEffect(()=>()=>crown?.dispose(),[crown])
+  useLayoutEffect(()=>{
+    if(!mesh.current) return
+    const object=new Object3D(),color=new Color()
+    parts.forEach((part,n)=>{
+      object.position.set(...part.at)
+      object.scale.set(...part.size)
+      object.rotation.set(...(part.rotation||[0,0,0]))
+      object.updateMatrix()
+      mesh.current.setMatrixAt(n,object.matrix)
+      mesh.current.setColorAt(n,color.set(part.color))
+    })
+    mesh.current.instanceMatrix.needsUpdate=true
+    if(mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate=true
+    mesh.current.computeBoundingSphere()
+  },[parts])
+  return <instancedMesh ref={mesh} args={[null,null,parts.length]} castShadow receiveShadow>
+    {branches?<cylinderGeometry args={[.76,1,1,7]}/>:<primitive object={crown} attach="geometry"/>}
+    <meshStandardMaterial color="#ffffff" roughness={branches ? .95 : .89} metalness={0}/>
+  </instancedMesh>
+}
 function FlowerBed({ x, z, width=2.4, color='#ddb67a' }) {
   const flowers=useMemo(()=>Array.from({length:7},(_,n)=>({at:[-width*.37+n*width*.74/6,.42,Math.sin(n*2)*.16],size:[.12,.09,.12],color:n%3?color:'#ced1ad'})),[width,color])
   return <group position={[x,0,z]}>
     <Soft at={[0,.12,0]} size={[width,.24,.9]} color={LANDSCAPE.limestone}/>
     <Soft at={[0,.28,0]} size={[width-.18,.12,.7]} color={LANDSCAPE.leaf[1]}/>
-    <StaticParts parts={flowers} foliage/>
+    <LandscapeInstances parts={flowers}/>
   </group>
 }
 function Fountain({ reducedMotion }) {
@@ -63,6 +100,12 @@ function Fountain({ reducedMotion }) {
   </group>
 }
 function Pergola() {
+  const vine=useMemo(()=>{
+    const parts=[]
+    for(const x of [-2.1,2.1]) for(let n=0;n<5;n++) parts.push({at:[x+Math.sin(n*2)*.12,.4+n*.48,-1.5],size:[.22,.3,.23],color:LANDSCAPE.leaf[(n+2)%6],rotation:[0,n,0]})
+    for(let n=0;n<12;n++) parts.push({at:[-1.95+n*.35,2.98+Math.sin(n)*.07,-1.45+Math.sin(n*2)*.18],size:[.24,.11,.29],color:LANDSCAPE.leaf[(n+1)%6],rotation:[0,n*.6,0]})
+    return parts
+  },[])
   const detail=useMemo(()=>{
     const parts=[],add=(at,size,color)=>parts.push({at,size,color})
     for(const x of [-2.1,2.1]) for(const z of [-1.5,1.5]) {
@@ -75,11 +118,16 @@ function Pergola() {
     for(let n=0;n<4;n++) add([0,.69+n*.14,-.89],[3.8,.09,.07],LANDSCAPE.timber)
     for(const x of [-1.5,1.5]) add([x,.25,-.5],[.12,.5,.65],LANDSCAPE.bronze)
     for(let n=0;n<5;n++) add([-2+n,.113,0],[.012,.008,3.9],LANDSCAPE.joint)
+    for(let n=0;n<5;n++) add([0,.113,-1.6+n*.8],[5,.008,.012],LANDSCAPE.joint)
+    // Recessed warm strip inside the outer beam and tiny metal bracket plates.
+    for(const x of [-2.1,2.1]) for(const z of [-1.5,1.5]) add([x,2.65,z],[.22,.24,.025],LANDSCAPE.bronze)
+    add([0,2.65,-1.49],[3.9,.025,.04],LANDSCAPE.light)
     return parts
   },[])
   return <group position={[-44,0,8]}>
     <Soft at={[0,.05,0]} size={[5.2,.1,4.1]} color={LANDSCAPE.limestone}/>
     <StaticParts parts={detail}/>
+    <LandscapeInstances parts={vine}/>
     <FlowerBed x={-2.55} z={.55} width={1.4}/><FlowerBed x={2.55} z={.55} width={1.4}/>
   </group>
 }
@@ -139,7 +187,7 @@ function Fence({ x, z, length, yaw=0 }) {
 
 function GardenIslands() {
   const detail=useMemo(()=>gardenDetails(),[])
-  return <group><StaticParts parts={detail.hardscape}/><StaticParts parts={detail.planting} foliage/></group>
+  return <group><StaticParts parts={detail.hardscape}/><LandscapeInstances parts={detail.planting}/><LandscapeInstances parts={detail.branches} branches/></group>
 }
 
 function ShadeTable({ x, z, color }) {

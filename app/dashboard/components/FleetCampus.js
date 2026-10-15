@@ -7,6 +7,9 @@ import { SITE, SITE_BUILDINGS, SITE_CUSTOMER, SITE_CHARGING, SITE_HEDGE, SITE_HE
 import { roadNetwork, roadDashes } from '@/lib/fleetRoadGeometry'
 import { ARCHITECTURE, facadeParts, officeRoofParts, pitchedRoofParts, ancillaryEntranceParts, treeCrown } from '@/lib/fleetArchitecture'
 import { ArchitecturalCanopy, StaticParts } from './FleetArchitecture'
+import FleetSurfaceMaterial from './FleetSurfaceMaterial'
+import { curbJoints, raisedCurbRuns } from '@/lib/fleetSurfaceMaterials'
+import { LandscapeInstances } from './FleetCampusProps'
 
 // Decorative, fictional campus only. No location lookup, textures or network calls.
 function Box({ at, size, color, ...props }) {
@@ -43,7 +46,7 @@ function Tree({ x, z, small = false, tone = 0, planted = false }) {
     {!planted && <><Box at={[0,.08,0]} size={[1.6,.16,1.6]} color={ARCHITECTURE.stone}/>
     <Box at={[0,.18,0]} size={[1.4,.08,1.4]} color={ARCHITECTURE.grass}/></>}
     <mesh position={[0,trunk/2+.18,0]} castShadow><cylinderGeometry args={[.085,.14,trunk,7]}/><meshStandardMaterial color="#8e7a61" roughness={1}/></mesh>
-    <StaticParts parts={crown} foliage/>
+    <LandscapeInstances parts={crown}/>
   </group>
 }
 
@@ -160,7 +163,7 @@ function Arrow({ x, z, yaw }) {
   </group>
 }
 
-function RoadSurface({ polygons, y, color }) {
+function RoadSurface({ polygons, y, color, asphalt = false }) {
   const shapes=useMemo(()=>polygons.map(poly=>{
     const shape=new Shape()
     poly.forEach((ring,n)=>{
@@ -170,20 +173,33 @@ function RoadSurface({ polygons, y, color }) {
     })
     return shape
   }),[polygons])
-  return <mesh rotation={[-Math.PI/2,0,0]} position={[0,y,0]} receiveShadow><shapeGeometry args={[shapes]}/><meshStandardMaterial color={color} roughness={1}/></mesh>
+  return <mesh rotation={[-Math.PI/2,0,0]} position={[0,y,0]} receiveShadow><shapeGeometry args={[shapes]}/><FleetSurfaceMaterial kind={asphalt?'asphalt':'stone'} color={color}/></mesh>
 }
 
 function RoadEdge({ ring }) {
-  const curve=useMemo(()=>new CatmullRomCurve3(ring.slice(0,-1).map(([x,z])=>new Vector3(x,.065,z)),true,'catmullrom',0),[ring])
-  return <mesh><tubeGeometry args={[curve,Math.max(64,ring.length*3),.04,4,true]}/><meshBasicMaterial color="#f4f1df"/></mesh>
+  const curve=useMemo(()=>new CatmullRomCurve3(ring.slice(0,-1).map(([x,z])=>new Vector3(x,.046,z)),true,'catmullrom',0),[ring])
+  return <mesh><tubeGeometry args={[curve,Math.max(64,ring.length*3),.018,4,true]}/><meshBasicMaterial color="#ede9dc"/></mesh>
 }
 
-function Road({ overflowAisles, chargingRows, site }) {
+function RaisedCurb({ path }) {
+  const curve=useMemo(()=>new CatmullRomCurve3(path.map(([x,z])=>new Vector3(x,.075,z)),false,'catmullrom',0),[path])
+  return <mesh castShadow receiveShadow><tubeGeometry args={[curve,Math.max(8,path.length*2),.09,6,false]}/><meshStandardMaterial color="#ddd9c9" roughness={.9}/></mesh>
+}
+
+function Road({ overflowAisles, chargingRows, site, vehicles }) {
   const net=useMemo(()=>roadNetwork(overflowAisles,chargingRows,site),[overflowAisles,chargingRows,site])
+  const curbs=useMemo(()=>{
+    const last=Math.max(0,...vehicles.filter(c=>c.parking).map(c=>c.parking.x))+1.8
+    const cutouts=[-1,1].map(sign=>({minX:-23,maxX:last,minZ:sign>0?4.05:-4.75,maxZ:sign>0?4.75:-4.05}))
+    return net.surface.flatMap(poly=>poly).flatMap(ring=>raisedCurbRuns(ring,cutouts))
+  },[net,vehicles])
+  const joints=useMemo(()=>curbJoints(curbs),[curbs])
   return <group>
     <RoadSurface polygons={net.pavement} y={-.015} color="#babeb5"/>
-    <RoadSurface polygons={net.surface} y={.025} color={ARCHITECTURE.road}/>
+    <RoadSurface polygons={net.surface} y={.025} color={ARCHITECTURE.road} asphalt/>
     {net.surface.flatMap(poly=>poly).map((ring,i)=><RoadEdge key={i} ring={ring}/>)}
+    {curbs.map((path,i)=><RaisedCurb key={i} path={path}/>)}
+    <StaticParts parts={joints}/>
     {net.routes.flatMap(route=>roadDashes(route,site)).map((p,i)=><Box key={i} at={[p.x,.05,p.z]} size={[.09,.015,1.2]} color="#fff5d8" rotation={[0,p.yaw,0]}/>)}
   </group>
 }
@@ -274,10 +290,13 @@ export default memo(function FleetCampus({ bounds, overflowAisles = [], charging
     return shape
   },[bounds.maxX,bounds.maxZ,site.exit.x])
   return <group>
-    <mesh position={[0,-.5,0]} rotation={[-Math.PI/2,0,0]} receiveShadow>
-      <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:false}]}/><meshStandardMaterial color={ARCHITECTURE.paving} roughness={1}/>
+    <mesh position={[0,-.58,0]} rotation={[-Math.PI/2,0,0]}>
+      <extrudeGeometry args={[outline,{depth:.1,bevelEnabled:false}]}/><meshStandardMaterial color="#7b837d" roughness={.9}/>
     </mesh>
-    <Road overflowAisles={overflowAisles} chargingRows={Math.max(1,Math.ceil(chargingBays.length/4))} site={site}/>
+    <mesh position={[0,-.5,0]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <extrudeGeometry args={[outline,{depth:.45,bevelEnabled:true,bevelThickness:.025,bevelSize:.035,bevelSegments:2,steps:1}]}/><FleetSurfaceMaterial color={ARCHITECTURE.paving}/>
+    </mesh>
+    <Road overflowAisles={overflowAisles} chargingRows={Math.max(1,Math.ceil(chargingBays.length/4))} site={site} vehicles={vehicles}/>
     {Array.from({length:Math.ceil((site.exit.x+17)/14)},(_,n)=>-17+n*14).map(x=><Arrow key={x} x={x} z={SITE.outgoingLane} yaw={Math.PI/2}/>)}
     <Arrow x={-28} z={-8} yaw={Math.atan2(20,27)}/><Arrow x={site.exit.x} z={-12} yaw={Math.PI}/>
     <Office/>

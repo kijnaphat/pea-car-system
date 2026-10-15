@@ -1,7 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { createHash } from 'node:crypto'
 import { SITE_BUILDINGS } from '../lib/fleetSiteLayout.js'
 
 test('decorative campus is offline geometry and does not add telemetry or database polling', () => {
@@ -33,9 +32,14 @@ test('decorative campus is offline geometry and does not add telemetry or databa
   assert.ok(scene.includes('[minZ,maxZ]'))
 })
 
-test('traffic queue update preserves the approved vehicle meshes', () => {
+test('detailed models remain display-only children of the original traffic wrappers', () => {
   const source = readFileSync(new URL('../app/dashboard/components/FleetScene.js', import.meta.url), 'utf8')
-  const hash = (start,end) => createHash('sha256').update(source.slice(source.indexOf(start),source.indexOf(end))).digest('hex')
-  // Approved vehicle implementation at 5621bf9, deliberately unchanged by this map redesign.
-  assert.equal(hash('function Block(', 'const Vehicle ='), 'fa36d653bb4ebde2ec3563a8444b12a58b3a5cc889c98f0549b3e9cfe625b9e6')
+  // The user requested new vehicle geometry; lock behavior instead of an old mesh hash.
+  assert.ok(source.includes('export const MiniCar = FleetVehicleModel'))
+  assert.ok(source.includes('<MiniCar car={car}/>'))
+  assert.ok(source.includes('const position=restingPose(car)'))
+  assert.ok(source.includes('controller.current.setFleet(ambientTraffic?[...vehicles,...visitors.cars]:vehicles)'))
+  assert.ok(source.includes('group.position.set(pose.x,0,pose.z);group.rotation.y=pose.yaw'))
+  assert.ok(source.includes('shown.has(id)'))
+  assert.ok(source.includes('if(reducedMotion) controller.current.clear(moves)'))
 })

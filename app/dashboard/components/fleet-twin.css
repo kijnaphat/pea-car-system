@@ -35,6 +35,16 @@
 .twin-paint-legend{display:flex;align-items:center;flex-wrap:wrap;gap:9px 18px;font-size:10px;color:#64748b;margin:-6px 0 15px}.twin-paint-legend>span{display:flex;align-items:center;gap:6px}.twin-paint-legend i{width:13px;height:9px;border-radius:3px;border:1px solid #0000000a}.twin-paint-legend small{font-size:9px;color:#8994a6}
 .twin-charge-note { display: flex; align-items: flex-start; gap: 8px; color: #197a88; background: #eaf8f8; border-radius: 10px; padding: 10px; font-size: 12px; line-height: 1.6; }
 /* Architectural model presentation. Existing fleet/navigation colors stay intact. */
+.twin-vehicle-showcase{margin:13px -5px 10px;border:1px solid #dce4e3;border-radius:15px;overflow:hidden;background:radial-gradient(ellipse at 35% 15%,#fffef8,#e5edeb 75%)}
+.twin-vehicle-showcase-heading{display:flex;justify-content:space-between;align-items:center;gap:5px;padding:10px 12px 0;font-size:10px;font-weight:700;color:#415b5f}
+.twin-vehicle-showcase-heading small{font-size:8px;font-weight:400;color:#84918e}
+.twin-vehicle-showcase-canvas{height:180px;touch-action:none}
+.twin-vehicle-showcase-controls{display:flex;align-items:center;justify-content:center;gap:12px;padding:0 8px 8px;color:#6d7f7c;font-size:9px}
+.twin-vehicle-showcase-controls button{display:flex;padding:5px;border-radius:7px;background:#ffffffb8;border:1px solid #d9e3df;color:#476266}
+.twin-vehicle-showcase-controls button:hover{background:#e5eeea}
+.twin-real-car-photo{font-size:10px;color:#6b7d7a;border-bottom:1px solid #e4ece8;padding:0 0 8px;margin:0 0 6px}
+.twin-real-car-photo summary{cursor:pointer;padding:5px 0}
+.twin-real-car-photo .twin-car-image{height:105px;margin-top:5px}
 .twin-map-panel{background:#e8eef0;border-color:#bfcac9;box-shadow:0 18px 48px #243c4714}
 .twin-architecture-caption{position:absolute;top:25px;left:50%;transform:translateX(-50%);z-index:3;text-align:center;pointer-events:none;color:#526365;white-space:nowrap}
 .twin-architecture-caption>span{display:block;font-size:10px;font-weight:700;letter-spacing:.24em}

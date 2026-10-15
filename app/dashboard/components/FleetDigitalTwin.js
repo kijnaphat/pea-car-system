@@ -16,6 +16,7 @@ import FleetVehicleGlyph from './FleetVehicleGlyph'
 import './fleet-twin.css'
 
 const Scene = dynamic(() => import('./FleetScene'), { ssr: false, loading: () => <div className="twin-loading">กำลังจัดลานรถ 3D…</div> })
+const VehicleShowcase = dynamic(() => import('./FleetVehicleShowcase'), { ssr: false, loading: () => <div className="twin-car-image">กำลังสร้างโมเดลรถ…</div> })
 const empty = { carsDataRaw: [], activeLogs: [], latestLogs: [], latestCharges: [], parkingSlots: [], maintenanceRecords: [] }
 const icons = { available: Car, on_trip: Route, charging: Zap, maintenance: Wrench, unknown: Clock }
 const todayThai = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' })
@@ -265,7 +266,8 @@ export default function FleetDigitalTwin({ onAnalytics }) {
           <span className="twin-map-watermark"><span className="twin-zoom-hint">ซูมเพื่อดูเลขช่อง · </span>ผังสำนักงานจำลอง · ไม่ใช่ GPS</span>
           <span className="twin-traffic-hint" ref={trafficHost} hidden aria-live="off"/>
           {selected && <article className="twin-detail" aria-label="ข้อมูลรถที่เลือก"><button className="twin-detail-close" aria-label="ปิดข้อมูลรถ" onClick={()=>{setSelectedId(null);setFocus(null)}}><X size={18}/></button><span className="twin-detail-eyebrow">รถ #{selected.id} · ช่องประจำ {selected.slotCode}</span><h3>{selected.plate_number}</h3><Status status={selected.status}/>
-            <div className="twin-car-image">{getCarImage(selected) ? <img src={getCarImage(selected)} alt={selected.model || 'รถที่เลือก'} loading="lazy"/> : <Car size={70}/>}</div>
+            {!safeMap && <SceneBoundary key={`preview-${selected.id}`} fallback={<div className="twin-car-image"><FleetVehicleGlyph car={selected} size={150}/></div>}><VehicleShowcase key={selected.id} car={selected}/></SceneBoundary>}
+            {getCarImage(selected) ? <details className="twin-real-car-photo"><summary>ดูภาพรถจริงที่บันทึกไว้</summary><div className="twin-car-image"><img src={getCarImage(selected)} alt={selected.model || 'รถที่เลือก'} loading="lazy"/></div></details> : safeMap && <div className="twin-car-image"><FleetVehicleGlyph car={selected} size={150}/></div>}
             <dl><div><dt>รุ่น / ประเภท</dt><dd>{selected.model || '—'} · {selected.car_type || selected.fuel_type}</dd></div><div><dt>{selected.trip?'ผู้ขับปัจจุบัน':'ผู้ใช้งานล่าสุด'}</dt><dd>{selected.driver}</dd></div><div><dt>แผนก</dt><dd>{selected.departments?.name || 'ไม่ระบุ'}</dd></div>{selected.trip && <><div><dt>เวลาออก</dt><dd>{timeText(selected.trip.start_time)}</dd></div><div><dt>งาน / สถานที่บันทึก</dt><dd>{selected.location || 'ไม่ระบุ'}</dd></div></>}{selected.battery!==null && <div><dt>แบตที่บันทึกล่าสุด</dt><dd>{selected.battery}% <small>{timeText(selected.batteryAt)} · ไม่ใช่ค่าปัจจุบันจากเซนเซอร์</small></dd></div>}</dl>
             <div className="twin-model-key"><i style={{background:selectedStyle.color}}/>{selectedStyle.label} · {selectedStyle.paintLabel} · สีในผังจำลอง</div>
             {selected.status==='charging' && selected.chargingBay && <p className="twin-charge-note"><Zap size={17}/>จุดชาร์จจำลอง {selected.chargingBay.code} · ช่องประจำ {selected.slotCode} ยังเป็นช่องเดิม</p>}
