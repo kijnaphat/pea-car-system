@@ -651,7 +651,7 @@ function MobileControlSheet({
                 <div className="px-4 pt-3 pb-1">
                   <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">วันที่</p>
                 </div>
-<input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
+                <input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
                   className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none"/>
               </div>
 
@@ -1189,7 +1189,7 @@ function ReportPage() {
             <div>
               <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">วันที่</p>
               <div className="bg-white rounded-[14px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-<input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
+                <input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
                   className="w-full px-3 py-2.5 text-[13px] text-[#4b1560] bg-transparent border-none outline-none"/>
               </div>
             </div>

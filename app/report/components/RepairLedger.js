@@ -323,7 +323,7 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
           <div className="repair-ledger-table-wrap">
             <table className="repair-ledger-table">
               <caption className="repair-ledger-visually-hidden">สมุดคุมงานซ่อม ประจำเดือน{ledgerMonthLabel(month)}</caption>
-              <colgroup>{[8, 9, 7, 10, 8, 9, 18, 12, 10, 9].map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}<col className="repair-ledger-screen-only" style={{ width: '75px' }} /></colgroup>
+              <colgroup>{[8, 9, 7, 10, 8, 9, 18, 12, 10, 9].map((width, index) => <col key={index} style={{ width: `${width * .94}%` }} />)}<col className="repair-ledger-screen-only" style={{ width: '6%' }} /></colgroup>
               <thead><tr>{columnHeaders.map(header => <th key={header} scope="col">{header}</th>)}<th scope="col" className="repair-ledger-screen-only">จัดการ</th></tr></thead>
               <tbody>{filteredRows.length ? filteredRows.map(row => <tr key={ledgerRowKey(row)}>
                 <td className="repair-ledger-date">{ledgerDateLabel(row.repair_date)}</td><td><strong>{row.plate_number}</strong><small className="repair-ledger-row-source repair-ledger-screen-only">{ledgerSourceLabel(row)}</small></td><td>{row.department || '—'}</td><td>{row.shop_name || '—'}</td><td>{row.bill_number || '—'}</td><td className="repair-ledger-number">{ledgerMoney(row.amount)}</td><td className="repair-ledger-description">{row.repair_description || '—'}</td><td>{statusControl(row)}</td><td>{row.accounting_document_number || '—'}</td><td className="repair-ledger-date">{ledgerDateLabel(row.paid_date)}</td><td className="repair-ledger-screen-only">{editButton(row)}</td>
