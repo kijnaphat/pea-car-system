@@ -5,15 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
 import PageSkeleton from '@/app/components/PageSkeleton'
+import { adminDestination } from '@/lib/adminDestination'
 
 const getDestinationAfterLogin = () => {
   if (typeof window === 'undefined') return '/admin'
-  const params = new URLSearchParams(window.location.search)
-  const carId = params.get('car_id')
-  if (params.get('next') === 'home-maintenance' && /^\d+$/.test(carId || '')) {
-    return `/?admin_report_car_id=${carId}`
-  }
-  return '/admin'
+  return adminDestination(window.location.search)
 }
 
 export default function AdminLogin() {

@@ -1,13 +1,15 @@
 'use client'
 import { isElectricCar, monthlyReportData, reportSignatureTable } from '@/lib/tripActivity'
 import ReportTypeSelector from '@/app/components/ReportTypeSelector'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { normalizeStaffCode } from '@/lib/staffCode'
 import { startVisiblePolling } from '@/lib/visiblePolling'
+import { saveRepairLedger } from '@/lib/repairLedgerData'
+import { ledgerValidateDraft } from '@/lib/repairLedger'
 
 // --- Main Component ---
 function MainApp() {
@@ -489,12 +491,28 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
 // 📄 Component: หน้าตารายงาน
 // ==========================================
 // ── Mobile Bottom Sheet for Report Controls ──
+function RepairLedgerActions({ onSave, onOpen, onNew, saving, saved, hasEntry, error }) {
+  return <div className="space-y-2">
+    <button onClick={onSave} disabled={saving}
+      className={`w-full py-4 rounded-[16px] text-[15px] font-semibold transition-all active:scale-[0.98] disabled:opacity-60 ${saved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#4b1560] text-white'}`}>
+      {saving ? 'กำลังบันทึก...' : saved ? '✓ บันทึกลงสมุดคุมแล้ว' : hasEntry ? 'บันทึกแก้ไขรายการเดิม' : 'บันทึกการซ่อม'}
+    </button>
+    {error && <p role="alert" className="text-[12px] text-red-700 bg-red-50 rounded-xl p-3">{error}</p>}
+    <button onClick={onOpen} disabled={saving} className="w-full py-3 rounded-[14px] border border-[#d7c2df] text-[#4b1560] bg-white text-[14px] font-semibold active:bg-[#f2eaf5]">
+      สมุดคุมงานซ่อม <span aria-hidden="true">↗</span>
+    </button>
+    {hasEntry && <button onClick={onNew} disabled={saving} className="w-full py-2 text-[12px] font-semibold text-[#702082]">+ เพิ่มรายการซ่อมใหม่</button>}
+    <p className="text-[10px] text-[#6e6e73] text-center">สำหรับแอดมิน · บันทึกลงสมุดคุม ไม่เพิ่มยอดซ่อมซ้ำในใบ ยพ.6</p>
+  </div>
+}
+
 function MobileControlSheet({ 
   selectedMonth, setSelectedMonth, fromText, setFromText, toText, setToText, dearText, setDearText, 
   isEVCar, canSignAny, isCurrentMonthSignable, signableMonth, driverSigText, controllerSigText, 
   signaturePeriodText,
-  handleDeleteSig, openSigModal, logs, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost, 
-  setDrillCost, drillHours, setDrillHours, drillSaving, setDrillSaving, drillSaved, setDrillSaved,
+  handleDeleteSig, openSigModal, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost,
+  setDrillCost, drillHours, setDrillHours, drillSaving, drillSaved, setDrillSaved,
+  handleSaveRepair, openRepairLedger, newRepair, hasRepairEntry, drillError,
   handleSaveDoc, docSaving, docSaved 
 }) {
   const [activeTab, setActiveTab] = useState('doc')
@@ -633,18 +651,8 @@ function MobileControlSheet({
                 <div className="px-4 pt-3 pb-1">
                   <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">วันที่</p>
                 </div>
-                <select value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
-                  className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none">
-                  <option value="">-- เลือกวันที่ --</option>
-                  {[...new Map(logs.map(l=>{
-                    const d=new Date(l.start_time)
-                    const key=d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'})
-                    const localIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-                    return [localIso,{key,iso:localIso}]
-                  })).values()].map(({key,iso})=>(
-                    <option key={iso} value={iso}>{key}</option>
-                  ))}
-                </select>
+<input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
+                  className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none"/>
               </div>
 
               {/* รายการซ่อม */}
@@ -653,7 +661,7 @@ function MobileControlSheet({
                 <div className="px-4 pt-3 pb-1">
                   <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">รายการซ่อม</p>
                 </div>
-                <input type="text" value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}}
+                <input type="text" disabled={drillSaving} value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}}
                   placeholder="เช่น ซ่อมดับเพลิง, ซ่อมอพยพ..."
                   className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
               </div>
@@ -663,22 +671,18 @@ function MobileControlSheet({
                 <div className="bg-white rounded-[14px] overflow-hidden"
                      style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
                   <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">เงิน (บาท)</p></div>
-                  <input type="number" value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
+                  <input type="number" disabled={drillSaving} value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
                     className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#4b1560] text-center bg-transparent border-none outline-none"/>
                 </div>
                 <div className="bg-white rounded-[14px] overflow-hidden"
                      style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
                   <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">ชม.เครื่องจักร</p></div>
-                  <input type="number" value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
+                  <input type="number" disabled={drillSaving} value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
                     className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#4b1560] text-center bg-transparent border-none outline-none"/>
                 </div>
               </div>
 
-              <button onClick={()=>{if(!drillDate||!drillDesc)return alert('กรุณาเลือกวันที่และกรอกรายการซ่อม');setDrillSaving(true);setTimeout(()=>{setDrillSaving(false);setDrillSaved(true)},600)}}
-                disabled={drillSaving}
-                className={`w-full py-4 rounded-[16px] text-[16px] font-semibold transition-all active:scale-[0.98] ${drillSaved?'bg-[#edfbf0] text-[#1a7f37]':'bg-[#4b1560] text-white'}`}>
-                {drillSaving ? 'กำลังบันทึก...' : drillSaved ? '✓ บันทึกแล้ว' : 'บันทึกการซ่อม'}
-              </button>
+              <RepairLedgerActions onSave={handleSaveRepair} onOpen={openRepairLedger} onNew={newRepair} saving={drillSaving} saved={drillSaved} hasEntry={hasRepairEntry} error={drillError}/>
             </>
           )}
         </div>
@@ -729,6 +733,51 @@ function ReportPage() {
   const [drillHours, setDrillHours] = useState('')
   const [drillSaving, setDrillSaving] = useState(false)
   const [drillSaved, setDrillSaved] = useState(false)
+  const [drillError, setDrillError] = useState('')
+  const [hasRepairEntry, setHasRepairEntry] = useState(false)
+  const repairDraftRef = useRef(null)
+  const repairSavingRef = useRef(false)
+  const repairContextRef = useRef('')
+
+  const newRepair = useCallback(() => {
+    repairContextRef.current = `${carId}:${selectedMonth}`
+    repairDraftRef.current = null
+    setHasRepairEntry(false); setDrillSaved(false); setDrillError('')
+    setDrillDate(''); setDrillDesc(''); setDrillCost(''); setDrillHours('')
+  }, [carId, selectedMonth])
+  const openRepairLedger = () => reportRouter.push(`/report/repairs?${new URLSearchParams({ car_id: String(carId || ''), month: drillDate?.slice(0, 7) || selectedMonth })}`)
+
+  const handleSaveRepair = async () => {
+    if (repairSavingRef.current) return
+    const context = `${carId}:${selectedMonth}`
+    const draft = {
+      ...(repairDraftRef.current || { source_type: 'report', source_id: null, client_request_id: crypto.randomUUID(), status: '' }),
+      car_id: Number(carId), repair_date: drillDate, plate_number: car?.plate_number || '',
+      department: repairDraftRef.current?.department ?? car?.departments?.name ?? '',
+      shop_name: repairDraftRef.current?.shop_name || '', bill_number: repairDraftRef.current?.bill_number || '',
+      amount: drillCost.trim() === '' ? null : drillCost, repair_description: drillDesc.trim(),
+      accounting_document_number: repairDraftRef.current?.accounting_document_number || '',
+      paid_date: repairDraftRef.current?.paid_date || null,
+      machine_hours: drillHours.trim() === '' ? null : drillHours,
+    }
+    const errors = ledgerValidateDraft(draft)
+    if (Object.keys(errors).length) return setDrillError(Object.values(errors)[0])
+    if (draft.machine_hours !== null && !/^\d+(?:\.\d{1,2})?$/.test(draft.machine_hours)) return setDrillError('ชั่วโมงเครื่องจักรต้องไม่ติดลบ และมีทศนิยมไม่เกิน 2 ตำแหน่ง')
+    repairDraftRef.current = draft
+    repairSavingRef.current = true; setDrillSaving(true); setDrillError(''); setDrillSaved(false)
+    try {
+      const saved = await saveRepairLedger(draft)
+      if (repairContextRef.current !== context) return
+      repairDraftRef.current = saved
+      setHasRepairEntry(true); setDrillSaved(true)
+    } catch (error) {
+      if (repairContextRef.current === context) setDrillError(error.message || 'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง')
+    } finally {
+      repairSavingRef.current = false; setDrillSaving(false)
+    }
+  }
+
+  useEffect(() => { newRepair() }, [newRepair])
 
   const [docSaving, setDocSaving] = useState(false)
   const [docSaved, setDocSaved] = useState(false)
@@ -820,7 +869,7 @@ function ReportPage() {
     const lastDay = new Date(year, month, 0).getDate()
     const endDate = `${year}-${month}-${lastDay}T23:59:59`
 
-    const { data: c } = await supabase.from('cars').select('*').eq('id', carId).single()
+    const { data: c } = await supabase.from('cars').select('*, departments(name)').eq('id', carId).single()
     setCar(c)
 
     const { data: l } = await supabase.from('trip_logs')
@@ -1140,45 +1189,31 @@ function ReportPage() {
             <div>
               <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">วันที่</p>
               <div className="bg-white rounded-[14px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-                <select value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
-                  className="w-full px-3 py-2.5 text-[13px] text-[#4b1560] bg-transparent border-none outline-none">
-                  <option value="">-- เลือกวันที่ --</option>
-                  {[...new Map(logs.map(l=>{
-                    const d=new Date(l.start_time)
-                    const key=d.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'})
-                    const localIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-                    return [localIso,{key,iso:localIso}]
-                  })).values()].map(({key,iso})=>(
-                    <option key={iso} value={iso}>{key}</option>
-                  ))}
-                </select>
+<input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
+                  className="w-full px-3 py-2.5 text-[13px] text-[#4b1560] bg-transparent border-none outline-none"/>
               </div>
             </div>
             <div>
               <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">รายการซ่อม</p>
-              <input type="text" value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}} placeholder="เช่น ซ่อมดับเพลิง..."
+              <input type="text" disabled={drillSaving} value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}} placeholder="เช่น ซ่อมดับเพลิง..."
                 className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none placeholder:text-[#c7c7cc]"
                 style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">เงิน (บาท)</p>
-                <input type="number" value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
+                <input type="number" disabled={drillSaving} value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
                   className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none text-center font-mono"
                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
               </div>
               <div>
                 <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">ชม.เครื่องจักร</p>
-                <input type="number" value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
+                <input type="number" disabled={drillSaving} value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
                   className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none text-center font-mono"
                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
               </div>
             </div>
-            <button onClick={()=>{if(!drillDate||!drillDesc)return alert('กรุณาเลือกวันที่และกรอกรายการซ่อม');setDrillSaving(true);setTimeout(()=>{setDrillSaving(false);setDrillSaved(true)},600)}}
-              disabled={drillSaving}
-              className="w-full bg-[#4b1560] text-white text-[14px] font-semibold py-3 rounded-[14px] active:bg-[#3a3a3c] transition-colors">
-              {drillSaving?'กำลังบันทึก...':'บันทึกการซ่อม'}
-            </button>
+            <RepairLedgerActions onSave={handleSaveRepair} onOpen={openRepairLedger} onNew={newRepair} saving={drillSaving} saved={drillSaved} hasEntry={hasRepairEntry} error={drillError}/>
           </div>
         </div>
       </div>
@@ -1197,13 +1232,13 @@ function ReportPage() {
           signableMonth={signableMonth} driverSigText={driverSigText}
           controllerSigText={controllerSigText}
           handleDeleteSig={handleDeleteSig} openSigModal={openSigModal}
-          logs={logs}
           drillDate={drillDate} setDrillDate={setDrillDate}
           drillDesc={drillDesc} setDrillDesc={setDrillDesc}
           drillCost={drillCost} setDrillCost={setDrillCost}
           drillHours={drillHours} setDrillHours={setDrillHours}
-          drillSaving={drillSaving} setDrillSaving={setDrillSaving}
+          drillSaving={drillSaving}
           drillSaved={drillSaved} setDrillSaved={setDrillSaved}
+          handleSaveRepair={handleSaveRepair} openRepairLedger={openRepairLedger} newRepair={newRepair} hasRepairEntry={hasRepairEntry} drillError={drillError}
           handleSaveDoc={handleSaveDoc} docSaving={docSaving} docSaved={docSaved}
         />
       </div>
