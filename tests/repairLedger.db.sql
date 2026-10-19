@@ -181,7 +181,7 @@ do $$ declare s repair_ledger_test_state%rowtype; v_month date; v_list jsonb; v_
   if s.canonical_before ->> 'billing_status' <> 'billed' and v_virtual -> 'amount' <> 'null'::jsonb then
     raise exception 'unbilled amount must stay unknown';
   end if;
-  v_virtual := v_virtual - 'created_at';
+  v_virtual := v_virtual - 'created_at' - 'created_by_staff_name' - 'updated_by_staff_name';
   begin perform public.save_repair_work_ledger(v_virtual || '{"car_id":null}'::jsonb);
     raise exception 'mismatched source car unexpectedly succeeded'; exception when invalid_parameter_value then null; end;
   v_saved := public.save_repair_work_ledger(v_virtual || '{"department":"แผนกแก้เอง","shop_name":"ร้านแก้เอง","status":"committee_signed"}'::jsonb);
@@ -195,7 +195,7 @@ do $$ declare s repair_ledger_test_state%rowtype; v_month date; v_list jsonb; v_
         and r ->> 'shop_name' = 'ร้านแก้เอง' and r ->> 'status' = 'committee_signed') then
     raise exception 'manual snapshots were overwritten by source';
   end if;
-  begin perform public.save_repair_work_ledger((v_saved - 'created_at') || '{"source_id":null,"source_type":"manual"}'::jsonb);
+  begin perform public.save_repair_work_ledger((v_saved - 'created_at' - 'created_by_staff_name' - 'updated_by_staff_name') || '{"source_id":null,"source_type":"manual"}'::jsonb);
     raise exception 'immutable source unexpectedly changed'; exception when invalid_parameter_value then null; end;
   begin perform public.list_repair_work_ledger(date '1899-12-01');
     raise exception 'invalid month unexpectedly accepted'; exception when invalid_parameter_value then null; end;

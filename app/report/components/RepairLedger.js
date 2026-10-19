@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen, Check, ChevronRight, FilePlus2, Filter, LoaderCircle, Pencil, Printer, RefreshCw, Search, ShieldCheck, X } from 'lucide-react'
-import { getRepairLedgerAccess, loadRepairLedger, saveRepairLedger, watchRepairLedgerAccess } from '@/lib/repairLedgerData'
+import { ArrowLeft, BookOpen, Check, FilePlus2, Filter, LoaderCircle, LogOut, Pencil, Printer, RefreshCw, Search, ShieldCheck, UserRound, X } from 'lucide-react'
+import { clearRepairLedgerIdentity, getRepairLedgerIdentity, loadRepairLedger, saveRepairLedger, watchRepairLedgerIdentity } from '@/lib/repairLedgerData'
 import {
   REPAIR_LEDGER_STATUSES, isLedgerMonth, ledgerDateLabel, ledgerDraft, ledgerFilterRows,
   ledgerMoney, ledgerMoneyFromCents, ledgerMonthLabel, ledgerPayload, ledgerRowKey,
   ledgerSourceLabel, ledgerStatus, ledgerToday, ledgerTotals, ledgerValidateDraft,
 } from '@/lib/repairLedger'
+import RepairLedgerIdentity from './RepairLedgerIdentity'
 import './repair-ledger.css'
 
 const emptyRows = []
@@ -38,7 +39,7 @@ function Field({ label, name, errors, children, wide = false, optional = false }
   </label>
 }
 
-function RepairEditor({ row, cars, month, selectedCarId, onClose, onSaved }) {
+function RepairEditor({ row, cars, month, selectedCarId, identity, onClose, onSaved }) {
   const dialogRef = useRef(null)
   const initialCar = cars.find(car => String(car.id) === String(selectedCarId))
   const [draft, setDraft] = useState(() => ledgerDraft(row || {
@@ -109,6 +110,7 @@ function RepairEditor({ row, cars, month, selectedCarId, onClose, onSaved }) {
       if (!alive.current) return
       onSaved(draft.repair_date.slice(0, 7) !== month || Boolean(selectedCarId && String(draft.car_id) !== String(selectedCarId)))
     } catch (error) {
+      if (error?.code === '42501') clearRepairLedgerIdentity()
       if (!alive.current) return
       setSaveError(error?.message || 'บันทึกไม่สำเร็จ ข้อมูลที่กรอกยังอยู่ กรุณาลองอีกครั้ง')
       setSaving(false)
@@ -121,13 +123,14 @@ function RepairEditor({ row, cars, month, selectedCarId, onClose, onSaved }) {
     disabled: saving,
   })
 
-  return <dialog ref={dialogRef} className="repair-ledger-dialog" aria-labelledby="repair-ledger-editor-title" onCancel={event => { event.preventDefault(); close() }}>
-    <form onSubmit={save} noValidate>
+  return <dialog ref={dialogRef} className="repair-ledger-dialog" aria-labelledby={identity ? 'repair-ledger-editor-title' : undefined} aria-label={!identity ? 'ยืนยันรหัสพนักงานอีกครั้ง' : undefined} onCancel={event => { event.preventDefault(); close() }}>
+    {identity ? <form onSubmit={save} noValidate>
       <header className="repair-ledger-editor-header">
         <div><span className="repair-ledger-eyebrow">สมุดคุมงานซ่อม</span><h2 id="repair-ledger-editor-title">{row ? 'แก้ไขรายการซ่อม' : 'เพิ่มรายการซ่อม'}</h2></div>
         <button type="button" className="repair-ledger-icon-button" aria-label="ปิดแบบฟอร์ม" disabled={saving} onClick={close}><X size={21} /></button>
       </header>
       <div className="repair-ledger-editor-body">
+        <p className="repair-ledger-editor-identity"><UserRound size={15} /> ผู้บันทึก: <strong>{identity.full_name}</strong></p>
         {row && <p className="repair-ledger-editor-note"><ShieldCheck size={18} /> แก้เฉพาะสมุดคุมงานซ่อม ไม่เปลี่ยนสถานะรถหรือประวัติส่งซ่อมต้นฉบับ</p>}
         <div className="repair-ledger-editor-grid">
           <Field label="วันที่" name="repair_date" errors={errors}><input type="date" {...inputProps('repair_date')} /></Field>
@@ -154,7 +157,7 @@ function RepairEditor({ row, cars, month, selectedCarId, onClose, onSaved }) {
         <button type="button" className="repair-ledger-button repair-ledger-button-secondary" disabled={saving} onClick={close}>ยกเลิก</button>
         <button type="submit" className="repair-ledger-button repair-ledger-button-primary" disabled={saving}>{saving ? <LoaderCircle size={18} className="repair-ledger-spin" /> : <Check size={18} />}{saving ? 'กำลังบันทึก…' : 'บันทึกรายการ'}</button>
       </footer>
-    </form>
+    </form> : <div className="repair-ledger-editor-body"><p className="repair-ledger-editor-note">การยืนยันหมดอายุแล้ว ข้อมูลที่กรอกยังอยู่ ยืนยันรหัสเดิมเพื่อกรอกต่อได้</p><RepairLedgerIdentity embedded onCancel={close} /></div>}
   </dialog>
 }
 
@@ -163,8 +166,9 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
   const [carId, setCarId] = useState(initialCarId)
   const [rows, setRows] = useState(emptyRows)
   const [cars, setCars] = useState([])
-  const [access, setAccess] = useState('checking')
-  const [loading, setLoading] = useState(true)
+  const [identity, setIdentity] = useState(getRepairLedgerIdentity)
+  const lastStaffId = useRef(identity?.staff_id ?? null)
+  const [loading, setLoading] = useState(Boolean(identity))
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [search, setSearch] = useState('')
@@ -172,37 +176,28 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
   const [statusDrafts, setStatusDrafts] = useState({})
   const [savingKey, setSavingKey] = useState('')
   const [editor, setEditor] = useState(null)
-  const [authRevision, setAuthRevision] = useState(0)
   const sequence = useRef(0)
-  const lastAccess = useRef(null)
   const accessEpoch = useRef(0)
+  const access = identity ? 'allowed' : 'denied'
 
   const refresh = useCallback(async ({ preserveStatusDrafts = false } = {}) => {
     const request = ++sequence.current
-    setLoading(true)
     setError('')
+    if (!getRepairLedgerIdentity()) {
+      setRows([])
+      setCars([])
+      setLoading(false)
+      return
+    }
+    setLoading(true)
     try {
-      const allowed = await getRepairLedgerAccess()
-      if (request !== sequence.current) return
-      if (!allowed) {
-        lastAccess.current = false
-        accessEpoch.current += 1
-        setRows([])
-        setCars([])
-        setStatusDrafts({})
-        setEditor(null)
-        setSavingKey('')
-        setNotice('')
-        setAccess('denied')
-        return
-      }
-      setAccess('allowed')
       const result = await loadRepairLedger({ month, carId: carId || null })
       if (request !== sequence.current) return
       setRows(result.rows || [])
       setCars(result.cars || [])
       if (!preserveStatusDrafts) setStatusDrafts({})
     } catch (caught) {
+      if (caught?.code === '42501') clearRepairLedgerIdentity()
       if (request !== sequence.current) return
       setRows([])
       setError(caught?.message || 'โหลดสมุดคุมงานซ่อมไม่สำเร็จ กรุณาลองอีกครั้ง')
@@ -214,27 +209,24 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
   useEffect(() => {
     refresh()
     return () => { sequence.current += 1 }
-  }, [refresh, authRevision])
+  }, [refresh, identity])
 
-  // Keep auth callbacks synchronous: a separate effect performs any fresh reads.
-  useEffect(() => watchRepairLedgerAccess(allowed => {
-    if (!allowed) {
-      sequence.current += 1
-      accessEpoch.current += 1
-      lastAccess.current = false
-      setAccess('denied')
-      setLoading(false)
-      setRows([])
-      setCars([])
-      setStatusDrafts({})
-      setEditor(null)
-      setSavingKey('')
-      setError('')
-      setNotice('')
-      return
-    }
-    if (lastAccess.current === false) setAuthRevision(value => value + 1)
-    lastAccess.current = true
+  // Identity changes invalidate in-flight reads and keep another person's drafts private.
+  useEffect(() => watchRepairLedgerIdentity(nextIdentity => {
+    sequence.current += 1
+    accessEpoch.current += 1
+    setIdentity(nextIdentity)
+    setLoading(Boolean(nextIdentity))
+    setRows([])
+    setCars([])
+    setStatusDrafts({})
+    // Retain the in-memory editor during expiry, but reveal it only after the
+    // same staff ID re-verifies. A different person must never inherit a draft.
+    if (nextIdentity && lastStaffId.current !== null && lastStaffId.current !== nextIdentity.staff_id) setEditor(null)
+    if (nextIdentity) lastStaffId.current = nextIdentity.staff_id
+    setSavingKey('')
+    setError('')
+    setNotice('')
   }), [])
 
   const filteredRows = useMemo(() => ledgerFilterRows(rows, { search, status: statusFilter }), [rows, search, statusFilter])
@@ -243,10 +235,13 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
   const selectedCar = cars.find(car => String(car.id) === String(carId))
   const backCarId = carId || initialCarId
   const backHref = backCarId ? `/report?car_id=${encodeURIComponent(backCarId)}` : '/dashboard'
-  const returnUrl = `/report/repairs?month=${encodeURIComponent(month)}${carId ? `&car_id=${encodeURIComponent(carId)}` : ''}`
-  const loginHref = `/admin/login?next=${encodeURIComponent(returnUrl)}`
   const unsavedStatuses = rows.some(row => statusDrafts[ledgerRowKey(row)] !== undefined && statusDrafts[ledgerRowKey(row)] !== (row.status || ''))
   const confirmDiscard = () => !unsavedStatuses || window.confirm('มีสถานะที่ยังไม่ได้บันทึก ต้องการละทิ้งการเปลี่ยนสถานะและดำเนินการต่อหรือไม่?')
+  const changeIdentity = () => {
+    if (savingKey || !confirmDiscard()) return
+    setEditor(null)
+    clearRepairLedgerIdentity()
+  }
 
   useEffect(() => {
     if (!unsavedStatuses && !savingKey) return
@@ -273,6 +268,7 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
       setNotice(`บันทึกสถานะ ${row.plate_number} แล้ว`)
       await refresh({ preserveStatusDrafts: true })
     } catch (caught) {
+      if (caught?.code === '42501') clearRepairLedgerIdentity()
       if (epoch !== accessEpoch.current) return
       setError(caught?.message || 'บันทึกสถานะไม่สำเร็จ กรุณาลองอีกครั้ง')
     } finally {
@@ -285,7 +281,7 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
   return <main className="repair-ledger-page">
     <div className="repair-ledger-screen-only repair-ledger-topbar">
       <Link href={backHref} className="repair-ledger-back" onClick={event => { if (!confirmDiscard()) event.preventDefault() }}><ArrowLeft size={18} />กลับรายงานรถ</Link>
-      <span><ShieldCheck size={16} /> สำหรับผู้ดูแลระบบ</span>
+      <span><ShieldCheck size={16} /> ยืนยันด้วยรหัสพนักงาน</span>
     </div>
     <header className="repair-ledger-header">
       <div className="repair-ledger-title-wrap"><span className="repair-ledger-book repair-ledger-screen-only"><BookOpen size={25} /></span><div><span className="repair-ledger-eyebrow">การไฟฟ้าส่วนภูมิภาค · รายงานการซ่อมยานพาหนะ</span><h1>สมุดคุมงานซ่อม</h1><p>{ledgerMonthLabel(month)} <span>·</span> {selectedCar?.plate_number || (carId ? 'รถที่เลือก' : 'รถทุกคัน')}{statusFilter !== 'all' && <> <span>·</span> {ledgerStatus(statusFilter).label}</>}{search && <> <span>·</span> ค้นหา: {search}</>}</p></div></div>
@@ -295,10 +291,13 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
       </div>}
     </header>
 
-    {access === 'denied' ? <section className="repair-ledger-access repair-ledger-screen-only">
-      <span className="repair-ledger-access-icon"><ShieldCheck size={30} /></span><h2>เข้าสู่ระบบผู้ดูแลเพื่อเปิดสมุดคุมงานซ่อม</h2><p>ข้อมูลค่าใช้จ่ายและสถานะการเงินแสดงเฉพาะผู้ดูแลระบบ</p><Link href={loginHref} className="repair-ledger-button repair-ledger-button-primary">เข้าสู่ระบบแอดมิน<ChevronRight size={18} /></Link>
-    </section> : <>
+    {access === 'denied' ? <div className="repair-ledger-screen-only"><RepairLedgerIdentity /></div> : <>
       {access === 'allowed' && <>
+        <div className="repair-ledger-verified repair-ledger-screen-only">
+          <span className="repair-ledger-verified-icon"><UserRound size={20} /></span>
+          <div><small>ยืนยันผู้บันทึกแล้ว</small><strong>{identity.full_name}</strong><span>ข้อมูลที่บันทึกจะระบุชื่อผู้ดำเนินการ · ใช้รหัสของตนเองเท่านั้น</span></div>
+          <button type="button" disabled={Boolean(savingKey)} onClick={changeIdentity}><LogOut size={16} />เปลี่ยนผู้บันทึก</button>
+        </div>
         <div className="repair-ledger-summary repair-ledger-screen-only">
           <div><span>รายการที่แสดง</span><strong>{filteredRows.length.toLocaleString('th-TH')}<small> รายการ</small></strong></div>
           <div><span>จำนวนเงินที่ระบุแล้ว</span><strong>{ledgerMoneyFromCents(totals.amount)}<small> บาท</small></strong>{unknownAmounts > 0 && <small>ยังไม่ระบุยอด {unknownAmounts.toLocaleString('th-TH')} รายการ</small>}</div>
@@ -326,7 +325,7 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
               <colgroup>{[8, 9, 7, 10, 8, 9, 18, 12, 10, 9].map((width, index) => <col key={index} style={{ width: `${width * .94}%` }} />)}<col className="repair-ledger-screen-only" style={{ width: '6%' }} /></colgroup>
               <thead><tr>{columnHeaders.map(header => <th key={header} scope="col">{header}</th>)}<th scope="col" className="repair-ledger-screen-only">จัดการ</th></tr></thead>
               <tbody>{filteredRows.length ? filteredRows.map(row => <tr key={ledgerRowKey(row)}>
-                <td className="repair-ledger-date">{ledgerDateLabel(row.repair_date)}</td><td><strong>{row.plate_number}</strong><small className="repair-ledger-row-source repair-ledger-screen-only">{ledgerSourceLabel(row)}</small></td><td>{row.department || '—'}</td><td>{row.shop_name || '—'}</td><td>{row.bill_number || '—'}</td><td className="repair-ledger-number">{ledgerMoney(row.amount)}</td><td className="repair-ledger-description">{row.repair_description || '—'}</td><td>{statusControl(row)}</td><td>{row.accounting_document_number || '—'}</td><td className="repair-ledger-date">{ledgerDateLabel(row.paid_date)}</td><td className="repair-ledger-screen-only">{editButton(row)}</td>
+                <td className="repair-ledger-date">{ledgerDateLabel(row.repair_date)}</td><td><strong>{row.plate_number}</strong><small className="repair-ledger-row-source repair-ledger-screen-only">{ledgerSourceLabel(row)}</small>{row.updated_by_staff_name && <small className="repair-ledger-row-source repair-ledger-screen-only">บันทึกโดย {row.updated_by_staff_name}</small>}</td><td>{row.department || '—'}</td><td>{row.shop_name || '—'}</td><td>{row.bill_number || '—'}</td><td className="repair-ledger-number">{ledgerMoney(row.amount)}</td><td className="repair-ledger-description">{row.repair_description || '—'}</td><td>{statusControl(row)}</td><td>{row.accounting_document_number || '—'}</td><td className="repair-ledger-date">{ledgerDateLabel(row.paid_date)}</td><td className="repair-ledger-screen-only">{editButton(row)}</td>
               </tr>) : <tr><td colSpan={11} className="repair-ledger-table-empty">ยังไม่มีรายการซ่อมในเดือนหรือตัวกรองที่เลือก</td></tr>}</tbody>
               <tfoot><tr><th colSpan={5} scope="row">รวม {filteredRows.length.toLocaleString('th-TH')} รายการ</th><td className="repair-ledger-number">{ledgerMoneyFromCents(totals.amount)}</td><td colSpan={4} /><td className="repair-ledger-screen-only" /></tr></tfoot>
             </table>
@@ -337,12 +336,13 @@ export default function RepairLedger({ initialCarId = '', initialMonth = '' }) {
               <p className="repair-ledger-mobile-description">{row.repair_description || '—'}</p>
               <dl><div><dt>แผนก</dt><dd>{row.department || '—'}</dd></div><div><dt>ร้าน</dt><dd>{row.shop_name || '—'}</dd></div><div><dt>เลขบิล</dt><dd>{row.bill_number || '—'}</dd></div><div><dt>จำนวนเงิน</dt><dd className="repair-ledger-mobile-amount">{ledgerMoney(row.amount)} บาท</dd></div><div><dt>เลขเอกสารบัญชี</dt><dd>{row.accounting_document_number || '—'}</dd></div><div><dt>วันที่จ่ายเงิน</dt><dd>{ledgerDateLabel(row.paid_date)}</dd></div></dl>
               <div className="repair-ledger-mobile-status"><span>สถานะ</span>{statusControl(row)}</div>
+              {row.updated_by_staff_name && <p className="repair-ledger-mobile-actor">ผู้บันทึกล่าสุด: {row.updated_by_staff_name}</p>}
             </article>) : <div className="repair-ledger-empty"><BookOpen size={30} /><strong>ยังไม่มีรายการในเดือนนี้</strong><p>เลือกเดือนอื่น หรือล้างตัวกรองเพื่อดูรายการเพิ่มเติม</p><button className="repair-ledger-button repair-ledger-button-secondary" onClick={() => setEditor({ row: null })}><FilePlus2 size={17} />เพิ่มรายการซ่อม</button></div>}
           </div>
           <footer className="repair-ledger-report-footer"><span>สมุดคุมงานซ่อม · {ledgerMonthLabel(month)} · สถานะตามข้อมูลที่บันทึกแล้ว</span><span>แสดง {filteredRows.length.toLocaleString('th-TH')} รายการ · หน่วยเงิน: บาท{unknownAmounts > 0 && ` · ยังไม่ระบุยอด ${unknownAmounts} รายการ (ไม่รวมในยอดเงิน)`}</span></footer>
         </>}
     </>}
-    {editor && <RepairEditor key={editor.row ? ledgerRowKey(editor.row) : 'new'} row={editor.row} cars={cars} month={month} selectedCarId={carId} onClose={() => setEditor(null)} onSaved={outsideFilters => {
+    {editor && <RepairEditor key={editor.row ? ledgerRowKey(editor.row) : 'new'} row={editor.row} cars={cars} month={month} selectedCarId={carId} identity={identity} onClose={() => setEditor(null)} onSaved={outsideFilters => {
       setEditor(null)
       setNotice(outsideFilters ? 'บันทึกแล้ว รายการอยู่นอกเดือนหรือทะเบียนที่เลือก เปลี่ยนตัวกรองเพื่อดูรายการได้' : 'บันทึกรายการซ่อมแล้ว')
       refresh()

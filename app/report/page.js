@@ -8,8 +8,9 @@ import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { normalizeStaffCode } from '@/lib/staffCode'
 import { startVisiblePolling } from '@/lib/visiblePolling'
-import { saveRepairLedger } from '@/lib/repairLedgerData'
+import { saveRepairLedger, getRepairLedgerIdentity, watchRepairLedgerIdentity, clearRepairLedgerIdentity } from '@/lib/repairLedgerData'
 import { ledgerValidateDraft } from '@/lib/repairLedger'
+import RepairLedgerIdentity from './components/RepairLedgerIdentity'
 
 // --- Main Component ---
 function MainApp() {
@@ -492,6 +493,8 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
 // ==========================================
 // ── Mobile Bottom Sheet for Report Controls ──
 function RepairLedgerActions({ onSave, onOpen, onNew, saving, saved, hasEntry, error }) {
+  const [identity, setIdentity] = useState(() => getRepairLedgerIdentity())
+  useEffect(() => watchRepairLedgerIdentity(setIdentity), [])
   return <div className="space-y-2">
     <button onClick={onSave} disabled={saving}
       className={`w-full py-4 rounded-[16px] text-[15px] font-semibold transition-all active:scale-[0.98] disabled:opacity-60 ${saved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#4b1560] text-white'}`}>
@@ -502,8 +505,27 @@ function RepairLedgerActions({ onSave, onOpen, onNew, saving, saved, hasEntry, e
       สมุดคุมงานซ่อม <span aria-hidden="true">↗</span>
     </button>
     {hasEntry && <button onClick={onNew} disabled={saving} className="w-full py-2 text-[12px] font-semibold text-[#702082]">+ เพิ่มรายการซ่อมใหม่</button>}
-    <p className="text-[10px] text-[#6e6e73] text-center">สำหรับแอดมิน · บันทึกลงสมุดคุม ไม่เพิ่มยอดซ่อมซ้ำในใบ ยพ.6</p>
+    <p className="text-[11px] text-[#6e6e73] text-center">{identity ? <>ผู้บันทึก: {identity.full_name} <button type="button" disabled={saving} className="text-purple-800 underline" onClick={() => clearRepairLedgerIdentity()}>เปลี่ยนผู้บันทึก</button></> : 'พนักงานทุกคนกรอกได้ · ยืนยันรหัสพนักงานก่อนบันทึก'}</p>
+    <p className="text-[10px] text-[#6e6e73] text-center">บันทึกลงสมุดคุม ไม่เพิ่มยอดซ่อมซ้ำในใบ ยพ.6</p>
   </div>
+}
+
+function RepairStaffVerification({ onVerified, onCancel }) {
+  const dialogRef = useRef(null)
+  useEffect(() => {
+    const dialog = dialogRef.current
+    dialog.showModal()
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { dialog.close(); document.body.style.overflow = previousOverflow }
+  }, [])
+  return <dialog ref={dialogRef} className="repair-ledger-verify-dialog" aria-label="ยืนยันผู้บันทึกการซ่อม" onCancel={event => { event.preventDefault(); onCancel() }}>
+    <div className="p-5 sm:p-6">
+      <h2 className="text-xl font-bold text-[#4b1560] mb-2">ยืนยันผู้บันทึกการซ่อม</h2>
+      <p className="text-sm text-gray-600 mb-4">ใส่รหัสพนักงานของคุณเพื่อบันทึกรายการที่กรอกไว้ ไม่ต้องล็อกอินแอดมิน</p>
+      <RepairLedgerIdentity embedded onVerified={onVerified} onCancel={onCancel} />
+    </div>
+  </dialog>
 }
 
 function MobileControlSheet({ 
@@ -735,6 +757,7 @@ function ReportPage() {
   const [drillSaved, setDrillSaved] = useState(false)
   const [drillError, setDrillError] = useState('')
   const [hasRepairEntry, setHasRepairEntry] = useState(false)
+  const [pendingRepair, setPendingRepair] = useState(null)
   const repairDraftRef = useRef(null)
   const repairSavingRef = useRef(false)
   const repairContextRef = useRef('')
@@ -743,9 +766,25 @@ function ReportPage() {
     repairContextRef.current = `${carId}:${selectedMonth}`
     repairDraftRef.current = null
     setHasRepairEntry(false); setDrillSaved(false); setDrillError('')
+    setPendingRepair(null)
     setDrillDate(''); setDrillDesc(''); setDrillCost(''); setDrillHours('')
   }, [carId, selectedMonth])
   const openRepairLedger = () => reportRouter.push(`/report/repairs?${new URLSearchParams({ car_id: String(carId || ''), month: drillDate?.slice(0, 7) || selectedMonth })}`)
+
+  const persistRepairDraft = async (draft, context) => {
+    if (repairSavingRef.current || repairContextRef.current !== context) return
+    repairSavingRef.current = true; setDrillSaving(true); setDrillError(''); setDrillSaved(false)
+    try {
+      const saved = await saveRepairLedger(draft)
+      if (repairContextRef.current !== context) return
+      repairDraftRef.current = saved
+      setHasRepairEntry(true); setDrillSaved(true)
+    } catch (error) {
+      if (repairContextRef.current === context) setDrillError(error.message || 'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง')
+    } finally {
+      repairSavingRef.current = false; setDrillSaving(false)
+    }
+  }
 
   const handleSaveRepair = async () => {
     if (repairSavingRef.current) return
@@ -764,17 +803,12 @@ function ReportPage() {
     if (Object.keys(errors).length) return setDrillError(Object.values(errors)[0])
     if (draft.machine_hours !== null && !/^\d+(?:\.\d{1,2})?$/.test(draft.machine_hours)) return setDrillError('ชั่วโมงเครื่องจักรต้องไม่ติดลบ และมีทศนิยมไม่เกิน 2 ตำแหน่ง')
     repairDraftRef.current = draft
-    repairSavingRef.current = true; setDrillSaving(true); setDrillError(''); setDrillSaved(false)
-    try {
-      const saved = await saveRepairLedger(draft)
-      if (repairContextRef.current !== context) return
-      repairDraftRef.current = saved
-      setHasRepairEntry(true); setDrillSaved(true)
-    } catch (error) {
-      if (repairContextRef.current === context) setDrillError(error.message || 'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง')
-    } finally {
-      repairSavingRef.current = false; setDrillSaving(false)
+    if (!getRepairLedgerIdentity()) {
+      setDrillError('')
+      setPendingRepair({ draft, context })
+      return
     }
+    await persistRepairDraft(draft, context)
   }
 
   useEffect(() => { newRepair() }, [newRepair])
@@ -1064,6 +1098,12 @@ function ReportPage() {
           }
         }
       `}</style>
+
+      {pendingRepair && <RepairStaffVerification onCancel={() => setPendingRepair(null)} onVerified={() => {
+        const pending = pendingRepair
+        setPendingRepair(null)
+        persistRepairDraft(pending.draft, pending.context)
+      }} />}
 
       <SignatureModal 
         isOpen={sigModal.isOpen} title={sigModal.title}
