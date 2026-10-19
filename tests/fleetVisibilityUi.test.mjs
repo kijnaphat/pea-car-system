@@ -15,13 +15,16 @@ test('3D slot meshes and projected labels share the displayed-only slot selector
   assert.ok(admin.includes("if (table === 'cars') markFleetChanged()"))
 })
 
-test('bottom dock uses translucent glass with readable icons and keeps QR-only hiding',()=>{
+test('bottom dock uses restrained translucent material, readable labels and keeps QR-only hiding',()=>{
   const css=read('app/globals.css'),dock=css.slice(css.indexOf('.kpn-dock {'),css.indexOf('.kpn-dock-active {'))
-  assert.match(dock,/linear-gradient\(135deg, rgba\(178,205,220,\.10\), rgba\(255,255,255,\.025\)\)/)
-  assert.match(dock,/-webkit-backdrop-filter: blur\(8px\)/)
+  assert.match(dock,/background: rgba\(255,255,255,\.92\)/)
+  assert.match(dock,/-webkit-backdrop-filter: blur\(12px\)/)
   assert.ok(dock.indexOf('-webkit-backdrop-filter:')<dock.indexOf('\n  backdrop-filter:'),'standard property must follow Safari prefix so the minifier retains both')
   assert.match(dock,/@supports not/)
   const nav=read('app/components/GlobalBottomNav.js')
   assert.ok(nav.includes('if (isVehicleWorkflow) return null'))
   assert.ok(nav.includes("aria-current={item.active ? 'page' : undefined}"))
+  assert.ok(nav.includes('<span className="leading-none">{item.label}</span>'))
+  const active=css.slice(css.indexOf('.kpn-dock-icon-active {'),css.indexOf('.kpn-dock-icon-inactive {'))
+  assert.doesNotMatch(active,/radial-gradient|#c9ff48/)
 })

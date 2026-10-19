@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import dynamic from 'next/dynamic'
+import './components/fleet-twin.css'
 
 const FleetDigitalTwin = dynamic(() => import('./components/FleetDigitalTwin'), { ssr: false })
 
-// ── Apple-style helpers ──
+// Shared report panels.
 const ACard = ({ children, className = '' }) => (
-  <div className={`kpn-surface bg-white rounded-[24px] overflow-hidden ${className}`}
-       style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.07)'}}>
+  <div className={`dashboard-panel kpn-surface bg-white rounded-[12px] overflow-hidden ${className}`}>
     {children}
   </div>
 )
@@ -664,24 +664,22 @@ export default function UltimateDashboard() {
         `}</style>
         
         <div className="relative z-10 mx-auto w-full max-w-[1080px] animate-slide-up">
-          <header className="flex items-center justify-between rounded-[22px] border border-white/90 bg-white/85 px-3.5 py-3 backdrop-blur-xl md:px-5">
+          <header className="dashboard-welcome-header flex items-center justify-between rounded-[12px] border border-[#dce1e2] bg-white px-3.5 py-3 md:px-5">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[#e7eaf1] bg-white p-1.5"><img src="/pea_logo.png" className="h-full w-full object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/></div>
-              <div className="min-w-0"><p className="text-[9px] font-bold tracking-[.15em] text-[#5547f7]">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</p><h1 className="truncate text-[18px] font-black tracking-[-.5px] text-[#101522] md:text-[21px]">KPN SMART CAR</h1></div>
+              <div className="min-w-0"><p className="text-[10px] font-medium text-[#687279]">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</p><h1 className="truncate text-[18px] font-semibold text-[#20272b] md:text-[21px]">KPN SMART CAR</h1></div>
             </div>
-            <div className="flex gap-2"><button type="button" onClick={() => setDashboardView('fleet')} className="rounded-xl bg-purple-100 px-4 text-sm font-bold text-purple-800">ลานรถ 3D</button><button type="button" onClick={() => router.push('/')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="กลับหน้าหลัก"><Icon icon="ph:house-duotone" width="21" height="21" /></button></div>
+            <div className="flex gap-2"><button type="button" onClick={() => setDashboardView('fleet')} className="rounded-lg border border-[#dce1e2] bg-white px-4 text-sm font-medium text-[#5b246b]">ลานรถ 3D</button><button type="button" onClick={() => router.push('/')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#dce1e2] bg-white text-[#687279]" aria-label="กลับหน้าหลัก"><Icon icon="ph:house-duotone" width="21" height="21" /></button></div>
           </header>
 
-          <section className="kpn-dark-card relative mt-3 overflow-hidden rounded-[28px] px-5 py-5 text-white md:mt-4 md:px-8 md:py-8">
-            <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[38px] border-white/[.05]" />
-            <div className="absolute bottom-0 right-[20%] h-28 w-28 rounded-full bg-[#7592ff]/20 blur-3xl" />
+          <section className="dashboard-welcome-intro relative mt-3 overflow-hidden rounded-[12px] px-5 py-5 md:mt-4 md:px-8 md:py-8">
             <div className="relative flex items-center justify-between gap-5">
               <div className="min-w-0">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[10px] font-bold tracking-[.12em] text-[#c9ff48]"><span className="h-1.5 w-1.5 rounded-full bg-[#c9ff48]" />FLEET ANALYTICS</div>
-                <h2 className="text-[26px] font-black leading-[1.05] tracking-[-1px] md:text-[38px]">แดชบอร์ด<br/><span className="text-[#9eb0ff]">ข้อมูลยานพาหนะ</span></h2>
-                <p className="mt-3 max-w-[520px] text-[12px] leading-relaxed text-white/60 md:text-[14px]">เลือกหมวดรถเพื่อดูสถิติการใช้งาน ระยะทาง ค่าใช้จ่าย และรายงานที่เกี่ยวข้อง</p>
+                <div className="dashboard-section-kicker mb-3 text-[11px] font-semibold">สถิติและรายงานการใช้รถ</div>
+                <h2 className="text-[25px] font-semibold leading-[1.4] md:text-[30px]">ข้อมูลยานพาหนะ</h2>
+                <p className="mt-2 max-w-[520px] text-[13px] leading-relaxed md:text-[14px]">เลือกหมวดรถเพื่อดูสถิติการใช้งาน ระยะทาง ค่าใช้จ่าย และรายงานที่เกี่ยวข้อง</p>
               </div>
-              <div className="flex h-[86px] w-[86px] shrink-0 rotate-[-5deg] items-center justify-center rounded-[28px] bg-[#c9ff48] text-[#080d1b] shadow-[0_18px_45px_rgba(174,235,36,.26)] md:h-[120px] md:w-[120px] md:rounded-[36px]"><Icon icon="ph:chart-donut-duotone" width="54" height="54" className="md:h-[72px] md:w-[72px]" /></div>
+              <div className="dashboard-intro-icon flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-[12px]"><Icon icon="ph:chart-donut-duotone" width="34" height="34" /></div>
             </div>
           </section>
 
@@ -690,17 +688,17 @@ export default function UltimateDashboard() {
               <button 
                 key={cat.id} 
                 onClick={() => handleSelectCategory(cat.id)}
-                className="kpn-surface group relative flex min-h-[148px] flex-col overflow-hidden rounded-[22px] border border-[#e7eaf1] bg-white p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#bac1d2] active:translate-y-0 active:scale-[.98] md:min-h-[190px] md:p-5"
+                className="dashboard-category kpn-surface group relative flex min-h-[148px] flex-col overflow-hidden rounded-[12px] border border-[#dce1e2] bg-white p-4 text-left transition-colors hover:border-[#5b246b] md:min-h-[176px] md:p-5"
                 style={{animationDelay: `${index * 80}ms`}}
               >
-                <span className="absolute right-3 top-3 text-[10px] font-black tracking-[.12em] text-[#c2c7d2]">0{index + 1}</span>
+                <span className="absolute right-3 top-3 text-[10px] font-medium text-[#939b9e]">0{index + 1}</span>
                 <div className={`mb-auto flex h-12 w-12 items-center justify-center rounded-[15px] ${cat.bg} transition-transform duration-300 group-hover:scale-105 md:h-14 md:w-14 md:rounded-[18px]`}
                      style={{color: cat.iconBg}}>
                   <Icon icon={cat.iconName} width="29" height="29" />
                 </div>
                 
                 <div className="mt-4 w-full">
-                  <div className="flex items-end justify-between gap-2"><h3 className="text-[16px] font-black tracking-[-.4px] text-[#101522] md:text-[19px]">{cat.title}</h3><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f2f4f8] text-[#101522] transition-colors group-hover:bg-[#c9ff48]"><Icon icon="ph:arrow-up-right-bold" width="14" height="14" /></span></div>
+                  <div className="flex items-end justify-between gap-2"><h3 className="text-[16px] font-semibold text-[#20272b] md:text-[18px]">{cat.title}</h3><span className="dashboard-category-arrow flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] bg-[#f5f5f3] text-[#687279]"><Icon icon="ph:arrow-up-right-bold" width="14" height="14" /></span></div>
                   <p className="mt-1.5 line-clamp-2 text-[10px] leading-snug text-[#737b8e] md:text-[12px]">{cat.desc}</p>
                 </div>
               </button>
@@ -720,8 +718,8 @@ export default function UltimateDashboard() {
   const maxLoc    = Math.max(...analytics.topLocations.map(l => l.count), 1);
 
   const Card = ({ children, className = '', style = {} }) => (
-    <div className={`kpn-surface bg-white rounded-[24px] overflow-hidden ${className}`}
-         style={{boxShadow:'0 1px 1px rgba(0,0,0,0.03), 0 4px 20px rgba(0,0,0,0.07)', ...style}}>
+    <div className={`dashboard-panel kpn-surface bg-white rounded-[12px] overflow-hidden ${className}`}
+         style={style}>
       {children}
     </div>
   )
@@ -907,7 +905,7 @@ export default function UltimateDashboard() {
 
       {/* ── Modal สั่งพิมพ์ (สำหรับสรุปรายคัน) ── */}
       {showPrintModal && (
-        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 no-print fu">
+        <div className="dashboard-document-modal fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4 md:p-6 no-print fu">
           <div className="bg-white rounded-[24px] w-full max-w-7xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             <div className="px-4 md:px-6 py-4 border-b border-[#eadfed] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-[#f9f9fb] shrink-0">
               <div>
@@ -996,7 +994,7 @@ export default function UltimateDashboard() {
 
       {/* ✅ Modal แสดงผลตาราง Query */}
       {showQueryModal && (
-        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 fu no-print">
+        <div className="dashboard-document-modal fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4 md:p-6 fu no-print">
           <div className="bg-white rounded-[24px] w-[95vw] h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             
             <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-[#eadfed] bg-white shrink-0 z-20">
@@ -1058,13 +1056,13 @@ export default function UltimateDashboard() {
       {/* ── Dashboard ปกติ ── */}
       <div className="kpn-screen kpn-dashboard no-print min-h-screen bg-[#f8f3fa] font-sarabun pb-24" style={{WebkitFontSmoothing:'antialiased'}}>
         <nav className="kpn-dashboard-nav sticky top-0 z-50 border-b border-black/[0.06] py-3 md:py-0 md:h-[60px]"
-             style={{background:'rgba(248,243,250,0.92)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)'}}>
+             style={{background:'#fff'}}>
           <div className="max-w-[1440px] mx-auto px-4 md:px-5 h-full flex flex-col md:flex-row md:items-center justify-between gap-3">
             
             <div className="flex items-center justify-between w-full md:w-auto">
               <div className="flex items-center gap-3">
                 <img src="/pea_logo.png" className="h-7 w-auto object-contain" alt="PEA" onError={(e) => e.target.style.display = 'none'}/>
-                <span className="text-[16px] font-semibold text-[#4b1560] tracking-[-0.3px] hidden sm:block">Fleet Dashboard</span>
+                <span className="text-[16px] font-semibold text-[#4b1560] hidden sm:block">สถิติการใช้รถ</span>
                 
                 <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#eadfed] ml-0 sm:ml-2">
                   <Icon icon={activeCategory.iconName} width="16" height="16" className="text-[#702082]" />
@@ -1112,7 +1110,7 @@ export default function UltimateDashboard() {
                 <Icon icon="ph:printer-duotone" width="16" height="16" /> สั่งพิมพ์
               </button>
 
-              <button onClick={() => setDashboardView('fleet')} className="shrink-0 rounded-lg bg-purple-100 px-3 py-1.5 text-xs font-bold text-purple-800">ลานรถ 3D</button>
+              <button onClick={() => setDashboardView('fleet')} className="shrink-0 rounded-lg border border-[#dce1e2] bg-white px-3 py-1.5 text-xs font-medium text-[#5b246b]">ลานรถ 3D</button>
               <button onClick={() => setShowWelcome(true)} 
                 className="hidden md:flex items-center gap-1.5 text-[12px] font-medium text-[#4b1560] bg-white border border-[#eadfed] hover:bg-[#f3eaf5] px-3 py-1.5 rounded-[8px] shadow-sm transition-colors shrink-0">
                 <Icon icon="ph:squares-four-duotone" width="16" height="16" className="text-[#702082]" /> เปลี่ยนหมวดหมู่
@@ -1141,7 +1139,7 @@ export default function UltimateDashboard() {
             </div>
 
             {carCategoryFilter === 'ev' ? (
-              <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%)'}}>
+              <Card className="p-5 flex flex-col justify-between min-h-[140px]">
                 <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center">
                   <Icon icon="ph:lightning-duotone" width="24" height="24" className="text-[#702082]" />
                 </div>
@@ -1170,7 +1168,7 @@ export default function UltimateDashboard() {
               </Card>
             )}
 
-            <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#edfbf0 0%,#d4f5e0 100%)'}}>
+            <Card className="p-5 flex flex-col justify-between min-h-[140px]">
               <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center">
                 <Icon icon="ph:leaf-duotone" width="24" height="24" className="text-[#1a7f37]" />
               </div>
@@ -1186,7 +1184,7 @@ export default function UltimateDashboard() {
               </div>
             </Card>
 
-            <Card className="p-5 flex flex-col justify-between min-h-[140px]" style={{background:'linear-gradient(135deg,#f0eeff 0%,#e5dbff 100%)'}}>
+            <Card className="p-5 flex flex-col justify-between min-h-[140px]">
               <div className="w-10 h-10 rounded-[12px] bg-white/60 flex items-center justify-center">
                 <Icon icon="ph:coins-duotone" width="24" height="24" className="text-[#5e35b1]" />
               </div>
@@ -1224,7 +1222,7 @@ export default function UltimateDashboard() {
                   <span>Utilisation rate</span><span className="font-semibold text-[#4b1560]">{globalStats.activeRate}%</span>
                 </div>
                 <div className="h-2 bg-[#eadfed] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${globalStats.activeRate}%`, background:'linear-gradient(90deg,#702082,#34aadc)'}}/>
+                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${globalStats.activeRate}%`, background:'#5b246b'}}/>
                 </div>
               </div>
             </Card>
@@ -1323,7 +1321,7 @@ export default function UltimateDashboard() {
                              <div className="w-full max-w-[28px] rounded-t-[4px] transition-all duration-500 shadow-sm group-hover:brightness-110 group-hover:scale-y-[1.03] origin-bottom"
                                   style={{
                                     height: `${pct}%`, 
-                                    background: 'linear-gradient(180deg, #34aadc 0%, #702082 100%)',
+                                    background: '#5b246b',
                                     minHeight: d.val > 0 ? '4px' : '0'
                                   }}
                              />
@@ -1388,7 +1386,7 @@ export default function UltimateDashboard() {
                              <div className="w-full max-w-[14px] rounded-t-[3px] transition-all duration-500 shadow-sm group-hover:brightness-110 group-hover:scale-y-[1.05] origin-bottom"
                                   style={{
                                     height: `${pct}%`, 
-                                    background: isPeak ? 'linear-gradient(180deg, #ff6961 0%, #ff3b30 100%)' : 'linear-gradient(180deg, #30d158 0%, #34c759 100%)',
+                                    background: isPeak ? '#b8543e' : '#44816a',
                                     minHeight: d.val > 0 ? '2px' : '0'
                                   }}
                              />
@@ -1551,7 +1549,7 @@ export default function UltimateDashboard() {
                         </div>
                         <div className="h-[5px] bg-[#f8f3fa] rounded-full overflow-hidden">
                           <div className="h-full rounded-full transition-all duration-700"
-                               style={{width:`${(loc.count/maxLoc)*100}%`, background:i===0?'linear-gradient(90deg,#ff9500,#ffcc00)':'linear-gradient(90deg,#702082,#34aadc)'}}/>
+                               style={{width:`${(loc.count/maxLoc)*100}%`, background:i===0?'#c7a53c':'#687e89'}}/>
                         </div>
                       </div>
                     </div>
@@ -1572,8 +1570,8 @@ export default function UltimateDashboard() {
                     <div className="flex items-center gap-3.5">
                       <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold"
                            style={{
-                             background: i===0 ? 'linear-gradient(135deg,#ffcc00,#ff9500)' : i===1 ? 'linear-gradient(135deg,#d9cadd,#aeaeb2)' : i===2 ? 'linear-gradient(135deg,#f4a460,#cd853f)' : '#f8f3fa',
-                             color: i<=2 ? 'white' : '#765c7c'
+                             background: i===0 ? '#e7d5a0' : i===1 ? '#d8dfe1' : i===2 ? '#decbb7' : '#eceeeb',
+                             color: '#4d5960'
                            }}>
                         {i+1}
                       </div>
@@ -1617,8 +1615,8 @@ export default function UltimateDashboard() {
                       <div className="flex items-center gap-2.5">
                         <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold"
                              style={{
-                               background:i===0?'linear-gradient(135deg,#ffcc00,#ff9500)':i===1?'linear-gradient(135deg,#d9cadd,#aeaeb2)':i===2?'linear-gradient(135deg,#f4a460,#cd853f)':'#f8f3fa',
-                               color:i<=2?'white':'#765c7c'
+                               background:i===0?'#e7d5a0':i===1?'#d8dfe1':i===2?'#decbb7':'#eceeeb',
+                               color:'#4d5960'
                              }}>
                           {i+1}
                         </div>

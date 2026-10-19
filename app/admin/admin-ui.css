@@ -1,0 +1,166 @@
+/* Admin presentation only. Keep controls, permissions and report print rules unchanged. */
+@media screen {
+  .kpn-screen.kpn-admin-ui,
+  .kpn-screen.kpn-admin-login {
+    --kpn-primary: #5b246b;
+    --kpn-primary-strong: #482055;
+    --kpn-line: #dce1e2;
+    --kpn-shadow: 0 2px 7px rgba(32, 39, 43, .035);
+    --kpn-ink: #20272b;
+    color: #20272b;
+    background: #f5f5f3 !important;
+    font-family: "Leelawadee UI", Tahoma, "Segoe UI", Arial, sans-serif;
+    letter-spacing: 0;
+  }
+
+  .kpn-screen.kpn-admin-ui::before,
+  .kpn-screen.kpn-admin-login::before { display: none; }
+
+  .kpn-admin-ui *,
+  .kpn-admin-login * { scrollbar-color: #c8cfce transparent; scrollbar-width: thin; }
+  .kpn-admin-ui ::-webkit-scrollbar { width: 7px; height: 7px; }
+  .kpn-admin-ui ::-webkit-scrollbar-track { background: transparent; }
+  .kpn-admin-ui ::-webkit-scrollbar-thumb { background: #c8cfce; border-radius: 6px; }
+  .kpn-admin-ui .hide-admin-scrollbar { scrollbar-width: none; }
+  .kpn-admin-ui .hide-admin-scrollbar::-webkit-scrollbar { display: none; }
+
+  .kpn-admin-ui button,
+  .kpn-admin-ui a,
+  .kpn-admin-login button { -webkit-tap-highlight-color: transparent; }
+  .kpn-admin-ui button { transition-duration: 130ms; }
+  .kpn-admin-ui button:focus-visible,
+  .kpn-admin-login button:focus-visible { outline: 2px solid #5b246b; outline-offset: 3px; }
+
+  .kpn-screen.kpn-admin-ui .kpn-admin-sidebar {
+    width: 248px;
+    background: #fff !important;
+    border: 1px solid #dce1e2 !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    color: #20272b !important;
+  }
+  .kpn-admin-ui .kpn-admin-sidebar nav { padding: 22px 12px; }
+  .kpn-admin-ui .kpn-admin-sidebar nav > p { color: #838c91; font-size: 11px; letter-spacing: .02em; }
+  .kpn-admin-ui .admin-sidebar-link { min-height: 64px; }
+  .kpn-admin-ui .admin-sidebar-link:not(.is-active) { color: #5f6a71 !important; }
+  .kpn-admin-ui .admin-sidebar-link.is-active { color: #5b246b !important; background: #f1eaf3 !important; box-shadow: none !important; }
+  .kpn-admin-ui .admin-sidebar-icon { box-shadow: none !important; }
+  .kpn-screen.kpn-admin-ui .admin-main { background: #f5f5f3 !important; box-shadow: none !important; }
+  .kpn-admin-ui .admin-page-header { background: #fff !important; border-color: #dce1e2 !important; box-shadow: none !important; }
+  .kpn-admin-ui .admin-page-header h1 { color: #20272b; font-size: 23px; font-weight: 700; letter-spacing: 0; }
+  .kpn-admin-ui .admin-page-header h1 + p { font-size: 12px; color: #687279; }
+  .kpn-admin-ui .admin-content > div { max-width: 1440px; }
+  .kpn-admin-ui .admin-record-form { box-shadow: none !important; }
+  .kpn-admin-ui .admin-record-form > div:first-child { margin-bottom: 24px; }
+  .kpn-admin-ui .admin-confirm-overlay { background: rgba(23, 31, 35, .4); }
+  .kpn-admin-ui .admin-confirm-overlay > div { border-radius: 12px !important; border-color: #dce1e2 !important; box-shadow: 0 16px 48px rgba(23, 31, 35, .16) !important; }
+  .kpn-admin-ui .admin-confirm-overlay [class*="text-[#ffdd00]"] { color: #5b246b !important; background: #f1eaf3 !important; border-color: #e5dce8 !important; }
+  .kpn-admin-ui .admin-confirm-overlay button[class*="bg-[#ffdd00]"] { color: #fff !important; background: #5b246b !important; }
+  .kpn-admin-ui .admin-confirm-overlay button { min-height: 44px; }
+
+  .kpn-admin-ui .admin-menu-card { box-shadow: none !important; }
+  .kpn-admin-ui .admin-menu-card:hover { border-color: #bca6c3; background: #fdfcfd !important; }
+  .kpn-admin-ui .admin-menu-card > span:last-child span:first-child { letter-spacing: 0; }
+  .kpn-admin-ui .admin-menu-card > span:last-child > span:last-child { font-size: 12px; line-height: 1.6; }
+  .kpn-admin-ui .admin-mobile-intro { background: transparent !important; box-shadow: none !important; }
+
+  /* A common, restrained surface language across all management panels. */
+  .kpn-admin-ui .admin-main :is(section, article, form, div)[class*="rounded-"]:is([class*="shadow-"], [class*="border-[#eadfed]"], [class*="border-[#d9c6df]"]) {
+    box-shadow: 0 2px 7px rgba(32, 39, 43, .035) !important;
+  }
+  .kpn-admin-ui :is([class*="rounded-[18px]"], [class*="rounded-[20px]"], [class*="rounded-[22px]"], [class*="rounded-[24px]"], [class*="rounded-[26px]"], [class*="rounded-[28px]"]) {
+    border-radius: 12px !important;
+  }
+  .kpn-admin-ui :is([class*="rounded-[13px]"], [class*="rounded-[14px]"], [class*="rounded-[15px]"], [class*="rounded-[16px]"]) {
+    border-radius: 8px !important;
+  }
+  .kpn-admin-ui [class*="backdrop-blur"] { backdrop-filter: none !important; }
+  .kpn-admin-ui .admin-main [class*="bg-[linear-gradient"] { background: #faf9f6 !important; }
+
+  .kpn-admin-ui :is([class*="border-[#eadfed]"], [class*="border-[#dfcfe4]"], [class*="border-[#dac8df]"], [class*="border-[#ddcce2]"], [class*="border-[#e3d4e7]"], [class*="border-[#d7c2de]"], [class*="border-[#d9c8de]"]) { border-color: #dce1e2 !important; }
+  .kpn-admin-ui .admin-main :is([class*="divide-[#eee4f0]"], [class*="divide-[#eadfed]"], [class*="divide-[#6b3475]"]) > :not(:last-child) { border-color: #e4e7e6 !important; }
+  .kpn-admin-ui .admin-main :is([class*="bg-[#f8f3fa]"], [class*="bg-[#fcf9fd]"], [class*="bg-[#fcfafd]"], [class*="bg-[#faf7fb]"], [class*="bg-[#f7f1f8]"], [class*="bg-[#f5edf7]"]) { background: #f7f7f5 !important; }
+  .kpn-admin-ui .admin-main :is([class*="bg-[#f1e6f4]"], [class*="bg-[#f3eaf5]"], [class*="bg-[#f0e5f3]"]) { background: #f1eaf3 !important; }
+  .kpn-admin-ui .admin-main [class*="bg-[#3b1746]"] { background: #fff !important; }
+  .kpn-admin-ui .admin-main [class*="bg-[#2a0f33]"] { background: #f5f5f3 !important; }
+  .kpn-admin-ui .admin-main [class*="bg-[#54205f]"] { background: #f4f5f3 !important; }
+  .kpn-admin-ui .admin-main :is([class*="border-[#6b3475]"], [class*="border-[#7e4a87]"]) { border-color: #dce1e2 !important; }
+
+  .kpn-admin-ui :is([class*="text-[#35133f]"], [class*="text-[#4b1560]"], [class*="text-[#101522]"]) { color: #20272b !important; }
+  .kpn-admin-ui .admin-main [class*="text-[#fffaf0]"] { color: #20272b !important; }
+  .kpn-admin-ui :is([class*="text-[#765c7c]"], [class*="text-[#846c89]"], [class*="text-[#9a83a0]"], [class*="text-[#927a98]"], [class*="text-[#8b6f92]"], [class*="text-[#5f4964]"], [class*="text-[#737b8e]"], [class*="text-[#a688ad]"]) { color: #687279 !important; }
+  .kpn-admin-ui .admin-main [class*="text-[#c9b8cd]"] { color: #687279 !important; }
+  .kpn-admin-ui :is([class*="text-[#702082]"], [class*="text-[#8b3c98]"]) { color: #5b246b !important; }
+  .kpn-admin-ui .admin-main :is([class*="bg-[#702082]"], [class*="bg-[#ffdd00]"]) { background: #5b246b !important; color: #fff !important; box-shadow: none !important; }
+  .kpn-admin-ui .admin-main :is(button[class*="bg-[#702082]"], button[class*="bg-[#ffdd00]"]) :is(svg, span) { color: inherit !important; }
+  .kpn-admin-ui .admin-page-header button[aria-label="กลับไปเลือกหมวด"] { background: #f1eaf3 !important; border-color: #e5dce8 !important; color: #5b246b !important; }
+  .kpn-admin-ui .admin-main :is(button[class*="bg-[#702082]"], button[class*="bg-[#ffdd00]"]):hover:not(:disabled) { background: #482055 !important; }
+  .kpn-admin-ui .admin-main button[class*="shadow-"] { box-shadow: none !important; }
+
+  .kpn-admin-ui input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .kpn-admin-ui select,
+  .kpn-admin-ui textarea {
+    min-height: 44px;
+    border: 1px solid #cfd5d7;
+    border-radius: 8px !important;
+    background-color: #fff !important;
+    color: #20272b !important;
+    box-shadow: none !important;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+  .kpn-admin-ui textarea { min-height: 96px; }
+  .kpn-admin-ui input::placeholder,
+  .kpn-admin-ui textarea::placeholder { color: #8b9499; }
+  .kpn-admin-ui :is(input, select, textarea):focus { outline: none; border-color: #5b246b; box-shadow: 0 0 0 3px rgba(91, 36, 107, .08) !important; }
+  .kpn-admin-ui select option { background: #fff; color: #20272b; }
+  .kpn-admin-ui .admin-main label:not([class*="cursor-pointer"]) { letter-spacing: 0; text-transform: none; font-size: 12px; font-weight: 600; }
+  .kpn-admin-ui .admin-main :is([class*="text-[8px]"], [class*="text-[9px]"]) { font-size: 11px; letter-spacing: 0; }
+  .kpn-admin-ui .admin-main [class*="text-[10px]"] { font-size: 12px; letter-spacing: 0; }
+  .kpn-admin-ui .admin-main [class*="text-[11px]"] { font-size: 12px; }
+  .kpn-admin-ui .admin-main :is([class*="tracking-wider"], [class*="tracking-widest"]) { letter-spacing: .01em; }
+  .kpn-admin-ui .admin-main .font-black { font-weight: 700; }
+
+  .kpn-admin-ui .admin-main thead { background: #f4f5f3 !important; }
+  .kpn-admin-ui .admin-main th { height: 48px; font-size: 12px !important; font-weight: 600; color: #687279 !important; letter-spacing: 0; text-transform: none; }
+  .kpn-admin-ui .admin-main td { padding-top: 14px; padding-bottom: 14px; }
+  .kpn-admin-ui .admin-main tbody tr:hover { background: #f9faf8 !important; }
+  .kpn-admin-ui .admin-main tbody { border-color: #dce1e2 !important; }
+  .kpn-admin-ui .admin-main td:last-child button:not([class*="inline-flex"]) { min-width: 36px; min-height: 40px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+  .kpn-admin-ui .admin-main td:last-child button:hover { background: #f1eaf3; }
+
+  .kpn-admin-ui .admin-discord-intro { background: #fff !important; color: #20272b !important; border-color: #dce1e2 !important; box-shadow: none !important; }
+  .kpn-admin-ui .admin-discord-intro h2 { font-size: 23px; color: #20272b; }
+  .kpn-admin-ui .admin-discord-intro [class*="text-white"] { color: #687279 !important; }
+  .kpn-admin-ui .admin-discord-intro [class*="bg-white/"] { background: #f4f5f3 !important; border-color: #e0e4e2 !important; }
+  .kpn-admin-ui .admin-discord-intro [class*="text-[#ffe86a]"] { color: #806b2c !important; }
+  .kpn-admin-ui .admin-discord-intro [class*="bg-black/15"] { background: #f7f7f5 !important; border-color: #e0e4e2 !important; }
+  .kpn-admin-ui .admin-discord-intro button { min-height: 44px; color: #5b246b !important; border: 1px solid #dce1e2; background: #fff !important; }
+
+  .kpn-admin-ui .admin-data-tabs { padding: 5px; border-radius: 10px !important; box-shadow: none !important; }
+  .kpn-admin-ui .admin-data-tabs button { min-height: 46px; border-radius: 7px !important; box-shadow: none !important; font-weight: 600; }
+  .kpn-admin-ui .admin-data-tabs button:not(.is-active) { background: transparent !important; color: #687279 !important; }
+  .kpn-admin-ui .admin-data-tabs button.is-active { background: #f1eaf3 !important; color: #5b246b !important; }
+  .kpn-admin-ui .admin-data-tabs button.is-active svg { color: #5b246b !important; }
+
+  .kpn-admin-login .admin-login-shell { border-radius: 12px !important; box-shadow: 0 5px 22px rgba(32, 39, 43, .045) !important; }
+  .kpn-admin-login .admin-login-information { min-height: 610px; }
+  .kpn-admin-login .admin-login-field { min-height: 48px; box-shadow: none !important; border-color: #cfd5d7 !important; background: #fff !important; }
+  .kpn-admin-login .admin-login-field:focus { border-color: #5b246b !important; box-shadow: 0 0 0 3px rgba(91, 36, 107, .08) !important; }
+  .kpn-admin-login .admin-login-submit { min-height: 48px; background: #5b246b !important; color: #fff !important; box-shadow: none !important; }
+  .kpn-admin-login .admin-login-submit:hover { background: #482055 !important; }
+
+  @media (max-width: 767px) {
+    .kpn-admin-ui .admin-page-header { min-height: 76px; }
+    .kpn-admin-ui .admin-page-header h1 { font-size: 19px; }
+    .kpn-admin-ui .admin-content { padding: 16px 12px 100px; }
+    .kpn-admin-ui input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .kpn-admin-ui select,
+    .kpn-admin-ui textarea { font-size: 16px; }
+    .kpn-admin-ui .admin-main :is(form, section, article)[class*="p-5"] { padding: 16px; }
+    .kpn-admin-ui .admin-main button:not([class*="inset-0"]):not([class*="inline-flex"]):not([class*="h-5"]) { min-height: 44px; }
+    .kpn-admin-ui .admin-main [class*="rounded-t-[26px]"] { border-radius: 12px 12px 0 0 !important; }
+    .kpn-admin-login .admin-login-form-panel { padding: 20px 24px 28px; }
+  }
+}

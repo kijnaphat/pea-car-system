@@ -22,9 +22,9 @@ export default function DataManagementPanel({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 overflow-x-auto rounded-[18px] border border-[#eadfed] bg-white p-2 shadow-sm">
+      <div className="admin-data-tabs flex gap-2 overflow-x-auto rounded-[10px] border border-[#dce1e2] bg-white p-2">
         {tabs.map(tab => (
-          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`flex min-w-fit flex-1 items-center justify-center gap-2 rounded-[13px] px-4 py-3 text-[12px] font-bold transition-all ${activeTab === tab.id ? 'bg-[#702082] text-white shadow-[0_7px_18px_rgba(112,32,130,.2)]' : 'bg-[#f8f3fa] text-[#765c7c]'}`}>
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`flex min-w-fit flex-1 items-center justify-center gap-2 rounded-[8px] px-4 py-3 text-[12px] font-semibold transition-colors ${activeTab === tab.id ? 'is-active bg-[#f1eaf3] text-[#5b246b]' : 'bg-white text-[#687279]'}`}>
             <Icon icon={tab.icon} width="19" height="19" />
             {tab.label}
             {tab.badge && <span className={`rounded-full px-2 py-0.5 text-[8px] font-black ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-[#efffc9] text-[#4a6f00]'}`}>{tab.badge}</span>}

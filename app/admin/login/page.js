@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react'
 import { supabase } from '@/lib/supabaseClient'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { adminDestination } from '@/lib/adminDestination'
+import '../admin-ui.css'
 
 const getDestinationAfterLogin = () => {
   if (typeof window === 'undefined') return '/admin'
@@ -62,83 +63,57 @@ export default function AdminLogin() {
   if (checkingSession || loading) return <PageSkeleton variant="login" />
 
   return (
-    <main className="kpn-screen kpn-login min-h-[calc(100dvh-78px)] bg-[#f8f3fa] font-sarabun flex items-center justify-center p-4 sm:p-7 relative overflow-hidden">
-      <div className="absolute -top-32 -left-28 w-80 h-80 rounded-full bg-[#702082]/10 blur-2xl" />
-      <div className="absolute -bottom-36 -right-24 w-96 h-96 rounded-full bg-[#ffdd00]/20 blur-3xl" />
-
-      <section className="relative w-full max-w-[1040px] min-h-[640px] bg-white rounded-[30px] overflow-hidden border border-[#eadfed] shadow-[0_24px_70px_rgba(79,28,91,.16)] grid grid-cols-1 lg:grid-cols-[1.05fr_.95fr]">
-        <aside className="kpn-login-visual relative hidden lg:flex flex-col justify-between overflow-hidden px-10 py-10 text-white"
-          style={{background:'linear-gradient(145deg,#451257 0%,#702082 58%,#963ba5 100%)'}}>
-          <div className="absolute -right-36 -top-32 w-96 h-96 rounded-full border-[58px] border-white/[0.05]" />
-          <div className="absolute -left-32 -bottom-40 w-96 h-96 rounded-full bg-[#ffdd00]/10" />
-
-          <div className="relative flex items-center gap-3">
-            <div className="w-14 h-14 bg-white rounded-[16px] p-1.5 shadow-lg"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
-            <div><p className="text-[11px] font-bold tracking-[.14em] text-[#ffea70]">การไฟฟ้าส่วนภูมิภาค</p><p className="text-[20px] font-bold">PEA Fleet</p></div>
+    <main className="kpn-screen kpn-login kpn-admin-login min-h-[calc(100dvh-78px)] flex items-center justify-center p-5 sm:p-8">
+      <section className="admin-login-shell w-full max-w-[900px] overflow-hidden rounded-[12px] border border-[#dce1e2] bg-white grid grid-cols-1 md:grid-cols-[.86fr_1.14fr]">
+        <aside className="admin-login-information hidden md:flex flex-col justify-between bg-[#f1efec] px-8 py-9 border-r border-[#dce1e2]">
+          <div className="flex items-center gap-3">
+            <img src="/pea_logo.png" alt="PEA" className="w-12 h-12 object-contain" />
+            <div><p className="text-[12px] font-semibold text-[#5b246b]">การไฟฟ้าส่วนภูมิภาค</p><p className="text-[19px] font-bold text-[#20272b]">PEA Smart Car</p></div>
           </div>
-
-          <div className="relative">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3.5 py-2 text-[11px] font-semibold mb-5"><span className="w-2 h-2 rounded-full bg-[#ffdd00]" />ระบบบริหารจัดการยานพาหนะ</span>
-            <h1 className="text-[42px] font-bold leading-[1.08] tracking-[-1.3px]">จัดการรถ PEA<br/>อย่างมั่นใจในทุกวัน</h1>
-            <p className="mt-5 text-[15px] leading-relaxed text-white/70 max-w-[390px]">เข้าสู่ระบบสำหรับผู้ดูแล เพื่อจัดการรถ บุคลากร งาน พื้นที่ปฏิบัติงาน และตรวจสอบข้อมูล Fleet จากศูนย์กลางเดียว</p>
+          <div className="py-12">
+            <div className="w-9 h-[3px] bg-[#c7a53c] mb-5" />
+            <h1 className="text-[27px] font-bold leading-snug text-[#20272b]">ระบบจัดการ<br/>ยานพาหนะ</h1>
+            <p className="mt-4 text-[14px] leading-7 text-[#687279]">สำหรับผู้ดูแลข้อมูลรถ บุคลากร<br/>และตรวจสอบการใช้งานของหน่วยงาน</p>
           </div>
-
-          <div className="relative grid grid-cols-3 gap-3">
+          <div className="border-t border-[#d9ddda] pt-5 space-y-3">
             {[
-              {icon:'ph:car-profile-duotone',label:'จัดการรถ'},
-              {icon:'ph:users-three-duotone',label:'บุคลากร'},
-              {icon:'ph:chart-pie-slice-duotone',label:'รายงาน'},
-            ].map(item => <div key={item.label} className="rounded-[18px] bg-white/10 border border-white/10 px-3 py-4 text-center"><Icon icon={item.icon} width="25" height="25" className="mx-auto text-[#ffdd00]"/><p className="mt-2 text-[11px] font-semibold">{item.label}</p></div>)}
+              {icon:'ph:car-profile',label:'ทะเบียนและข้อมูลรถ'},
+              {icon:'ph:users-three',label:'บุคลากรและหน่วยงาน'},
+              {icon:'ph:clipboard-text',label:'ตรวจสอบข้อมูลและรายงาน'},
+            ].map(item => <div key={item.label} className="flex items-center gap-3 text-[13px] text-[#687279]"><Icon icon={item.icon} width="19" height="19" className="text-[#5b246b]"/><span>{item.label}</span></div>)}
           </div>
         </aside>
-
-        <div className="flex flex-col px-6 py-7 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
-          <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-[52px] h-[52px] bg-white rounded-[14px] border border-[#eadfed] p-1.5 shadow-sm"><img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" /></div>
-            <div><p className="text-[10px] font-bold tracking-[.12em] text-[#702082]">การไฟฟ้าส่วนภูมิภาค</p><p className="text-[18px] font-bold text-[#4b1560]">PEA Fleet</p></div>
+        <div className="admin-login-form-panel flex flex-col px-6 py-7 sm:px-10 sm:py-9">
+          <button type="button" onClick={() => router.push('/')} className="self-start inline-flex min-h-11 items-center gap-2 text-[13px] font-medium text-[#687279] hover:text-[#5b246b] transition-colors"><Icon icon="ph:arrow-left" width="17" height="17" />กลับหน้าหลัก</button>
+          <div className="md:hidden flex items-center gap-3 mt-6">
+            <img src="/pea_logo.png" alt="PEA" className="w-11 h-11 object-contain" />
+            <div><p className="text-[11px] text-[#687279]">การไฟฟ้าส่วนภูมิภาค</p><p className="text-[18px] font-bold text-[#20272b]">PEA Smart Car</p></div>
           </div>
-
-          <button onClick={() => router.push('/')} className="self-start inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#765c7c] hover:text-[#702082] transition-colors"><Icon icon="ph:arrow-left" width="16" height="16" />กลับหน้าหลัก</button>
-
           <div className="my-auto py-8">
-            <p className="text-[11px] font-bold tracking-[.14em] text-[#8b3c98] mb-2">ADMIN PORTAL</p>
-            <h2 className="text-[32px] sm:text-[38px] font-bold text-[#35133f] tracking-[-1px]">ยินดีต้อนรับ</h2>
-            <p className="mt-2 text-[14px] text-[#765c7c]">เข้าสู่ระบบด้วยบัญชีผู้ดูแล PEA</p>
-
-            {errorMsg && <div className="mt-6 flex items-start gap-2.5 rounded-[15px] bg-[#fff0f0] border border-[#ffd7d4] px-4 py-3.5 text-[12px] text-[#c93830]"><Icon icon="ph:warning-circle-duotone" width="19" height="19" className="flex-shrink-0"/><span>{errorMsg}</span></div>}
-
+            <p className="text-[12px] font-semibold text-[#5b246b] mb-2">ผู้ดูแลระบบ</p>
+            <h2 className="text-[28px] font-bold text-[#20272b]">เข้าสู่ระบบ</h2>
+            <p className="mt-2 text-[14px] text-[#687279]">ใช้บัญชีผู้ดูแลที่ได้รับสิทธิ์จากหน่วยงาน</p>
+            {errorMsg && <div role="alert" className="mt-5 flex items-start gap-2.5 rounded-[8px] bg-[#fcf2f1] border border-[#e7cbc8] px-4 py-3 text-[13px] text-[#ac3f38]"><Icon icon="ph:warning-circle" width="19" height="19" className="shrink-0"/><span>{errorMsg}</span></div>}
             <form onSubmit={handleLogin} className="mt-7 space-y-5">
               <label className="block">
-                <span className="text-[12px] font-bold text-[#4b4050]">อีเมลหรือรหัสผู้ใช้งาน</span>
-                <div className="relative mt-2">
-                  <Icon icon="ph:user-circle-duotone" width="21" height="21" className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b3c98]" />
-                  <input type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@pea.co.th"
-                    className="w-full rounded-[16px] border border-[#ded1e2] bg-[#fcf9fd] pl-12 pr-4 py-4 text-[14px] text-[#35133f] outline-none transition-all placeholder:text-[#b5a7b8] focus:bg-white focus:border-[#702082] focus:ring-4 focus:ring-[#702082]/10" />
-                </div>
+                <span className="text-[13px] font-semibold text-[#485259]">อีเมลผู้ใช้งาน</span>
+                <input type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@pea.co.th" className="admin-login-field mt-2 w-full rounded-[8px] border border-[#cfd5d7] bg-white px-3.5 py-3 text-[16px] text-[#20272b] outline-none placeholder:text-[#91999e] focus:border-[#5b246b] focus:ring-2 focus:ring-[#5b246b]/10" />
               </label>
-
               <label className="block">
-                <span className="text-[12px] font-bold text-[#4b4050]">รหัสผ่าน</span>
+                <span className="text-[13px] font-semibold text-[#485259]">รหัสผ่าน</span>
                 <div className="relative mt-2">
-                  <Icon icon="ph:lock-key-duotone" width="21" height="21" className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b3c98]" />
-                  <input type={showPassword ? 'text' : 'password'} required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="กรอกรหัสผ่าน"
-                    className="w-full rounded-[16px] border border-[#ded1e2] bg-[#fcf9fd] pl-12 pr-12 py-4 text-[14px] text-[#35133f] outline-none transition-all placeholder:text-[#b5a7b8] focus:bg-white focus:border-[#702082] focus:ring-4 focus:ring-[#702082]/10" />
-                  <button type="button" onClick={() => setShowPassword(value => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8e7d92] hover:text-[#702082]" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}><Icon icon={showPassword ? 'ph:eye-duotone' : 'ph:eye-slash-duotone'} width="20" height="20" /></button>
+                  <input type={showPassword ? 'text' : 'password'} required autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="กรอกรหัสผ่าน" className="admin-login-field w-full rounded-[8px] border border-[#cfd5d7] bg-white pl-3.5 pr-14 py-3 text-[16px] text-[#20272b] outline-none placeholder:text-[#91999e] focus:border-[#5b246b] focus:ring-2 focus:ring-[#5b246b]/10" />
+                  <button type="button" onClick={() => setShowPassword(value => !value)} className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-[6px] text-[#687279] hover:bg-[#f5f5f3] hover:text-[#5b246b]" aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}><Icon icon={showPassword ? 'ph:eye' : 'ph:eye-slash'} width="20" height="20" /></button>
                 </div>
               </label>
-
-              <button type="submit" className="kpn-primary-action w-full rounded-[16px] py-4 text-[14px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[.985] bg-[#702082] text-white shadow-[0_10px_24px_rgba(112,32,130,.24)] hover:bg-[#5c176d]">
-                เข้าสู่ระบบ <Icon icon="ph:arrow-right-bold" width="16" height="16" className="text-[#ffdd00]"/>
-              </button>
+              <button type="submit" className="admin-login-submit w-full rounded-[8px] py-3.5 text-[15px] font-semibold flex items-center justify-center gap-2 bg-[#5b246b] text-white hover:bg-[#482055] transition-colors">เข้าสู่ระบบ<Icon icon="ph:arrow-right" width="18" height="18" /></button>
             </form>
-
-            <div className="mt-6 flex items-start gap-2.5 rounded-[15px] bg-[#fff9d9] border border-[#f3df70] px-4 py-3.5 text-[#66510d]">
-              <Icon icon="ph:shield-check-duotone" width="20" height="20" className="flex-shrink-0 text-[#a88000]" />
-              <p className="text-[11px] leading-relaxed">หน้านี้สำหรับผู้ดูแลระบบเท่านั้น หากไม่สามารถเข้าสู่ระบบได้ กรุณาติดต่อผู้ดูแล IT ของหน่วยงาน</p>
+            <div className="mt-6 flex items-start gap-2.5 border-t border-[#e4e7e6] pt-5 text-[#687279]">
+              <Icon icon="ph:shield-check" width="19" height="19" className="shrink-0 mt-0.5" />
+              <p className="text-[12px] leading-6">สำหรับผู้ดูแลระบบเท่านั้น หากเข้าสู่ระบบไม่ได้ กรุณาติดต่อผู้ดูแล IT ของหน่วยงาน</p>
             </div>
           </div>
-
-          <p className="text-center text-[10px] text-[#aa9cae]">PEA Smart Vehicle Management · Secure Admin Access</p>
+          <p className="text-[11px] text-[#91999e]">PEA Smart Car · ระบบบริหารจัดการยานพาหนะ</p>
         </div>
       </section>
     </main>

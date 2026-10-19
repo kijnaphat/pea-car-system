@@ -223,9 +223,9 @@ export default function FleetDigitalTwin({ onAnalytics }) {
     </button>)}</div><p>มุมมอง 2D สำรอง · รถที่ออกภารกิจแสดงช่องจอดว่าง</p></div>
 
   return <section className="fleet-twin" aria-label="ลานรถดิจิทัล">
-    <header className="twin-header"><div className="twin-brand"><img src="/pea_logo.png" alt="PEA" /><div><span>PEA SMART CAR</span><strong>Fleet Digital Twin</strong></div></div>
+    <header className="twin-header"><div className="twin-brand"><img src="/pea_logo.png" alt="PEA" /><div><span>PEA SMART CAR · กำแพงแสน</span><strong>สถานะรถและลานจอด</strong></div></div>
       <label className="twin-search"><Search size={19} /><input aria-label="ค้นหารถในลาน" placeholder="ค้นหาทะเบียนรถ, ผู้ขับ, สถานที่..." value={query} onChange={event => { setQuery(event.target.value); setSelectedId(null) }} /></label>
-      <button onClick={onAnalytics} className="twin-analytics"><LayoutGrid size={17} />สถิติและรายงานเดิม<ArrowUpRight size={16} /></button>
+      <button onClick={onAnalytics} className="twin-analytics"><LayoutGrid size={17} />สถิติและรายงาน<ArrowUpRight size={16} /></button>
     </header>
     <div className="twin-content">
       <div className="twin-topline"><div className="twin-modes" aria-label="โหมดลานรถ">{[['live','สถานะปัจจุบัน'],['replay','ดูย้อนหลัง'],['demo','โหมดสาธิต']].map(([key,label]) => <button key={key} aria-pressed={mode===key} disabled={key==='replay' && !snapshot.carsDataRaw.length} onClick={() => switchMode(key)}>{label}</button>)}</div>

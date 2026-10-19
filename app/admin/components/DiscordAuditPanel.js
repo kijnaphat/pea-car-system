@@ -208,7 +208,7 @@ export default function DiscordAuditPanel() {
 
   return (
     <div className="space-y-5">
-      <section className="overflow-hidden rounded-[24px] border border-[#d9c6df] bg-gradient-to-br from-[#32103d] via-[#4c165b] to-[#702082] text-white shadow-[0_18px_45px_rgba(75,21,96,.2)]">
+      <section className="admin-discord-intro overflow-hidden rounded-[12px] border border-[#dce1e2] bg-white text-[#20272b]">
         <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.1fr_.9fr]">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-[#ffe86a]"><Icon icon="ph:discord-logo-fill" width="17" height="17" /> Multi-channel Audit Center</span>

@@ -12,6 +12,7 @@ import { countPendingAnomalies } from '@/lib/tripAnomalies'
 import { clearMileageReviewCache, loadMileageReviewData } from '@/lib/mileageReviewData'
 import { startVisiblePolling } from '@/lib/visiblePolling'
 import { markFleetChanged } from '@/lib/fleetSnapshot'
+import './admin-ui.css'
 
 // เพิ่ม is_visible เข้าไปใน initial data (ค่าเริ่มต้นให้แสดงผล)
 const initialCarData = { plate_number: '', model: '', car_type: '', fuel_type: 'ดีเซล', status: 'available', budget: '', department_id: '', usage_type: '', ownership_type: '', is_visible: true, image_path: '' }
@@ -407,52 +408,30 @@ export default function AdminDashboard() {
   const activeMenuObj = sidebarMenus.find(m => m.id === activeMenu)
   const dataManagementCount = mileageAnomalyCount + pendingBillingCount
   
-  const inputStyle = "w-full rounded-[12px] border border-[#dfcfe4] bg-white px-4 py-3.5 text-[14px] text-[#35133f] placeholder-[#a892ad] focus:border-[#702082] focus:ring-2 focus:ring-[#702082]/10 outline-none transition-all shadow-[0_1px_2px_rgba(75,21,96,.03)]"
-  const labelStyle = "text-[11px] font-bold text-[#702082] mb-2 block uppercase tracking-wider pl-1"
+  const inputStyle = "admin-field w-full rounded-[8px] border border-[#dce1e2] bg-white px-3 py-3 text-[14px] text-[#20272b] placeholder-[#8a9297] focus:border-[#5b246b] focus:ring-2 focus:ring-[#5b246b]/10 outline-none transition-colors"
+  const labelStyle = "admin-label text-[13px] font-semibold text-[#485259] mb-2 block"
 
   return (
-    <div className="kpn-screen kpn-admin pea-admin flex h-[calc(100dvh-60px)] bg-[#f3edf5] font-sans overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
-      
-      <style>{`
-        * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbb6d1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a98caf; }
-        select option { background: #ffffff; color: #35133f; }
-        .hide-admin-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-admin-scrollbar { scrollbar-width: none; }
-        .admin-main tbody tr:hover { background: #fbf7fc !important; }
-        .admin-main tbody { border-color: #eadfed !important; }
-        .admin-main [class*="bg-[#3b1746]"] { background: #ffffff !important; }
-        .admin-main [class*="bg-[#2a0f33]"] { background: #faf7fb !important; }
-        .admin-main [class*="bg-[#54205f]"] { background: #f5edf7 !important; }
-        .admin-main [class*="border-[#6b3475]"] { border-color: #eadfed !important; }
-        .admin-main [class*="border-[#7e4a87]"] { border-color: #dfcfe4 !important; }
-        .admin-main [class*="text-[#fffaf0]"] { color: #35133f !important; }
-        .admin-main [class*="text-[#c9b8cd]"] { color: #765c7c !important; }
-        .admin-main [class*="text-[#a688ad]"] { color: #8b6f92 !important; }
-        .admin-main [class*="divide-[#6b3475]"] > :not(:last-child) { border-color: #eadfed !important; }
-      `}</style>
+    <div className="kpn-screen kpn-admin pea-admin kpn-admin-ui flex h-[calc(100dvh-60px)] bg-[#f5f5f3] overflow-hidden p-0 md:p-4 gap-4" style={{ WebkitFontSmoothing: 'antialiased' }}>
 
       {qrCar && <CarQrLabel car={qrCar} onClose={() => setQrCar(null)} />}
 
       {/* 🔴 Delete Modal (Dark Theme) */}
       {deleteModal.isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
+        <div className="admin-confirm-overlay fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
           <div className="bg-white border border-[#eadfed] rounded-[24px] p-8 w-full max-w-md shadow-[0_24px_70px_rgba(75,21,96,.22)] text-center transform transition-all">
             <div className="w-16 h-16 bg-[#ff453a]/10 text-[#ff453a] rounded-full flex items-center justify-center mx-auto mb-5 border border-[#ff453a]/20">
               <Icon icon="ph:trash" width="32" height="32" />
             </div>
-            <h3 className="text-xl font-semibold text-[#4b1560] mb-2 tracking-tight">Delete Record?</h3>
-            <p className="text-[#765c7c] text-sm mb-6">This action cannot be undone. This will permanently delete the selected data.</p>
+            <h3 className="text-xl font-semibold text-[#4b1560] mb-2 tracking-tight">ยืนยันการลบข้อมูล</h3>
+            <p className="text-[#765c7c] text-sm mb-6">รายการนี้จะถูกลบออกจากระบบ และไม่สามารถย้อนกลับได้</p>
             <div className="bg-[#f8f3fa] text-[#35133f] p-4 rounded-xl mb-8 border border-[#eadfed] font-medium break-words">
               {deleteModal.data.plate_number || deleteModal.data.full_name || deleteModal.data.name}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteModal({ isOpen: false, table: '', data: null })} className="flex-1 py-3.5 bg-[#f1e6f4] hover:bg-[#e6d7ea] text-[#702082] rounded-[12px] font-semibold transition-all">Cancel</button>
+              <button onClick={() => setDeleteModal({ isOpen: false, table: '', data: null })} className="flex-1 py-3.5 bg-[#f1e6f4] hover:bg-[#e6d7ea] text-[#702082] rounded-[12px] font-semibold transition-all">ยกเลิก</button>
               <button onClick={executeDelete} disabled={isSubmitting} className="flex-1 py-3.5 bg-[#ff453a] hover:bg-[#ff3b30] text-white rounded-[12px] font-medium transition-all">
-                {isSubmitting ? 'Deleting...' : 'Delete'}
+                {isSubmitting ? 'กำลังลบ...' : 'ลบข้อมูล'}
               </button>
             </div>
           </div>
@@ -461,15 +440,15 @@ export default function AdminDashboard() {
 
       {/* 🟡 Update Modal (Dark Theme) */}
       {updateModal.isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
+        <div className="admin-confirm-overlay fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
           <div className="bg-white border border-[#eadfed] rounded-[24px] p-8 w-full max-w-2xl shadow-[0_24px_70px_rgba(75,21,96,.22)] max-h-[90vh] flex flex-col relative">
             <div className="flex items-center gap-4 mb-6 border-b border-[#eadfed] pb-5">
               <div className="w-12 h-12 bg-[#ffdd00] text-[#4b1560] rounded-full flex items-center justify-center border border-[#e7c900]">
                 <Icon icon="ph:arrows-clockwise" width="24" height="24" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-[#4b1560] tracking-tight">Confirm Changes</h3>
-                <p className="text-[#765c7c] text-sm mt-0.5">Please review the updates before saving.</p>
+                <h3 className="text-xl font-semibold text-[#4b1560] tracking-tight">ตรวจสอบข้อมูลที่แก้ไข</h3>
+                <p className="text-[#765c7c] text-sm mt-0.5">ตรวจสอบค่าเดิมและค่าใหม่ก่อนยืนยันการบันทึก</p>
               </div>
             </div>
             <div className="overflow-y-auto flex-1 space-y-3 mb-8 pr-2">
@@ -488,9 +467,9 @@ export default function AdminDashboard() {
               })}
             </div>
             <div className="flex gap-3 mt-auto shrink-0">
-              <button onClick={() => setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })} className="flex-1 py-3.5 bg-[#f1e6f4] hover:bg-[#e6d7ea] text-[#702082] rounded-[12px] font-semibold transition-all">Cancel</button>
+              <button onClick={() => setUpdateModal({ isOpen: false, table: '', oldData: null, newData: null })} className="flex-1 py-3.5 bg-[#f1e6f4] hover:bg-[#e6d7ea] text-[#702082] rounded-[12px] font-semibold transition-all">ยกเลิก</button>
               <button onClick={executeUpdate} disabled={isSubmitting} className="flex-1 py-3.5 bg-[#ffdd00] hover:bg-[#e8c900] text-[#3b1746] rounded-[12px] font-medium transition-all">
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {isSubmitting ? 'กำลังบันทึก...' : 'ยืนยันการบันทึก'}
               </button>
             </div>
           </div>
@@ -500,14 +479,14 @@ export default function AdminDashboard() {
       {/* หน้าเลือกหมวดสำหรับมือถือเท่านั้น */}
       <section className={`${showMobileMenu ? 'flex' : 'hidden'} h-full min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-28 pt-2 md:hidden`}>
         <div className="mx-auto w-full max-w-[560px]">
-          <header className="flex items-center justify-between rounded-[22px] border border-white/90 bg-white/90 px-3.5 py-3 backdrop-blur-xl">
+          <header className="admin-mobile-header flex items-center justify-between rounded-[12px] border border-[#dce1e2] bg-white px-3.5 py-3">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] border border-[#e7eaf1] bg-white p-1.5">
                 <img src="/pea_logo.png" alt="PEA" className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0">
-                <p className="text-[9px] font-bold tracking-[.15em] text-[#5547f7]">KPN SMART CAR</p>
-                <h1 className="truncate text-[18px] font-black tracking-[-.5px] text-[#101522]">ADMIN PORTAL</h1>
+                <p className="text-[11px] font-semibold text-[#5b246b]">PEA SMART CAR</p>
+                <h1 className="truncate text-[18px] font-bold text-[#20272b]">ผู้ดูแลระบบ</h1>
               </div>
             </div>
             <button type="button" onClick={handleLogout} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f1f3f7] text-[#101522] transition-transform active:scale-95" aria-label="ออกจากระบบ">
@@ -515,16 +494,14 @@ export default function AdminDashboard() {
             </button>
           </header>
 
-          <section className="kpn-dark-card relative mt-3 overflow-hidden rounded-[28px] px-5 py-5 text-white">
-            <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[38px] border-white/[.05]" />
-            <div className="absolute bottom-0 right-[18%] h-28 w-28 rounded-full bg-[#7592ff]/20 blur-3xl" />
+          <section className="admin-mobile-intro relative mt-5 overflow-hidden px-1 py-3">
             <div className="relative flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[9px] font-bold tracking-[.12em] text-[#c9ff48]"><span className="h-1.5 w-1.5 rounded-full bg-[#c9ff48]" />SYSTEM MANAGEMENT</div>
-                <h2 className="text-[25px] font-black leading-[1.06] tracking-[-.8px]">ศูนย์จัดการ<br/><span className="text-[#9eb0ff]">ระบบรถ</span></h2>
-                <p className="mt-2 max-w-[310px] text-[11px] leading-relaxed text-white/60">เลือกหมวดเพื่อเพิ่ม แก้ไข และตรวจสอบข้อมูลในระบบ</p>
+                <p className="mb-1 text-[12px] font-semibold text-[#687279]">จัดการข้อมูลส่วนกลาง</p>
+                <h2 className="text-[24px] font-bold leading-snug text-[#20272b]">วันนี้ต้องการจัดการอะไร</h2>
+                <p className="mt-2 max-w-[310px] text-[13px] leading-relaxed text-[#687279]">เลือกหมวดเพื่อเพิ่ม แก้ไข หรือตรวจสอบข้อมูล</p>
               </div>
-              <div className="flex h-[82px] w-[82px] shrink-0 rotate-[-5deg] items-center justify-center rounded-[27px] bg-[#c9ff48] text-[#080d1b] shadow-[0_18px_45px_rgba(174,235,36,.24)]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10px] border border-[#e5dce8] bg-[#f1eaf3] text-[#5b246b]">
                 <Icon icon="ph:user-gear-duotone" width="50" height="50" />
               </div>
             </div>
@@ -536,11 +513,11 @@ export default function AdminDashboard() {
                 key={menu.id}
                 type="button"
                 onClick={() => { setActiveMenu(menu.id); setShowMobileMenu(false) }}
-                className={`kpn-surface group relative flex min-h-[144px] flex-col overflow-hidden rounded-[22px] border border-[#e7eaf1] bg-white p-4 text-left transition-all active:scale-[.98] ${menu.id === 'discord' ? 'col-span-2 min-h-[122px]' : ''}`}
+                className={`admin-menu-card group relative flex min-h-[132px] flex-col overflow-hidden rounded-[10px] border border-[#dce1e2] bg-white p-4 text-left transition-colors ${menu.id === 'discord' ? 'col-span-2 min-h-[112px]' : ''}`}
               >
                 <span className="absolute right-3 top-3 text-[10px] font-black tracking-[.12em] text-[#c2c7d2]">{String(index + 1).padStart(2, '0')}</span>
                 {menu.id === 'mileage' && dataManagementCount > 0 && <span className="absolute right-10 top-3 inline-flex min-w-6 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-1 text-[9px] font-bold leading-none text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
-                <span className={`mb-auto flex h-12 w-12 items-center justify-center rounded-[15px] ${menu.iconClass}`}><Icon icon={menu.icon} width="28" height="28" /></span>
+                <span className="admin-menu-icon mb-auto flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#f1eaf3] text-[#5b246b]"><Icon icon={menu.icon} width="23" height="23" /></span>
                 <span className="mt-4 w-full">
                   <span className="flex items-end justify-between gap-2"><span className="text-[16px] font-black tracking-[-.4px] text-[#101522]">{menu.title}</span><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f2f4f8] text-[#101522]"><Icon icon="ph:arrow-up-right-bold" width="14" height="14" /></span></span>
                   <span className="mt-1.5 block line-clamp-2 text-[10px] leading-snug text-[#737b8e]">{menu.desc}</span>
@@ -552,36 +529,34 @@ export default function AdminDashboard() {
       </section>
 
       {/* Sidebar สำหรับจอใหญ่ */}
-      <aside className="kpn-admin-sidebar hidden md:flex w-[272px] shrink-0 bg-gradient-to-b from-[#32103d] via-[#270d31] to-[#1d0925] border border-white/10 text-[#fffaf0] flex-col rounded-[26px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,.28)] relative">
-        <div className="absolute -top-20 -right-20 w-52 h-52 rounded-full bg-[#8e3ba0]/25 blur-3xl pointer-events-none"/>
-        <div className="absolute bottom-10 -left-20 w-48 h-48 rounded-full bg-[#ffdd00]/5 blur-3xl pointer-events-none"/>
+      <aside className="kpn-admin-sidebar hidden md:flex w-[248px] shrink-0 bg-white border border-[#dce1e2] text-[#20272b] flex-col rounded-[12px] overflow-hidden relative">
         
-        <div className="h-[106px] flex items-center gap-3.5 px-6 shrink-0 border-b border-white/10 relative z-10">
-          <div className="w-11 h-11 bg-white rounded-[14px] p-1.5 flex items-center justify-center border-2 border-[#ffdd00] shadow-[0_8px_24px_rgba(255,221,0,.18)] overflow-hidden">
+        <div className="admin-sidebar-brand h-[92px] flex items-center gap-3 px-5 shrink-0 border-b border-[#e7e9e8] relative z-10">
+          <div className="w-11 h-11 bg-white rounded-[8px] p-1 flex items-center justify-center overflow-hidden">
             <img src="/pea_logo.png" alt="PEA" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="font-bold text-white text-[17px] tracking-tight">Admin Portal</h1>
-            <p className="text-[10px] text-[#cdb8d2] uppercase tracking-[.18em] font-semibold mt-1">PEA Fleet System</p>
+            <h1 className="font-bold text-[#20272b] text-[17px]">ผู้ดูแลระบบ</h1>
+            <p className="text-[11px] text-[#687279] font-medium mt-0.5">PEA Smart Car</p>
           </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 relative z-10">
           <p className="mb-3 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-[#a98caf]">
-            Management
+            จัดการข้อมูล
             {dataManagementCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold tracking-normal text-white shadow-[0_0_0_3px_rgba(255,69,58,.14)]">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
           </p>
           {sidebarMenus.map(menu => (
             <button 
               key={menu.id} 
               onClick={() => setActiveMenu(menu.id)}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-[15px] transition-all text-left group border ${
+              className={`admin-sidebar-link w-full flex items-center gap-3 px-3 py-3 rounded-[8px] transition-colors text-left group border ${
                 activeMenu === menu.id 
-                  ? 'bg-gradient-to-r from-[#6f287d] to-[#572063] text-white border-white/10 shadow-[0_8px_22px_rgba(0,0,0,.18)]'
-                  : 'text-[#c9b8cd] border-transparent hover:bg-white/[.06] hover:text-white'
+                  ? 'is-active bg-[#f1eaf3] text-[#5b246b] border-[#e5dce8]'
+                  : 'text-[#687279] border-transparent hover:bg-[#f5f5f3] hover:text-[#20272b]'
               }`}
             >
-              <span className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 ${activeMenu === menu.id ? 'bg-[#ffdd00] text-[#4b1560]' : 'bg-white/[.06] text-[#c9b8cd] group-hover:text-white'}`}>
+              <span className={`admin-sidebar-icon w-9 h-9 rounded-[7px] flex items-center justify-center shrink-0 ${activeMenu === menu.id ? 'bg-white text-[#5b246b]' : 'bg-[#f5f5f3] text-[#687279]'}`}>
                 <Icon icon={menu.icon} width="22" height="22" />
               </span>
               <span className="min-w-0">
@@ -589,18 +564,18 @@ export default function AdminDashboard() {
                   {menu.title}
                   {menu.id === 'mileage' && dataManagementCount > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[#ff453a] px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">{dataManagementCount > 99 ? '99+' : dataManagementCount}</span>}
                 </span>
-                <span className={`block text-[10px] mt-0.5 ${activeMenu === menu.id ? 'text-white/65' : 'text-[#94789b]'}`}>{menu.desc}</span>
+                <span className="block text-[11px] mt-0.5 font-normal text-[#687279] leading-relaxed">{menu.desc}</span>
               </span>
             </button>
           ))}
         </nav>
 
-        <div className="p-4 shrink-0 border-t border-white/10 relative z-10">
+        <div className="admin-sidebar-account p-4 shrink-0 border-t border-[#e7e9e8] relative z-10">
           <div className="flex items-center gap-3 px-2 pb-3">
-            <span className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-[#ffdd00] font-bold text-[12px]">A</span>
-            <div><p className="text-[12px] font-semibold text-white">Admin PEA</p><p className="text-[9px] text-[#62d98b] mt-0.5">● Online</p></div>
+            <span className="w-9 h-9 rounded-full bg-[#f1eaf3] flex items-center justify-center text-[#5b246b] font-bold text-[12px]">A</span>
+            <div><p className="text-[12px] font-semibold text-[#20272b]">Admin PEA</p><p className="text-[11px] text-[#27805b] mt-0.5">● ออนไลน์</p></div>
           </div>
-          <button onClick={handleLogout} className="w-full py-3 rounded-[12px] bg-white/[.06] hover:bg-[#ff453a]/15 text-[#e4d6e7] hover:text-[#ff8d87] transition-all text-[12px] font-semibold flex items-center justify-center gap-2 border border-white/10 hover:border-[#ff453a]/30">
+          <button onClick={handleLogout} className="w-full py-3 rounded-[8px] bg-white hover:bg-[#fcf2f1] text-[#687279] hover:text-[#b23e38] transition-colors text-[13px] font-semibold flex items-center justify-center gap-2 border border-[#dce1e2] hover:border-[#e4c9c7]">
              <Icon icon="ph:sign-out-bold" width="18" height="18" />
              ออกจากระบบ
           </button>
@@ -608,10 +583,10 @@ export default function AdminDashboard() {
       </aside>
 
       {/* 👉 Main Content */}
-      <main className={`${showMobileMenu ? 'hidden md:flex' : 'flex'} admin-main min-w-0 flex-1 bg-[radial-gradient(circle_at_top_right,_#fff6bd_0%,_#fbf7fc_24%,_#f6f0f8_100%)] flex-col overflow-hidden relative md:rounded-[26px] md:border md:border-[#e5d6e9] md:shadow-[0_20px_60px_rgba(75,21,96,.12)]`}>
+      <main className={`${showMobileMenu ? 'hidden md:flex' : 'flex'} admin-main min-w-0 flex-1 bg-[#f5f5f3] flex-col overflow-hidden relative md:rounded-[12px] md:border md:border-[#dce1e2]`}>
         
         {/* Header */}
-        <header className="kpn-dashboard-nav min-h-[76px] bg-white/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-t-[4px] border-t-[#ffdd00] border-b border-b-[#eadfed] sticky top-0 shadow-[0_4px_20px_rgba(75,21,96,.04)]">
+        <header className="admin-page-header min-h-[80px] bg-white flex items-center justify-between px-4 sm:px-7 shrink-0 z-20 border-b border-[#dce1e2] sticky top-0">
           <div className="flex items-center gap-3 min-w-0">
             <button type="button" onClick={() => setShowMobileMenu(true)} className="md:hidden w-10 h-10 bg-[#c9ff48] rounded-[13px] flex items-center justify-center border border-[#b2e93d] text-[#101522] shrink-0 transition-transform active:scale-95" aria-label="กลับไปเลือกหมวด"><Icon icon="ph:squares-four-duotone" width="23" height="23" /></button>
             <div>
@@ -633,7 +608,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">
+        <div className="admin-content flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-6 pb-12">
 
             {activeMenu === 'mileage' ? (
@@ -649,15 +624,15 @@ export default function AdminDashboard() {
               <>
 
             {/* ส่วนที่ 1: ฟอร์ม (Dark Card) */}
-            <div id="form-section" className="bg-white p-6 sm:p-8 rounded-[22px] border border-[#eadfed] shadow-[0_12px_36px_rgba(75,21,96,.07)]">
+            <div id="form-section" className="admin-record-form bg-white p-5 sm:p-6 rounded-[12px] border border-[#dce1e2]">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
                 <h3 className="text-[18px] font-bold text-[#4b1560] flex items-center gap-3 tracking-tight">
                   {editingId ? 
-                    <><Icon icon="ph:pencil-simple" className="text-[#ffdd00]" width="22" height="22" /> Edit Record (ID: {editingId})</> :
-                    <><Icon icon="ph:plus-circle" className="text-[#702082]" width="22" height="22" /> Add New Record</>
+                    <><Icon icon="ph:pencil-simple" className="text-[#702082]" width="22" height="22" /> แก้ไขข้อมูล (ID: {editingId})</> :
+                    <><Icon icon="ph:plus-circle" className="text-[#702082]" width="22" height="22" /> เพิ่มข้อมูลใหม่</>
                   }
                 </h3>
-                {editingId && <button onClick={cancelEdit} className="text-[12px] bg-[#f3eaf5] text-[#702082] px-4 py-2 rounded-[10px] font-semibold hover:bg-[#eadfed] transition-all border border-[#dfcfe4]">Cancel Edit</button>}
+                {editingId && <button onClick={cancelEdit} className="text-[12px] bg-[#f3eaf5] text-[#702082] px-4 py-2 rounded-[10px] font-semibold hover:bg-[#eadfed] transition-all border border-[#dfcfe4]">ยกเลิกการแก้ไข</button>}
               </div>
 
               {/* ฟอร์มรถ */}
@@ -713,16 +688,16 @@ export default function AdminDashboard() {
               {/* ฟอร์มพนักงาน */}
               {activeMenu === 'staff' && (
                 <form onSubmit={(e) => handlePreSubmit(e, 'staff', staffData)} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div><label className={labelStyle}>Staff ID *</label><input type="text" required placeholder="ID Number" value={staffData.staff_code} onChange={e => setStaffData({...staffData, staff_code: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>Full Name *</label><input type="text" required placeholder="First Last" value={staffData.full_name} onChange={e => setStaffData({...staffData, full_name: e.target.value})} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>Position</label><input type="text" placeholder="Job Title" value={staffData.position} onChange={e => setStaffData({...staffData, position: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>รหัสพนักงาน *</label><input type="text" required placeholder="ระบุรหัสพนักงาน" value={staffData.staff_code} onChange={e => setStaffData({...staffData, staff_code: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ชื่อ-นามสกุล *</label><input type="text" required placeholder="ระบุชื่อและนามสกุล" value={staffData.full_name} onChange={e => setStaffData({...staffData, full_name: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ตำแหน่ง</label><input type="text" placeholder="ระบุตำแหน่งงาน" value={staffData.position} onChange={e => setStaffData({...staffData, position: e.target.value})} className={inputStyle} /></div>
                   <div>
-                    <label className={labelStyle}>Department</label>
-                    <select value={staffData.department_id} onChange={e => setStaffData({...staffData, department_id: e.target.value})} className={inputStyle}><option value="">-- Unassigned --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
+                    <label className={labelStyle}>แผนก</label>
+                    <select value={staffData.department_id} onChange={e => setStaffData({...staffData, department_id: e.target.value})} className={inputStyle}><option value="">-- ยังไม่ระบุแผนก --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
                   </div>
                   <div className="sm:col-span-2 mt-2 flex justify-end">
                     <button type="submit" className="px-8 py-3.5 bg-[#ffdd00] hover:bg-[#e8c900] text-[#3b1746] rounded-[10px] font-medium transition-all text-[14px]">
-                      {editingId ? 'Save Changes' : 'Add Personnel'}
+                      {editingId ? 'บันทึกการแก้ไข' : 'เพิ่มบุคลากร'}
                     </button>
                   </div>
                 </form>
@@ -731,14 +706,14 @@ export default function AdminDashboard() {
               {/* ฟอร์มตารางงาน */}
               {activeMenu === 'tasks' && (
                 <form onSubmit={(e) => handlePreSubmit(e, 'tasks', taskData)} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div><label className={labelStyle}>Task / Route Name *</label><input type="text" required placeholder="Task details" value={taskData.name} onChange={e => setTaskData({...taskData, name: e.target.value})} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>ชื่อประเภทงาน / เส้นทาง *</label><input type="text" required placeholder="ระบุรายละเอียดงาน" value={taskData.name} onChange={e => setTaskData({...taskData, name: e.target.value})} className={inputStyle} /></div>
                   <div>
-                    <label className={labelStyle}>Department</label>
-                    <select value={taskData.department_id} onChange={e => setTaskData({...taskData, department_id: e.target.value})} className={inputStyle}><option value="">-- Central --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
+                    <label className={labelStyle}>แผนก</label>
+                    <select value={taskData.department_id} onChange={e => setTaskData({...taskData, department_id: e.target.value})} className={inputStyle}><option value="">-- ส่วนกลาง --</option>{departmentsOptions.map(dept => (<option key={dept.id} value={dept.id}>{dept.name}</option>))}</select>
                   </div>
                   <div className="sm:col-span-2 mt-2 flex justify-end">
                     <button type="submit" className="px-8 py-3.5 bg-[#ffdd00] hover:bg-[#e8c900] text-[#3b1746] rounded-[10px] font-medium transition-all text-[14px]">
-                      {editingId ? 'Save Changes' : 'Create Task'}
+                      {editingId ? 'บันทึกการแก้ไข' : 'เพิ่มประเภทงาน'}
                     </button>
                   </div>
                 </form>
@@ -748,11 +723,11 @@ export default function AdminDashboard() {
               {(activeMenu === 'departments' || activeMenu === 'operation_areas') && (
                 <form onSubmit={(e) => handlePreSubmit(e, activeMenu, activeMenu === 'departments' ? departmentData : operationAreaData)} className="flex flex-col sm:flex-row gap-5 items-end">
                   <div className="flex-1 w-full">
-                    <label className={labelStyle}>{activeMenu === 'departments' ? 'Department Name *' : 'Operation Area Name *'}</label>
-                    <input type="text" required placeholder="Enter name" value={activeMenu === 'departments' ? departmentData.name : operationAreaData.name} onChange={e => activeMenu === 'departments' ? setDepartmentData({...departmentData, name: e.target.value}) : setOperationAreaData({...operationAreaData, name: e.target.value})} className={inputStyle} />
+                    <label className={labelStyle}>{activeMenu === 'departments' ? 'ชื่อแผนก *' : 'ชื่อพื้นที่ปฏิบัติงาน *'}</label>
+                    <input type="text" required placeholder="ระบุชื่อ" value={activeMenu === 'departments' ? departmentData.name : operationAreaData.name} onChange={e => activeMenu === 'departments' ? setDepartmentData({...departmentData, name: e.target.value}) : setOperationAreaData({...operationAreaData, name: e.target.value})} className={inputStyle} />
                   </div>
                   <button type="submit" className="w-full sm:w-auto px-8 py-3.5 bg-[#ffdd00] hover:bg-[#e8c900] text-[#3b1746] rounded-[10px] font-medium transition-all text-[14px] shrink-0">
-                    {editingId ? 'Save Changes' : 'Save Record'}
+                    {editingId ? 'บันทึกการแก้ไข' : 'เพิ่มข้อมูล'}
                   </button>
                 </form>
               )}
@@ -761,9 +736,9 @@ export default function AdminDashboard() {
             {/* ส่วนที่ 2: รายการข้อมูล (Table) */}
             <div className="bg-white rounded-[22px] border border-[#eadfed] overflow-hidden shadow-[0_12px_36px_rgba(75,21,96,.07)]">
               <div className="px-6 py-5 border-b border-[#eadfed] flex justify-between items-center bg-white">
-                <h3 className="text-[13px] font-bold text-[#4b1560] tracking-wider uppercase">Database Records</h3>
+                <h3 className="text-[14px] font-semibold text-[#20272b]">ข้อมูลในระบบ</h3>
                 <span className="bg-[#fff7bf] text-[#4b1560] py-1 px-3 rounded-full text-[11px] font-bold border border-[#f3df4b]">
-                  {activeMenu === 'cars' ? carsList.length : activeMenu === 'staff' ? staffList.length : activeMenu === 'tasks' ? tasksList.length : activeMenu === 'departments' ? departmentsList.length : operationAreasList.length} ITEMS
+                  {activeMenu === 'cars' ? carsList.length : activeMenu === 'staff' ? staffList.length : activeMenu === 'tasks' ? tasksList.length : activeMenu === 'departments' ? departmentsList.length : operationAreasList.length} รายการ
                 </span>
               </div>
 

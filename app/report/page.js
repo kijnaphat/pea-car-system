@@ -4,6 +4,7 @@ import ReportTypeSelector from '@/app/components/ReportTypeSelector'
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { normalizeStaffCode } from '@/lib/staffCode'
@@ -11,6 +12,7 @@ import { startVisiblePolling } from '@/lib/visiblePolling'
 import { saveRepairLedger, getRepairLedgerIdentity, watchRepairLedgerIdentity, clearRepairLedgerIdentity } from '@/lib/repairLedgerData'
 import { ledgerValidateDraft } from '@/lib/repairLedger'
 import RepairLedgerIdentity from './components/RepairLedgerIdentity'
+import './report-ui.css'
 
 // --- Main Component ---
 function MainApp() {
@@ -93,10 +95,10 @@ function CarSelector() {
   if (loading) return <PageSkeleton variant="report" />
 
   return (
-    <div className="kpn-screen kpn-report min-h-screen bg-[#f8f3fa] font-sarabun pb-6 relative">
+    <div className="kpn-screen kpn-report report-car-selector min-h-screen bg-[#f8f3fa] font-sarabun pb-6 relative">
       
       {/* 🟣 Header */}
-      <div className="kpn-dark-card px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
+      <div className="kpn-dark-card report-selector-header px-6 pt-12 pb-24 text-white rounded-b-[3rem] shadow-xl relative z-10">
         <div className="flex justify-between items-start">
           <div>
              <h1 className="text-2xl font-black tracking-tight">KPN SMART CAR</h1>
@@ -112,7 +114,7 @@ function CarSelector() {
       </div>
 
       {/* 🌟 Alert Instruction (ป้ายเหลือง) */}
-      <div className="-mt-16 mx-4 relative z-20 mb-8">
+      <div className="report-selector-notice -mt-16 mx-4 relative z-20 mb-8">
         <style>{`
           @keyframes scroll-left {
             0% { transform: translateX(0%); }
@@ -168,7 +170,7 @@ function CarSelector() {
       </div>
 
       {/* ⚪ รายการรถ */}
-      <div className="px-4 space-y-4 relative z-20">
+      <div className="report-selector-list px-4 space-y-4 relative z-20">
         {cars.map((car) => {
           const carImageSrc = getCarImage(car)
           
@@ -436,7 +438,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="report-signature-overlay fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="kpn-modal-surface bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col animate-fade-in-up">
         <div className="kpn-dark-card text-white p-5 text-center font-black text-lg">
           {title}
@@ -495,7 +497,7 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
 function RepairLedgerActions({ onSave, onOpen, onNew, saving, saved, hasEntry, error }) {
   const [identity, setIdentity] = useState(() => getRepairLedgerIdentity())
   useEffect(() => watchRepairLedgerIdentity(setIdentity), [])
-  return <div className="space-y-2">
+  return <div className="report-repair-actions space-y-2">
     <button onClick={onSave} disabled={saving}
       className={`w-full py-4 rounded-[16px] text-[15px] font-semibold transition-all active:scale-[0.98] disabled:opacity-60 ${saved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#4b1560] text-white'}`}>
       {saving ? 'กำลังบันทึก...' : saved ? '✓ บันทึกลงสมุดคุมแล้ว' : hasEntry ? 'บันทึกแก้ไขรายการเดิม' : 'บันทึกการซ่อม'}
@@ -551,12 +553,13 @@ function MobileControlSheet({
   }
 
   return (
-    <div className="mobile-control-sheet bg-[rgba(245,245,247,0.95)] backdrop-blur-2xl"
+    <div className="mobile-control-sheet report-mobile-sheet bg-[rgba(245,245,247,0.95)] backdrop-blur-2xl"
          style={{boxShadow:'0 4px 20px rgba(0,0,0,0.12)', borderBottom:'0.5px solid rgba(0,0,0,0.1)', WebkitFontSmoothing:'antialiased'}}>
 
       {/* Tab bar */}
-      <div className="flex w-full px-3 pt-2.5 pb-2.5 gap-2">
+      <div className="report-mobile-tabs flex w-full px-3 pt-2.5 pb-2.5 gap-2">
         <button onClick={()=> expanded ? setExpanded(false) : window.location.href = '/'}
+          aria-label={expanded ? 'ปิดแผงเอกสาร' : 'กลับหน้าหลัก'}
           className={`px-4 py-2.5 rounded-[12px] font-bold flex-shrink-0 flex items-center justify-center transition-all ${expanded ? 'bg-[#ff3b30] text-white text-[15px]' : 'bg-[#4b1560] text-white'}`}>
           {expanded ? '✕' : (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -565,14 +568,17 @@ function MobileControlSheet({
           )}
         </button>
         <button onClick={()=>{setActiveTab('doc'); setExpanded(t => activeTab==='doc' ? !t : true)}}
+          aria-expanded={activeTab === 'doc' && expanded}
           className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='doc'&&expanded?'bg-[#4b1560] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
           เอกสาร
         </button>
         <button onClick={()=>{setActiveTab('drill'); setExpanded(t => activeTab==='drill' ? !t : true)}}
+          aria-expanded={activeTab === 'drill' && expanded}
           className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='drill'&&expanded?'bg-[#4b1560] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
           รายการซ่อม
         </button>
         <button onClick={()=>window.print()}
+          aria-label="พิมพ์รายงาน"
           className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold bg-[#4b1560] text-white flex-shrink-0">
           <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
         </button>
@@ -582,7 +588,7 @@ function MobileControlSheet({
       {expanded && (
         <div ref={dragRef}
              onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-             className="px-3 pb-32 space-y-3 max-h-[75vh] overflow-y-auto border-t border-[rgba(0,0,0,0.06)]">
+             className="report-mobile-content px-3 pb-32 space-y-3 max-h-[75vh] overflow-y-auto border-t border-[rgba(0,0,0,0.06)]">
           {/* handle bar */}
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-[#c7c7cc]"/>
@@ -1050,7 +1056,7 @@ function ReportPage() {
   );
 
   return (
-    <div className="kpn-screen kpn-report min-h-screen bg-[#f8f3fa] flex flex-col items-center print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden pt-0 pb-8 xl:pt-8 xl:pb-12"
+    <div className="kpn-screen kpn-report report-workspace min-h-screen bg-[#f8f3fa] flex flex-col items-center print:bg-white print:p-0 font-sarabun text-black relative overflow-x-hidden pt-0 pb-8 xl:pt-8 xl:pb-12"
          style={{WebkitFontSmoothing:'antialiased'}}>
       
       <style>{`
@@ -1121,8 +1127,17 @@ function ReportPage() {
         @media print { .ctrl-panel { display:none !important; } }
       `}</style>
 
+      <header className="report-workspace-header print:hidden">
+        <div>
+          <span className="report-workspace-eyebrow">การไฟฟ้าส่วนภูมิภาค · กำแพงแสน</span>
+          <h1>รายงานยานพาหนะ{car?.plate_number && <span>{car.plate_number}</span>}</h1>
+          <p>ตรวจสอบเอกสารประจำเดือน บันทึกการซ่อม และลงลายมือชื่อ</p>
+        </div>
+        <Link href="/" className="report-workspace-back">กลับหน้าหลัก <span aria-hidden="true">↗</span></Link>
+      </header>
+
       {/* ── Desktop Sidebar ── */}
-      <div className="ctrl-panel hidden xl:flex xl:fixed xl:top-4 xl:right-4 xl:w-[300px] xl:flex-col xl:gap-3 xl:z-50 print:hidden"
+      <div className="ctrl-panel report-desktop-controls hidden xl:flex xl:fixed xl:top-4 xl:right-4 xl:w-[300px] xl:flex-col xl:gap-3 xl:z-50 print:hidden"
             style={{WebkitFontSmoothing:'antialiased'}}>
 
         {/* Card: ตั้งค่าเอกสาร */}
@@ -1259,7 +1274,7 @@ function ReportPage() {
       </div>
 
       {/* ── Mobile Bottom Sheet ── */}
-      <div className="ctrl-panel xl:hidden sticky top-0 z-50 print:hidden w-full">
+      <div className="ctrl-panel report-mobile-controls xl:hidden sticky top-0 z-50 print:hidden w-full">
         {electric && <div className="px-3 pt-2"><ReportTypeSelector value={reportType} onChange={changeReportType} count={logs.length} /></div>}
         <MobileControlSheet
           selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth}

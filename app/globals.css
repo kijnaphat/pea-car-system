@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f6fb;
-  --foreground: #101522;
-  --kpn-ink: #080d1b;
-  --kpn-primary: #5547f7;
-  --kpn-primary-strong: #4338e8;
-  --kpn-blue: #7592ff;
-  --kpn-lime: #c9ff48;
-  --kpn-canvas: #f4f6fb;
+  --background: #f5f5f3;
+  --foreground: #20272b;
+  --kpn-ink: #20272b;
+  --kpn-primary: #5b246b;
+  --kpn-primary-strong: #471d54;
+  --kpn-blue: #5b7585;
+  --kpn-lime: #f2e5bb;
+  --kpn-canvas: #f5f5f3;
   --kpn-surface: #ffffff;
-  --kpn-surface-soft: #f8f9fc;
-  --kpn-line: #e7eaf1;
-  --kpn-muted: #6d7588;
-  --kpn-shadow: 0 18px 48px rgba(19, 27, 50, .08);
+  --kpn-surface-soft: #f7f7f5;
+  --kpn-line: #dce1e2;
+  --kpn-muted: #687279;
+  --kpn-shadow: 0 1px 3px rgba(24, 32, 36, .035);
   color-scheme: light;
 }
 
@@ -33,23 +33,20 @@ body {
 }
 
 ::selection {
-  background: rgba(85, 71, 247, .2);
+  background: #e9ddec;
   color: var(--kpn-ink);
 }
 
-/* KPN 2026 application design system ------------------------------------ */
+/* Shared PEA operations interface. Page-specific styles own their layout. */
 .kpn-screen {
   position: relative;
   isolation: isolate;
   color: var(--kpn-ink);
-  background:
-    radial-gradient(circle at 8% -5%, rgba(117, 146, 255, .16), transparent 28rem),
-    radial-gradient(circle at 100% 15%, rgba(201, 255, 72, .12), transparent 24rem),
-    linear-gradient(180deg, #f8f9fd 0%, var(--kpn-canvas) 100%) !important;
+  background: var(--kpn-canvas) !important;
 }
 
 .kpn-screen::before {
-  content: '';
+  content: none;
   position: fixed;
   z-index: -1;
   inset: 0;
@@ -87,7 +84,7 @@ body {
 .kpn-screen select:focus,
 .kpn-screen textarea:focus {
   border-color: var(--kpn-primary) !important;
-  box-shadow: 0 0 0 4px rgba(85, 71, 247, .11) !important;
+  box-shadow: 0 0 0 3px rgba(91, 36, 107, .1) !important;
 }
 
 .kpn-screen button,
@@ -100,7 +97,7 @@ body {
 .kpn-screen input:focus-visible,
 .kpn-screen select:focus-visible,
 .kpn-screen textarea:focus-visible {
-  outline: 3px solid rgba(85, 71, 247, .28);
+  outline: 2px solid #9d77a7;
   outline-offset: 2px;
 }
 
@@ -132,7 +129,7 @@ body {
 .kpn-screen [class~="bg-[#f3eaf5]"],
 .kpn-screen [class~="bg-[#f1e6f4]"],
 .kpn-screen [class~="bg-[#eadfed]"] {
-  background-color: #eef0ff !important;
+  background-color: #f1ebf3 !important;
 }
 
 .kpn-screen [class~="border-[#eadfed]"],
@@ -157,19 +154,19 @@ body {
 
 .kpn-screen [class~="border-[#e5c700]"],
 .kpn-screen [class~="border-[#e7c900]"] {
-  border-color: #a9d92b !important;
+  border-color: #c8b36c !important;
 }
 
 .kpn-primary-action {
   color: white !important;
-  border: 1px solid rgba(255,255,255,.08) !important;
-  background: linear-gradient(135deg, var(--kpn-primary) 0%, #6e78ff 100%) !important;
-  box-shadow: 0 14px 30px rgba(85, 71, 247, .25) !important;
+  border: 1px solid var(--kpn-primary) !important;
+  background: var(--kpn-primary) !important;
+  box-shadow: none !important;
 }
 
 .kpn-primary-action:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 18px 36px rgba(85, 71, 247, .3) !important;
+  background: var(--kpn-primary-strong) !important;
+  box-shadow: none !important;
 }
 
 .kpn-primary-action:disabled {
@@ -181,10 +178,8 @@ body {
 
 .kpn-dark-card {
   color: white;
-  background:
-    radial-gradient(circle at 95% 15%, rgba(117, 146, 255, .35), transparent 35%),
-    linear-gradient(145deg, #080d1b 0%, #111a32 100%) !important;
-  box-shadow: 0 22px 45px rgba(8, 13, 27, .22) !important;
+  background: #2c343b !important;
+  box-shadow: none !important;
 }
 
 .kpn-lime-chip {
@@ -195,23 +190,19 @@ body {
 .kpn-dashboard .kpn-dashboard-nav,
 .kpn-report .ctrl-panel > div,
 .kpn-report .mobile-control-sheet {
-  background: rgba(255,255,255,.88) !important;
-  border-color: rgba(221, 225, 235, .88) !important;
-  box-shadow: 0 16px 38px rgba(17, 24, 39, .1) !important;
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  background: #fff !important;
+  border-color: var(--kpn-line) !important;
+  box-shadow: 0 1px 4px #18202408 !important;
 }
 
 .kpn-home > header {
-  background: rgba(255,255,255,.82) !important;
-  border-bottom: 1px solid rgba(231,234,241,.88);
-  backdrop-filter: blur(22px) saturate(155%);
-  -webkit-backdrop-filter: blur(22px) saturate(155%);
+  background: #fff !important;
+  border-bottom: 1px solid var(--kpn-line);
 }
 
 .kpn-home > main {
-  border: 1px solid rgba(231,234,241,.92);
-  box-shadow: 0 24px 70px rgba(23, 31, 54, .1) !important;
+  border: 0;
+  box-shadow: none !important;
 }
 
 /* Full-screen details must sit above, and temporarily replace, the dock. */
@@ -283,51 +274,43 @@ body:has(.kpn-detail-overlay) .global-nav-spacer {
 }
 
 .kpn-hero {
-  border: 1px solid rgba(255,255,255,.1);
-  box-shadow: 0 20px 45px rgba(8, 13, 27, .22) !important;
+  border: 1px solid var(--kpn-line);
+  box-shadow: none !important;
 }
 
 .kpn-admin .admin-main {
-  background:
-    radial-gradient(circle at 100% 0%, rgba(201,255,72,.13), transparent 22rem),
-    radial-gradient(circle at 0% 0%, rgba(117,146,255,.16), transparent 28rem),
-    #f7f8fc !important;
+  background: var(--kpn-canvas) !important;
   border-color: var(--kpn-line) !important;
-  box-shadow: 0 22px 60px rgba(21, 29, 52, .1) !important;
+  box-shadow: none !important;
 }
 
 .kpn-admin .kpn-admin-sidebar {
-  background:
-    radial-gradient(circle at 85% 8%, rgba(100, 112, 255, .34), transparent 15rem),
-    linear-gradient(180deg, #0b1122 0%, #070b14 100%) !important;
+  background: #293137 !important;
 }
 
 .kpn-login .kpn-login-visual {
-  background:
-    radial-gradient(circle at 80% 20%, rgba(117,146,255,.55), transparent 19rem),
-    linear-gradient(145deg, #080d1b 0%, #101a33 100%) !important;
+  background: #293137 !important;
 }
 
 .kpn-modal-surface {
-  background: rgba(248,249,253,.98) !important;
-  border: 1px solid rgba(231,234,241,.95);
-  box-shadow: 0 28px 80px rgba(8,13,27,.28) !important;
+  background: #fff !important;
+  border: 1px solid var(--kpn-line);
+  box-shadow: 0 16px 48px #20272b26 !important;
 }
 
 .kpn-dock {
   position: relative;
   isolation: isolate;
-  color: #3e5067;
-  border-color: rgba(255,255,255,.48);
-  background: linear-gradient(135deg, rgba(178,205,220,.10), rgba(255,255,255,.025));
-  box-shadow: 0 10px 28px rgba(37,55,76,.14), inset 0 1px 0 rgba(255,255,255,.6), inset 0 -1px 0 rgba(48,78,102,.12);
-  -webkit-backdrop-filter: blur(8px) saturate(135%);
-  backdrop-filter: blur(8px) saturate(135%);
-  text-shadow: 0 1px 2px rgba(255,255,255,.55);
+  color: var(--kpn-muted);
+  border-color: #dce1e2;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 4px 18px #20272b0d;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .kpn-dock::before {
-  content: '';
+  content: none;
   position: absolute;
   inset: 1px;
   border-radius: inherit;
@@ -340,8 +323,8 @@ body:has(.kpn-detail-overlay) .global-nav-spacer {
 }
 
 .kpn-dock-active {
-  color: var(--kpn-ink);
-  background: transparent;
+  color: var(--kpn-primary);
+  background: #f1ebf3;
 }
 
 .kpn-dock-inactive:hover {
@@ -350,9 +333,9 @@ body:has(.kpn-detail-overlay) .global-nav-spacer {
 }
 
 .kpn-dock-icon-active {
-  color: var(--kpn-ink);
-  background: radial-gradient(circle at 38% 28%, #dcff82 0%, var(--kpn-lime) 48%, #aeea22 100%);
-  box-shadow: 0 10px 24px rgba(166, 226, 27, .38), 0 0 22px rgba(201,255,72,.5);
+  color: var(--kpn-primary);
+  background: transparent;
+  box-shadow: none;
 }
 
 .kpn-dock-icon-inactive {

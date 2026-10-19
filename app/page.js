@@ -550,8 +550,8 @@ function CarSelector({ adminReportCarId }) {
 
     return (
       <article key={car.id} onClick={() => setCarDetailModal({ car, logData })}
-        className="flex items-center gap-3 py-4 border-b border-[#edf0ee] last:border-b-0 cursor-pointer active:bg-[#f8faf8] transition-colors">
-        <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border border-black/[0.05] ${isMaintenance ? 'bg-[#fff5df]' : isBusy ? 'bg-[#fff0ed]' : isEV ? 'bg-[#edf3ff]' : 'bg-[#eefaf2]'}`}>
+        className="kpn-car-row flex items-center gap-3 py-4 border-b border-[#edf0ee] last:border-b-0 cursor-pointer active:bg-[#f8faf8] transition-colors">
+        <div className={`kpn-car-row-photo w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border border-black/[0.05] ${isMaintenance ? 'bg-[#fff5df]' : isBusy ? 'bg-[#fff0ed]' : isEV ? 'bg-[#edf3ff]' : 'bg-[#eefaf2]'}`}>
           {carImageSrc
             ? <img src={carImageSrc} alt={car.car_type} width="56" height="56" loading="lazy" decoding="async" className={`w-full h-full object-cover ${isMaintenance ? 'sepia-[.25] opacity-75' : !car.isActivated ? 'grayscale opacity-40' : ''}`}/>
             : <Icon icon={isMaintenance ? 'ph:wrench-duotone' : 'ph:car-profile-duotone'} width="30" height="30" className={isMaintenance ? 'text-[#d57a00]' : isBusy ? 'text-[#ff6680]' : 'text-[#14c767]'} />}
@@ -605,7 +605,7 @@ function CarSelector({ adminReportCarId }) {
       </header>
 
       <main className="mx-auto flex w-full max-w-[620px] flex-1 flex-col overflow-hidden bg-white lg:max-w-[1280px] lg:rounded-[30px] lg:shadow-[0_14px_45px_rgba(75,21,96,.10)]">
-        <section>
+        <section className="kpn-home-guides">
           <div ref={bannerViewportRef}
             onTouchStart={(e) => { bannerTouchStartRef.current = e.touches[0]?.clientX ?? null }}
             onTouchEnd={(e) => {
@@ -625,8 +625,8 @@ function CarSelector({ adminReportCarId }) {
           }} className="flex gap-3 px-5 lg:px-0 opacity-0 will-change-transform">
             {loopedBannerSlides.map((slide, index) => (
               <article key={`${slide.title}-${index}`} className="kpn-hero relative overflow-hidden h-[128px] sm:h-[150px] lg:h-[210px] min-w-[90%] sm:min-w-[88%] lg:min-w-full rounded-[19px] sm:rounded-[22px] lg:rounded-[26px] px-5 sm:px-6 lg:px-10 py-3 sm:py-4 lg:py-7 text-white" style={{background:slide.background, boxShadow:'0 8px 24px rgba(73,20,88,.16)'}}>
-                <div className="absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
-                <div className="absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
+                <div className="kpn-hero-decoration absolute -left-20 -top-20 w-52 h-52 rounded-full border border-white/20"/>
+                <div className="kpn-hero-decoration absolute -right-12 -bottom-20 w-48 h-48 rounded-full bg-white/10"/>
                 <div className="relative z-10 max-w-[70%]">
                   <p className="text-[8px] sm:text-[9px] font-bold tracking-[.16em] text-[#ffea6a] mb-1">{slide.eyebrow}</p>
                   <h2 className="text-[18px] sm:text-[23px] lg:text-[32px] font-bold leading-[1.1] tracking-[-.7px]">{slide.title}<br/><span className="text-[#ffea4d] text-[14px] sm:text-[18px] lg:text-[23px]">{slide.accent}</span></h2>
@@ -642,7 +642,7 @@ function CarSelector({ adminReportCarId }) {
           <div className="flex justify-center gap-2 py-2 sm:py-2.5 lg:py-4">{bannerSlides.map((slide, index) => <button key={slide.title} onClick={() => moveBannerTo(index + 1, true)} aria-label={`ไปแบนเนอร์หน้า ${index + 1}`} className={`h-1.5 rounded-full transition-all ${activeBanner === index ? 'w-5 sm:w-6 bg-[#702082]' : 'w-1.5 sm:w-2 bg-[#d9cddd]'}`}/>)}</div>
         </section>
 
-        <section className="pb-3 sm:pb-4">
+        <section className="kpn-home-stats pb-3 sm:pb-4">
           <div className="flex gap-2 sm:gap-3 overflow-x-auto hide-scrollbar px-5 lg:px-6 pb-2 lg:grid lg:grid-cols-5 lg:overflow-visible">
             {[
               {label:'รถทั้งหมด', value:cars.length, sub:'ในระบบ', icon:'ph:car-profile-duotone', accent:'#702082'},
@@ -650,11 +650,11 @@ function CarSelector({ adminReportCarId }) {
               {label:'กำลังใช้งาน', value:busyCars.length, sub:'คัน', icon:'ph:steering-wheel-duotone', accent:'#d29f00'},
               {label:'กำลังซ่อม', value:maintenanceCars.length, sub:'คัน', icon:'ph:wrench-duotone', accent:'#c26b00'},
               {label:'รถ EV', value:evCars.length, sub:'คัน', icon:'ph:lightning-duotone', accent:'#702082'}
-            ].map(stat => <div key={stat.label} className="min-w-[118px] sm:min-w-[138px] lg:min-w-0 h-[82px] sm:h-[96px] lg:h-[110px] bg-white rounded-[16px] sm:rounded-[19px] p-2.5 sm:p-3 lg:p-4 border border-[#eee3f1]" style={{boxShadow:'0 6px 22px rgba(91,35,104,.08)'}}><div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-bold whitespace-nowrap"><span className="w-5 h-5 sm:w-6 sm:h-6 rounded-[7px] sm:rounded-[8px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="14" height="14" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-1 sm:mt-1.5 text-[18px] sm:text-[21px] lg:text-[28px] font-bold leading-tight" style={{color:stat.accent}}>{stat.value} <span className="text-[10px] sm:text-[12px]">{stat.sub}</span></p><p className="mt-0.5 text-[8px] sm:text-[10px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="9" height="9" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
+            ].map(stat => <div key={stat.label} className="kpn-home-stat min-w-[118px] sm:min-w-[138px] lg:min-w-0 h-[82px] sm:h-[96px] lg:h-[110px] bg-white rounded-[16px] sm:rounded-[19px] p-2.5 sm:p-3 lg:p-4 border border-[#eee3f1]" style={{boxShadow:'0 6px 22px rgba(91,35,104,.08)'}}><div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-bold whitespace-nowrap"><span className="w-5 h-5 sm:w-6 sm:h-6 rounded-[7px] sm:rounded-[8px] bg-[#f5edf7] flex items-center justify-center"><Icon icon={stat.icon} width="14" height="14" style={{color:stat.accent}} /></span>{stat.label}</div><p className="mt-1 sm:mt-1.5 text-[18px] sm:text-[21px] lg:text-[28px] font-bold leading-tight" style={{color:stat.accent}}>{stat.value} <span className="text-[10px] sm:text-[12px]">{stat.sub}</span></p><p className="mt-0.5 text-[8px] sm:text-[10px] text-[#8b7f8e] flex items-center gap-1"><Icon icon="ph:lightning-fill" width="9" height="9" className="text-[#d3a900]"/>PEA Fleet</p></div>)}
           </div>
         </section>
 
-        <section className="relative pt-3 sm:pt-4 pb-8 sm:pb-9 overflow-hidden" style={{background:'linear-gradient(145deg,#f5f6ff 0%,#eef1ff 58%,#f7ffd9 135%)'}}>
+        <section className="kpn-home-news relative pt-3 sm:pt-4 pb-8 sm:pb-9 overflow-hidden" style={{background:'linear-gradient(145deg,#f5f6ff 0%,#eef1ff 58%,#f7ffd9 135%)'}}>
           <div className="absolute -right-24 bottom-0 w-80 h-80 rounded-full border border-white/35"/>
           <div className="relative px-5 flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2.5 sm:gap-3"><span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#080d1b] text-[#c9ff48] flex items-center justify-center shadow-[0_9px_22px_rgba(8,13,27,.18)]"><Icon icon="ph:newspaper-clipping-duotone" width="22" height="22" /></span><div><h2 className="text-[20px] sm:text-[20px] font-bold leading-tight text-[#4b1560]">ประกาศและข่าวสาร</h2><p className="text-[9px] sm:text-[10px] text-[#765c7c]">ข้อมูลสำคัญจากระบบ KPN Smart Car</p></div></div>
@@ -683,9 +683,9 @@ function CarSelector({ adminReportCarId }) {
           </div>}
         </section>
 
-        <section className="relative -mt-6 sm:-mt-7 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
+        <section className="kpn-home-inventory relative -mt-6 sm:-mt-7 bg-white rounded-t-[32px] px-5 lg:px-6 pt-6 pb-4">
           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><h2 className="text-[25px] font-bold tracking-[-.7px] text-[#4b1560]">รายการรถ</h2><Icon icon="ph:info-duotone" width="21" height="21" className="text-[#702082]" /></div><button onClick={() => router.push('/dashboard')} className="w-10 h-10 rounded-full bg-[#f3eaf5] text-[#702082] flex items-center justify-center" aria-label="เปิดแดชบอร์ด"><Icon icon="ph:chart-pie-slice-duotone" width="22" height="22" /></button></div>
-          <div className="mt-4 rounded-[22px] border border-[#e7eaf1] bg-[linear-gradient(135deg,#f1edff_0%,#ffffff_52%,#f2ffe1_100%)] p-1.5 shadow-[0_10px_28px_rgba(42,35,74,.09)] transition-shadow focus-within:shadow-[0_12px_34px_rgba(85,71,247,.16)]">
+          <div className="kpn-home-search mt-4 rounded-[22px] border border-[#e7eaf1] bg-[linear-gradient(135deg,#f1edff_0%,#ffffff_52%,#f2ffe1_100%)] p-1.5 shadow-[0_10px_28px_rgba(42,35,74,.09)] transition-shadow focus-within:shadow-[0_12px_34px_rgba(85,71,247,.16)]">
             <div className="relative flex items-center rounded-[17px] bg-white">
               <span className="pointer-events-none absolute left-2.5 flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#c9ff48] text-[#101522] shadow-[0_6px_16px_rgba(174,235,36,.24)]">
                 <Icon icon="ph:magnifying-glass-bold" width="21" height="21" />
@@ -716,7 +716,7 @@ function CarSelector({ adminReportCarId }) {
             href="https://github.com/kijnaphat"
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-center justify-between gap-4 rounded-[22px] border border-[#eadfed] bg-gradient-to-r from-[#faf5fb] to-[#fffbea] px-4 py-4 transition-all active:scale-[.98]"
+            className="kpn-home-credit group flex items-center justify-between gap-4 rounded-[22px] border border-[#eadfed] bg-gradient-to-r from-[#faf5fb] to-[#fffbea] px-4 py-4 transition-all active:scale-[.98]"
             aria-label="เปิด GitHub Profile ของ Kijnaphat Suksod"
           >
             <div className="flex items-center gap-3 min-w-0">
@@ -2544,7 +2544,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
       )}
 
       {/* ── Nav (transparent over hero) ── */}
-      <div className="fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center px-5">
+      <div className="kpn-action-topbar fixed top-0 left-0 right-0 z-50 h-[52px] flex items-center px-5">
         <button onClick={() => window.location.href = '/'}
           className="flex items-center gap-1.5 text-[15px] font-medium active:opacity-60 transition-opacity"
           style={{color: getCarImage(car) ? 'white' : '#702082', textShadow: getCarImage(car) ? '0 1px 4px rgba(0,0,0,0.3)' : 'none'}}>
@@ -2563,7 +2563,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
       </div>
 
       {/* ── Hero ── */}
-      <div className={`relative w-full overflow-hidden`}
+      <div className={`kpn-action-hero relative w-full overflow-hidden`}
            style={{height:'55vh', minHeight:'280px', maxHeight:'380px'}}>
         {getCarImage(car) ? (
           <>
@@ -2609,7 +2609,7 @@ function CarActionForm({ carId, maintenanceTakeoutToken }) {
       </div>
 
       {/* ── Form Sheet ── */}
-      <div className="relative -mt-5 rounded-t-[28px] bg-[#f8f3fa] pb-16 min-h-[50vh]"
+      <div className="kpn-action-sheet relative -mt-5 rounded-t-[28px] bg-[#f8f3fa] pb-16 min-h-[50vh]"
            style={{boxShadow:'0 -4px 20px rgba(0,0,0,0.08)'}}>
 
         <div className="flex justify-center pt-3 pb-4">
