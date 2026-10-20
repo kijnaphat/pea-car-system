@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./operations-ui.css";
+import "./interface-theme.css";
 import { Suspense } from "react"; // ✅ 1. เพิ่มบรรทัดนี้
 import GlobalBottomNav from "./components/GlobalBottomNav";
 
@@ -45,7 +46,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f5f5f3",
+  themeColor: "#f5f5f7",
 };
 
 export default function RootLayout({

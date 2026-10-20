@@ -1,0 +1,221 @@
+/* Screen-only visual system. Never style the formal report paper or change
+   workflow structure here. Native system fonts add no network requests. */
+@media screen {
+  :root {
+    --background: #f5f5f7;
+    --foreground: #1d1d1f;
+    --kpn-ink: #1d1d1f;
+    --kpn-primary: #0071e3;
+    --kpn-primary-strong: #0077ed;
+    --kpn-blue: #0071e3;
+    --kpn-lime: #e8f2ff;
+    --kpn-canvas: #f5f5f7;
+    --kpn-surface: #fff;
+    --kpn-surface-soft: #f5f5f7;
+    --kpn-line: #e5e5ea;
+    --kpn-muted: #6e6e73;
+    --kpn-shadow: 0 4px 20px #1d1d1f06, 0 1px 3px #1d1d1f04;
+    --kpn-system-font: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Leelawadee UI", Tahoma, sans-serif;
+  }
+
+  body { letter-spacing: 0; }
+  .kpn-screen:not(.kpn-report), .fleet-twin[aria-label], .kpn-task-modal, nav[aria-label="เมนูหลัก"] { font-family: var(--kpn-system-font); }
+  .kpn-screen :is(button,input,select,textarea) { font-family: inherit; }
+  .kpn-screen :is(button,a,input,select,textarea):focus-visible { outline: 3px solid #0071e380; outline-offset: 3px; }
+  .kpn-screen :is(input,select,textarea):focus { border-color: #0071e3 !important; box-shadow: 0 0 0 4px #0071e31a !important; }
+  .kpn-screen .font-black { font-weight: 650; }
+  .kpn-screen :is([class~="text-[#702082]"],[class~="text-[#8b3c98]"],[class~="text-[#7258d8]"],[class~="text-[#5547f7]"],[class~="text-[#5e35b1]"]) { color: #0071e3 !important; }
+  .kpn-screen :is([class~="bg-[#f3eaf5]"],[class~="bg-[#f1e6f4]"],[class~="bg-[#eadfed]"],[class~="bg-[#eee8ff]"]) { background-color: #eaf3fe !important; }
+  .kpn-screen .kpn-primary-action { border-radius: 16px; box-shadow: 0 2px 4px #0071e312 !important; }
+  .kpn-screen .kpn-primary-action:disabled { color: #fff !important; background: #b7bdc6 !important; box-shadow: none !important; }
+  .kpn-dock-active, .kpn-dock-icon-active { color: #0066cc; }
+
+  /* Light chrome and generous, consistent editorial hierarchy. */
+  .kpn-screen.kpn-home { background: #f5f5f7 !important; }
+  .kpn-home > header {
+    background: #ffffffbd !important;
+    border-bottom: 1px solid #0000000a;
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+  }
+  .kpn-home > header > div { padding-block: 14px; }
+  .kpn-home > header h1 { font-size: 21px; font-weight: 650; letter-spacing: -.025em; color: #1d1d1f; }
+  .kpn-home > header p { color: #6e6e73 !important; font-weight: 500; letter-spacing: 0; }
+  .kpn-home > header button { border-radius: 999px; background: #f0f0f2 !important; color: #1d1d1f !important; font-weight: 500; }
+  .kpn-home > header button:hover { background: #e8e8ed !important; }
+  .kpn-home > header img { filter: none; }
+  .kpn-home > main { background: transparent; padding-top: 20px; }
+  .kpn-home-guides .kpn-hero {
+    height: 186px;
+    min-height: 186px;
+    padding: 24px;
+    border: 1px solid #ffffffc7;
+    border-radius: 26px;
+    border-left-width: 1px;
+    background: linear-gradient(115deg, #fff 12%, #f7f9fc 64%, #eaf1fa 100%) !important;
+    color: #1d1d1f;
+    box-shadow: 0 4px 18px #1d1d1f04 !important;
+  }
+  .kpn-home-guides .kpn-hero p { margin-bottom: 8px; font-size: 10px; font-weight: 600; color: #6e6e73 !important; letter-spacing: .07em; }
+  .kpn-home-guides .kpn-hero h2 { font-size: 25px; line-height: 1.3; font-weight: 650; letter-spacing: -.035em; }
+  .kpn-home-guides .kpn-hero h2 span { color: #6e6e73; font-size: 16px; line-height: 1.5; font-weight: 400; letter-spacing: -.015em; }
+  .kpn-home-guides .kpn-hero .kpn-lime-chip {
+    min-height: 36px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 999px;
+    background: #0071e3 !important;
+    color: #fff !important;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .kpn-home-guides .kpn-hero .kpn-lime-chip:hover { background: #0077ed !important; }
+  .kpn-home-guides .float-car { right: 10px; width: 28%; opacity: .75; }
+  .kpn-home-guides .float-car > div {
+    width: 76px; height: 76px;
+    color: #0071e3 !important;
+    background: #ffffff8a !important;
+    border: 1px solid #ffffffd9;
+    border-radius: 24px;
+    box-shadow: 0 12px 28px #0071e30c;
+    rotate: none;
+  }
+  .kpn-home-guides button[aria-label^="ไปแบนเนอร์"] { background: #d2d2d7; }
+  .kpn-home-guides button[aria-label^="ไปแบนเนอร์"][class*="w-5"] { background: #1d1d1f !important; }
+  .kpn-home-stat {
+    min-height: 104px;
+    border: 1px solid #ffffffd9;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: var(--kpn-shadow) !important;
+  }
+  .kpn-home-stat > div { color: #6e6e73; font-size: 12px; font-weight: 500; }
+  .kpn-home-stat > div > span { background: transparent; }
+  .kpn-home-stat > div svg { color: #0071e3 !important; }
+  .kpn-home-stat > p:first-of-type { margin-top: 8px; color: #1d1d1f !important; font-size: 30px; font-weight: 600; letter-spacing: -.04em; }
+  .kpn-home-stat > p > span { color: #6e6e73; font-size: 11px; font-weight: 400; letter-spacing: 0; }
+  .kpn-home-news { padding-top: 24px; padding-bottom: 24px; background: transparent !important; border: 0; }
+  .kpn-home-news > .relative > div:first-child > span { border-radius: 12px; background: #e8f2ff; color: #0071e3; }
+  .kpn-home-news h2 { color: #1d1d1f !important; font-size: 22px; line-height: 1.4; font-weight: 600; letter-spacing: -.025em; }
+  .kpn-home-news > .relative p { color: #6e6e73; font-size: 11px; }
+  .kpn-home-news article { padding: 20px; border-radius: 24px; border: 1px solid #ffffffd9; background: #fff; box-shadow: var(--kpn-shadow) !important; }
+  .kpn-home-news article > div > div > span:first-child { background: #f5f5f7 !important; color: #0071e3 !important; border-radius: 12px; }
+  .kpn-home-news article > div > div > div > span:first-child { font-size: 16px; font-weight: 600; letter-spacing: -.015em; }
+  .kpn-home-news article > div > span { background: #f5f5f7; color: #6e6e73; border-radius: 999px; font-weight: 500; }
+  .kpn-home-news article p { font-size: 13px; line-height: 1.8; color: #6e6e73; }
+  .kpn-home-news article button { color: #0071e3 !important; text-decoration: none; font-size: 12px; font-weight: 500; }
+  .kpn-home-news article button:hover { text-decoration: underline; }
+  .kpn-home-news button[aria-label^="ไปข่าว"] { background: #d2d2d7 !important; }
+  .kpn-home-news button[aria-label^="ไปข่าว"][class*="w-5"] { background: #1d1d1f !important; }
+
+  /* Keep the entire fleet visible and scannable, not a decorative card grid. */
+  .kpn-home-inventory { margin-top: 4px; padding-top: 26px; border-radius: 28px 28px 0 0; background: #fff; }
+  .kpn-home-inventory > div:first-child h2 { color: #1d1d1f !important; font-size: 25px; font-weight: 600; letter-spacing: -.025em; }
+  .kpn-home-inventory > div:first-child button { border-radius: 14px; }
+  .kpn-home-search { border: 1px solid transparent; border-radius: 16px; background: #f5f5f7; }
+  .kpn-home-search > div { border-radius: 16px; background: transparent; }
+  .kpn-home-search input { border-radius: 16px; background: transparent; height: 50px; color: #1d1d1f; font-size: 15px; font-weight: 400; }
+  .kpn-home-search input::placeholder { color: #86868b; }
+  .kpn-home-search:focus-within { border-color: #0071e3; box-shadow: 0 0 0 4px #0071e31a; }
+  .kpn-home-search > div > span { color: #86868b; }
+  .kpn-car-row { min-height: 108px; gap: 14px; padding-block: 20px; border-color: #ededf0; }
+  .kpn-car-row:hover { background: #fafafa; }
+  .kpn-car-row-photo { width: 72px; height: 64px; border-radius: 14px; border-color: #00000006; background: #f5f5f7; }
+  .kpn-car-row h3 { font-size: 18px; font-weight: 600; letter-spacing: -.015em; color: #1d1d1f; }
+  .kpn-car-row > div:nth-child(2) > span { padding: 3px 7px; border-radius: 6px; font-size: 10px; font-weight: 500; }
+  .kpn-car-row > div:nth-child(2) > p { color: #6e6e73; line-height: 1.65; }
+  .kpn-car-row > div:last-child > span { font-size: 11px; font-weight: 500; }
+  .kpn-home-credit { border: 0; border-radius: 20px; background: #eaeaec; padding: 18px; }
+  .kpn-home-credit > div > span { border-radius: 11px; background: #ffffffb3; color: #6e6e73; }
+  .kpn-home-credit p:nth-child(1) { color: #6e6e73 !important; }
+  .kpn-home-credit p:nth-child(2) { color: #1d1d1f; font-weight: 500; }
+
+  /* QR workflows retain every input and validation state. */
+  .kpn-action-topbar { background: #ffffffc9; border-bottom-color: #0000000a; -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+  .kpn-action-topbar button { color: #0071e3 !important; border-radius: 12px; }
+  .kpn-action-hero { border-radius: 0; }
+  .kpn-action-sheet { background: #f5f5f7 !important; padding-top: 24px; }
+  .kpn-action :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) { border-color: #d2d2d7 !important; border-radius: 14px !important; color: #1d1d1f !important; min-height: 50px; font-size: 16px; }
+  .kpn-action-sheet :is(section.bg-white,div.bg-white) { border-radius: 24px; box-shadow: 0 4px 20px #1d1d1f05 !important; }
+  .kpn-action-sheet button:not(.rounded-full) { border-radius: 14px; }
+  .kpn-action section[aria-label="เลือกกิจกรรมรถ EV"] { border-color: #e5e5ea; border-radius: 24px; }
+  .kpn-action section[aria-label="เลือกกิจกรรมรถ EV"] button { border-radius: 18px; }
+  .kpn-action form[aria-label="ชาร์จ EV ระหว่างภารกิจ"] { border: 1px solid #bdd9f7; border-radius: 22px; }
+
+  /* Consistent sheets, dialogs and vehicle details, with unchanged stacking. */
+  .kpn-home .kpn-detail-overlay > .absolute { background: #1d1d1f59; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .kpn-home .kpn-detail-overlay > .relative,
+  .kpn-home .kpn-detail-overlay[aria-labelledby] > :is(section,div.relative) { border-radius: 28px; border-color: #ffffffb3; box-shadow: 0 24px 80px #00000026 !important; }
+  .kpn-home .kpn-detail-overlay[aria-labelledby] h2 { color: #1d1d1f; font-size: 26px; line-height: 1.4; font-weight: 600; letter-spacing: -.025em; }
+  .kpn-home .kpn-detail-overlay[aria-labelledby] :is([class*="text-[#c9ff48]"],[class*="text-[#702082]"]) { color: #0071e3 !important; }
+  .kpn-home .kpn-detail-overlay[aria-labelledby] :is([class*="bg-[#c9ff48]"],[class*="bg-[#f3eaf5]"]) { background: #e8f2ff !important; color: #0071e3; border-radius: 16px; }
+  .kpn-home .kpn-detail-overlay[aria-labelledby] button { border-radius: 14px; min-height: 44px; }
+  .kpn-home .kpn-detail-overlay[aria-labelledby] button[class*="bg-[#101522]"] { background: #0071e3 !important; color: #fff; }
+  .kpn-home .kpn-detail-overlay[aria-labelledby] [class*="rounded-["] { border-radius: 18px; }
+  .kpn-home .kpn-detail-overlay[aria-labelledby] button[aria-label="ปิดประกาศ"] { border-radius: 50%; background: #f5f5f7; color: #6e6e73; border: 0; }
+  .car-detail-modal, .car-detail-modal > div, .car-detail-modal main { background: #f5f5f7 !important; }
+  .car-detail-modal main { padding-top: 20px; }
+  .car-detail-modal .car-detail-summary { background: #1d1d1f; border-radius: 22px; padding: 12px; gap: 8px; }
+  .car-detail-modal .car-detail-summary .bg-\[\#c9ff48\] { background: #e8f2ff; color: #0071e3; }
+  .car-detail-modal .car-detail-summary [class~="text-[#c9ff48]"] { color: #b8dcff; background: transparent; }
+  .car-detail-modal .car-detail-summary h2 { font-size: 15px; font-weight: 600; }
+  .car-detail-modal .car-detail-summary > div:last-child { max-width: 41%; padding-inline: 6px; }
+  .car-detail-modal .car-detail-grid > div { border-radius: 18px; background: #fff !important; border-color: #e5e5ea !important; }
+  .car-detail-modal .car-detail-actions button { border-radius: 16px; font-weight: 500; }
+  .kpn-task-modal > section { border-radius: 28px; box-shadow: 0 24px 80px #00000026; }
+  .kpn-task-modal > section > header { background: #fafafc !important; border-bottom-color: #e5e5ea; }
+  .kpn-task-modal > section > header :is(h1,h2,h3) { color: #1d1d1f; font-weight: 600; }
+  .kpn-task-modal > section > header .text-\[\#fff1b8\] { color: #0071e3 !important; }
+  .kpn-task-modal > section > header button { border-radius: 50%; background: #e8e8ed; color: #6e6e73; }
+  .kpn-task-modal :is(input,select,textarea) { border-color: #d2d2d7 !important; border-radius: 14px !important; color: #1d1d1f !important; font-size: 16px; }
+  .kpn-task-modal [class*="rounded-["] { border-radius: 16px; }
+  .kpn-task-modal .kpn-modal-surface { box-shadow: 0 24px 80px #00000026 !important; }
+}
+
+@media screen and (min-width: 1024px) {
+  .kpn-home > header > div { padding-block: 16px; }
+  .kpn-home > main { padding-top: 28px; }
+  .kpn-home-guides > div:first-child { padding-inline: 0; }
+  .kpn-home-guides .kpn-hero { min-width: calc(100% - 48px); height: 236px; padding: 34px 40px; border-radius: 30px; }
+  .kpn-home-guides .kpn-hero p { font-size: 11px; margin-bottom: 10px; }
+  .kpn-home-guides .kpn-hero h2 { font-size: 39px; }
+  .kpn-home-guides .kpn-hero h2 span { font-size: 22px; }
+  .kpn-home-guides .kpn-hero .kpn-lime-chip { min-height: 40px; padding: 10px 20px; font-size: 13px; }
+  .kpn-home-guides .float-car { right: 44px; width: 26%; }
+  .kpn-home-guides .float-car > div { width: 112px; height: 112px; border-radius: 34px; }
+  .kpn-home-guides .float-car svg { width: 62px; height: 62px; }
+  .kpn-home-stats > div { gap: 16px; }
+  .kpn-home-stat { padding: 20px; min-height: 114px; border-radius: 24px; }
+  .kpn-home-stat > p:first-of-type { font-size: 34px; }
+  .kpn-home-news { margin: 0; padding: 30px 0 32px; border: 0; border-radius: 0; }
+  .kpn-home-news > .relative { padding-inline: 28px; }
+  .kpn-home-news article { padding: 26px; }
+  .kpn-home-inventory { margin: 0 24px 0; padding: 30px; border: 1px solid #ffffffd9; border-radius: 28px; box-shadow: var(--kpn-shadow); }
+  .kpn-home-inventory > div:first-child h2 { font-size: 28px; }
+  .kpn-home > main > footer { padding-top: 24px; }
+}
+
+@media screen and (max-width: 420px) {
+  .kpn-home > header h1 { font-size: 18px; }
+  .kpn-home > header > div { padding-inline: 20px; }
+  .kpn-home > header p { font-size: 9px; }
+  .kpn-home-guides .kpn-hero { padding: 22px; }
+  .kpn-home-guides .kpn-hero > div.relative { max-width: 78%; }
+  .kpn-home-guides .kpn-hero h2 { font-size: 23px; }
+  .kpn-home-guides .kpn-hero h2 span { font-size: 15px; }
+  .kpn-home-guides .float-car { opacity: .32; right: -10px; width: 26%; }
+  .kpn-home-guides .float-car > div { width: 62px; height: 62px; border-radius: 20px; }
+  .kpn-home-stat { min-width: 132px; padding: 16px; }
+  .kpn-home-news h2 { font-size: 20px; }
+  .kpn-home-news article { padding: 20px; }
+  .kpn-car-row { gap: 10px; }
+  .kpn-car-row-photo { width: 52px; height: 52px; border-radius: 12px; }
+  .kpn-car-row h3 { font-size: 16px; }
+  .kpn-car-row > div:last-child { width: 108px; }
+  .kpn-car-row > div:last-child :is(p,span) { font-size: 10px; }
+}
+
+@media screen and (prefers-reduced-transparency: reduce) {
+  .kpn-home > header, .kpn-action-topbar, .kpn-dock { background: #fafafc !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

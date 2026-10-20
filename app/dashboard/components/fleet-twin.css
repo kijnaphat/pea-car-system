@@ -312,3 +312,171 @@
   .twin-clock>svg:first-child { display:none; }
   .twin-live-badge { font-size:9px; }
 }
+
+/* Apple-inspired screen surfaces. Scene, controls and printed documents keep
+   their existing structure and behavior. */
+@media screen {
+  .fleet-twin { --purple:#0071e3;--ink:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;background:#f5f5f7; }
+  .fleet-twin :is(button,a,input,select):focus-visible { outline-color:#0071e3; }
+  .twin-header { gap:28px;padding:22px 30px;background:rgba(255,255,255,.82);border-bottom-color:#e5e5ea;-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px); }
+  .twin-brand strong { color:#1d1d1f;font-size:22px;font-weight:600;letter-spacing:-.5px; }
+  .twin-brand span { color:#6e6e73;font-size:11px; }
+  .twin-search { padding:12px 15px;border-color:#e5e5ea;border-radius:12px;background:#f5f5f7;color:#86868b; }
+  .twin-search input::placeholder { color:#86868b; }
+  .twin-search:focus-within { border-color:#80b8ef;box-shadow:0 0 0 3px #0071e310; }
+  .twin-analytics { padding:12px 17px;border-color:#0071e3;border-radius:12px;background:#0071e3;font-weight:500; }
+  .twin-analytics:hover { background:#0077ed;border-color:#0077ed; }
+  .twin-content { padding:24px 28px; }
+  .twin-topline { gap:18px;margin-bottom:22px; }
+  .twin-modes { gap:2px;align-self:center;padding:4px;border:0;border-radius:12px;background:#e8e8ed; }
+  .twin-modes button { padding:8px 14px;border-radius:9px;color:#6e6e73;font-size:12px;font-weight:500; }
+  .twin-modes button[aria-pressed=true] { background:#fff;color:#1d1d1f;font-weight:600;box-shadow:0 1px 4px #00000014,inset 0 0 0 1px #00000003; }
+  .twin-modes button[aria-pressed=true]::after { content:none; }
+  .twin-live-badge { border-color:#dbe9e1;border-radius:20px;padding:6px 10px;background:#edf6f0;color:#387456;font-size:10px; }
+  .twin-live-badge.is-demo { border-color:#eee2c8;background:#faf5e9;color:#87682b; }
+  .twin-clock { color:#6e6e73; }
+  .twin-status-cards { gap:12px;margin-bottom:20px; }
+  .twin-status-cards button:first-child { --status-color:#0071e3 !important; }
+  .twin-status-cards button { padding:17px 17px;border-color:#e5e5ea;border-radius:18px;box-shadow:0 2px 8px #00000004;background:#fff;font-size:13px; }
+  .twin-status-cards button:hover { background:#fff;border-color:#c6c6cc; }
+  .twin-status-cards button[aria-pressed=true] { border-color:#a5c9ee;background:#f2f8ff;box-shadow:0 2px 8px #0071e309; }
+  .twin-status-cards strong { color:#1d1d1f;font-size:25px;font-weight:600;letter-spacing:-.5px; }
+  .twin-paint-legend { margin-bottom:20px;color:#6e6e73; }
+  .twin-paint-legend small { color:#86868b; }
+  .twin-map-panel { border-color:#dfe3e6;border-radius:24px;background:#edf1f3;box-shadow:0 4px 18px #00000005; }
+  .twin-map-toolbar,.twin-camera-pad { padding:6px;border-color:#ffffffc9;border-radius:18px;background:rgba(255,255,255,.78);box-shadow:0 8px 28px #0000000b,inset 0 0 0 1px #ffffff8c;-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px); }
+  .twin-map-toolbar button { width:38px;height:41px;border-radius:11px;color:#51515a; }
+  .twin-map-toolbar button+button { border-top:0; }
+  .twin-map-toolbar button:hover { color:#1d1d1f;background:#e8e8edaa; }
+  .twin-map-toolbar button[aria-pressed=true] { color:#0071e3;background:#e6f0fc; }
+  .twin-camera-pad { gap:4px; }
+  .twin-camera-pad>span { color:#86868b; }
+  .twin-camera-pad button { border-radius:10px;color:#51515a;background:#f0f0f4b8; }
+  .twin-camera-pad button:hover { color:#0071e3;background:#e6f0fc; }
+  .twin-camera-help,.twin-map-watermark { border-color:#ffffffad;border-radius:8px;background:#ffffffc4;color:#6e6e73;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px); }
+  .twin-architecture-caption { color:#6e6e73; }
+  .twin-architecture-caption>strong { color:#86868b; }
+  .twin-campus-label { border-color:#4b4b54;background:#33333aeF;box-shadow:0 4px 18px #00000012;border-radius:12px; }
+  .twin-campus-label:after { background:#33333a; }
+  .twin-charge-label,.twin-gate-label { border-color:#e5e5eae6;border-radius:10px;background:#ffffffed;box-shadow:0 3px 12px #00000009; }
+  .twin-gate-label { color:#6e6e73; }
+  .twin-slot-label { border-radius:4px;background:#ffffffe3;color:#6e6e73; }
+  .twin-list { border-color:#e5e5ea;border-radius:22px;background:#fff;box-shadow:0 4px 18px #00000005; }
+  .twin-list-heading { padding:22px 20px 6px; }
+  .twin-list-heading h2 { color:#1d1d1f;font-size:17px;font-weight:600;letter-spacing:-.3px; }
+  .twin-list-heading h2 span,.twin-list-heading>svg { color:#86868b; }
+  .twin-list-subtitle { padding:0 20px 16px;border-bottom-color:#eeeeF1;color:#86868b; }
+  .twin-list-scroll { padding:6px 10px; }
+  .twin-list-car { padding:14px 10px;border-bottom-color:#eeeeF1;border-radius:12px; }
+  .twin-list-car:hover { background:#f5f5f7; }
+  .twin-list-car[aria-pressed=true] { background:#edf5ff;box-shadow:inset 0 0 0 1px #d1e5fa;border-bottom-color:transparent; }
+  .twin-list-thumbnail { border-radius:11px;background:#f5f5f7; }
+  .twin-list-car-info strong { color:#1d1d1f;font-weight:600; }
+  .twin-list-car-info small { color:#86868b; }
+  .twin-list-footer { border-top-color:#e5e5ea;background:#fafafc;color:#6e6e73; }
+  .twin-detail { padding:20px;border-color:#ffffffed;border-radius:24px;background:#ffffffF5;box-shadow:0 8px 32px #00000012;-webkit-backdrop-filter:saturate(150%) blur(20px);backdrop-filter:saturate(150%) blur(20px); }
+  .twin-detail-close { border-radius:50%;background:#f0f0f3;color:#86868b; }
+  .twin-detail-close:hover { color:#1d1d1f;background:#e5e5ea; }
+  .twin-detail-eyebrow { color:#86868b; }
+  .twin-detail h3 { color:#1d1d1f;font-size:25px;font-weight:600;letter-spacing:-.5px; }
+  .twin-detail dl>div { border-color:#eeeeF1; }
+  .twin-detail dt,.twin-detail dd small,.twin-model-key { color:#86868b; }
+  .twin-detail dd { color:#1d1d1f; }
+  .twin-qr-only { padding:12px;border:1px solid #dbe9f8;border-radius:12px;background:#f0f7ff;color:#3471ab; }
+  .twin-charge-note { border-radius:12px; }
+  .twin-detail-actions button,.twin-detail-actions a { padding:11px;border-color:#e5e5ea;border-radius:10px;background:#f5f5f7;color:#1d1d1f; }
+  .twin-detail-actions button:hover { background:#eaeaef; }
+  .twin-detail-actions a.twin-report-link { border-color:#0071e3;background:#0071e3;color:#fff; }
+  .twin-footer { padding-top:18px;color:#86868b; }
+  .twin-error,.twin-demo-controls,.twin-replay { border-radius:16px; }
+  .twin-demo-controls,.twin-replay { padding:15px 17px;border-color:#e5e5ea;background:#fff;box-shadow:0 2px 8px #00000003; }
+  .twin-demo-controls button,.twin-replay input[type=date],.twin-replay select { border-color:#e5e5ea;border-radius:9px;background:#f5f5f7; }
+  .twin-replay button { border-radius:9px;background:#0071e3; }
+  .twin-flat-map { background:#f1f3f4; }
+  .twin-flat-office { border-radius:16px;color:#6e6e73;background:#e5e8eb;font-weight:600; }
+  .twin-flat-grid button { border-radius:12px; }
+  .twin-vehicle-photo,.twin-vehicle-showcase { border-color:#e5e5ea;border-radius:16px; }
+  .twin-vehicle-photo-frame,.twin-vehicle-showcase { background:#f5f5f7; }
+  .twin-vehicle-photo figcaption strong,.twin-vehicle-showcase-heading { color:#1d1d1f;font-weight:600; }
+  .twin-vehicle-photo figcaption span,.twin-vehicle-photo>p,.twin-vehicle-showcase-heading small,.twin-vehicle-showcase-controls { color:#86868b; }
+  .twin-vehicle-showcase-controls button { border-color:#e5e5ea;border-radius:9px;background:#fff;color:#6e6e73; }
+  .twin-optional-model { border-color:#e5e5ea;color:#6e6e73; }
+
+  .kpn-dashboard { color:#1d1d1f;background:#f5f5f7 !important; }
+  .kpn-dashboard .dashboard-panel,.kpn-dashboard .dashboard-category { border:1px solid #e5e5ea !important;border-radius:22px !important;box-shadow:0 3px 16px #00000004 !important;background:#fff !important; }
+  .kpn-dashboard .dashboard-category:hover { border-color:#bcd8f5 !important;background:#fbfdff !important;box-shadow:0 6px 22px #00000007 !important; }
+  .kpn-dashboard .dashboard-category-arrow { background:#f5f5f7;color:#6e6e73; }
+  .kpn-dashboard .dashboard-category:hover .dashboard-category-arrow { background:#e6f0fc;color:#0071e3; }
+  .kpn-dashboard .dashboard-welcome-header { border-color:#e5e5ea;border-radius:20px;background:#ffffffd9;box-shadow:0 2px 12px #00000003;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px); }
+  .kpn-dashboard .dashboard-welcome-intro { padding:30px 32px;border:1px solid #e5e5ea;border-radius:24px;background:#fff;color:#1d1d1f;box-shadow:0 3px 16px #00000003; }
+  .kpn-dashboard .dashboard-welcome-intro h2 { color:#1d1d1f;font-size:32px;font-weight:600;letter-spacing:-.7px; }
+  .kpn-dashboard .dashboard-welcome-intro p { color:#86868b; }
+  .kpn-dashboard .dashboard-section-kicker { color:#0071e3;letter-spacing:0; }
+  .kpn-dashboard .dashboard-intro-icon { border-color:#e4edf7;border-radius:18px;background:#edf5ff;color:#0071e3; }
+  .kpn-dashboard .kpn-dark-card { border:1px solid #e5e5ea !important;border-radius:22px !important;background:#fff !important;color:#1d1d1f !important;box-shadow:0 3px 16px #00000004 !important; }
+  .kpn-dashboard .kpn-dark-card [class*="text-white"] { color:#1d1d1f !important; }
+  .kpn-dashboard .kpn-dark-card [class*="text-white/"] { color:#86868b !important; }
+  .kpn-dashboard .kpn-dark-card [class*="bg-white/"] { background:#edf5ff !important;color:#0071e3 !important; }
+  .kpn-dashboard .kpn-dashboard-nav { border-color:#e5e5ea !important;background:#ffffffd9 !important;box-shadow:0 1px 8px #00000003;-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px); }
+  .kpn-dashboard [class*="rounded-[24px]"],.kpn-dashboard [class*="rounded-[22px]"] { border-radius:22px !important; }
+  .kpn-dashboard [class*="rounded-[16px]"],.kpn-dashboard [class*="rounded-[14px]"] { border-radius:12px !important; }
+  .kpn-dashboard [class*="text-[#4b1560]"],.kpn-dashboard [class*="text-[#101522]"],.kpn-dashboard [class*="text-[#20272b]"] { color:#1d1d1f !important; }
+  .kpn-dashboard [class*="text-[#765c7c]"],.kpn-dashboard [class*="text-[#8e8e93]"],.kpn-dashboard [class*="text-[#aeaeb2]"],.kpn-dashboard [class*="text-[#687279]"] { color:#6e6e73 !important; }
+  .kpn-dashboard [class*="text-[#702082]"],.kpn-dashboard [class*="text-[#5547f7]"],.kpn-dashboard [class*="text-[#5b246b]"] { color:#0071e3 !important; }
+  .kpn-dashboard [class*="text-[#5e35b1]"],.kpn-dashboard [class*="text-[#8b3c98]"] { color:#0071e3 !important; }
+  .kpn-dashboard [class*="bg-[#702082]"] { background:#0071e3 !important; }
+  .kpn-dashboard button[class*="bg-[#4b1560]"] { background:#0071e3 !important; }
+  .kpn-dashboard .dashboard-panel div[class*="bg-[#4b1560]"] { background:#1d1d1f; }
+  .kpn-dashboard [class*="border-t-[#4b1560]"] { border-top-color:#1d1d1f; }
+  .kpn-dashboard [class*="bg-[#f8f3fa]"],.kpn-dashboard [class*="bg-[#f9f9fb]"] { background:#f5f5f7 !important; }
+  .kpn-dashboard [class*="bg-[#eadfed]"] { background:#e8e8ed !important; }
+  .kpn-dashboard [class*="border-[#eadfed]"],.kpn-dashboard [class*="border-[#dce1e2]"],.kpn-dashboard [class*="border-[#f8f3fa]"] { border-color:#e5e5ea !important; }
+  .kpn-dashboard .dashboard-panel th { color:#6e6e73 !important;background:#fafafc; }
+  .kpn-dashboard .dashboard-panel td { border-color:#eeeeF1; }
+  .kpn-dashboard button:focus-visible,.kpn-dashboard input:focus-visible,.kpn-dashboard select:focus-visible { outline-color:#0071e3; }
+  .dashboard-document-modal { background:#1d1d1f66;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px); }
+  .dashboard-document-modal>div { border-color:#e5e5ea;border-radius:24px !important;box-shadow:0 20px 80px #00000029 !important; }
+  .dashboard-document-modal h3 { color:#1d1d1f; }
+  .dashboard-document-modal [class*="bg-[#702082]"],.dashboard-document-modal button[class*="bg-[#4b1560]"] { background:#0071e3; }
+  .dashboard-document-modal [class*="text-[#702082]"] { color:#0071e3; }
+
+  @media(max-width:1100px) {
+    .twin-header { padding:18px 22px;gap:20px; }
+    .twin-brand strong { font-size:19px; }
+    .twin-content { padding:22px 20px; }
+    .twin-status-cards button { padding:15px 12px; }
+    .twin-status-cards strong { font-size:23px; }
+  }
+  @media(max-width:760px) {
+    .twin-header { padding:18px 16px;gap:14px; }
+    .twin-brand strong { font-size:17px; }
+    .twin-search { padding:12px 13px; }
+    .twin-analytics { padding:11px 12px;border-radius:11px; }
+    .twin-content { padding:18px 13px; }
+    .twin-topline { gap:12px;margin-bottom:18px; }
+    .twin-modes { gap:2px;border-radius:12px;padding:4px; }
+    .twin-modes button { padding:9px 7px;font-size:12px; }
+    .twin-status-cards { gap:9px;margin-bottom:16px; }
+    .twin-status-cards button { min-width:140px;padding:14px 12px;border-radius:16px; }
+    .twin-status-cards strong { font-size:23px; }
+    .twin-paint-legend { margin-bottom:17px; }
+    .twin-map-panel { border-radius:20px; }
+    .twin-map-toolbar { padding:4px;border-radius:15px; }
+    .twin-map-toolbar button { width:34px;height:38px;border-radius:10px; }
+    .twin-camera-pad { padding:5px;border-radius:15px; }
+    .twin-camera-pad button { height:34px;border-radius:9px; }
+    .twin-campus-label,.twin-charge-label,.twin-gate-label { border-radius:8px; }
+    .twin-detail { padding:18px;border-radius:20px;box-shadow:none; }
+    .twin-detail h3 { font-size:23px; }
+    .twin-list { border-radius:20px; }
+    .twin-list-heading { padding:20px 18px 6px; }
+    .twin-list-subtitle { padding:0 18px 14px; }
+    .kpn-dashboard .dashboard-welcome-intro { padding:24px 22px;border-radius:22px; }
+    .kpn-dashboard .dashboard-welcome-intro h2 { font-size:28px; }
+    .kpn-dashboard .dashboard-panel,.kpn-dashboard .dashboard-category { border-radius:20px !important; }
+  }
+  @media(max-width:420px) {
+    .twin-brand strong { font-size:15px; }
+    .twin-analytics { padding:10px 9px; }
+  }
+}

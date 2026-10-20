@@ -156,7 +156,7 @@ export default function UltimateDashboard() {
   }
 
   const categories = [
-    { id: 'all', iconName: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'ภาพรวมรถทุกคัน รวมรถเช่าและรถ EV', bg: 'bg-[#eef0ff]', iconBg: '#5547f7', shadow: 'rgba(85,71,247,.18)' },
+    { id: 'all', iconName: 'ph:car-profile-duotone', title: 'รถทั้งหมด', desc: 'ภาพรวมรถทุกคัน รวมรถเช่าและรถ EV', bg: 'bg-[#edf5ff]', iconBg: '#0071e3', shadow: 'rgba(0,113,227,.12)' },
     { id: 'pea', iconName: 'ph:buildings-duotone', title: 'รถ กฟภ.', desc: 'ข้อมูลรถยนต์ประจำหน่วยงาน กฟภ.', bg: 'bg-[#f0f2f6]', iconBg: '#101522', shadow: 'rgba(16,21,34,.14)' },
     { id: 'rental', iconName: 'ph:handshake-duotone', title: 'รถเช่า', desc: 'รถเช่าเหมาสำหรับการปฏิบัติงาน', bg: 'bg-[#fff3df]', iconBg: '#d57a00', shadow: 'rgba(213,122,0,.16)' },
     { id: 'ev', iconName: 'ph:leaf-duotone', title: 'รถ EV', desc: 'รถยนต์พลังงานไฟฟ้าและข้อมูลการชาร์จ', bg: 'bg-[#eaf9f0]', iconBg: '#169d54', shadow: 'rgba(22,157,84,.16)' }
@@ -1222,7 +1222,7 @@ export default function UltimateDashboard() {
                   <span>Utilisation rate</span><span className="font-semibold text-[#4b1560]">{globalStats.activeRate}%</span>
                 </div>
                 <div className="h-2 bg-[#eadfed] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${globalStats.activeRate}%`, background:'#5b246b'}}/>
+                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${globalStats.activeRate}%`, background:'#0071e3'}}/>
                 </div>
               </div>
             </Card>
@@ -1321,7 +1321,7 @@ export default function UltimateDashboard() {
                              <div className="w-full max-w-[28px] rounded-t-[4px] transition-all duration-500 shadow-sm group-hover:brightness-110 group-hover:scale-y-[1.03] origin-bottom"
                                   style={{
                                     height: `${pct}%`, 
-                                    background: '#5b246b',
+                                    background: '#0071e3',
                                     minHeight: d.val > 0 ? '4px' : '0'
                                   }}
                              />

@@ -26,10 +26,10 @@ export default function GlobalBottomNav() {
     <>
       <div className="global-nav-spacer h-[84px] print:hidden" aria-hidden="true" />
       <nav className="fixed inset-x-0 bottom-[max(10px,env(safe-area-inset-bottom))] z-[100] flex justify-center px-4 print:hidden md:bottom-4 md:px-6" aria-label="เมนูหลัก">
-        <div className="kpn-dock flex h-[64px] w-full max-w-[430px] items-center gap-1 rounded-xl border p-1.5 md:max-w-[470px]">
+        <div className="kpn-dock flex h-[68px] w-full max-w-[430px] items-center gap-1 rounded-[28px] border p-1.5 md:max-w-[470px]">
           {items.map(item => (
             <button key={item.path} type="button" onClick={() => router.push(item.path)} aria-label={item.label} aria-current={item.active ? 'page' : undefined}
-              className={`relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-semibold transition-colors ${item.active ? 'kpn-dock-active' : 'kpn-dock-inactive'}`}>
+              className={`relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[22px] px-1 text-[11px] font-medium transition-colors ${item.active ? 'kpn-dock-active' : 'kpn-dock-inactive'}`}>
               <span className={`kpn-dock-icon flex h-6 w-6 items-center justify-center ${item.active ? 'kpn-dock-icon-active' : 'kpn-dock-icon-inactive'}`}><Icon icon={item.icon} width="21" height="21" /></span>
               <span className="leading-none">{item.label}</span>
             </button>

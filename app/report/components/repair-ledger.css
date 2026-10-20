@@ -9,103 +9,104 @@
 @media(max-width:767px){.repair-ledger-page{padding:18px 16px 130px}.repair-ledger-topbar{font-size:11px;margin-bottom:23px;gap:10px}.repair-ledger-header{margin-bottom:20px;gap:18px}.repair-ledger-title-wrap{gap:11px}.repair-ledger-book{width:48px;height:48px;border-radius:15px}.repair-ledger-eyebrow{font-size:9px}.repair-ledger-header h1{font-size:26px}.repair-ledger-header p{font-size:11px}.repair-ledger-header-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}.repair-ledger-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}.repair-ledger-summary>div{padding:14px;border-radius:14px}.repair-ledger-summary span{font-size:10px}.repair-ledger-summary strong{font-size:19px}.repair-ledger-summary small{font-size:9px}.repair-ledger-filters{padding:13px;gap:11px}.repair-ledger-filters label{flex:1 1 calc(50% - 10px);min-width:100px}.repair-ledger-filters .repair-ledger-search{flex:1 1 calc(100% - 54px);min-width:120px}.repair-ledger-filters label:nth-child(3){flex-basis:100%}.repair-ledger-filters input,.repair-ledger-filters select{font-size:13px}.repair-ledger-table-wrap{display:none}.repair-ledger-mobile-records{display:block}.repair-ledger-mobile-card{background:white;border:1px solid var(--ledger-line);border-radius:17px;padding:17px;margin-bottom:12px}.repair-ledger-mobile-card>header{display:flex;align-items:center;justify-content:space-between;gap:10px}.repair-ledger-mobile-card .repair-ledger-row-source{font-size:10px;margin:0}.repair-ledger-mobile-card h2{font-size:20px;font-weight:800;margin:4px 0 0}.repair-ledger-mobile-card .repair-ledger-edit-button{padding:8px 10px;font-size:11px!important;min-height:37px}.repair-ledger-mobile-description{font-size:13px;line-height:1.8;margin:15px 0 13px;padding:11px 12px;background:#f7f7fb;border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere;color:#626c80}.repair-ledger-mobile-card dl{display:grid;grid-template-columns:1fr 1fr;gap:13px 16px;margin:0 0 16px}.repair-ledger-mobile-card dt{font-size:10px;color:#9397a8;margin-bottom:3px}.repair-ledger-mobile-card dd{font-size:12px;margin:0;overflow-wrap:anywhere}.repair-ledger-mobile-card .repair-ledger-mobile-amount{font-size:15px;color:#5c2879;font-weight:800;font-variant-numeric:tabular-nums}.repair-ledger-mobile-status{display:flex;align-items:start;gap:14px;border-top:1px solid #eef0f4;padding-top:13px}.repair-ledger-mobile-status>span{font-size:11px;color:#8a91a4;padding-top:11px}.repair-ledger-mobile-status .repair-ledger-status-control{flex:1}.repair-ledger-mobile-status select{font-size:12px;min-height:40px;padding:8px 10px}.repair-ledger-status-save{font-size:12px!important;min-height:36px;padding:8px 11px}.repair-ledger-table-note{font-size:10px}.repair-ledger-report-footer{font-size:9px;flex-wrap:wrap}.repair-ledger-alert{font-size:11px;align-items:flex-start}.repair-ledger-access{margin:32px auto;padding:30px 20px}.repair-ledger-access h2{font-size:18px}.repair-ledger-dialog{border-radius:18px;width:calc(100vw - 20px);max-height:95dvh}.repair-ledger-editor-header{padding:17px}.repair-ledger-editor-header h2{font-size:20px}.repair-ledger-editor-body{padding:17px}.repair-ledger-editor-grid{gap:16px 12px}.repair-ledger-field input,.repair-ledger-field select,.repair-ledger-field textarea{font-size:16px;padding:11px;min-height:46px}.repair-ledger-editor-footer{padding:13px 17px}.repair-ledger-editor-footer .repair-ledger-button-primary{flex:1}.repair-ledger-field>span{font-size:11px}}
 @media(max-width:380px){.repair-ledger-editor-grid{grid-template-columns:1fr}.repair-ledger-topbar>span{font-size:9px}.repair-ledger-summary strong{font-size:17px}}
 @media(prefers-reduced-motion:reduce){.repair-ledger-spin{animation:none}}
-/* Operational screen styling; the formal print table below keeps its original geometry. */
+/* Screen-only presentation; the formal print table below keeps its original geometry. */
 @media screen {
   .repair-ledger-page {
-    --ledger-ink: #20272b;
-    --ledger-purple: #5b246b;
-    --ledger-line: #dce1e2;
-    background: #f5f5f3;
+    --ledger-ink: #1d1d1f;
+    --ledger-purple: #0071e3;
+    --ledger-line: #e5e5ea;
+    background: #f5f5f7;
     padding-top: 22px;
+    font-family: var(--kpn-system-font);
   }
   .repair-ledger-topbar { color: #687279; margin-bottom: 28px; font-size: 12px; }
   .repair-ledger-back { min-height: 44px; color: #4e575d; font-weight: 500; }
-  .repair-ledger-back:hover { color: #5b246b; }
+  .repair-ledger-back:hover { color: #0071e3; }
   .repair-ledger-header { padding-bottom: 24px; margin-bottom: 22px; border-bottom: 1px solid var(--ledger-line); }
   .repair-ledger-title-wrap { gap: 14px; }
-  .repair-ledger-book { width: 48px; height: 48px; color: #5b246b; background: #eee8f0; border: 1px solid #e2d9e5; border-radius: 9px; box-shadow: none; }
+  .repair-ledger-book { width: 48px; height: 48px; color: #0071e3; background: #eaf3fc; border: 1px solid #dcebf9; border-radius: 14px; box-shadow: none; }
   .repair-ledger-eyebrow { color: #687279; letter-spacing: 0; font-size: 12px; font-weight: 400; }
   .repair-ledger-header h1 { font-size: clamp(26px, 2.7vw, 32px); font-weight: 700; letter-spacing: -.025em; }
   .repair-ledger-header p { color: #687279; font-size: 13px; }
-  .repair-ledger-button { min-height: 44px; border-radius: 8px; font-weight: 600 !important; padding: 10px 16px; }
-  .repair-ledger-button-primary { box-shadow: none; background: #5b246b; }
-  .repair-ledger-button-primary:hover { background: #471b54; }
+  .repair-ledger-button { min-height: 44px; border-radius: 12px; font-weight: 500 !important; font-size: 14px !important; padding: 10px 16px; }
+  .repair-ledger-button-primary { box-shadow: none; background: #0071e3; }
+  .repair-ledger-button-primary:hover { background: #0077ed; }
   .repair-ledger-button-secondary { color: #3e494f; border-color: #cfd6d7; }
   .repair-ledger-button-secondary:hover { background: #f0f2f1; }
-  .repair-ledger-verified { border-color: #dce1e2; border-radius: 9px; background: #fff; padding: 14px 16px; margin-bottom: 20px; }
-  .repair-ledger-verified-icon { color: #5b246b; background: #f3eff4; border-radius: 7px; width: 40px; height: 40px; }
+  .repair-ledger-verified { border-color: #e5e5ea; border-radius: 18px; background: #ffffffd9; padding: 16px 18px; margin-bottom: 20px; box-shadow: 0 2px 12px #1d1d1f04; }
+  .repair-ledger-verified-icon { color: #0071e3; background: #eaf3fc; border-radius: 12px; width: 40px; height: 40px; }
   .repair-ledger-verified small { color: #687279; font-size: 11px; }
   .repair-ledger-verified strong { color: #20272b; font-size: 15px; font-weight: 600; }
   .repair-ledger-verified > div > span { color: #687279; font-size: 11px; }
-  .repair-ledger-verified > button { min-height: 44px; border-radius: 7px; border-color: #dce1e2; color: #5b246b; font-size: 12px; font-weight: 500; }
-  .repair-ledger-summary { gap: 0; background: #fff; border: 1px solid var(--ledger-line); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  .repair-ledger-verified > button { min-height: 44px; border-radius: 12px; border-color: #e5e5ea; color: #0071e3; font-size: 13px; font-weight: 500; }
+  .repair-ledger-summary { gap: 0; background: #fff; border: 1px solid #e5e5ea; border-radius: 22px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 20px #1d1d1f05; }
   .repair-ledger-summary > div { background: none; border: 0; border-radius: 0; padding: 20px 22px; }
   .repair-ledger-summary > div + div { border-left: 1px solid #e5e8e8; }
   .repair-ledger-summary span { font-size: 12px; color: #687279; margin-bottom: 8px; }
   .repair-ledger-summary strong { font-size: clamp(20px, 1.9vw, 26px); font-weight: 600; letter-spacing: -.025em; }
   .repair-ledger-summary small { font-size: 11px; color: #687279; }
   .repair-ledger-paid-total { color: #247657; }
-  .repair-ledger-filters { border-radius: 10px; padding: 18px; gap: 14px; }
-  .repair-ledger-filters label > span { color: #4e595f; font-size: 12px; font-weight: 500; }
+  .repair-ledger-filters { border-radius: 20px; padding: 20px; gap: 14px; border-color: #e5e5ea; box-shadow: 0 3px 16px #1d1d1f04; }
+  .repair-ledger-filters label > span { color: #6e6e73; font-size: 14px; font-weight: 500; }
   .repair-ledger-filters input,
-  .repair-ledger-filters select { height: 44px; border-color: #cfd6d7; border-radius: 7px; background: #fff; color: #20272b; font-size: 13px; }
-  .repair-ledger-icon-button { width: 44px; height: 44px; min-width: 44px; border-radius: 8px; color: #59656c; }
+  .repair-ledger-filters select { height: 44px; border-color: #d2d2d7; border-radius: 10px; background: #fff; color: #1d1d1f; font-size: 14px; }
+  .repair-ledger-icon-button { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; color: #6e6e73; }
   .repair-ledger-icon-button:hover { background: #f2f3f1; }
   .repair-ledger-table-note { color: #687279; font-size: 12px; line-height: 1.9; margin: 18px 0 12px; }
   .repair-ledger-table-note strong { color: #4e595f; }
-  .repair-ledger-table-wrap { border: 1px solid #d5dbdc; border-radius: 9px; box-shadow: none; }
+  .repair-ledger-table-wrap { border: 1px solid #e5e5ea; border-radius: 20px; box-shadow: 0 4px 24px #1d1d1f05; }
   .repair-ledger-table { color: #303a40; font-size: 12px; }
-  .repair-ledger-table thead { background: #eff1ef; color: #4b565c; }
+  .repair-ledger-table thead { background: #f5f5f7; color: #6e6e73; }
   .repair-ledger-table th { padding: 14px 10px; font-size: 11px; font-weight: 600; line-height: 1.7; }
   .repair-ledger-table td { padding: 16px 10px; border-top-color: #e2e6e6; line-height: 1.8; }
   .repair-ledger-table td strong { color: #20272b; font-weight: 600; }
-  .repair-ledger-table tbody tr:nth-child(even) { background: #fafbf9; }
-  .repair-ledger-table tbody tr:hover { background: #f5f1f6; }
+  .repair-ledger-table tbody tr:nth-child(even) { background: #fcfcfd; }
+  .repair-ledger-table tbody tr:hover { background: #f0f6fd; }
   .repair-ledger-row-source { color: #758087; font-size: 10px; line-height: 1.7; }
   .repair-ledger-table tfoot { background: #eff1ef; border-top: 2px solid #cfd6d7; }
   .repair-ledger-table tfoot th,
   .repair-ledger-table tfoot td { font-weight: 600; }
   .repair-ledger-status-control select { min-height: 44px; padding: 7px 5px; font-size: 11px; border-color: #dce1e2; border-radius: 6px; }
   .repair-ledger-state-pending { background: #f1f3f2; color: #5e686e; }
-  .repair-ledger-state-committee_signed { background: #f0eaf2; color: #673876; }
+  .repair-ledger-state-committee_signed { background: #eaf3fc; color: #0066cc; }
   .repair-ledger-state-submitted_executive { background: #ecf1f6; color: #3b617c; }
   .repair-ledger-state-submitted_review { background: #f8f2e5; color: #88672d; }
   .repair-ledger-state-paid { background: #edf5ef; color: #247657; }
-  .repair-ledger-status-save { min-height: 44px; width: 100%; justify-content: center; padding: 8px; font-size: 11px !important; font-weight: 600; background: #5b246b; border-radius: 6px; }
-  .repair-ledger-edit-button { min-height: 44px; min-width: 44px; padding: 8px; font-size: 11px !important; border-color: #d9d2dc; color: #5b246b; border-radius: 7px; }
-  .repair-ledger-edit-button:hover { background: #f3eff4; }
+  .repair-ledger-status-save { min-height: 44px; width: 100%; justify-content: center; padding: 8px; font-size: 11px !important; font-weight: 500; background: #0071e3; border-radius: 10px; }
+  .repair-ledger-edit-button { min-height: 44px; min-width: 44px; padding: 8px; font-size: 11px !important; border-color: #e5e5ea; color: #0071e3; border-radius: 10px; }
+  .repair-ledger-edit-button:hover { background: #eaf3fc; }
   .repair-ledger-report-footer { color: #687279; font-size: 11px; line-height: 1.8; margin: 16px 0 0; }
-  .repair-ledger-empty { border-radius: 10px; border-color: #dce1e2; color: #687279; }
+  .repair-ledger-empty { border-radius: 22px; border-color: #e5e5ea; color: #6e6e73; }
   .repair-ledger-empty strong { color: #36434a; font-weight: 600; }
   .repair-ledger-table-empty { color: #687279; }
   .repair-ledger-alert { border-radius: 8px; font-size: 13px; padding: 12px 15px; }
   .repair-ledger-alert button { min-height: 44px; padding: 8px 12px; border-radius: 6px; }
-  .repair-ledger-dialog { border-color: #dce1e2; border-radius: 12px; color: #20272b; box-shadow: 0 16px 50px #20272b29; }
-  .repair-ledger-dialog::backdrop { background: #20272b73; backdrop-filter: none; }
-  .repair-ledger-editor-header { background: #fafbf9; border-bottom-color: #dce1e2; padding: 20px 24px; backdrop-filter: none; }
+  .repair-ledger-dialog { border-color: #ffffffb3; border-radius: 24px; color: #1d1d1f; box-shadow: 0 24px 80px #1d1d1f26; }
+  .repair-ledger-dialog::backdrop { background: #1d1d1f47; backdrop-filter: blur(8px); }
+  .repair-ledger-editor-header { background: #ffffffeb; border-bottom-color: #e5e5ea; padding: 22px 24px; backdrop-filter: saturate(160%) blur(20px); -webkit-backdrop-filter: saturate(160%) blur(20px); }
   .repair-ledger-editor-header h2 { font-size: 22px; font-weight: 700; }
   .repair-ledger-editor-header .repair-ledger-eyebrow { font-size: 11px; color: #687279; }
   .repair-ledger-editor-body { padding: 22px 24px; }
   .repair-ledger-editor-identity { font-size: 12px; color: #687279; border-bottom-color: #e2e6e6; }
   .repair-ledger-editor-identity strong { color: #20272b; font-weight: 600; }
-  .repair-ledger-editor-note { color: #5e5662; background: #f3eff4; border-color: #e1d8e5; border-radius: 7px; font-size: 12px; line-height: 1.9; }
+  .repair-ledger-editor-note { color: #51677d; background: #eef5fc; border-color: #dcebf9; border-radius: 12px; font-size: 13px; line-height: 1.9; }
   .repair-ledger-field { gap: 8px; }
-  .repair-ledger-field > span { color: #4e595f; font-size: 13px; font-weight: 500; }
+  .repair-ledger-field > span { color: #6e6e73; font-size: 14px; font-weight: 500; }
   .repair-ledger-field input,
   .repair-ledger-field select,
-  .repair-ledger-field textarea { border-color: #cfd6d7; border-radius: 7px; color: #20272b; background: #fff; font-size: 14px; min-height: 46px; padding: 11px 12px; }
+  .repair-ledger-field textarea { border-color: #d2d2d7; border-radius: 11px; color: #1d1d1f; background: #fff; font-size: 14px; min-height: 46px; padding: 11px 12px; }
   .repair-ledger-field input:disabled,
   .repair-ledger-field select:disabled { background: #f0f2f1; color: #687279; }
   .repair-ledger-field input::placeholder,
   .repair-ledger-field textarea::placeholder { color: #8a9398; }
   .repair-ledger-field small { font-size: 11px; color: #687279; }
   .repair-ledger-small-note { font-size: 11px; color: #687279; }
-  .repair-ledger-editor-footer { background: #fff; border-top-color: #dce1e2; backdrop-filter: none; padding: 16px 24px; }
+  .repair-ledger-editor-footer { background: #ffffffeb; border-top-color: #e5e5ea; backdrop-filter: saturate(160%) blur(20px); -webkit-backdrop-filter: saturate(160%) blur(20px); padding: 16px 24px; }
   .repair-ledger-page button:focus-visible,
   .repair-ledger-page a:focus-visible,
   .repair-ledger-page input:focus-visible,
   .repair-ledger-page select:focus-visible,
-  .repair-ledger-page textarea:focus-visible { outline: 2px solid #5b246b; outline-offset: 3px; }
+  .repair-ledger-page textarea:focus-visible { outline: 3px solid #0071e34d; outline-offset: 3px; }
 
   @media (max-width: 767px) {
     .repair-ledger-page { padding: 16px 16px 120px; }
@@ -113,7 +114,7 @@
     .repair-ledger-topbar > span { gap: 4px; }
     .repair-ledger-header { gap: 18px; padding-bottom: 20px; margin-bottom: 18px; }
     .repair-ledger-title-wrap { align-items: flex-start; gap: 12px; }
-    .repair-ledger-book { width: 42px; height: 42px; border-radius: 8px; margin-top: 4px; }
+    .repair-ledger-book { width: 42px; height: 42px; border-radius: 13px; margin-top: 4px; }
     .repair-ledger-book svg { width: 22px; }
     .repair-ledger-header .repair-ledger-eyebrow { font-size: 10px; }
     .repair-ledger-header h1 { font-size: 25px; }
@@ -129,15 +130,15 @@
     .repair-ledger-summary span { font-size: 11px; }
     .repair-ledger-summary strong { font-size: 21px; }
     .repair-ledger-summary small { font-size: 10px; }
-    .repair-ledger-filters { border-radius: 9px; padding: 14px; gap: 13px; }
+    .repair-ledger-filters { border-radius: 18px; padding: 16px; gap: 13px; }
     .repair-ledger-filters input,
     .repair-ledger-filters select { font-size: 16px; }
-    .repair-ledger-filters label > span { font-size: 12px; }
-    .repair-ledger-mobile-card { border-radius: 9px; padding: 18px 16px; margin-bottom: 14px; }
+    .repair-ledger-filters label > span { font-size: 14px; }
+    .repair-ledger-mobile-card { border-radius: 20px; padding: 20px 18px; margin-bottom: 14px; border-color: #e5e5ea; box-shadow: 0 3px 18px #1d1d1f05; }
     .repair-ledger-mobile-card h2 { font-weight: 700; font-size: 21px; }
     .repair-ledger-mobile-card .repair-ledger-row-source { font-size: 11px; color: #687279; }
     .repair-ledger-mobile-card .repair-ledger-edit-button { min-height: 44px; font-size: 12px !important; }
-    .repair-ledger-mobile-description { color: #4e595f; background: #f3f4f1; border-radius: 6px; font-size: 14px; line-height: 1.9; margin: 16px 0; }
+    .repair-ledger-mobile-description { color: #515154; background: #f5f5f7; border-radius: 12px; font-size: 14px; line-height: 1.9; margin: 16px 0; }
     .repair-ledger-mobile-card dl { gap: 16px; }
     .repair-ledger-mobile-card dt { font-size: 11px; color: #687279; }
     .repair-ledger-mobile-card dd { font-size: 13px; color: #303a40; }
@@ -149,16 +150,17 @@
     .repair-ledger-table-note { font-size: 11px; }
     .repair-ledger-alert { font-size: 12px; }
     .repair-ledger-report-footer { font-size: 10px; }
-    .repair-ledger-dialog { border-radius: 10px; }
+    .repair-ledger-dialog { border-radius: 22px; }
     .repair-ledger-editor-header,
     .repair-ledger-editor-body { padding: 18px; }
     .repair-ledger-editor-header h2 { font-size: 21px; }
     .repair-ledger-editor-identity { font-size: 12px; }
-    .repair-ledger-field > span { font-size: 12px; }
+    .repair-ledger-field > span { font-size: 14px; }
     .repair-ledger-field input,
     .repair-ledger-field select,
     .repair-ledger-field textarea { font-size: 16px; }
     .repair-ledger-editor-footer { padding: 14px 18px; }
+    .repair-ledger-editor-grid { grid-template-columns: 1fr; }
   }
 }
 @media print{@page{size:A4 landscape;margin:10mm 8mm}html,body{background:#fff!important;overflow:visible!important;height:auto!important;margin:0!important;padding:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.repair-ledger-page{padding:0!important;margin:0!important;min-height:0!important;background:#fff!important;color:#000!important;font-family:Sarabun,sans-serif}.repair-ledger-screen-only,.repair-ledger-page dialog,nav,.kpn-bottom-nav,.global-bottom-nav{display:none!important}.repair-ledger-header{margin:0 0 5mm!important;display:block!important;text-align:center}.repair-ledger-title-wrap{display:block}.repair-ledger-header h1{font-size:20pt!important;margin:0 0 1.5mm}.repair-ledger-header .repair-ledger-eyebrow{font-size:9pt;color:#000}.repair-ledger-header p{font-size:10pt;color:#000}.repair-ledger-table-wrap{display:block!important;overflow:visible!important;border:0;border-radius:0;box-shadow:none}.repair-ledger-table{width:100%!important;min-width:0!important;table-layout:fixed;border-collapse:collapse;font-size:8pt!important}.repair-ledger-table th,.repair-ledger-table td{padding:2mm 1.5mm!important;border:.2mm solid #555!important;color:#000!important;font-size:8pt!important;line-height:1.5!important;vertical-align:top;white-space:normal!important;overflow-wrap:anywhere}.repair-ledger-table thead{display:table-header-group;background:#eee!important}.repair-ledger-table tbody tr{background:white!important;break-inside:avoid;page-break-inside:avoid}.repair-ledger-table tfoot{display:table-row-group;background:white!important}.repair-ledger-table .repair-ledger-number{white-space:nowrap!important}.repair-ledger-print-status{display:block!important;font-size:8pt!important;background:transparent!important;padding:0}.repair-ledger-report-footer{font-size:8pt;color:#555;margin-top:3mm}.repair-ledger-table-empty{padding:10mm!important}}
