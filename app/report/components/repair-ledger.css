@@ -163,4 +163,57 @@
     .repair-ledger-editor-grid { grid-template-columns: 1fr; }
   }
 }
+@media screen {
+  .repair-ledger-vehicle-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding: 13px 15px; border: 1px solid #e5e5ea; border-radius: 12px; background: #f5f5f7; font-size: 13px; color: #6e6e73; }
+  .repair-ledger-vehicle-summary strong { color: #1d1d1f; font-weight: 600; margin-left: 6px; }
+  .repair-ledger-vehicle-summary small { flex-basis: 100%; font-size: 11px; }
+  .repair-ledger-extra-details { margin-top: 22px; border: 1px solid #e5e5ea; border-radius: 14px; overflow: hidden; }
+  .repair-ledger-extra-details > summary { cursor: pointer; padding: 16px; font-size: 14px; color: #1d1d1f; font-weight: 500; min-height: 48px; }
+  .repair-ledger-extra-details > summary small { margin-left: 10px; color: #6e6e73; font-size: 11px; font-weight: 400; }
+  .repair-ledger-extra-details > .repair-ledger-editor-grid { padding: 4px 16px 16px; }
+  .repair-ledger-extra-details > .repair-ledger-small-note { padding: 0 16px 16px; margin: 0; }
+  .repair-ledger-date-error { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; color: #b23636 !important; font-size: 12px !important; }
+  .repair-ledger-date-error button { padding: 7px 10px; min-height: 40px; background: #fff; border: 1px solid #d2d2d7; color: #0071e3; border-radius: 9px; }
+  .repair-ledger-pending-date { display: block; color: #88672d; font-size: 11px; line-height: 1.8; white-space: normal; }
+  .repair-ledger-report-link { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto; padding: 7px 10px; min-height: 40px; color: #0066cc; border-radius: 9px; border: 1px solid #0066cc26; text-decoration: none; background: #fff; font-size: 12px; }
+  .repair-ledger-inbox { margin: 0 0 20px; background: #fff; border: 1px solid #e5e5ea; border-radius: 18px; overflow: hidden; }
+  .repair-ledger-inbox > summary { display: flex; align-items: center; gap: 12px; padding: 17px 20px; cursor: pointer; color: #46535e; font-size: 14px; min-height: 60px; }
+  .repair-ledger-inbox > summary::after { content: '+'; margin-left: auto; color: #0071e3; font-size: 22px; }
+  .repair-ledger-inbox[open] > summary::after { content: '−'; }
+  .repair-ledger-inbox > summary strong { display: inline-block; padding: 1px 8px; border-radius: 20px; margin-left: 6px; background: #eef4fb; color: #0066cc; font-size: 12px; }
+  .repair-ledger-inbox > summary small { display: block; margin-top: 4px; color: #6e6e73; font-size: 11px; }
+  .repair-ledger-inbox-body { padding: 0 20px 18px; }
+  .repair-ledger-inbox-body > p { color: #6e6e73; font-size: 12px; margin: 0 0 14px; line-height: 1.9; }
+  .repair-ledger-inbox-body > article { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-top: 1px solid #e5e5ea; padding: 17px 0; }
+  .repair-ledger-inbox-body > article:last-child { padding-bottom: 0; }
+  .repair-ledger-inbox-body article > div:first-child { min-width: 0; }
+  .repair-ledger-inbox-body article strong { font-size: 15px; font-weight: 600; color: #1d1d1f; }
+  .repair-ledger-inbox-body article small { display: block; color: #6e6e73; font-size: 11px; margin-top: 4px; }
+  .repair-ledger-inbox-body article p { font-size: 13px; line-height: 1.9; margin: 8px 0; color: #46535e; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .repair-ledger-inbox-body article span { font-size: 11px; color: #6e6e73; }
+  .repair-ledger-inbox-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+  .repair-ledger-inbox-actions .repair-ledger-button { font-size: 12px !important; }
+  .repair-ledger-inbox-empty { padding-top: 10px; }
+  .repair-ledger-duplicate-warning { margin-top: 20px; padding: 16px; background: #fffbf1; border: 1px solid #ead7a7; border-radius: 13px; color: #725928; font-size: 13px; line-height: 1.9; }
+  .repair-ledger-duplicate-warning > div { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #ead7a7; }
+  .repair-ledger-duplicate-warning > div span { min-width: 0; overflow-wrap: anywhere; }
+  .repair-ledger-duplicate-warning button { min-height: 44px; border: 1px solid #ddc68f; border-radius: 9px; padding: 7px 10px; font-size: 12px; color: #725928; background: #fff; flex-shrink: 0; }
+  .repair-ledger-duplicate-warning > label { display: flex; align-items: flex-start; gap: 9px; margin-top: 16px; cursor: pointer; }
+  .repair-ledger-duplicate-warning input { width: 20px; height: 20px; flex-shrink: 0; margin: 3px 0 0; accent-color: #0071e3; }
+  .repair-ledger-inbox > summary:focus-visible, .repair-ledger-extra-details > summary:focus-visible { outline: 3px solid #0071e34d; outline-offset: -4px; border-radius: 12px; }
+  @media (max-width: 767px) {
+    .repair-ledger-extra-details > summary { padding: 15px 13px; }
+    .repair-ledger-extra-details > summary small { display: block; margin: 5px 0 0 15px; }
+    .repair-ledger-extra-details > .repair-ledger-editor-grid { padding: 4px 13px 13px; }
+    .repair-ledger-inbox > summary { padding: 16px; }
+    .repair-ledger-inbox-body { padding: 0 16px 16px; }
+    .repair-ledger-inbox-body > article { flex-direction: column; gap: 12px; }
+    .repair-ledger-inbox-actions { width: 100%; }
+    .repair-ledger-inbox-actions .repair-ledger-button { justify-content: flex-start; }
+    .repair-ledger-report-link { margin-left: 0; }
+    .repair-ledger-alert-success { flex-wrap: wrap; }
+    .repair-ledger-editor-footer .repair-ledger-button { font-size: 12px !important; padding: 10px; }
+    .repair-ledger-duplicate-warning > div { flex-direction: column; }
+  }
+}
 @media print{@page{size:A4 landscape;margin:10mm 8mm}html,body{background:#fff!important;overflow:visible!important;height:auto!important;margin:0!important;padding:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.repair-ledger-page{padding:0!important;margin:0!important;min-height:0!important;background:#fff!important;color:#000!important;font-family:Sarabun,sans-serif}.repair-ledger-screen-only,.repair-ledger-page dialog,nav,.kpn-bottom-nav,.global-bottom-nav{display:none!important}.repair-ledger-header{margin:0 0 5mm!important;display:block!important;text-align:center}.repair-ledger-title-wrap{display:block}.repair-ledger-header h1{font-size:20pt!important;margin:0 0 1.5mm}.repair-ledger-header .repair-ledger-eyebrow{font-size:9pt;color:#000}.repair-ledger-header p{font-size:10pt;color:#000}.repair-ledger-table-wrap{display:block!important;overflow:visible!important;border:0;border-radius:0;box-shadow:none}.repair-ledger-table{width:100%!important;min-width:0!important;table-layout:fixed;border-collapse:collapse;font-size:8pt!important}.repair-ledger-table th,.repair-ledger-table td{padding:2mm 1.5mm!important;border:.2mm solid #555!important;color:#000!important;font-size:8pt!important;line-height:1.5!important;vertical-align:top;white-space:normal!important;overflow-wrap:anywhere}.repair-ledger-table thead{display:table-header-group;background:#eee!important}.repair-ledger-table tbody tr{background:white!important;break-inside:avoid;page-break-inside:avoid}.repair-ledger-table tfoot{display:table-row-group;background:white!important}.repair-ledger-table .repair-ledger-number{white-space:nowrap!important}.repair-ledger-print-status{display:block!important;font-size:8pt!important;background:transparent!important;padding:0}.repair-ledger-report-footer{font-size:8pt;color:#555;margin-top:3mm}.repair-ledger-table-empty{padding:10mm!important}}

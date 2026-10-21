@@ -5,6 +5,7 @@ import {
   REPAIR_LEDGER_STATUSES, isLedgerDate, isLedgerMonth, ledgerToday, ledgerDateLabel,
   ledgerMonthLabel, ledgerAmountCents, ledgerAmountValue, ledgerMoney, ledgerMoneyFromCents,
   ledgerTotals, ledgerDraft, ledgerValidateDraft, ledgerPayload, ledgerFilterRows, ledgerRowKey,
+  findPossibleLedgerDuplicates,
 } from '../lib/repairLedger.js'
 
 test('calendar dates use Bangkok calendar values without a UTC date shift', () => {
@@ -44,7 +45,8 @@ test('drafts autofill car details but preserve maintenance source identity and c
   const draft = ledgerDraft({ source_type: 'maintenance', source_id: 'maint-1', car_id: 7, updated_at: 'opaque-token', amount: null }, {
     car: { id: 7, plate_number: '90-7606 นฐ.', departments: { name: 'แผนกปฏิบัติการ' } }, month: '2026-09', today: '2026-10-19',
   })
-  assert.equal(draft.repair_date, '2026-09-01')
+  assert.equal(draft.repair_date, '2026-10-19', 'selecting a historical report month does not invent a repair date')
+  assert.equal(draft.usage_date, '', 'only an actual usage date selected by staff can create a report mapping')
   assert.equal(draft.department, 'แผนกปฏิบัติการ')
   assert.equal(draft.plate_number, '90-7606 นฐ.')
   assert.equal(draft.amount, '')
@@ -54,19 +56,54 @@ test('drafts autofill car details but preserve maintenance source identity and c
   assert.equal(payload.car_id, 7)
   assert.equal(payload.bill_number, 'B-001')
   assert.equal(payload.amount, null)
+  assert.equal(payload.usage_date, null)
   assert.equal(payload.repair_description, 'เปลี่ยนน้ำมันเครื่อง')
   assert.equal(payload.paid_date, null)
 })
 
-test('form requires date, plate and description while unknown billing fields can stay blank', () => {
-  const draft = ledgerDraft({ repair_date: '2026-10-19', plate_number: 'ทดสอบ 123', repair_description: 'ตรวจเบรก' })
+test('new entries require a registered car and usage date while unknown billing fields can stay blank', () => {
+  const draft = ledgerDraft({ car_id: 7, usage_date: '2026-09-18', repair_date: '2026-10-19', plate_number: 'ทดสอบ 123', repair_description: 'ตรวจเบรก' })
   assert.deepEqual(ledgerValidateDraft(draft), {})
+  assert.equal(ledgerPayload(draft).usage_date, '2026-09-18')
+  assert.equal(ledgerPayload(draft).repair_date, '2026-10-19')
+  assert.ok(ledgerValidateDraft({ ...draft, car_id: '' }).car_id)
+  assert.ok(ledgerValidateDraft({ ...draft, car_id: '1.5' }).car_id)
+  assert.ok(ledgerValidateDraft({ ...draft, usage_date: '' }).usage_date)
+  assert.ok(ledgerValidateDraft({ ...draft, usage_date: '2026-02-30' }).usage_date)
   assert.ok(ledgerValidateDraft({ ...draft, repair_date: '2026-02-30' }).repair_date)
   assert.ok(ledgerValidateDraft({ ...draft, plate_number: ' ' }).plate_number)
   assert.ok(ledgerValidateDraft({ ...draft, repair_description: ' ' }).repair_description)
   assert.ok(ledgerValidateDraft({ ...draft, amount: '-20' }).amount)
   assert.ok(ledgerValidateDraft({ ...draft, amount: '1.234' }).amount)
   assert.ok(ledgerValidateDraft({ ...draft, status: 'arbitrary' }).status)
+})
+
+test('existing unmapped legacy records can change status without inventing a usage mapping', () => {
+  const draft = ledgerDraft({ id: 'old-entry', repair_date: '2026-09-19', plate_number: 'รถเดิม', repair_description: 'ตรวจเบรก', status: 'paid' })
+  assert.ok(ledgerValidateDraft(draft).usage_date)
+  assert.deepEqual(ledgerValidateDraft(draft, { allowLegacyUsageDate: true }), {})
+  assert.ok(ledgerValidateDraft({ ...draft, id: null }, { allowLegacyUsageDate: true }).usage_date)
+  assert.ok(ledgerValidateDraft({ ...draft, usage_date: 'not-a-date' }, { allowLegacyUsageDate: true }).usage_date)
+})
+
+test('duplicate suggestions match saved same-car work without blocking every same-day repair', () => {
+  const draft = ledgerDraft({ id: 'self', car_id: 7, usage_date: '2026-09-18', repair_date: '2026-10-19',
+    bill_number: ' B-01 ', shop_name: 'ร้าน เอ', repair_description: 'ตรวจ เบรก', amount: '' })
+  const rows = [
+    { ...draft, id: 'self' },
+    { ...draft, id: 'invoice', usage_date: '2026-08-18', repair_date: '2026-08-19', repair_description: 'งานอื่น' },
+    { ...draft, id: 'same-description', bill_number: '', shop_name: '', amount: null },
+    { ...draft, id: 'other-shop', shop_name: 'ร้านบี', repair_description: 'งานอื่น', amount: null },
+    { ...draft, id: 'other-car', car_id: 8 },
+    { ...draft, id: null },
+    { ...draft, id: 'different-work', bill_number: '', repair_description: 'เปลี่ยนยาง', amount: null },
+  ]
+  assert.deepEqual(findPossibleLedgerDuplicates(draft, rows).map(row => row.id), ['invoice', 'same-description'])
+  assert.deepEqual(findPossibleLedgerDuplicates({ ...draft, car_id: '' }, rows), [])
+  const amounts = [{ id: 'amount', car_id: 7, repair_date: draft.repair_date, shop_name: 'ร้าน เอ', amount: '0.10' }]
+  assert.equal(findPossibleLedgerDuplicates({ ...draft, bill_number: '', repair_description: '', amount: '0.1' }, amounts).length, 1)
+  assert.equal(findPossibleLedgerDuplicates({ ...draft, bill_number: '', repair_description: '', amount: '' }, amounts).length, 0,
+    'two unknown amounts do not become matching explicit zero amounts')
 })
 
 test('search and status filters operate on the same report rows used by printing and totals', () => {
@@ -85,9 +122,10 @@ test('UI saves explicitly, uses one retry-safe manual key, and checks access bef
   const component = readFileSync(new URL('../app/report/components/RepairLedger.js', import.meta.url), 'utf8')
   assert.match(component, /const \[draft, setDraft\] = useState\(\(\) => ledgerDraft/)
   assert.match(component, /client_request_id: crypto\.randomUUID\(\)/)
-  assert.equal((component.match(/crypto\.randomUUID/g) || []).length, 1)
+  assert.equal((component.match(/crypto\.randomUUID/g) || []).length, 2,
+    'one key is created lazily for either a manual entry or optional source import, never on retry')
   assert.match(component, /if \(!getRepairLedgerIdentity\(\)\)/)
-  assert.ok(component.indexOf('if (!getRepairLedgerIdentity())') < component.indexOf('await loadRepairLedger'))
+  assert.ok(component.indexOf('if (!getRepairLedgerIdentity())') < component.indexOf('await loadRepairLedger({ month, carId:'))
   assert.match(component, /บันทึกสถานะ/)
   assert.match(component, /useEffect\(\(\) => watchRepairLedgerIdentity\(nextIdentity =>/)
   assert.match(component, /lastStaffId\.current !== nextIdentity\.staff_id/)

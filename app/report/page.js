@@ -9,9 +9,9 @@ import PageSkeleton from '@/app/components/PageSkeleton'
 import { getSignatureSchedule } from '@/lib/signatureSchedule'
 import { normalizeStaffCode } from '@/lib/staffCode'
 import { startVisiblePolling } from '@/lib/visiblePolling'
-import { saveRepairLedger, getRepairLedgerIdentity, watchRepairLedgerIdentity, clearRepairLedgerIdentity } from '@/lib/repairLedgerData'
-import { ledgerValidateDraft } from '@/lib/repairLedger'
-import RepairLedgerIdentity from './components/RepairLedgerIdentity'
+import { loadRepairLedgerYp6 } from '@/lib/repairLedgerData'
+import { isLedgerMonth, ledgerToday, ledgerMoney, ledgerMoneyFromCents } from '@/lib/repairLedger'
+import { appendLedgerRepairRows, attachLegacyRepairCosts, repairReportMonthBounds, repairReportTotalCents } from '@/lib/repairLedgerReport'
 import './report-ui.css'
 
 // --- Main Component ---
@@ -494,49 +494,21 @@ function SignatureModal({ isOpen, onClose, onSave, title, onVerifySuccess, signa
 // 📄 Component: หน้าตารายงาน
 // ==========================================
 // ── Mobile Bottom Sheet for Report Controls ──
-function RepairLedgerActions({ onSave, onOpen, onNew, saving, saved, hasEntry, error }) {
-  const [identity, setIdentity] = useState(() => getRepairLedgerIdentity())
-  useEffect(() => watchRepairLedgerIdentity(setIdentity), [])
-  return <div className="report-repair-actions space-y-2">
-    <button onClick={onSave} disabled={saving}
-      className={`w-full py-4 rounded-[16px] text-[15px] font-semibold transition-all active:scale-[0.98] disabled:opacity-60 ${saved ? 'bg-[#edfbf0] text-[#1a7f37]' : 'bg-[#4b1560] text-white'}`}>
-      {saving ? 'กำลังบันทึก...' : saved ? '✓ บันทึกลงสมุดคุมแล้ว' : hasEntry ? 'บันทึกแก้ไขรายการเดิม' : 'บันทึกการซ่อม'}
+function RepairLedgerActions({ onOpen }) {
+  return <div className="report-repair-actions space-y-3">
+    <p className="text-sm text-[#6e6e73]">กรอกและแก้ไขที่สมุดคุมงานซ่อมเพียงที่เดียว เลือกย้อนหลังได้เฉพาะวันที่รถคันนี้มีการใช้งาน แล้วรายการจะขึ้น ยพ.6 อัตโนมัติ</p>
+    <button onClick={onOpen} className="w-full py-4 rounded-[16px] text-[15px] font-semibold bg-[#4b1560] text-white">
+      เปิดสมุดคุมงานซ่อม <span aria-hidden="true">↗</span>
     </button>
-    {error && <p role="alert" className="text-[12px] text-red-700 bg-red-50 rounded-xl p-3">{error}</p>}
-    <button onClick={onOpen} disabled={saving} className="w-full py-3 rounded-[14px] border border-[#d7c2df] text-[#4b1560] bg-white text-[14px] font-semibold active:bg-[#f2eaf5]">
-      สมุดคุมงานซ่อม <span aria-hidden="true">↗</span>
-    </button>
-    {hasEntry && <button onClick={onNew} disabled={saving} className="w-full py-2 text-[12px] font-semibold text-[#702082]">+ เพิ่มรายการซ่อมใหม่</button>}
-    <p className="text-[11px] text-[#6e6e73] text-center">{identity ? <>ผู้บันทึก: {identity.full_name} <button type="button" disabled={saving} className="text-purple-800 underline" onClick={() => clearRepairLedgerIdentity()}>เปลี่ยนผู้บันทึก</button></> : 'พนักงานทุกคนกรอกได้ · ยืนยันรหัสพนักงานก่อนบันทึก'}</p>
-    <p className="text-[10px] text-[#6e6e73] text-center">บันทึกลงสมุดคุม ไม่เพิ่มยอดซ่อมซ้ำในใบ ยพ.6</p>
+    <p className="text-[11px] text-[#6e6e73] text-center">พนักงานทุกคนกรอกได้ · ยืนยันรหัสพนักงานก่อนบันทึก</p>
   </div>
-}
-
-function RepairStaffVerification({ onVerified, onCancel }) {
-  const dialogRef = useRef(null)
-  useEffect(() => {
-    const dialog = dialogRef.current
-    dialog.showModal()
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { dialog.close(); document.body.style.overflow = previousOverflow }
-  }, [])
-  return <dialog ref={dialogRef} className="repair-ledger-verify-dialog" aria-label="ยืนยันผู้บันทึกการซ่อม" onCancel={event => { event.preventDefault(); onCancel() }}>
-    <div className="p-5 sm:p-6">
-      <h2 className="text-xl font-bold text-[#4b1560] mb-2">ยืนยันผู้บันทึกการซ่อม</h2>
-      <p className="text-sm text-gray-600 mb-4">ใส่รหัสพนักงานของคุณเพื่อบันทึกรายการที่กรอกไว้ ไม่ต้องล็อกอินแอดมิน</p>
-      <RepairLedgerIdentity embedded onVerified={onVerified} onCancel={onCancel} />
-    </div>
-  </dialog>
 }
 
 function MobileControlSheet({ 
   selectedMonth, setSelectedMonth, fromText, setFromText, toText, setToText, dearText, setDearText, 
   isEVCar, canSignAny, isCurrentMonthSignable, signableMonth, driverSigText, controllerSigText, 
   signaturePeriodText,
-  handleDeleteSig, openSigModal, drillDate, setDrillDate, drillDesc, setDrillDesc, drillCost,
-  setDrillCost, drillHours, setDrillHours, drillSaving, drillSaved, setDrillSaved,
-  handleSaveRepair, openRepairLedger, newRepair, hasRepairEntry, drillError,
+  handleDeleteSig, openSigModal, openRepairLedger, reportReady,
   handleSaveDoc, docSaving, docSaved 
 }) {
   const [activeTab, setActiveTab] = useState('doc')
@@ -577,7 +549,7 @@ function MobileControlSheet({
           className={`flex-1 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all ${activeTab==='drill'&&expanded?'bg-[#4b1560] text-white':'bg-[#e5e5ea] text-[#3c3c43]'}`}>
           รายการซ่อม
         </button>
-        <button onClick={()=>window.print()}
+        <button onClick={()=>window.print()} disabled={!reportReady}
           aria-label="พิมพ์รายงาน"
           className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold bg-[#4b1560] text-white flex-shrink-0">
           <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
@@ -671,47 +643,7 @@ function MobileControlSheet({
               )}
             </>
           ) : (
-            /* ── Tab: ซ่อม ── */
-            <>
-              {/* วันที่ */}
-              <div className="bg-white rounded-[14px] overflow-hidden"
-                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-                <div className="px-4 pt-3 pb-1">
-                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">วันที่</p>
-                </div>
-                <input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
-                  className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none"/>
-              </div>
-
-              {/* รายการซ่อม */}
-              <div className="bg-white rounded-[14px] overflow-hidden"
-                   style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-                <div className="px-4 pt-3 pb-1">
-                  <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">รายการซ่อม</p>
-                </div>
-                <input type="text" disabled={drillSaving} value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}}
-                  placeholder="เช่น ซ่อมดับเพลิง, ซ่อมอพยพ..."
-                  className="w-full px-4 py-3 text-[15px] text-[#4b1560] bg-transparent border-none outline-none placeholder:text-[#c7c7cc]"/>
-              </div>
-
-              {/* เงิน + ชั่วโมง */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-[14px] overflow-hidden"
-                     style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-                  <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">เงิน (บาท)</p></div>
-                  <input type="number" disabled={drillSaving} value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
-                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#4b1560] text-center bg-transparent border-none outline-none"/>
-                </div>
-                <div className="bg-white rounded-[14px] overflow-hidden"
-                     style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-                  <div className="px-3 pt-3 pb-1"><p className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em]">ชม.เครื่องจักร</p></div>
-                  <input type="number" disabled={drillSaving} value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
-                    className="w-full px-3 py-3 text-[18px] font-mono font-semibold text-[#4b1560] text-center bg-transparent border-none outline-none"/>
-                </div>
-              </div>
-
-              <RepairLedgerActions onSave={handleSaveRepair} onOpen={openRepairLedger} onNew={newRepair} saving={drillSaving} saved={drillSaved} hasEntry={hasRepairEntry} error={drillError}/>
-            </>
+            <RepairLedgerActions onOpen={openRepairLedger} />
           )}
         </div>
       )}
@@ -724,19 +656,28 @@ function ReportPage() {
   const reportRouter = useRouter()
   const carId = searchParams.get('car_id')
   
-  const [car, setCar] = useState(null)
-  const [allMonthLogs, setLogs] = useState([])
-  const reportData = monthlyReportData(allMonthLogs, car, searchParams.get('report_type'))
-  const logs = reportData.rows
+  const [selectedMonth, setSelectedMonth] = useState(() => isLedgerMonth(searchParams.get('month')) ? searchParams.get('month') : ledgerToday().slice(0, 7))
+  const [reportPayload, setReportPayload] = useState(null)
+  const [reportLoading, setReportLoading] = useState(true)
+  const [reportError, setReportError] = useState('')
+  const reportRequest = useRef(0)
+  const dataKey = `${carId}:${selectedMonth}`
+  const currentReport = reportPayload?.key === dataKey ? reportPayload : null
+  const car = currentReport?.car || null
+  const reportData = monthlyReportData(currentReport?.trips || [], car, searchParams.get('report_type'))
+  const logs = reportData.type === 'usage'
+    ? appendLedgerRepairRows(reportData.rows, currentReport?.ledger.rows || [], { carId, month: selectedMonth })
+    : reportData.rows
   const electric = isElectricCar(car)
   const reportType = reportData.type
+  const reportReady = Boolean(currentReport) && !reportLoading && !reportError
+  const unknownRepairAmounts = logs.filter(row => row._repairOnly && row.repair_cost === null).length
   const changeReportType = type => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('report_type', type)
     reportRouter.replace(`?${params.toString()}`, { scroll: false })
   }
-  
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7))
+
   const [today, setToday] = useState(new Date())
 
   const [fromText, setFromText] = useState('')
@@ -755,69 +696,7 @@ function ReportPage() {
 
   const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' })
 
-  const [drillDate, setDrillDate] = useState('')
-  const [drillDesc, setDrillDesc] = useState('')
-  const [drillCost, setDrillCost] = useState('')
-  const [drillHours, setDrillHours] = useState('')
-  const [drillSaving, setDrillSaving] = useState(false)
-  const [drillSaved, setDrillSaved] = useState(false)
-  const [drillError, setDrillError] = useState('')
-  const [hasRepairEntry, setHasRepairEntry] = useState(false)
-  const [pendingRepair, setPendingRepair] = useState(null)
-  const repairDraftRef = useRef(null)
-  const repairSavingRef = useRef(false)
-  const repairContextRef = useRef('')
-
-  const newRepair = useCallback(() => {
-    repairContextRef.current = `${carId}:${selectedMonth}`
-    repairDraftRef.current = null
-    setHasRepairEntry(false); setDrillSaved(false); setDrillError('')
-    setPendingRepair(null)
-    setDrillDate(''); setDrillDesc(''); setDrillCost(''); setDrillHours('')
-  }, [carId, selectedMonth])
-  const openRepairLedger = () => reportRouter.push(`/report/repairs?${new URLSearchParams({ car_id: String(carId || ''), month: drillDate?.slice(0, 7) || selectedMonth })}`)
-
-  const persistRepairDraft = async (draft, context) => {
-    if (repairSavingRef.current || repairContextRef.current !== context) return
-    repairSavingRef.current = true; setDrillSaving(true); setDrillError(''); setDrillSaved(false)
-    try {
-      const saved = await saveRepairLedger(draft)
-      if (repairContextRef.current !== context) return
-      repairDraftRef.current = saved
-      setHasRepairEntry(true); setDrillSaved(true)
-    } catch (error) {
-      if (repairContextRef.current === context) setDrillError(error.message || 'บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง')
-    } finally {
-      repairSavingRef.current = false; setDrillSaving(false)
-    }
-  }
-
-  const handleSaveRepair = async () => {
-    if (repairSavingRef.current) return
-    const context = `${carId}:${selectedMonth}`
-    const draft = {
-      ...(repairDraftRef.current || { source_type: 'report', source_id: null, client_request_id: crypto.randomUUID(), status: '' }),
-      car_id: Number(carId), repair_date: drillDate, plate_number: car?.plate_number || '',
-      department: repairDraftRef.current?.department ?? car?.departments?.name ?? '',
-      shop_name: repairDraftRef.current?.shop_name || '', bill_number: repairDraftRef.current?.bill_number || '',
-      amount: drillCost.trim() === '' ? null : drillCost, repair_description: drillDesc.trim(),
-      accounting_document_number: repairDraftRef.current?.accounting_document_number || '',
-      paid_date: repairDraftRef.current?.paid_date || null,
-      machine_hours: drillHours.trim() === '' ? null : drillHours,
-    }
-    const errors = ledgerValidateDraft(draft)
-    if (Object.keys(errors).length) return setDrillError(Object.values(errors)[0])
-    if (draft.machine_hours !== null && !/^\d+(?:\.\d{1,2})?$/.test(draft.machine_hours)) return setDrillError('ชั่วโมงเครื่องจักรต้องไม่ติดลบ และมีทศนิยมไม่เกิน 2 ตำแหน่ง')
-    repairDraftRef.current = draft
-    if (!getRepairLedgerIdentity()) {
-      setDrillError('')
-      setPendingRepair({ draft, context })
-      return
-    }
-    await persistRepairDraft(draft, context)
-  }
-
-  useEffect(() => { newRepair() }, [newRepair])
+  const openRepairLedger = () => reportRouter.push(`/report/repairs?${new URLSearchParams({ car_id: String(carId || ''), month: selectedMonth })}`)
 
   const [docSaving, setDocSaving] = useState(false)
   const [docSaved, setDocSaved] = useState(false)
@@ -901,59 +780,44 @@ function ReportPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const fetchData = async () => {
-    if (!carId) return
-
-    const [year, month] = selectedMonth.split('-')
-    const startDate = `${year}-${month}-01T00:00:00`
-    const lastDay = new Date(year, month, 0).getDate()
-    const endDate = `${year}-${month}-${lastDay}T23:59:59`
-
-    const { data: c } = await supabase.from('cars').select('*, departments(name)').eq('id', carId).single()
-    setCar(c)
-
-    const { data: l } = await supabase.from('trip_logs')
-      .select('*').eq('car_id', carId).eq('is_completed', true)
-      .gte('start_time', startDate).lte('start_time', endDate)
-      .order('start_time', { ascending: true })
-
-    const tripIds = (l || []).map(log => log.id)
-    let repairs = []
-    if (tripIds.length > 0) {
-      const { data: repairData, error: repairError } = await supabase
-        .from('car_maintenance_records')
-        .select('id, y6_trip_log_id, repair_amount, car_maintenance_repair_items(repair_item_code, custom_text, maintenance_repair_items(name))')
-        .eq('car_id', Number(carId))
-        .eq('status', 'completed')
-        .eq('billing_status', 'billed')
-        .in('y6_trip_log_id', tripIds)
-      if (repairError) console.error('Y.P.6 repair data failed to load:', repairError)
-      else repairs = repairData || []
-    }
-
-    const repairsByTrip = new Map()
-    repairs.forEach(repair => {
-      const descriptions = (repair.car_maintenance_repair_items || []).map(item => (
-        item.repair_item_code === 'other'
-          ? item.custom_text
-          : item.maintenance_repair_items?.name
-      )).filter(Boolean)
-      const current = repairsByTrip.get(Number(repair.y6_trip_log_id)) || { descriptions: [], amount: 0 }
-      current.descriptions.push(...descriptions)
-      current.amount += Number(repair.repair_amount) || 0
-      repairsByTrip.set(Number(repair.y6_trip_log_id), current)
-    })
-
-    setLogs((l || []).map(log => {
-      const repair = repairsByTrip.get(Number(log.id))
-      return {
-        ...log,
-        repair_description: repair?.descriptions.join(', ') || '',
-        repair_cost: repair?.amount || 0,
+  const fetchData = useCallback(async () => {
+    if (!carId) { setReportLoading(false); return }
+    const request = ++reportRequest.current
+    setReportLoading(true)
+    setReportError('')
+    try {
+      const { start, end } = repairReportMonthBounds(selectedMonth)
+      const [vehicle, trips, ledger] = await Promise.all([
+        supabase.from('cars').select('*, departments(name)').eq('id', carId).single(),
+        supabase.from('trip_logs').select('*').eq('car_id', carId).eq('is_completed', true)
+          .gte('start_time', start).lt('start_time', end).order('start_time', { ascending: true }),
+        loadRepairLedgerYp6({ carId, month: selectedMonth }),
+      ])
+      if (vehicle.error) throw vehicle.error
+      if (trips.error) throw trips.error
+      const tripIds = (trips.data || []).map(log => log.id)
+      let repairs = []
+      if (tripIds.length) {
+        const result = await supabase.from('car_maintenance_records')
+          .select('id, y6_trip_log_id, repair_amount, car_maintenance_repair_items(repair_item_code, custom_text, maintenance_repair_items(name))')
+          .eq('car_id', Number(carId)).eq('status', 'completed').eq('billing_status', 'billed')
+          .in('y6_trip_log_id', tripIds)
+        if (result.error) throw result.error
+        repairs = result.data || []
       }
-    }))
-
-  }
+      if (request !== reportRequest.current) return
+      setReportPayload({
+        key: `${carId}:${selectedMonth}`, car: vehicle.data, ledger,
+        trips: attachLegacyRepairCosts(trips.data || [], repairs, ledger.linked_source_ids),
+      })
+    } catch {
+      if (request !== reportRequest.current) return
+      setReportPayload(null)
+      setReportError('โหลดข้อมูลรายงานหรือสมุดซ่อมไม่ครบ จึงยังไม่แสดงยอดหรือให้พิมพ์ กรุณาลองโหลดใหม่')
+    } finally {
+      if (request === reportRequest.current) setReportLoading(false)
+    }
+  }, [carId, selectedMonth])
 
   useEffect(() => {
     if (!car || !carId) return
@@ -970,9 +834,15 @@ function ReportPage() {
   }, [car, carId, selectedMonth, reportType, signatureKey])
 
   useEffect(() => {
-    if (carId) fetchData()
+    fetchData()
     setToday(new Date())
-  }, [carId, selectedMonth])
+    const onFocus = () => fetchData()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      reportRequest.current += 1
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [fetchData])
 
   const saveSignatureToDB = async (target, base64Text, fetchedName, fetchedPos, staffId = null, staffCode = null) => {
     try {
@@ -1007,15 +877,15 @@ function ReportPage() {
       setSigModal({ isOpen: true, target, title });
   }
 
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'numeric', year: '2-digit' }) : ''
+  const formatDate = (d) => d ? new Date(d.length === 10 ? `${d}T12:00:00+07:00` : d).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'numeric', year: '2-digit' }) : ''
   const formatThaiMonth = (d) => d ? new Date(d).toLocaleDateString('th-TH', { month: 'long' }) : ''
   const formatThaiYear = (d) => d ? new Date(d).getFullYear() + 543 : ''
   const reportDate = new Date(`${selectedMonth}-01`)
 
-  const totalDistance = logs.reduce((sum, log) => sum + (log.end_mileage - log.start_mileage), 0)
+  const totalDistance = reportData.rows.reduce((sum, log) => sum + (log.end_mileage - log.start_mileage), 0)
   const totalFuelLiters = logs.reduce((sum, log) => sum + (Number(log.fuel_liters) || 0), 0)
   const totalFuelCost = logs.reduce((sum, log) => sum + (Number(log.fuel_cost) || 0), 0)
-  const totalRepairCost = logs.reduce((sum, log) => sum + (Number(log.repair_cost) || 0), 0)
+  const totalRepairCents = repairReportTotalCents(logs)
   const kmPerLiter = (totalDistance > 0 && totalFuelLiters > 0) ? (totalDistance / totalFuelLiters).toFixed(2) : ''
   const startMonthMileage = reportData.startMileage;
   const endMonthMileage = reportData.endMileage;
@@ -1105,11 +975,11 @@ function ReportPage() {
         }
       `}</style>
 
-      {pendingRepair && <RepairStaffVerification onCancel={() => setPendingRepair(null)} onVerified={() => {
-        const pending = pendingRepair
-        setPendingRepair(null)
-        persistRepairDraft(pending.draft, pending.context)
-      }} />}
+      {(reportLoading || reportError) && carId && <div className="report-data-warning mx-4 my-3 rounded-xl border border-slate-200 bg-white p-4" role={reportError ? 'alert' : 'status'}>
+        {reportError || 'กำลังโหลดรายงานและรายการซ่อม…'}
+        {reportError && <button className="ml-3 underline print:hidden" onClick={fetchData}>ลองโหลดใหม่</button>}
+      </div>}
+      {unknownRepairAmounts > 0 && <p className="mx-4 my-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 print:hidden">มีงานซ่อม {unknownRepairAmounts} รายการที่ยังไม่ระบุยอดเงิน ยอดรวมคิดเฉพาะรายการที่ระบุเงินแล้ว <button className="underline" onClick={openRepairLedger}>เปิดสมุดซ่อม</button></p>}
 
       <SignatureModal 
         isOpen={sigModal.isOpen} title={sigModal.title}
@@ -1145,7 +1015,7 @@ function ReportPage() {
              style={{boxShadow:'0 2px 1px rgba(0,0,0,0.03),0 8px 28px rgba(0,0,0,0.12)', border:'0.5px solid rgba(0,0,0,0.08)'}}>
           <div className="px-4 py-3 border-b border-black/[0.06] flex items-center justify-between">
             <span className="text-[15px] font-semibold text-[#4b1560] tracking-[-0.3px]">เอกสาร</span>
-            <button onClick={() => window.print()}
+            <button onClick={() => window.print()} disabled={!reportReady}
               className="flex items-center gap-1.5 bg-[#4b1560] text-white text-[12px] font-medium px-3.5 py-1.5 rounded-full active:bg-[#3a3a3c] transition-colors">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               พิมพ์
@@ -1153,7 +1023,7 @@ function ReportPage() {
           </div>
 
           <div className="px-4 py-3 space-y-3">
-            {electric && <ReportTypeSelector value={reportType} onChange={changeReportType} count={logs.length} />}
+            {electric && <ReportTypeSelector value={reportType} onChange={changeReportType} count={reportData.rows.length} />}
             {/* Status badge */}
             {!canSignAny ? (
               <div className="flex items-center gap-2 bg-[#fff8ed] rounded-[10px] px-3 py-2">
@@ -1233,49 +1103,16 @@ function ReportPage() {
           </div>
         </div>
 
-        {/* Card: บันทึกการซ่อม */}
-        <div className="bg-[rgba(248,243,250,0.94)] backdrop-blur-2xl rounded-[20px] overflow-hidden"
-             style={{boxShadow:'0 2px 1px rgba(0,0,0,0.03),0 8px 28px rgba(0,0,0,0.12)', border:'0.5px solid rgba(0,0,0,0.08)'}}>
-          <div className="px-4 py-3 border-b border-black/[0.06] flex items-center justify-between">
-            <span className="text-[15px] font-semibold text-[#4b1560] tracking-[-0.3px]">บันทึกการซ่อม</span>
-            {drillSaved && <span className="text-[11px] font-medium text-[#1a7f37] bg-[#edfbf0] px-2.5 py-0.5 rounded-full">✓ บันทึกแล้ว</span>}
-          </div>
-          <div className="px-4 py-3 space-y-3">
-            <div>
-              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">วันที่</p>
-              <div className="bg-white rounded-[14px] overflow-hidden" style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}>
-                <input type="date" aria-label="วันที่ซ่อม" disabled={drillSaving} value={drillDate} onChange={e=>{setDrillDate(e.target.value);setDrillSaved(false)}}
-                  className="w-full px-3 py-2.5 text-[13px] text-[#4b1560] bg-transparent border-none outline-none"/>
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">รายการซ่อม</p>
-              <input type="text" disabled={drillSaving} value={drillDesc} onChange={e=>{setDrillDesc(e.target.value);setDrillSaved(false)}} placeholder="เช่น ซ่อมดับเพลิง..."
-                className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none placeholder:text-[#c7c7cc]"
-                style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">เงิน (บาท)</p>
-                <input type="number" disabled={drillSaving} value={drillCost} onChange={e=>{setDrillCost(e.target.value);setDrillSaved(false)}} placeholder="0"
-                  className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none text-center font-mono"
-                  style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-[#6e6e73] uppercase tracking-[0.05em] mb-1.5">ชม.เครื่องจักร</p>
-                <input type="number" disabled={drillSaving} value={drillHours} onChange={e=>{setDrillHours(e.target.value);setDrillSaved(false)}} placeholder="0.0" step="0.5"
-                  className="w-full bg-white rounded-[14px] px-3 py-2.5 text-[13px] outline-none text-center font-mono"
-                  style={{boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.07)'}}/>
-              </div>
-            </div>
-            <RepairLedgerActions onSave={handleSaveRepair} onOpen={openRepairLedger} onNew={newRepair} saving={drillSaving} saved={drillSaved} hasEntry={hasRepairEntry} error={drillError}/>
-          </div>
+        {/* Single repair entry point: the canonical ledger, not a second report form. */}
+        <div className="bg-white rounded-[20px] overflow-hidden border border-[#d2d2d7]">
+          <div className="px-4 py-3 border-b border-black/[0.06]"><span className="text-[15px] font-semibold">สมุดคุมงานซ่อม</span></div>
+          <div className="px-4 py-3"><RepairLedgerActions onOpen={openRepairLedger} /></div>
         </div>
       </div>
 
       {/* ── Mobile Bottom Sheet ── */}
       <div className="ctrl-panel report-mobile-controls xl:hidden sticky top-0 z-50 print:hidden w-full">
-        {electric && <div className="px-3 pt-2"><ReportTypeSelector value={reportType} onChange={changeReportType} count={logs.length} /></div>}
+        {electric && <div className="px-3 pt-2"><ReportTypeSelector value={reportType} onChange={changeReportType} count={reportData.rows.length} /></div>}
         <MobileControlSheet
           selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth}
           fromText={fromText} setFromText={setFromText}
@@ -1287,13 +1124,7 @@ function ReportPage() {
           signableMonth={signableMonth} driverSigText={driverSigText}
           controllerSigText={controllerSigText}
           handleDeleteSig={handleDeleteSig} openSigModal={openSigModal}
-          drillDate={drillDate} setDrillDate={setDrillDate}
-          drillDesc={drillDesc} setDrillDesc={setDrillDesc}
-          drillCost={drillCost} setDrillCost={setDrillCost}
-          drillHours={drillHours} setDrillHours={setDrillHours}
-          drillSaving={drillSaving}
-          drillSaved={drillSaved} setDrillSaved={setDrillSaved}
-          handleSaveRepair={handleSaveRepair} openRepairLedger={openRepairLedger} newRepair={newRepair} hasRepairEntry={hasRepairEntry} drillError={drillError}
+          openRepairLedger={openRepairLedger} reportReady={reportReady}
           handleSaveDoc={handleSaveDoc} docSaving={docSaving} docSaved={docSaved}
         />
       </div>
@@ -1532,7 +1363,7 @@ function ReportPage() {
                                     <tbody>
                                         {pageLogs.map((log, i) => (
                                         <tr key={i} className="h-[28px] align-middle font-normal text-[12px]">
-                                            <td className="border border-black text-center">{formatDate(log.start_time)}</td>
+                                            <td className="border border-black text-center">{formatDate(log.usage_date || log.start_time)}</td>
                                             <td className="border border-black px-1 text-left truncate max-w-[140px]">{log.driver_name}</td>
                                             
                                             {/* 🟢 ดึงข้อมูลแสดงแค่ ประเภทงาน */}
@@ -1542,11 +1373,11 @@ function ReportPage() {
 
                                             <td className="border border-black text-center">{log.start_mileage}</td>
                                             <td className="border border-black text-center">{log.end_mileage}</td>
-                                            <td className="border border-black text-center"></td>
+                                            <td className="border border-black text-center">{log._repairOnly ? log.machine_hours : ''}</td>
                                             <td className="border border-black text-center">{log.fuel_liters ? Number(log.fuel_liters).toFixed(2) : ''}</td>
                                             <td className="border border-black text-center">{log.fuel_cost > 0 ? Number(log.fuel_cost).toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
                                             <td className="border border-black px-1 text-left text-[10px] leading-tight">{log.repair_description}</td>
-                                            <td className="border border-black text-center">{log.repair_cost > 0 ? Number(log.repair_cost).toLocaleString(undefined, {minimumFractionDigits: 2}) : (log.repair_description ? '0.00' : '')}</td>
+                                            <td className="border border-black text-center">{log.repair_cost !== null && log.repair_cost !== undefined ? ledgerMoney(log.repair_cost) : ''}</td>
                                             <td className="border border-black"></td>
                                         </tr>
                                         ))}
@@ -1567,7 +1398,7 @@ function ReportPage() {
                                                 <td className="border border-black text-center text-black">{totalFuelLiters > 0 ? totalFuelLiters.toFixed(2) : ''}</td>
                                                 <td className="border border-black text-center text-black">{totalFuelCost > 0 ? totalFuelCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
                                                 <td className="border border-black"></td>
-                                                <td className="border border-black text-center text-black">{totalRepairCost > 0 ? totalRepairCost.toLocaleString(undefined, {minimumFractionDigits: 2}) : ''}</td>
+                                                <td className="border border-black text-center text-black">{totalRepairCents > 0n ? ledgerMoneyFromCents(totalRepairCents) : ''}</td>
                                                 <td className="border border-black"></td>
                                             </tr>
                                         )}
