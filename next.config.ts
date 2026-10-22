@@ -46,6 +46,13 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/fleet-images/:path*",
+        headers: [
+          // Every filename contains its content hash. Never overwrite those URLs.
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };

@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { CAR_IMAGE_BUCKET } from '@/lib/carImages'
+import { CAR_IMAGE_BUCKET, getBundledCarImageUrl } from '@/lib/carImages'
 import { IMAGE_CACHE_SECONDS, createCarSourceReader, optimizeImageSource, parseCarImageRequest,
   readBoundedImage, renderCarImage } from '@/lib/carImageDelivery'
 
@@ -28,6 +28,13 @@ export async function GET(request) {
   if (!image || !projectUrl) return Response.json({ error: 'Invalid image request' }, {
     status: 400, headers: { 'Cache-Control': 'no-store' },
   })
+  // Backwards-compatible old URLs no longer depend on cache retention or fetch
+  // any Supabase original when this exact project's image has a static copy.
+  const bundled = getBundledCarImageUrl(image.path, image.variant, projectUrl)
+  if (bundled) return new Response(null, { status: 308, headers: {
+    Location: bundled, 'Cache-Control': `public, max-age=${IMAGE_CACHE_SECONDS}, immutable`,
+    'X-Car-Image-Delivery': 'bundled-static',
+  } })
   try {
     const source = await readSource(projectUrl, image.path)
     const { bytes, etag } = await renderCarImage(source, image.variant)
