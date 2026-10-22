@@ -90,5 +90,9 @@ await db.exec(`
         and p.prosecdef) then raise exception 'Public SECURITY DEFINER wrapper'; end if;
   end $$;
 `);
+if (process.env.REPAIR_LEDGER_DISCORD_TEST === '1') {
+  const { runRepairLedgerDiscordIsolated } = await import('./repairLedgerDiscord.isolated.mjs');
+  await runRepairLedgerDiscordIsolated(db, root);
+}
 await db.close();
 console.log(`Isolated SQL integration passed: ${fileURLToPath(root)} (no external database connection)`);
