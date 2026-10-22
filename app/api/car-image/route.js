@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { CAR_IMAGE_BUCKET, getBundledCarImageUrl } from '@/lib/carImages'
+import { CAR_IMAGE_BUCKET, getBundledCarImageUrl, isCarImageStoragePaused } from '@/lib/carImages'
 import { IMAGE_CACHE_SECONDS, createCarSourceReader, optimizeImageSource, parseCarImageRequest,
   readBoundedImage, renderCarImage } from '@/lib/carImageDelivery'
 
@@ -34,6 +34,12 @@ export async function GET(request) {
   if (bundled) return new Response(null, { status: 308, headers: {
     Location: bundled, 'Cache-Control': `public, max-age=${IMAGE_CACHE_SECONDS}, immutable`,
     'X-Car-Image-Delivery': 'bundled-static',
+  } })
+  // Stop BEFORE consulting either cache or origin. This also protects valid old
+  // API links to obsolete/unbundled originals, without breaking existing photos.
+  if (isCarImageStoragePaused(projectUrl)) return new Response(null, { status: 307, headers: {
+    Location: '/car-placeholder.svg', 'Cache-Control': 'public, max-age=300',
+    'X-Car-Image-Delivery': 'local-fallback',
   } })
   try {
     const source = await readSource(projectUrl, image.path)

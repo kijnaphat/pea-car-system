@@ -8,7 +8,7 @@ import PageSkeleton from '@/app/components/PageSkeleton'
 import CarQrLabel from '@/app/components/CarQrLabel'
 import DataManagementPanel from '@/app/admin/components/DataManagementPanel'
 import DiscordAuditPanel from '@/app/admin/components/DiscordAuditPanel'
-import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage } from '@/lib/carImages'
+import { CAR_IMAGE_BUCKET, getCarImage, getLegacyCarImage, isCarImageStoragePaused } from '@/lib/carImages'
 import { countPendingAnomalies } from '@/lib/tripAnomalies'
 import { clearMileageReviewCache, loadMileageReviewData } from '@/lib/mileageReviewData'
 import { startVisiblePolling } from '@/lib/visiblePolling'
@@ -21,6 +21,8 @@ const initialStaffData = { staff_code: '', full_name: '', position: '', departme
 const initialTaskData = { name: '', department_id: '' }
 const initialDepartmentData = { name: '' }
 const initialOperationAreaData = { name: '' }
+const carImageStoragePaused = isCarImageStoragePaused()
+const carImagePauseMessage = 'พักการเพิ่มหรือเปลี่ยนรูปรถชั่วคราวเพื่อประหยัดโควตา รูปเดิมยังแสดงได้ และบันทึกข้อมูลรถได้ตามปกติ'
 
 const fieldLabels = {
   plate_number: 'ป้ายทะเบียน', model: 'ยี่ห้อ/รุ่น', car_type: 'ประเภทรถ', fuel_type: 'ประเภทพลังงาน', 
@@ -180,6 +182,7 @@ export default function AdminDashboard() {
   }
 
   const handleCarImageChange = async (event) => {
+    if (carImageStoragePaused) { event.target.value = ''; return }
     const file = event.target.files?.[0]
     if (!file) return
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
@@ -206,6 +209,7 @@ export default function AdminDashboard() {
   }
 
   const uploadCarImage = async (carId, file) => {
+    if (carImageStoragePaused) throw new Error(carImagePauseMessage)
     if (file.size > MAX_CAR_UPLOAD_BYTES) throw new Error('กรุณาเลือกรูปใหม่เพื่อย่อขนาดก่อนอัปโหลด')
     const extension = file.type === 'image/webp' ? 'webp' : (file.name.split('.').pop() || 'jpg').toLowerCase()
     const imagePath = `cars/${carId}/main-${Date.now()}.${extension}`
@@ -219,6 +223,7 @@ export default function AdminDashboard() {
   }
 
   const migrateLegacyImages = async () => {
+    if (carImageStoragePaused) return
     const carsToMigrate = carsList.filter(car => !car.image_path && getLegacyCarImage(car))
     if (carsToMigrate.length === 0) return
     setIsMigratingImages(true)
@@ -657,16 +662,16 @@ export default function AdminDashboard() {
 
                   <div className="sm:col-span-2 lg:col-span-3">
                     <label className={labelStyle}>รูปรถ (JPG, PNG, WebP, AVIF · ไม่เกิน 5 MB)</label>
-                    <label className="flex min-h-[116px] cursor-pointer items-center gap-4 rounded-[16px] border-2 border-dashed border-[#d9c8de] bg-[#fcf9fd] p-4 transition-colors hover:border-[#702082]">
-                      <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={handleCarImageChange} className="hidden" />
+                    <label className={`flex min-h-[116px] items-center gap-4 rounded-[16px] border-2 border-dashed border-[#d9c8de] bg-[#fcf9fd] p-4 transition-colors ${carImageStoragePaused ? 'cursor-default' : 'cursor-pointer hover:border-[#702082]'}`}>
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={handleCarImageChange} disabled={carImageStoragePaused} className="hidden" />
                       {carImagePreview ? <img src={carImagePreview} alt="ตัวอย่างรูปรถ" className="h-20 w-28 rounded-[12px] border border-[#eadfed] bg-white object-cover" /> : <span className="flex h-20 w-28 items-center justify-center rounded-[12px] bg-[#f1e6f4] text-[#702082]"><Icon icon="ph:image-square-duotone" width="34" height="34" /></span>}
-                      <span className="min-w-0"><span className="block text-[13px] font-bold text-[#4b1560]">{carImageFile ? carImageFile.name : carImagePreview ? 'คลิกเพื่อเปลี่ยนรูปรถ' : 'คลิกเพื่อเลือกรูปรถ'}</span><span className="mt-1 block text-[11px] text-[#846c89]">รูปนี้จะเก็บใน Supabase Storage และแสดงบนหน้า Home</span></span>
+                      <span className="min-w-0"><span className="block text-[13px] font-bold text-[#4b1560]">{carImageStoragePaused ? 'ใช้รูปเดิมที่เก็บไว้กับเว็บ' : carImageFile ? carImageFile.name : carImagePreview ? 'คลิกเพื่อเปลี่ยนรูปรถ' : 'คลิกเพื่อเลือกรูปรถ'}</span><span className="mt-1 block text-[11px] text-[#846c89]">{carImageStoragePaused ? carImagePauseMessage : 'รูปนี้จะเก็บใน Supabase Storage และแสดงบนหน้า Home'}</span></span>
                     </label>
                     {(carImageFile || carData.image_path) && <button type="button" onClick={() => { if (carImagePreview.startsWith('blob:')) URL.revokeObjectURL(carImagePreview); setCarImageFile(null); setCarImagePreview(''); setCarData({...carData, image_path: ''}); setRemoveCarImage(true) }} className="mt-2 text-[11px] font-semibold text-[#d33c35]">ลบรูปที่เลือก</button>}
                   </div>
 
                   <div className="flex flex-col justify-end gap-2">
-                    {carsWithoutStoredImages > 0 && <button type="button" onClick={migrateLegacyImages} disabled={isMigratingImages} className="rounded-[12px] border border-[#dfcfe4] bg-[#f5edf7] px-4 py-3 text-[12px] font-bold text-[#702082] disabled:opacity-50"><Icon icon="ph:database-duotone" width="17" height="17" className="mr-1 inline" />{isMigratingImages ? 'กำลังย้ายรูป...' : `นำรูปเดิมเข้า Storage (${carsWithoutStoredImages} คัน)`}</button>}
+                    {carsWithoutStoredImages > 0 && <button type="button" onClick={migrateLegacyImages} disabled={isMigratingImages || carImageStoragePaused} className="rounded-[12px] border border-[#dfcfe4] bg-[#f5edf7] px-4 py-3 text-[12px] font-bold text-[#702082] disabled:opacity-50"><Icon icon="ph:database-duotone" width="17" height="17" className="mr-1 inline" />{isMigratingImages ? 'กำลังย้ายรูป...' : `นำรูปเดิมเข้า Storage (${carsWithoutStoredImages} คัน)`}</button>}
                     <button type="submit" disabled={isSubmitting} className="rounded-[12px] bg-[#ffdd00] px-6 py-3.5 text-[14px] font-bold text-[#3b1746] transition-all hover:bg-[#e8c900] disabled:opacity-50">
                       {isSubmitting ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'สร้างรถและ QR Code'}
                     </button>

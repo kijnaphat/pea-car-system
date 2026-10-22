@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+  <title id="title">ยังไม่มีภาพรถที่แสดงได้</title>
+  <desc id="desc">ภาพสัญลักษณ์แทนรูปรถ ไม่ใช่ภาพรถจริง</desc>
+  <rect width="640" height="400" rx="24" fill="#f1f4f5"/>
+  <ellipse cx="320" cy="292" rx="180" ry="16" fill="#dce3e6"/>
+  <g fill="none" stroke="#788b96" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M160 258v-39c0-11 8-20 19-23l28-7 37-58h152l38 58 28 7c11 3 18 12 18 23v39H160Z" fill="#e2e9ed"/>
+    <path d="m213 188 35-53h143l35 53H213Z" fill="#f9fbfc"/>
+    <path d="M320 138v44M180 222h32m216 0h32M250 251h140"/>
+    <path d="M197 259v17m246-17v17" stroke-width="22"/>
+  </g>
+</svg>

@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync } from 'node:fs'
 import sharp from 'sharp'
 import { CAR_IMAGE_SNAPSHOT, CAR_IMAGE_SNAPSHOT_PROJECT } from '../lib/carImageSnapshot.js'
-import { getBundledCarImageUrl, getStoredCarImageUrl } from '../lib/carImages.js'
+import { getBundledCarImageUrl, getCarImage, getStoredCarImageUrl, isCarImageStoragePaused } from '../lib/carImages.js'
 import { IMAGE_CACHE_SECONDS, parseCarImageRequest } from '../lib/carImageDelivery.js'
 
 const variants = { thumb: 160, card: 640, hero: 1280 }
@@ -25,11 +25,12 @@ function withProject(project, callback) {
 // or resolving its build-time @ alias. Both origin and renderer are observable stubs.
 function handlerFixture() {
   const calls = { bundled: 0, origin: 0, rendered: 0 }
-  const handler = new Function('parseCarImageRequest', 'getBundledCarImageUrl', 'readSource',
+  const handler = new Function('parseCarImageRequest', 'getBundledCarImageUrl', 'isCarImageStoragePaused', 'readSource',
     'renderCarImage', 'IMAGE_CACHE_SECONDS',
     `${routeSource.slice(routeSource.indexOf('export async function GET')).replace('export async function GET', 'async function GET')}; return GET;`)(
     parseCarImageRequest,
     (...args) => { calls.bundled++; return getBundledCarImageUrl(...args) },
+    isCarImageStoragePaused,
     async () => { calls.origin++; return 'new-bounded-source' },
     async () => { calls.rendered++; return { bytes: Buffer.from('bounded-webp'), etag: '"fixture-etag"' } },
     IMAGE_CACHE_SECONDS,
@@ -71,15 +72,35 @@ test('only the exact Supabase project and exact current image path resolve to st
   }
 })
 
-test('client helper defaults to its configured tenant and new/replaced photos retain the dynamic pipeline', async () => {
+test('emergency Storage pause is scoped to the exact Kamphaeng Saen project only', async () => {
+  for (const project of [CAR_IMAGE_SNAPSHOT_PROJECT, `${CAR_IMAGE_SNAPSHOT_PROJECT}/`]) {
+    assert.equal(isCarImageStoragePaused(project), true)
+    await withProject(project, () => assert.equal(isCarImageStoragePaused(), true))
+  }
+  for (const project of [null, '', 'https://dqwemzjmzowyxyhbljoe.supabase.co',
+    `${CAR_IMAGE_SNAPSHOT_PROJECT}.evil.test`, `${CAR_IMAGE_SNAPSHOT_PROJECT}?other=1`,
+    `${CAR_IMAGE_SNAPSHOT_PROJECT}/storage`, `${CAR_IMAGE_SNAPSHOT_PROJECT}//`,
+    CAR_IMAGE_SNAPSHOT_PROJECT.replace('https://', 'https://attacker@'),
+    CAR_IMAGE_SNAPSHOT_PROJECT.replace('https://', 'http://')]) {
+    assert.equal(isCarImageStoragePaused(project), false, `do not pause unrelated project ${project}`)
+  }
+  await withProject(undefined, () => assert.equal(isCarImageStoragePaused(), false))
+})
+
+test('paused tenant reuses current static photos while unknown/replaced/obsolete paths use only local fallbacks', async () => {
   const path = paths[0]
   assert.ok(path)
-  const newPath = 'cars/999/main-9999999999999.webp'
   await withProject(CAR_IMAGE_SNAPSHOT_PROJECT, () => {
     assert.equal(getStoredCarImageUrl(path, 'thumb'), CAR_IMAGE_SNAPSHOT[path].thumb)
     assert.equal(getStoredCarImageUrl(path), CAR_IMAGE_SNAPSHOT[path].hero)
-    assert.equal(getStoredCarImageUrl(newPath, 'card'), '/api/car-image?path=cars/999/main-9999999999999.webp&variant=card')
-    assert.equal(getStoredCarImageUrl(newPath, 'unsupported'), '/api/car-image?path=cars/999/main-9999999999999.webp&variant=hero')
+    assert.equal(getCarImage({ image_path: path, car_type: 'รถ EV' }, 'card'), CAR_IMAGE_SNAPSHOT[path].card)
+    for (const unknownPath of ['cars/999/main-9999999999999.webp',
+      path.replace(/[^/]+$/, 'main-9999999999999.webp'), 'cars/999/main-old.webp', 'legacy/obsolete.png']) {
+      assert.equal(getStoredCarImageUrl(unknownPath, 'card'), null)
+      assert.equal(getStoredCarImageUrl(unknownPath, 'unsupported'), null)
+      assert.equal(getCarImage({ image_path: unknownPath, car_type: 'รถ EV' }, 'card'), '/mg.png')
+      assert.equal(getCarImage({ image_path: unknownPath, car_type: 'unknown' }, 'card'), '/car-placeholder.svg')
+    }
     assert.equal(getStoredCarImageUrl(null), null)
   })
   await withProject('https://dqwemzjmzowyxyhbljoe.supabase.co', () => {
@@ -143,10 +164,30 @@ test('actual API handler validates malformed requests before looking up or readi
   })
 })
 
-test('actual API handler preserves bounded delivery for unknown replacements and other tenants', async () => {
-  for (const [project, path] of [[CAR_IMAGE_SNAPSHOT_PROJECT, 'cars/999/main-9999999999999.webp'],
-    ['https://dqwemzjmzowyxyhbljoe.supabase.co', paths[0]]]) {
+test('actual API handler temporarily redirects every valid unknown KPN path before any source/cache/origin read or rendering', async () => {
+  for (const project of [CAR_IMAGE_SNAPSHOT_PROJECT, `${CAR_IMAGE_SNAPSHOT_PROJECT}/`]) {
     await withProject(project, async () => {
+      const { handler, calls } = handlerFixture()
+      const unknownPaths = ['cars/999/main-9999999999999.webp',
+        paths[0].replace(/[^/]+$/, 'main-9999999999999.webp'), 'cars/999/main-old.webp', 'legacy/obsolete.png']
+      for (const path of unknownPaths) {
+        for (const variant of Object.keys(variants)) {
+          const response = await handler(request(path, variant))
+          assert.equal(response.status, 307, 'temporary response must be reversible when emergency mode ends')
+          assert.equal(response.headers.get('location'), '/car-placeholder.svg')
+          assert.equal(response.headers.get('cache-control'), 'public, max-age=300')
+          assert.equal(response.headers.get('x-car-image-delivery'), 'local-fallback')
+          assert.equal(await response.text(), '')
+        }
+      }
+      assert.deepEqual(calls, { bundled: unknownPaths.length * Object.keys(variants).length, origin: 0, rendered: 0 })
+    })
+  }
+})
+
+test('actual API handler preserves bounded dynamic delivery for both current and unknown paths of other tenants', async () => {
+  for (const path of [paths[0], 'cars/999/main-9999999999999.webp']) {
+    await withProject('https://dqwemzjmzowyxyhbljoe.supabase.co', async () => {
       const { handler, calls } = handlerFixture()
       const response = await handler(request(path, 'card'))
       assert.equal(response.status, 200)
