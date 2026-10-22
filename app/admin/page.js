@@ -1,6 +1,7 @@
 ﻿'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { optimizeCarImage, MAX_CAR_UPLOAD_BYTES } from '@/lib/optimizeCarImage'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react'
 import PageSkeleton from '@/app/components/PageSkeleton'
@@ -35,25 +36,6 @@ function getDeleteErrorMessage(table, error) {
   }
 
   return error?.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
-}
-
-async function optimizeCarImage(file) {
-  try {
-    const bitmap = await createImageBitmap(file)
-    const maxDimension = 1280
-    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height))
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-    bitmap.close()
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.78))
-    if (!blob) return file
-    const name = `${file.name.replace(/\.[^.]+$/, '')}.webp`
-    return new File([blob], name, { type: 'image/webp', lastModified: Date.now() })
-  } catch {
-    return file
-  }
 }
 
 export default function AdminDashboard() {
@@ -211,14 +193,20 @@ export default function AdminDashboard() {
       event.target.value = ''
       return
     }
-    const optimizedFile = await optimizeCarImage(file)
-    if (carImagePreview?.startsWith('blob:')) URL.revokeObjectURL(carImagePreview)
-    setCarImageFile(optimizedFile)
-    setCarImagePreview(URL.createObjectURL(optimizedFile))
-    setRemoveCarImage(false)
+    try {
+      const optimizedFile = await optimizeCarImage(file)
+      if (carImagePreview?.startsWith('blob:')) URL.revokeObjectURL(carImagePreview)
+      setCarImageFile(optimizedFile)
+      setCarImagePreview(URL.createObjectURL(optimizedFile))
+      setRemoveCarImage(false)
+    } catch (error) {
+      alert(error.message || 'ไม่สามารถย่อรูปได้ กรุณาเลือกไฟล์ใหม่')
+      event.target.value = ''
+    }
   }
 
   const uploadCarImage = async (carId, file) => {
+    if (file.size > MAX_CAR_UPLOAD_BYTES) throw new Error('กรุณาเลือกรูปใหม่เพื่อย่อขนาดก่อนอัปโหลด')
     const extension = file.type === 'image/webp' ? 'webp' : (file.name.split('.').pop() || 'jpg').toLowerCase()
     const imagePath = `cars/${carId}/main-${Date.now()}.${extension}`
     const { error } = await supabase.storage.from(CAR_IMAGE_BUCKET).upload(imagePath, file, {
@@ -245,10 +233,11 @@ export default function AdminDashboard() {
       for (const [legacyImage, carIds] of groupedCars) {
         const response = await fetch(legacyImage)
         if (!response.ok) throw new Error(`ไม่สามารถอ่านไฟล์เดิม ${legacyImage}`)
-        const blob = await response.blob()
-        const imagePath = `legacy/${legacyImage.split('/').pop()}`
+        const original = await response.blob()
+        const blob = await optimizeCarImage(new File([original], legacyImage.split('/').pop(), { type: original.type || 'image/png' }))
+        const imagePath = `legacy/${legacyImage.split('/').pop()}-${Date.now()}.${blob.type === 'image/webp' ? 'webp' : 'jpg'}`
         const { error: uploadError } = await supabase.storage.from(CAR_IMAGE_BUCKET).upload(imagePath, blob, {
-          upsert: true,
+          upsert: false,
           contentType: blob.type || 'image/png',
           cacheControl: '31536000',
         })

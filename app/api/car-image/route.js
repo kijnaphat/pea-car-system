@@ -1,65 +1,48 @@
-import { NextResponse } from 'next/server'
-import sharp from 'sharp'
+import { unstable_cache } from 'next/cache'
 import { CAR_IMAGE_BUCKET } from '@/lib/carImages'
-
-const CACHE_SECONDS = 30 * 24 * 60 * 60
-const STALE_SECONDS = 24 * 60 * 60
-
-const IMAGE_VARIANTS = {
-  thumb: { width: 160, quality: 62 },
-  card: { width: 640, quality: 70 },
-  hero: { width: 1280, quality: 74 },
-}
+import { IMAGE_CACHE_SECONDS, createCarSourceReader, optimizeImageSource, parseCarImageRequest,
+  readBoundedImage, renderCarImage } from '@/lib/carImageDelivery'
 
 export const runtime = 'nodejs'
 
-function imageHeaders(contentType = 'image/webp') {
-  const browserCache = `public, max-age=${CACHE_SECONDS}, immutable`
-  const edgeCache = `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${STALE_SECONDS}`
-
-  return {
-    'Content-Type': contentType,
-    'Cache-Control': browserCache,
-    'CDN-Cache-Control': edgeCache,
-    'Vercel-CDN-Cache-Control': edgeCache,
+const persistentSource = unstable_cache(async (projectUrl, imagePath) => {
+  const encodedPath = imagePath.split('/').map(encodeURIComponent).join('/')
+  const response = await fetch(`${projectUrl}/storage/v1/object/public/${CAR_IMAGE_BUCKET}/${encodedPath}`, {
+    cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(15000),
+  })
+  if (!response.ok) {
+    const error = new Error('Image source unavailable')
+    error.status = response.status === 404 || response.status === 400 ? 404 : 502
+    throw error
   }
-}
+  // Persist AFTER resizing: even a 5 MB original produces a <350 KB JSON entry.
+  // Shared by all variants and retained across requests/instances/deployments.
+  return optimizeImageSource(await readBoundedImage(response))
+}, ['car-image-optimized-source-v2'], { revalidate: IMAGE_CACHE_SECONDS })
+
+const readSource = createCarSourceReader(persistentSource)
 
 export async function GET(request) {
-  const imagePath = request.nextUrl.searchParams.get('path')
-  const variantName = request.nextUrl.searchParams.get('variant') || 'hero'
-  const variant = IMAGE_VARIANTS[variantName] || IMAGE_VARIANTS.hero
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-
-  if (!imagePath || !supabaseUrl || imagePath.includes('..')) {
-    return NextResponse.json({ error: 'Invalid image path' }, { status: 400 })
-  }
-
-  const encodedPath = imagePath.split('/').map(encodeURIComponent).join('/')
-  const sourceUrl = `${supabaseUrl}/storage/v1/object/public/${CAR_IMAGE_BUCKET}/${encodedPath}`
-  const response = await fetch(sourceUrl, { next: { revalidate: CACHE_SECONDS } })
-
-  if (!response.ok) {
-    return NextResponse.json({ error: 'Image not found' }, { status: response.status })
-  }
-
-  const originalImage = Buffer.from(await response.arrayBuffer())
-
+  const image = parseCarImageRequest(request.url)
+  const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!image || !projectUrl) return Response.json({ error: 'Invalid image request' }, {
+    status: 400, headers: { 'Cache-Control': 'no-store' },
+  })
   try {
-    const optimizedImage = await sharp(originalImage)
-      .rotate()
-      .resize({
-        width: variant.width,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: variant.quality, effort: 4 })
-      .toBuffer()
-
-    return new NextResponse(optimizedImage, { headers: imageHeaders() })
-  } catch {
-    return new NextResponse(originalImage, {
-      headers: imageHeaders(response.headers.get('content-type') || 'image/jpeg'),
+    const source = await readSource(projectUrl, image.path)
+    const { bytes, etag } = await renderCarImage(source, image.variant)
+    const headers = {
+      'Content-Type': 'image/webp', ETag: etag,
+      'Cache-Control': `public, max-age=${IMAGE_CACHE_SECONDS}, immutable`,
+      'CDN-Cache-Control': `public, s-maxage=${IMAGE_CACHE_SECONDS}, stale-while-revalidate=86400`,
+      'Vercel-CDN-Cache-Control': `public, s-maxage=${IMAGE_CACHE_SECONDS}, stale-while-revalidate=86400`,
+    }
+    if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers })
+    return new Response(bytes, { headers })
+  } catch (error) {
+    // Never fall back to serving/caching the multi-megabyte original on errors.
+    return Response.json({ error: 'Image temporarily unavailable' }, {
+      status: error.status || 502, headers: { 'Cache-Control': 'no-store' },
     })
   }
 }
